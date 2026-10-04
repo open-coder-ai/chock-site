@@ -1,0 +1,57 @@
+presets:
+- id: git-hygiene
+  title: Git hygiene
+  summary: Keep hooks on, main protected, commits private and reviewable.
+  members: [block-no-verify, block-hook-bypass-in-files, protect-main-branch, protect-commit-privacy, limit-diff-size, refname-filename-metachar]
+- id: secrets
+  title: Secrets
+  summary: Keep credentials out of files the agent writes and out of its reach.
+  members: [scan-secrets, scan-secret-files, scan-secrets-entropy, block-secret-store-reads]
+- id: supply-chain
+  title: Packages and supply chain
+  summary: Refuse risky registries, lockfile tampering, known-bad packages and install-time code.
+  members: [registry-config, lockfile-integrity, compromised-package-ioc, package-lifecycle-scripts, opaque-blob-guard]
+- id: ci-pipeline
+  title: CI pipeline
+  summary: Pinned actions and safe GitHub Actions workflows.
+  members: [pin-github-actions, ci-github-actions-security, protect-ci-workflows]
+- id: agent-config
+  title: Agent configuration
+  summary: Stop the agent widening its own permissions or weakening its guardrails.
+  members: [protect-agent-config, agent-permissions-scan, block-wildcard-agent-permissions, block-unguarded-agent-spawn, block-unpinned-agent-components, agent-devenv-autoexec]
+- id: prompt-injection
+  title: Prompt injection and memory
+  summary: Hidden text, injected instructions and poisoned memory.
+  members: [scan-instruction-files, block-invisible-unicode, guard-memory-writes, scan-hidden-content]
+- id: shell-containment
+  title: Shell containment
+  summary: Destructive commands, download-and-run, data leaving the machine, persistence.
+  members: [block-curl-pipe-sh, block-destructive-commands, block-unapproved-egress, block-persistence-shapes, block-fetch-exec-in-files]
+- id: code-hardening
+  title: Code hardening
+  summary: Keep compiler hardening, security checks and scanners in place.
+  members: [hardening-flags, guard-deletion, scan-suppression-markers, block-unsafe-code-execution]
+- id: test-integrity
+  title: Test integrity
+  summary: No skipped, weakened or deleted tests to get green.
+  members: [block-test-skips, protect-test-integrity]
+- id: cloud-iac
+  title: Cloud and containers
+  summary: Wildcard IAM grants and insecure Dockerfiles or compose files.
+  members: [block-wildcard-iam, iam-policy-scan, dockerfile-compose-security]
+- id: owasp-agentic-top10
+  title: OWASP agentic top 10
+  summary: Guidance for the OWASP top 10 risks of agentic applications.
+  members: [owasp-asi01-agent-goal-hijack, owasp-asi02-tool-misuse, owasp-asi03-identity-privilege-abuse, owasp-asi04-agentic-supply-chain, owasp-asi05-unexpected-code-execution, owasp-asi06-memory-context-poisoning, owasp-asi07-insecure-inter-agent-communication, owasp-asi08-cascading-failures, owasp-asi09-human-agent-trust, owasp-asi10-rogue-agents]
+- id: eu-ai-act
+  title: EU AI Act
+  summary: Prohibited practices, transparency duties and high-risk triage.
+  members: [eu-ai-act-prohibited-practices, eu-ai-act-transparency, eu-ai-act-high-risk-triage]
+- id: safety-guidance
+  title: Safety guidance
+  summary: Advice the agent reads on git, code safety, injection and self-review.
+  members: [git-safety, code-safety, injection-defense, review-like-a-red-team]
+- id: agent-craft
+  title: Agent craft
+  summary: "Working habits: verify, keep context clean, remember the right things, save tokens."
+  members: [agent-discipline, context-hygiene, memory-discipline, token-efficiency, firecrawl-fallback-only]

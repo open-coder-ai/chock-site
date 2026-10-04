@@ -1,0 +1,5 @@
+pytest==9.1.1
+ruff==0.16.10
+PyYAML==6.0.3
+playwright==1.63.0
+pytest-playwright==0.9.0
