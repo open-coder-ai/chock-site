@@ -98,17 +98,17 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
         if status in LIFECYCLE_HIDDEN:
             continue
         version = str(manifest.get("version") or row["version"])
+        description = _collapse(manifest.get("description") or row.get("description"))
         policies.append(
             Policy(
                 id=policy_id,
                 path=str(row["path"]),
                 name=_collapse(manifest.get("name") or policy_id),
                 version=str(row["version"]),
-                description=_collapse(
-                    manifest.get("description") or row.get("description")
-                ),
+                description=description,
                 eval_cases=int(row.get("eval_cases") or 0),
                 eval_executed=int(row.get("eval_executed") or 0),
+                misses=extract_misses(description),
                 latest=_latest_entry(manifest.get("changelog") or [], version),
                 source_url=f"{CATALOG_TREE}{catalog_ref}/{row['path']}",
             )

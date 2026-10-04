@@ -84,6 +84,12 @@ def test_git_safety_latest_matches_manifest_version(built, catalog_path: Path) -
     assert policy["latest"]["change"] == " ".join(str(entry["changes"][0]).split())
 
 
+def test_block_no_verify_misses(built) -> None:
+    data = _site_json(built)
+    policy = next(p for p in data["policies"] if p["id"] == "block-no-verify")
+    assert policy["misses"] == "older aliases, scripts, $VARs."
+
+
 def test_build_is_byte_identical_and_lf_only(
     built, catalog_path: Path, tmp_path: Path
 ) -> None:
