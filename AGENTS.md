@@ -4,7 +4,7 @@ Rules for this repo, from `plan/chock-site-implementation.md` section 2 in open-
 
 1. **Python 3.12.** Format and lint with `ruff`. Never run a blanket `ruff --fix`: fix each finding by hand.
 2. **Docstrings:** one line per module, class and function. Comments only where the code is not obvious.
-3. **Templates are files** under `templates/`, with `__TOKEN__` placeholders filled by `str.replace`. Never use f-strings or `.format` to build HTML. Every value put into HTML goes through `html.escape` first, except a value that is itself a rendered template.
+3. **Templates are files** under `templates/`, with `__TOKEN__` placeholders filled in **one pass**: one `re.sub` over the template with a function that looks each token up. Never call `str.replace` once per token, because a value containing `__OTHER__` would be filled by a later token, which allows HTML injection. A template token without a value, or a value without a token, raises an error. Never use f-strings or `.format` to build HTML. Every value put into HTML goes through `html.escape` first, except a value that is itself a rendered template.
 4. **Facts are data, not code.** Texts, links, presets and message wording live in `data/*.json` or `data/*.yaml`. Python and JS read them.
 5. **JavaScript:**
    - vanilla, ES2020, no libraries, no npm, no build step;

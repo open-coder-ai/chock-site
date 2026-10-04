@@ -45,6 +45,7 @@
     "missing_partner": "__PRESENT__ is picked without __ABSENT__: the two cover one rule by different means; pick both.",
     "all_present": "__PRESENT__ are all picked and overlap: keep one, or the same action is checked twice.",
     "file_absent": "__PRESENT__ refuses everything until your repo has __FILE__. Create it before you install.",
-    "grade": "__PRESENT__ does not refuse anything: it only warns or advises."
+    "grade:warn": "__PRESENT__ only warns while it is measured: nothing is refused.",
+    "grade:advise": "__PRESENT__ is text only: nothing stops a violation."
   }
 }

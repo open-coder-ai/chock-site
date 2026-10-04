@@ -27,4 +27,4 @@ def write_pages(site: Site, out_dir: Path, templates_dir: Path) -> None:
         CATALOG_REF=site.catalog_ref,
         CATALOG_REF_12=site.catalog_ref[:12],
     )
-    (out_dir / "index.html").write_text(html, encoding="utf-8")
+    (out_dir / "index.html").write_text(html, encoding="utf-8", newline="\n")

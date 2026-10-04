@@ -11,13 +11,29 @@ class Safe(str):
     """A value that is itself rendered HTML and must not be escaped again."""
 
 
+class RenderError(ValueError):
+    """A template token without a value, or a value without a token."""
+
+
 def render(template: str, **tokens: object) -> str:
-    """The template with every __TOKEN__ replaced; non-Safe values are html.escaped."""
-    for name, value in tokens.items():
-        if not isinstance(value, Safe):
-            value = Safe(html.escape(str(value), quote=True))
-        template = template.replace(f"__{name}__", value)
-    return template
+    """One-pass fill: a value holding __OTHER__ is inserted literally, never rescanned."""
+    found = {t[2:-2] for t in TOKEN_RE.findall(template)}
+    missing = found - set(tokens)
+    if missing:
+        msg = f"template tokens with no value: {', '.join(sorted(missing))}"
+        raise RenderError(msg)
+    unused = set(tokens) - found
+    if unused:
+        msg = f"values with no token in the template: {', '.join(sorted(unused))}"
+        raise RenderError(msg)
+
+    def _fill(match: re.Match) -> str:
+        value = tokens[match.group(0)[2:-2]]
+        if isinstance(value, Safe):
+            return str(value)
+        return html.escape(str(value), quote=True)
+
+    return TOKEN_RE.sub(_fill, template)
 
 
 def render_file(path: Path, **tokens: object) -> str:

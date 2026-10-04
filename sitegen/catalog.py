@@ -69,6 +69,20 @@ def where_tags(says: str) -> list[str]:
     return [tag for needle, tag in WHERE_MAP if needle in says]
 
 
+def _latest_entry(changelog: list[dict], version: str) -> Latest:
+    """The entry whose version equals the manifest's, else the newest by date (plan 5.1)."""
+    entry = next((e for e in changelog if str(e.get("version")) == version), None)
+    if entry is None and changelog:
+        entry = max(changelog, key=lambda e: str(e.get("date") or ""))
+    entry = entry or {}
+    changes = entry.get("changes") or [""]
+    return Latest(
+        version=str(entry.get("version", "")),
+        date=str(entry.get("date", "")),
+        change=_collapse(changes[0]),
+    )
+
+
 def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Policy]:
     """Every registry policy that is not hidden or retired, sorted by id."""
     registry = yaml.safe_load((catalog / REGISTRY).read_text(encoding="utf-8")) or {}
@@ -83,8 +97,7 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
         status = (manifest.get("lifecycle") or {}).get("status")
         if status in LIFECYCLE_HIDDEN:
             continue
-        first = (manifest.get("changelog") or [{}])[0]
-        changes = first.get("changes") or [""]
+        version = str(manifest.get("version") or row["version"])
         policies.append(
             Policy(
                 id=policy_id,
@@ -96,11 +109,7 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
                 ),
                 eval_cases=int(row.get("eval_cases") or 0),
                 eval_executed=int(row.get("eval_executed") or 0),
-                latest=Latest(
-                    version=str(first.get("version", "")),
-                    date=str(first.get("date", "")),
-                    change=_collapse(changes[0]),
-                ),
+                latest=_latest_entry(manifest.get("changelog") or [], version),
                 source_url=f"{CATALOG_TREE}{catalog_ref}/{row['path']}",
             )
         )

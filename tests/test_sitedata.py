@@ -6,6 +6,9 @@ from pathlib import Path
 
 import yaml
 
+from sitegen import engine
+from sitegen.__main__ import build
+
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 KEYWORDS = {"block", "ask", "warn", "advise"}
 HIDDEN_ID = "rtk-dangerous-actions-blocker"
@@ -48,9 +51,50 @@ def test_counts_match_registry_minus_hidden(built, catalog_path: Path) -> None:
     assert {p["id"] for p in data["policies"]} == registry_ids - {HIDDEN_ID}
 
 
-def test_warning_texts_cover_engine_kinds(built) -> None:
+def _text_key(rule: dict) -> str:
+    if rule["kind"] == "grade":
+        return f"grade:{rule['grade']}"
+    return rule["kind"]
+
+
+def test_warning_texts_cover_engine_rules(built) -> None:
     data = _site_json(built)
-    kinds = {rule["kind"] for rule in data["warning_rules"]}
-    assert kinds <= set(data["warning_texts"]), (
-        f"missing texts for {kinds - set(data['warning_texts'])}"
+    expected = {_text_key(rule) for rule in engine.warning_rules()}
+    assert expected <= set(data["warning_texts"]), (
+        f"missing texts for {expected - set(data['warning_texts'])}"
     )
+
+
+def test_git_safety_latest_matches_manifest_version(built, catalog_path: Path) -> None:
+    data = _site_json(built)
+    policy = next(p for p in data["policies"] if p["id"] == "git-safety")
+    manifest = yaml.safe_load(
+        (catalog_path / "base" / "git-safety" / "manifest.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert manifest["changelog"][0]["version"] != manifest["version"], (
+        "test needs a changelog that is not ordered newest-first"
+    )
+    entry = next(
+        e for e in manifest["changelog"] if e["version"] == manifest["version"]
+    )
+    assert policy["latest"]["version"] == "0.0.4"
+    assert policy["latest"]["date"] == str(entry["date"])
+    assert policy["latest"]["change"] == " ".join(str(entry["changes"][0]).split())
+
+
+def test_build_is_byte_identical_and_lf_only(
+    built, catalog_path: Path, tmp_path: Path
+) -> None:
+    out2 = tmp_path / "dist2"
+    build(catalog_path, out2, str(catalog_path.resolve()), None)
+    files1 = sorted(
+        p.relative_to(built.out) for p in built.out.rglob("*") if p.is_file()
+    )
+    files2 = sorted(p.relative_to(out2) for p in out2.rglob("*") if p.is_file())
+    assert files1 == files2
+    for rel in files1:
+        content = (built.out / rel).read_bytes()
+        assert content == (out2 / rel).read_bytes(), rel
+        assert b"\r" not in content, rel

@@ -113,5 +113,6 @@ def write_site_json(site: Site, out_dir: Path) -> Path:
     path.write_text(
         json.dumps(site_dict(site), indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
+        newline="\n",
     )
     return path

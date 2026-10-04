@@ -17,7 +17,9 @@ SelectionError = chock.install.selection.SelectionError
 
 def _resource(name: str) -> dict[str, Any]:
     return json.loads(
-        importlib.resources.files("chock.install").joinpath(name).read_text()
+        importlib.resources.files("chock.install")
+        .joinpath(name)
+        .read_text(encoding="utf-8")
     )
 
 

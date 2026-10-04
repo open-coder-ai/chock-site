@@ -3,6 +3,7 @@
 import threading
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import pytest
 
@@ -11,8 +12,7 @@ from sitegen.__main__ import build, make_server
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / ".catalog"
 SCREENSHOTS = ROOT / "test-results" / "screenshots"
-LOCAL_ORIGINS = ("http://127.0.0.1", "http://localhost")
-NON_REQUESTS = ("data:", "about:", "blob:")
+NON_REQUEST_SCHEMES = ("data", "about", "blob")
 
 
 @pytest.fixture(scope="session")
@@ -33,9 +33,22 @@ def site_url(tmp_path_factory: pytest.TempPathFactory):
 _PROBLEMS: dict[int, list[str]] = {}
 
 
-def collect(page: Any) -> None:
+def _origin(url: str) -> str:
+    parsed = urlparse(url)
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def collect(page: Any, site_url: str) -> None:
     """Attach listeners that record console errors, failed and foreign requests."""
     problems: list[str] = []
+    allowed = _origin(site_url)
+
+    def _is_foreign(url: str) -> bool:
+        parsed = urlparse(url)
+        if parsed.scheme in NON_REQUEST_SCHEMES:
+            return False
+        return _origin(url) != allowed
+
     page.on(
         "console",
         lambda msg: (
@@ -52,7 +65,7 @@ def collect(page: Any) -> None:
         "request",
         lambda req: (
             problems.append(f"foreign request: {req.url}")
-            if not req.url.startswith(LOCAL_ORIGINS + NON_REQUESTS)
+            if _is_foreign(req.url)
             else None
         ),
     )
@@ -60,8 +73,8 @@ def collect(page: Any) -> None:
 
 
 @pytest.fixture(autouse=True)
-def _watch(page) -> None:
-    collect(page)
+def _watch(page, site_url) -> None:
+    collect(page, site_url)
 
 
 def assert_clean(page: Any) -> None:

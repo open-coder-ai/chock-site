@@ -57,7 +57,10 @@ pytest -q tests/e2e
 
 - `--catalog PATH`: required. A chock-catalog checkout at `.catalog-ref`; the build
   checks `git -C <catalog> rev-parse HEAD` and exits with code 2 on a mismatch.
-- `--out PATH`: required for a build (default `dist` for `serve`). Emptied first, then written.
+- `--out PATH`: required for a build (default `dist` for `serve`). Emptied first,
+  then written, with a `.sitegen-output` marker. The build refuses (exit 2) a path
+  that is the repo root, the home directory, a filesystem root, an ancestor of
+  the repo, or a non-empty directory without that marker.
 - `--catalog-source URL_OR_PATH`: default `https://github.com/open-coder-ai/chock-catalog`.
   What the selection's `catalog.source` says. Tests pass the local `.catalog` path.
 - `--release vX.Y.Z`: optional. Written to `catalog.release` when given; omitted otherwise.
