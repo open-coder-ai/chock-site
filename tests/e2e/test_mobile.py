@@ -16,6 +16,27 @@ def _paths(page, site_url: str) -> list[str]:
     ]
 
 
+def _wide_elements(page) -> list[str]:
+    return page.evaluate(
+        """() => {
+            const w = window.innerWidth;
+            const out = [];
+            document.querySelectorAll('body *').forEach(el => {
+                const r = el.getBoundingClientRect();
+                if (r.right > w + 0.5 || r.left < -0.5) {
+                    const cls = (el.className && el.className.baseVal === undefined)
+                        ? '.' + String(el.className).trim().split(/\\s+/).join('.')
+                        : '';
+                    out.push(el.tagName.toLowerCase() + cls
+                        + ' [' + r.left.toFixed(0) + ',' + r.right.toFixed(0) + ']'
+                        + ' ' + (el.textContent || '').trim().slice(0, 40));
+                }
+            });
+            return out.slice(0, 8);
+        }"""
+    )
+
+
 def test_no_horizontal_scroll_at_mobile_width(browser, site_url) -> None:
     context = browser.new_context(viewport=MOBILE)
     try:
@@ -25,7 +46,9 @@ def test_no_horizontal_scroll_at_mobile_width(browser, site_url) -> None:
             overflow = page.evaluate(
                 "document.scrollingElement.scrollWidth > window.innerWidth"
             )
-            assert not overflow, f"{path}: horizontal scroll at 390px"
+            assert not overflow, (
+                f"{path}: horizontal scroll at 390px: {_wide_elements(page)}"
+            )
     finally:
         context.close()
 
