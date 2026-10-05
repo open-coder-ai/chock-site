@@ -30,6 +30,26 @@ def test_label_chip_filters(page, site_url) -> None:
     assert "Showing" in page.locator("#policies-status").inner_text()
 
 
+def test_where_chips_union_within_facet(page, site_url) -> None:
+    page.goto(site_url + "/coding/policies/")
+    page.locator('.chip[data-facet="where"][data-value="command"]').click()
+    page.locator('.chip[data-facet="where"][data-value="write"]').click()
+    visible = page.locator(VISIBLE)
+    assert visible.count() > 0
+    for i in range(visible.count()):
+        tags = visible.nth(i).get_attribute("data-where").split()
+        assert {"command", "write"} & set(tags)
+    expected = sum(
+        1
+        for tags in page.evaluate(
+            "[...document.querySelectorAll('.row[data-policy-id]')]"
+            ".map(r => r.dataset.where)"
+        )
+        if {"command", "write"} & set(tags.split())
+    )
+    assert visible.count() == expected
+
+
 def test_search_finds_block_no_verify(page, site_url) -> None:
     page.goto(site_url + "/coding/policies/")
     # Descriptions arrive via fetch('/data/site.json') on first input; wait for it.

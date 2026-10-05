@@ -9,6 +9,7 @@
   --white: #E8EEF6;
   --border: #24334F;
   --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -32,7 +33,7 @@ main {
 
 p, dd, td, li { overflow-wrap: break-word; }
 
-.row-name, .row-id, .row-says, .row-desc, .bsays { overflow-wrap: anywhere; }
+.row-name, .row-id, .row-says, .row-desc, .bsays, .bname { overflow-wrap: anywhere; }
 
 h1, h2, h3 {
   color: var(--white);
@@ -167,6 +168,8 @@ header {
   font-weight: 700;
   font-size: 16px;
 }
+
+.wordmark .mark { color: var(--gold); }
 
 .wordmark:hover { text-decoration: none; }
 
@@ -640,16 +643,22 @@ footer {
 
 .bmember {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: 220px auto minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: center;
+  align-items: start;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
 
 .bmember:last-child { border-bottom: 0; }
 .bpick { display: flex; align-items: center; gap: 10px; color: var(--white); font-size: 14px; cursor: pointer; }
-.bpick input { accent-color: var(--gold); width: 16px; height: 16px; }
+.bpick input {
+  accent-color: var(--gold);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: none;
+}
 .bsays { color: var(--cool); font-size: 12px; }
 .bdetails { font-size: 12px; }
 

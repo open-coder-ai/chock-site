@@ -32,9 +32,7 @@ function matches(row, facets) {
   const wheres = facets.where;
   if (labels.size && !labels.has(row.dataset.label)) return false;
   const tags = (row.dataset.where || "").split(" ").filter(Boolean);
-  for (const tag of wheres) {
-    if (!tags.includes(tag)) return false;
-  }
+  if (wheres.size && !tags.some((tag) => wheres.has(tag))) return false;
   if (facets.group === "none") {
     if (row.dataset.groups) return false;
   } else if (facets.group) {
