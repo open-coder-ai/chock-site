@@ -167,3 +167,32 @@ def test_no_imperative_agent_phrasing(built) -> None:
         text = path.read_text(encoding="utf-8").lower()
         for phrase in BANNED:
             assert phrase not in text, f"{path}: {phrase!r}"
+
+
+def test_worked_example_decodes_and_validates(built) -> None:
+    from sitegen import engine
+    from sitegen.presets import load_presets
+
+    text = (built.out / "for-agents" / "index.md").read_text(encoding="utf-8")
+    object_block = re.search(r"```json\n(.*?)\n```", text, re.DOTALL).group(1)
+    code = re.search(r"# Share code\n(\S+)\n", text).group(1)
+    command = re.search(r"\n(chock install --selection '[^']+' --apply)", text).group(1)
+    assert command == f"chock install --selection '{code}' --apply"
+    selection = engine.load_selection(code)
+    assert selection == json.loads(object_block)
+    engine.check_selection(selection)
+    members = next(
+        p.members
+        for p in load_presets(Path(__file__).parents[1] / "data" / "presets.yaml")
+        if p.id == "git-hygiene"
+    )
+    assert selection["preset"] == "git-hygiene"
+    assert [p["id"] for p in selection["policies"]] == sorted(members)
+    html = (built.out / "for-agents" / "index.html").read_text(encoding="utf-8")
+    assert code in html
+
+
+def test_builder_texts_are_in_site_json(built) -> None:
+    texts = _site(built)["builder_texts"]
+    for key in ("link_unreadable", "ref_mismatch", "use_same", "not_available"):
+        assert texts[key]

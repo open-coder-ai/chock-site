@@ -109,5 +109,26 @@
     "file_absent": "__PRESENT__ refuses everything until your repo has __FILE__. Create it before you install.",
     "grade:warn": "__PRESENT__ only warns while it is measured: nothing is refused.",
     "grade:advise": "__PRESENT__ is text only: nothing stops a violation."
+  },
+  "builder_texts": {
+    "count_one": "1 policy",
+    "count_many": "{n} policies",
+    "showing": "Showing {shown} of {total}",
+    "remove": "Remove",
+    "remove_label": "Remove {name}",
+    "confirm_replace": "This replaces your current picks. Continue?",
+    "link_unreadable": "This link could not be read.",
+    "ref_mismatch": "This link was made for catalog {theirs}; this site shows {ours}.",
+    "use_same": "Use the same policies here",
+    "start_fresh": "Start fresh",
+    "not_available": "Not available here: {ids} (retired or not in this catalog).",
+    "preset_unknown": "No preset called {id} on this site.",
+    "added": "Added {name}",
+    "removed": "Removed {name}",
+    "preset_applied": "Picked the {title} preset",
+    "cleared": "Cleared your picks",
+    "bar_notes_one": "· 1 note",
+    "bar_notes_many": "· {n} notes",
+    "download_name": "chock.selection.yaml"
   }
 }

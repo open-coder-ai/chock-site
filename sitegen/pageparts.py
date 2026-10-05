@@ -21,11 +21,20 @@ def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
+CODE_KEYS = (
+    ("code_python", "python"),
+    ("code_js", "js"),
+    ("code_json", "json"),
+    ("code_bash", "bash"),
+)
+
+
 def data_fill(text: str, subs: dict[str, str]) -> str:
     """Substitute placeholders inside a data string (not an HTML template)."""
-    for token, value in subs.items():
-        text = text.replace(token, value)
-    return text
+    if not subs:
+        return text
+    pattern = re.compile("|".join(re.escape(token) for token in subs))
+    return pattern.sub(lambda match: subs[match.group(0)], text)
 
 
 def chip(site: Site, templates: Path, policy: Policy, section: str) -> Safe:
@@ -244,7 +253,7 @@ def text_sections(site: Site, templates: Path, sections: list[dict[str, Any]]) -
                     LANG=lang,
                     CODE=section[key].rstrip(),
                 )
-                for key, lang in (("code_python", "python"), ("code_js", "js"))
+                for key, lang in CODE_KEYS
                 if section.get(key)
             )
         rendered.append(
@@ -267,7 +276,7 @@ def md_sections(sections: list[dict[str, Any]], links: dict[str, str]) -> str:
         out.append(f"## {s['heading']}\n\n{s['body']}\n")
         if s.get("code_label"):
             out.append(f"\n{s['code_label']}\n")
-            for key, lang in (("code_python", "python"), ("code_js", "js")):
+            for key, lang in CODE_KEYS:
                 if s.get(key):
                     out.append(f"\n```{lang}\n{s[key].rstrip()}\n```\n")
         if s.get("link"):

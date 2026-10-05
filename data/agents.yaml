@@ -23,6 +23,10 @@ sections:
       for (const b of bytes) bin += String.fromCharCode(b);
       return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
     }
+- heading: "A worked example"
+  body: "The git-hygiene preset, built the way the section above describes. The selection object, its share code and the command are generated from the pinned catalog when the site is built, so they match this catalog commit. Ask the user before running the command."
+  code_label: "The selection object for the git-hygiene preset, then its share code and command:"
+  worked_example: git-hygiene
 - heading: "The install command"
   body: "The command the site hands out is `chock install --selection '<code>' --apply` — ask the user before running it, since it installs hooks that change how their agent behaves. Show the user the chosen policies, with their labels, before asking."
 - heading: "What chock is not"

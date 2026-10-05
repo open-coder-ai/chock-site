@@ -1,5 +1,6 @@
 """The only module that imports chock: hashes, labels, selection schema and warnings."""
 
+import base64
 import importlib.resources
 import json
 from pathlib import Path
@@ -61,6 +62,12 @@ def build_selection(
     return selection
 
 
+def encode_selection(selection: dict[str, Any]) -> str:
+    """The share code: base64url of compact UTF-8 JSON, no padding (plan 8.2)."""
+    raw = json.dumps(selection, separators=(",", ":"), ensure_ascii=False)
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii").rstrip("=")
+
+
 def policy_labels(catalog: Path, selection: dict[str, Any]) -> dict[str, Any]:
     """Each selected policy's Label (policy_id, keyword, says, description), keyed by id."""
     members = chock.install.resolve.members(catalog, selection)
@@ -73,6 +80,11 @@ def policy_labels(catalog: Path, selection: dict[str, Any]) -> dict[str, Any]:
 def check_selection(obj: dict[str, Any]) -> dict[str, Any]:
     """The selection if it matches the engine's schema, else SelectionError."""
     return chock.install.selection.check(obj)
+
+
+def load_selection(arg: str) -> dict[str, Any]:
+    """The checked selection named by a file path, a URL with #s=..., or a bare code."""
+    return chock.install.selection.load(arg)
 
 
 def selection_schema() -> dict[str, Any]:

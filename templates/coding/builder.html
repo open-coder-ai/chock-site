@@ -3,6 +3,7 @@
 <p class="sub">__SUB__</p>
 </section>
 <noscript><p class="noscript-note">__NOSCRIPT__</p></noscript>
+<div class="link-notice" id="link-notice" role="status"></div>
 <div class="builder-grid">
 <section class="pick" aria-labelledby="pick-policies">
 <h2 id="pick-policies">Pick policies</h2>
@@ -19,6 +20,7 @@ __PRESET_OPTIONS__</select>
 </div>
 </div>
 <div class="chips" aria-label="Labels">__LABEL_CHIPS__</div>
+<p id="builder-status" class="status" role="status"></p>
 <div class="groups">
 __GROUP_SECTIONS__
 </div>
@@ -28,19 +30,30 @@ __GROUP_SECTIONS__
 <div class="sel-list"><p class="empty">__EMPTY__</p></div>
 <div class="notes" aria-live="polite"></div>
 <div class="outputs">
+<p class="need-one" id="need-one">__NEED_ONE__</p>
 <div class="tabs" role="tablist" aria-label="Outputs">
-<button type="button" role="tab" id="tab-command" aria-selected="false" aria-controls="output-panel" disabled>Command</button>
-<button type="button" role="tab" id="tab-share" aria-selected="false" aria-controls="output-panel" disabled>Share link</button>
-<button type="button" role="tab" id="tab-file" aria-selected="false" aria-controls="output-panel" disabled>Selection file</button>
+<button type="button" role="tab" id="tab-command" aria-selected="false" aria-controls="panel-command" disabled>Command</button>
+<button type="button" role="tab" id="tab-share" aria-selected="false" aria-controls="panel-share" disabled>Share link</button>
+<button type="button" role="tab" id="tab-file" aria-selected="false" aria-controls="panel-file" disabled>Selection file</button>
 </div>
-<div class="output-box" role="tabpanel" id="output-panel" aria-labelledby="tab-command">
-<pre><code class="language-bash" data-selection-code>__NEED_ONE__</code></pre>
+<div class="output-box" role="tabpanel" id="panel-command" aria-labelledby="tab-command" hidden>
+<pre><code class="language-bash" data-selection-code></code></pre>
+<button type="button" class="copy" id="copy-command">Copy command</button>
+</div>
+<div class="output-box" role="tabpanel" id="panel-share" aria-labelledby="tab-share" hidden>
 <label class="visually-hidden" for="share-url">Share link</label>
-<input class="share-url" id="share-url" type="text" readonly data-selection-url hidden>
-<button type="button" class="copy" disabled>Copy</button>
-<button type="button" class="download" disabled>Download chock.selection.yaml</button>
+<input class="share-url" id="share-url" type="text" readonly data-selection-url>
+<button type="button" class="copy" id="copy-share">Copy link</button>
+</div>
+<div class="output-box" role="tabpanel" id="panel-file" aria-labelledby="tab-file" hidden>
+<button type="button" class="download" id="download-file">Download chock.selection.yaml</button>
 </div>
 <p class="hint">__HINT__</p>
 </div>
 </section>
+</div>
+<div class="mobile-bar" id="mobile-bar" hidden>
+<span class="mb-count" id="mb-count"></span>
+<button type="button" class="button button-primary button-small" id="mb-copy">Copy command</button>
+<a class="mb-jump" id="mb-jump" href="#your-selection">Your selection</a>
 </div>

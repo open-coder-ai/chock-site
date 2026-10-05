@@ -2,8 +2,9 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
-from . import coding
+from . import coding, engine
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
@@ -275,10 +276,34 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
     return "/faq/", "/faq/index.md", twin
 
 
+def _worked_example(site: Site, section: dict[str, Any]) -> dict[str, Any]:
+    """The guide section with its preset's selection object, code and command filled in."""
+    preset = next(p for p in site.presets if p.id == section["worked_example"])
+    by_id = {p.id: p for p in site.policies}
+    picks = [
+        {"id": pid, "version": by_id[pid].version, "sha256": by_id[pid].sha256}
+        for pid in preset.members
+    ]
+    selection = engine.build_selection(
+        picks, site.catalog_source, site.catalog_ref, site.release, preset.id
+    )
+    code = engine.encode_selection(selection)
+    command = data_fill(site.command, {"__CODE__": code})
+    return {
+        **section,
+        "code_json": json.dumps(selection, indent=2, ensure_ascii=False),
+        "code_bash": f"# Share code\n{code}\n\n# Ask the user first: it installs hooks\n{command}",
+    }
+
+
 def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
-    """The agent guide (plan 6.8); the worked example lands in PR 3."""
+    """The agent guide (plan 6.8), with the git-hygiene worked example."""
     data = site.data
     page = data["pages"]["agents"]
+    sections = [
+        _worked_example(site, s) if s.get("worked_example") else s
+        for s in data["agents"]["sections"]
+    ]
     write_page(
         site,
         out_dir,
@@ -290,9 +315,7 @@ def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, s
             render_file(
                 templates / "for-agents.html",
                 SUB=Prose(page["description"]),
-                SECTIONS=Safe(
-                    text_sections(site, templates, data["agents"]["sections"])
-                ),
+                SECTIONS=Safe(text_sections(site, templates, sections)),
             )
         ),
         jsonld_data={
@@ -305,7 +328,7 @@ def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, s
     twin = render_text_file(
         templates / MD / "for-agents.md",
         SUB=Prose(page["description"]),
-        SECTIONS=md_sections(data["agents"]["sections"], data["links"]),
+        SECTIONS=md_sections(sections, data["links"]),
     )
     write_md(out_dir, "/for-agents/", twin)
     return "/for-agents/", "/for-agents/index.md", twin
