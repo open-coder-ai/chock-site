@@ -6,12 +6,14 @@ from pathlib import Path
 
 import yaml
 
-from .model import Latest, Policy
+from .model import Example, Latest, Policy
 
 REGISTRY = "registry.yaml"
 MANIFEST = "manifest.yaml"
+EVALS = "evals/suite.yaml"
 LIFECYCLE_HIDDEN = {"deprecated", "retired"}
 MISSES_MARKERS = ("Misses:", "Not caught here:")
+EXPECT_WORDS = {"block": "Refused", "ask": "Asks", "warn": "Warns", "allow": "Allowed"}
 WHERE_MAP = (
     ("shell command", "command"),
     ("file writes", "write"),
@@ -69,6 +71,43 @@ def where_tags(says: str) -> list[str]:
     return [tag for needle, tag in WHERE_MAP if needle in says]
 
 
+def first_sentence(text: str) -> str:
+    """The description's first sentence, used on list rows and meta tags."""
+    end = re.search(r"\.(?=\s|$)", text)
+    return text[: end.end()] if end else text
+
+
+def _examples(path: Path) -> list[Example]:
+    """The first refused and first allowed execute cases in evals/suite.yaml (5.5)."""
+    suite_file = path / EVALS
+    if not suite_file.is_file():
+        return []
+    suite = yaml.safe_load(suite_file.read_text(encoding="utf-8")) or {}
+    cases = (suite.get("suite") or {}).get("cases") or []
+    refused = allowed = None
+    for case in cases:
+        execute = case.get("execute") or {}
+        expect = str(execute.get("expect") or "")
+        if expect == "allow" and allowed is None:
+            allowed = case
+        elif expect in ("block", "ask", "warn") and refused is None:
+            refused = case
+    examples = []
+    for case in (refused, allowed):
+        if case is None:
+            continue
+        execute = case.get("execute") or {}
+        command = execute.get("command")
+        examples.append(
+            Example(
+                word=EXPECT_WORDS[str(execute.get("expect"))],
+                prompt=_collapse(case.get("prompt")),
+                command=str(command) if command else None,
+            )
+        )
+    return examples
+
+
 def _latest_entry(changelog: list[dict], version: str) -> Latest:
     """The entry whose version equals the manifest's, else the newest by date (plan 5.1)."""
     entry = next((e for e in changelog if str(e.get("version")) == version), None)
@@ -111,6 +150,8 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
                 misses=extract_misses(description),
                 latest=_latest_entry(manifest.get("changelog") or [], version),
                 source_url=f"{CATALOG_TREE}{catalog_ref}/{row['path']}",
+                enforces=str(row.get("enforces") or ""),
+                examples=_examples(catalog / row["path"]),
             )
         )
     return sorted(policies, key=lambda p: p.id)

@@ -9,6 +9,7 @@ import chock.install.package
 import chock.install.resolve
 import chock.install.selection
 import chock.lock
+from chock.validation.loading import load_schema
 
 INSTALL_JSON = "data/install.json"
 WARNINGS_JSON = "data/warnings.json"
@@ -72,3 +73,8 @@ def policy_labels(catalog: Path, selection: dict[str, Any]) -> dict[str, Any]:
 def check_selection(obj: dict[str, Any]) -> dict[str, Any]:
     """The selection if it matches the engine's schema, else SelectionError."""
     return chock.install.selection.check(obj)
+
+
+def selection_schema() -> dict[str, Any]:
+    """The engine's selection schema, served at /api/selection.schema.json."""
+    return load_schema(chock.install.selection.SCHEMA)

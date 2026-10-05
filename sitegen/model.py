@@ -1,7 +1,17 @@
-"""Dataclasses for the site build: Policy, Preset and Site."""
+"""Dataclasses for the site build: Track, Policy, Preset, Site, SectionResult."""
 
 from dataclasses import dataclass, field
 from typing import Any
+
+
+@dataclass
+class Track:
+    """One site section from data/tracks.yaml (plan 0.1)."""
+
+    id: str
+    slug: str
+    title: str
+    summary: str
 
 
 @dataclass
@@ -11,6 +21,15 @@ class Latest:
     version: str
     date: str
     change: str
+
+
+@dataclass
+class Example:
+    """One eval-suite case shown on a policy page (plan 5.5)."""
+
+    word: str
+    prompt: str
+    command: str | None = None
 
 
 @dataclass
@@ -26,6 +45,8 @@ class Policy:
     eval_executed: int
     latest: Latest
     source_url: str
+    track: str = "coding"
+    enforces: str = ""
     sha256: str = ""
     keyword: str = ""
     word: str = ""
@@ -33,6 +54,7 @@ class Policy:
     misses: str | None = None
     where: list[str] = field(default_factory=list)
     groups: list[str] = field(default_factory=list)
+    examples: list[Example] = field(default_factory=list)
 
 
 @dataclass
@@ -51,11 +73,22 @@ class Site:
 
     catalog_source: str
     catalog_ref: str
+    framework_ref: str
     release: str | None
-    label_words: dict[str, str]
+    tracks: list[Track]
+    label_words: dict[str, dict[str, str]]
     policies: list[Policy]
     presets: list[Preset]
     warning_rules: list[dict[str, Any]]
     warning_texts: dict[str, str]
     command: str
     data: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SectionResult:
+    """What a section builder hands back: sitemap paths, llms block, twins."""
+
+    pages: list[str]
+    llms: str
+    docs: list[tuple[str, str]]

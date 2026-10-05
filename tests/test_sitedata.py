@@ -24,7 +24,7 @@ def test_every_policy_has_hash_and_keyword(built) -> None:
     for policy in data["policies"]:
         assert SHA256_RE.match(policy["sha256"]), policy["id"]
         assert policy["keyword"] in KEYWORDS, policy["id"]
-        assert policy["word"] == data["label_words"][policy["keyword"]]
+        assert policy["word"] == data["label_words"][policy["track"]][policy["keyword"]]
 
 
 def test_no_hidden_id_anywhere(built) -> None:
@@ -103,4 +103,7 @@ def test_build_is_byte_identical_and_lf_only(
     for rel in files1:
         content = (built.out / rel).read_bytes()
         assert content == (out2 / rel).read_bytes(), rel
-        assert b"\r" not in content, rel
+        # Binary assets (og-card.png) legally contain 0x0d; the LF rule is
+        # for text files, which Path.write_text(newline="\n") governs.
+        if rel.suffix != ".png":
+            assert b"\r" not in content, rel

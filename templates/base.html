@@ -6,30 +6,48 @@
 <title>__TITLE__ · chock.sh</title>
 <meta name="description" content="__DESCRIPTION__">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="canonical" href="__CANONICAL__">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="chock.sh">
+<meta property="og:title" content="__TITLE__ · chock.sh">
+<meta property="og:description" content="__DESCRIPTION__">
+<meta property="og:url" content="__CANONICAL__">
+<meta property="og:image" content="__OG_IMAGE__">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="text/markdown" href="__MD_HREF__">
+__ALT_JSON__
 <link rel="stylesheet" href="/css/site.css">
+__JSONLD__
 </head>
 <body>
 <a class="skip-link" href="#content">Skip to content</a>
 <header>
-<a class="wordmark" href="/">chock.sh</a>
-<nav>
-<a href="/policies/">Policies</a>
-<a href="/builder/">Builder</a>
-<a href="/install/">Install</a>
-<a href="/faq/">FAQ</a>
-<a href="/security/">Security</a>
-<a href="/clients/">Other clients</a>
+<div class="header-inner">
+<a class="wordmark" href="/"><span class="mark">◆</span> chock.sh</a>
+<button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Menu">☰</button>
+<nav id="nav-links" aria-label="Site">
+__TRACK_LINKS__<a href="/faq/"__ARIA_FAQ__>FAQ</a>
+<a href="/security/"__ARIA_SECURITY__>Security</a>
 </nav>
-<a class="button button-primary" href="/builder/">Build your plugin</a>
+<a class="button button-primary button-small" href="/coding/builder/">Build your plugin</a>
+</div>
 </header>
+__SECTION_NAV__
 <main id="content">
 __CONTENT__
 </main>
 <footer>
-<p>__FOOTER_LINE__</p>
-<p>Catalog <a href="https://github.com/open-coder-ai/chock-catalog/commit/__CATALOG_REF__">__CATALOG_REF_12__</a></p>
-<p><a href="https://github.com/open-coder-ai/chock">chock</a> · <a href="https://github.com/open-coder-ai/chock-catalog">chock-catalog</a></p>
-<p><a href="/agents/">For AI agents</a> · <a href="/llms.txt">llms.txt</a></p>
+<p class="footer-line">__FOOTER_LINE__</p>
+<nav class="footer-links" aria-label="Catalog and agents">
+<a href="https://github.com/open-coder-ai/chock-catalog/commit/__CATALOG_REF__">Catalog __CATALOG_REF_12__</a>
+<a href="https://github.com/open-coder-ai/chock">chock</a>
+<a href="https://github.com/open-coder-ai/chock-catalog">chock-catalog</a>
+<a href="/for-agents/">For AI agents</a>
+<a href="/llms.txt">llms.txt</a>
+</nav>
 </footer>
+<div id="live" class="visually-hidden" aria-live="polite"></div>
+__SCRIPTS__
 </body>
 </html>

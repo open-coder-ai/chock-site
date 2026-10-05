@@ -1,0 +1,5 @@
+tracks:
+  - id: coding
+    slug: coding
+    title: Coding agents
+    summary: "Rules for agents that write code: refuse git commit --no-verify, keep secrets out of files, stop the agent editing its own guardrails. Pick them and install one Claude Code plugin."
