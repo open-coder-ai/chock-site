@@ -177,6 +177,18 @@ def test_command_installs_end_to_end(page, site_url, tmp_path: Path) -> None:
     _open(page, site_url)
     page.select_option("#builder-start", "git-hygiene")
     code = _code(page)
+    # chock reads the source's main branch; CI checks .catalog out detached at the
+    # pin, so install from a throwaway clone whose main sits at that same commit.
+    ref = (ROOT / ".catalog-ref").read_text(encoding="utf-8").strip()
+    clone = tmp_path / "catalog"
+    for git in (
+        ["clone", "-q", "--no-checkout", str(CATALOG.resolve()), str(clone)],
+        ["-C", str(clone), "checkout", "-q", "-B", "main", ref],
+    ):
+        subprocess.run(["git", *git], check=True, capture_output=True, timeout=120)
+    selection = engine.load_selection(code)
+    assert selection["catalog"]["ref"] == ref
+    selection["catalog"]["source"] = str(clone)
     result = subprocess.run(
         [
             sys.executable,
@@ -184,11 +196,11 @@ def test_command_installs_end_to_end(page, site_url, tmp_path: Path) -> None:
             "chock",
             "install",
             "--selection",
-            code,
+            engine.encode_selection(selection),
             "--dest",
             str(tmp_path / "marketplace"),
             "--allow-source",
-            str(CATALOG.resolve()),
+            str(clone),
         ],
         capture_output=True,
         text=True,
