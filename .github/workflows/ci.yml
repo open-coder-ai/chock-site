@@ -1,0 +1,74 @@
+name: ci
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+
+  unit:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - id: refs
+        run: |
+          echo "framework=$(cat .framework-ref)" >> "$GITHUB_OUTPUT"
+          echo "catalog=$(cat .catalog-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: open-coder-ai/chock-catalog
+          path: .catalog
+          ref: ${{ steps.refs.outputs.catalog }}
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+        env:
+          FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: pytest -q --ignore=tests/e2e
+
+  e2e:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - id: refs
+        run: |
+          echo "framework=$(cat .framework-ref)" >> "$GITHUB_OUTPUT"
+          echo "catalog=$(cat .catalog-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: open-coder-ai/chock-catalog
+          path: .catalog
+          ref: ${{ steps.refs.outputs.catalog }}
+          fetch-depth: 0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+        env:
+          FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: python -m playwright install --with-deps chromium
+      - run: pytest -q tests/e2e
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: failure()
+        with:
+          name: test-results
+          path: test-results/

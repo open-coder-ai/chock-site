@@ -1,0 +1,51 @@
+{
+  "launched": false,
+  "released": false,
+  "site_url": "https://chock.sh",
+  "wordmark": "chock.sh",
+  "nav": [
+    {"label": "Policies", "href": "/policies/"},
+    {"label": "Builder", "href": "/builder/"},
+    {"label": "Install", "href": "/install/"},
+    {"label": "FAQ", "href": "/faq/"},
+    {"label": "Security", "href": "/security/"},
+    {"label": "Other clients", "href": "/clients/"}
+  ],
+  "texts": {
+    "footer_line": "Friction, not a security boundary.",
+    "hero_headline": "Guardrails for your AI coding agent.",
+    "hero_sub": "Pick the rules you want. chock turns them into one Claude Code plugin that refuses the risky moves before they happen.",
+    "hero_note": "Free and open source · No sign-up · Nothing tracked",
+    "builder_empty": "Pick a preset or add policies.",
+    "builder_noscript": "The builder needs JavaScript. You can still browse the policies and write a selection file by hand; see Install.",
+    "builder_outputs_hint": "You need chock installed; see Install. Read the command before you run it."
+  },
+  "links": {
+    "engine_repo": "https://github.com/open-coder-ai/chock",
+    "catalog_repo": "https://github.com/open-coder-ai/chock-catalog",
+    "catalog_tree": "https://github.com/open-coder-ai/chock-catalog/tree/",
+    "catalog_commit": "https://github.com/open-coder-ai/chock-catalog/commit/",
+    "security_policy": "https://github.com/open-coder-ai/chock-catalog/blob/main/SECURITY.md",
+    "claude_marketplace": "https://github.com/open-coder-ai/chock-claude-plugins"
+  },
+  "label_meanings": {
+    "blocks": "Claude Code refuses the action.",
+    "asks": "Claude Code stops and asks you.",
+    "warns": "The action goes ahead, with a warning, while the policy is measured.",
+    "advisory": "Text the agent reads; nothing stops a violation."
+  },
+  "clients": [
+    {"name": "Cursor", "repo": "https://github.com/open-coder-ai/chock-cursor-plugins", "note": "Install policies from the Cursor plugins repo."},
+    {"name": "Codex", "repo": "https://github.com/open-coder-ai/chock-codex-plugins", "note": "Install policies from the Codex plugins repo."},
+    {"name": "GitHub Copilot", "repo": "https://github.com/open-coder-ai/chock-copilot-plugins", "note": "Install policies from the Copilot plugins repo."},
+    {"name": "Devin", "repo": "https://github.com/open-coder-ai/chock-devin-plugins", "note": "Install policies from the Devin plugins repo."}
+  ],
+  "command": "chock install --selection '__CODE__' --apply",
+  "warning_texts": {
+    "missing_partner": "__PRESENT__ is picked without __ABSENT__: the two cover one rule by different means; pick both.",
+    "all_present": "__PRESENT__ are all picked and overlap: keep one, or the same action is checked twice.",
+    "file_absent": "__PRESENT__ refuses everything until your repo has __FILE__. Create it before you install.",
+    "grade:warn": "__PRESENT__ only warns while it is measured: nothing is refused.",
+    "grade:advise": "__PRESENT__ is text only: nothing stops a violation."
+  }
+}
