@@ -19,7 +19,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Safe, render_file, render_text_file
+from .render import Prose, Safe, render_file, render_text_file
 from .sitedata import site_dict
 
 MD = "md"
@@ -61,7 +61,7 @@ def _home(
             ID=preset.id,
             TITLE=preset.title,
             COUNT=str(len(preset.members)),
-            SUMMARY=preset.summary,
+            SUMMARY=Prose(preset.summary),
         )
         for preset in site.presets
     )
@@ -77,18 +77,18 @@ def _home(
             render_file(
                 templates / track.slug / "home.html",
                 H1=home["h1"],
-                INTRO=home["intro"],
+                INTRO=Prose(home["intro"]),
                 PRIMARY_CTA=site.data["home"]["primary_cta"],
                 SECONDARY_CTA=site.data["home"]["secondary_cta"],
                 GLANCE_HEADING=home["glance_heading"],
                 GLANCE_LINK=home["glance_link"],
                 STAT_CARDS=Safe(stats),
                 PRESETS_HEADING=home["presets_heading"],
-                PRESETS_INTRO=home["presets_intro"],
+                PRESETS_INTRO=Prose(home["presets_intro"]),
                 PRESET_CARDS=Safe(preset_cards),
                 STEPS=render_steps(site, templates),
                 CLIENTS_HEADING=home["clients_heading"],
-                CLIENTS_LINE=home["clients_line"],
+                CLIENTS_LINE=Prose(home["clients_line"]),
                 CLIENTS_LINK=home["clients_link"],
             )
         ),
@@ -147,13 +147,10 @@ def _policies_list(
                 KEYWORD=policy.keyword,
                 WHERE=" ".join(policy.where),
                 GROUPS=" ".join(policy.groups),
-                SEARCH=policy.description[
-                    len(first_sentence(policy.description)) :
-                ].lower(),
                 NAME=policy.name,
                 CHIP=chip(site, templates, policy, track.id),
-                SAYS=policy.says,
-                DESC=first_sentence(policy.description),
+                SAYS=Prose(policy.says),
+                DESC=Prose(first_sentence(policy.description)),
                 VERSION=policy.version,
             )
         )
@@ -191,7 +188,7 @@ def _policies_list(
         content=Safe(
             render_file(
                 templates / track.slug / "policies.html",
-                INTRO=intro,
+                INTRO=Prose(intro),
                 SEARCH_PLACEHOLDER="Search by name, id or what it stops",
                 GROUP_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
@@ -221,7 +218,7 @@ def _policies_list(
     )
     twin = render_text_file(
         templates / MD / track.slug / "policies.md",
-        INTRO=intro,
+        INTRO=Prose(intro),
         ROWS="".join(
             f"- [{policy.name}](/{track.slug}/policies/{policy.id}/index.md) "
             f"(`{policy.id}`, v{policy.version}): {policy.word} — {policy.says}. "
@@ -273,7 +270,7 @@ def _policy_pages(
                     if example.word != "Allowed"
                     else "✓",
                     WORD=example.word,
-                    PROMPT=example.prompt,
+                    PROMPT=Prose(example.prompt),
                     COMMAND=Safe(
                         render_file(
                             templates / PARTIALS / "command-pre.html",
@@ -288,7 +285,7 @@ def _policy_pages(
             examples = render_file(
                 templates / PARTIALS / "examples-section.html",
                 EXAMPLE_CARDS=Safe(cards),
-                EXAMPLES_NOTE=texts["examples_note"],
+                EXAMPLES_NOTE=Prose(texts["examples_note"]),
             )
             examples_md = "\n## Examples\n\n" + "".join(
                 f"- {e.word}: {e.prompt}"
@@ -305,15 +302,15 @@ def _policy_pages(
                 NAME=policy.name,
                 VERSION=policy.version,
                 CHIP=chip(site, templates, policy, track.id),
-                SAYS=policy.says.rstrip(".") + ".",
-                LABEL_NOTE=texts["label_box_note"],
+                SAYS=Prose(policy.says.rstrip(".") + "."),
+                LABEL_NOTE=Prose(texts["label_box_note"]),
                 PLUGIN_NOTE=Safe(plugin_note),
-                DESCRIPTION=policy.description,
-                MISSES=policy.misses or texts["misses_empty"],
+                DESCRIPTION=Prose(policy.description),
+                MISSES=Prose(policy.misses or texts["misses_empty"]),
                 EXAMPLES_SECTION=Safe(examples),
                 LATEST_VERSION=policy.latest.version,
                 LATEST_DATE=policy.latest.date,
-                LATEST_CHANGE=policy.latest.change,
+                LATEST_CHANGE=Prose(policy.latest.change),
                 EVAL_EXECUTED=str(policy.eval_executed),
                 EVAL_CASES=str(policy.eval_cases),
                 SHA256=policy.sha256,
@@ -397,10 +394,9 @@ def _member_rows(
             GROUP=group,
             KEYWORD=p.keyword,
             WHERE=" ".join(p.where),
-            SEARCH=f"{p.id} {p.name} {p.description}".lower(),
             NAME=p.name,
             CHIP=chip(site, templates, p, track.id),
-            SAYS=p.says,
+            SAYS=Prose(p.says),
         )
         for p in members
     )
@@ -461,13 +457,13 @@ def _builder(
         content=Safe(
             render_file(
                 templates / track.slug / "builder.html",
-                SUB=page["description"],
-                NOSCRIPT=texts["builder_noscript"],
+                SUB=Prose(page["description"]),
+                NOSCRIPT=Prose(texts["builder_noscript"]),
                 PRESET_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
                 GROUP_SECTIONS=Safe(groups),
-                EMPTY=texts["builder_empty"],
-                NEED_ONE=texts["builder_need_one"],
+                EMPTY=Prose(texts["builder_empty"]),
+                NEED_ONE=Prose(texts["builder_need_one"]),
                 HINT=data_fill(texts["builder_outputs_hint"], subs),
             )
         ),
@@ -482,7 +478,7 @@ def _builder(
     )
     twin = render_text_file(
         templates / MD / track.slug / "builder.md",
-        SUB=page["description"],
+        SUB=Prose(page["description"]),
         NOSCRIPT=texts["builder_noscript"],
         PRESET_LINES="".join(
             f"- {preset.title} ({len(preset.members)} policies): {preset.summary}\n"
@@ -532,19 +528,19 @@ def _install(
         content=Safe(
             render_file(
                 templates / track.slug / "install.html",
-                SUB=page["description"],
+                SUB=Prose(page["description"]),
                 INSTALL_HEADING=inst["install_heading"],
                 INSTALL_CMD=install_cmd,
-                INSTALL_NOTE=inst["install_note"],
+                INSTALL_NOTE=Prose(inst["install_note"]),
                 RUN_HEADING=inst["run_heading"],
-                RUN_BODY=inst["run_body"],
+                RUN_BODY=Prose(inst["run_body"]),
                 RUN_CMD=inst["run_command"],
                 UPDATE_HEADING=inst["update_heading"],
-                UPDATE_BODY=inst["update_body"],
+                UPDATE_BODY=Prose(inst["update_body"]),
                 REMOVE_HEADING=inst["remove_heading"],
                 REMOVE_CMD=inst["remove_command"],
                 FILE_HEADING=inst["file_heading"],
-                FILE_BODY=inst["file_body"],
+                FILE_BODY=Prose(inst["file_body"]),
                 FIELD_ROWS=field_rows,
             )
         ),
@@ -559,7 +555,7 @@ def _install(
     )
     twin = render_text_file(
         templates / MD / track.slug / "install.md",
-        SUB=page["description"],
+        SUB=Prose(page["description"]),
         INSTALL_HEADING=inst["install_heading"],
         INSTALL_CMD=install_cmd,
         INSTALL_NOTE=inst["install_note"],
@@ -590,7 +586,7 @@ def _clients(
         render_file(
             templates / PARTIALS / "client-card.html",
             NAME=client["name"],
-            NOTE=client["note"],
+            NOTE=Prose(client["note"]),
             REPO=client["repo"],
             REPO_LABEL=client["repo"].rsplit("/", 1)[-1],
         )
@@ -607,7 +603,7 @@ def _clients(
         content=Safe(
             render_file(
                 templates / track.slug / "clients.html",
-                INTRO=data["clients_intro"],
+                INTRO=Prose(data["clients_intro"]),
                 CLIENT_CARDS=Safe(cards),
                 MARKETPLACE=data["links"]["claude_marketplace"],
             )

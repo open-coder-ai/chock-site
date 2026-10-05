@@ -5,7 +5,6 @@ demo:
   tool: "Claude Code"
   policy: "block-no-verify"
   lines:
-    - {actor: "You", text: "Run the migration script."}
     - {actor: "Claude Code", text: "Bash(git commit --no-verify -m \"fix\")"}
     - {actor: "guard", text: "BLOCKED: git commit --no-verify is not allowed. Fix the failing hook instead; if it must be skipped, ask the person to run the command themselves."}
     - {actor: "Claude Code", text: "The pre-commit hook is failing on a lint error. Fixing that first, then committing normally."}

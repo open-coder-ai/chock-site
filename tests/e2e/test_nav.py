@@ -70,3 +70,51 @@ def test_header_cta_goes_to_builder(page, site_url) -> None:
     response = page.goto(site_url + "/coding/builder/")
     assert response.status == 200
     assert "Build your plugin" in page.locator("h1").inner_text()
+
+
+def test_mobile_hides_only_the_top_nav(browser, site_url) -> None:
+    """390px: section nav, breadcrumb and footer links stay visible."""
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    try:
+        page = context.new_page()
+        page.goto(site_url + "/coding/policies/block-no-verify/")
+        for sel in (".section-nav", ".breadcrumb", ".footer-links"):
+            loc = page.locator(sel)
+            assert loc.count(), sel
+            assert loc.first.is_visible(), sel
+        nav = page.locator("#nav-links")
+        toggle = page.locator(".nav-toggle")
+        assert not nav.is_visible()
+        assert toggle.is_visible()
+        toggle.click()
+        assert nav.is_visible()
+        assert page.locator(".section-nav").first.is_visible()
+        toggle.click()
+        assert not nav.is_visible()
+    finally:
+        context.close()
+
+
+def test_section_nav_band_aligns_with_header(browser, site_url) -> None:
+    """1280px: the section-nav band is full width; its inner aligns with the header."""
+    context = browser.new_context(viewport={"width": 1280, "height": 800})
+    try:
+        page = context.new_page()
+        page.goto(site_url + "/coding/policies/")
+        band = page.locator(".section-nav").bounding_box()
+        assert band["x"] == 0 and band["width"] == 1280
+        inner_x = page.locator(".section-nav-inner").bounding_box()["x"]
+        header_x = page.locator(".header-inner").bounding_box()["x"]
+        assert inner_x == header_x
+        label = page.locator(".section-nav-title")
+        assert label.inner_text().lower() == "coding agents"
+        assert (
+            page.evaluate(
+                "getComputedStyle(document.querySelector('.section-nav-title'))"
+                ".textTransform"
+            )
+            == "uppercase"
+        )
+        assert page.locator(".section-nav a[aria-current='page']").count() == 1
+    finally:
+        context.close()

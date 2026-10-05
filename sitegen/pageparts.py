@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .model import Policy, Site, Track
-from .render import Safe, render_file
+from .render import Prose, Safe, render_file
 
 PARTIALS = "partials"
 BASE = "base.html"
@@ -63,8 +63,13 @@ def label_chips(
 
 
 def jsonld(kind: dict[str, Any]) -> Safe:
-    """A JSON-LD script element; `</` is neutralised so it cannot close the tag."""
-    body = json.dumps(kind, ensure_ascii=False).replace("</", "<\\/")
+    """A JSON-LD script element; `<`, `>` and `&` are \\u-escaped so catalog text cannot break out."""
+    body = (
+        json.dumps(kind, ensure_ascii=False)
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+    )
     return Safe(f'<script type="application/ld+json">\n{body}\n</script>')
 
 
@@ -208,7 +213,7 @@ def render_steps(site: Site, templates: Path) -> Safe:
                         templates / PARTIALS / "home-step.html",
                         NUM=str(i),
                         TITLE=step["title"],
-                        BODY=step["body"],
+                        BODY=Prose(step["body"]),
                     )
                     for i, step in enumerate(home["steps"], start=1)
                 )
@@ -247,7 +252,7 @@ def text_sections(site: Site, templates: Path, sections: list[dict[str, Any]]) -
                 templates / PARTIALS / "text-section.html",
                 ID=slug(section["heading"]),
                 HEADING=section["heading"],
-                BODY=section["body"],
+                BODY=Prose(section["body"]),
                 CODE=Safe(code),
                 LINK=Safe(link),
             )

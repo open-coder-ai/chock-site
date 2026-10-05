@@ -129,7 +129,6 @@ def test_policy_rows_carry_data_attributes(built) -> None:
             "data-label",
             "data-where",
             "data-groups",
-            "data-search",
         ):
             assert attr in row, row
 

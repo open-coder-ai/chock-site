@@ -32,11 +32,14 @@ def test_label_chip_filters(page, site_url) -> None:
 
 def test_search_finds_block_no_verify(page, site_url) -> None:
     page.goto(site_url + "/coding/policies/")
-    page.locator("#policy-search").fill("no-verify")
-    visible = page.locator(VISIBLE)
-    ids = [
-        visible.nth(i).get_attribute("data-policy-id") for i in range(visible.count())
-    ]
+    # Descriptions arrive via fetch('/data/site.json') on first input; wait for it.
+    with page.expect_response("**/data/site.json"):
+        page.locator("#policy-search").fill("no-verify")
+    page.wait_for_timeout(150)  # let the post-fetch apply() run
+    ids = page.evaluate(
+        "[...document.querySelectorAll('.row[data-policy-id]:not(.hidden)')]"
+        ".map(r => r.dataset.policyId)"
+    )
     assert "block-no-verify" in ids
 
 

@@ -17,7 +17,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Safe, render_file, render_text_file
+from .render import Prose, Safe, render_file, render_text_file
 
 MD = "md"
 DEMO_MARKS = {"You": "›", "Claude Code": "●", "guard": "⎿"}
@@ -50,7 +50,7 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 ID=track.id,
                 SLUG=track.slug,
                 TITLE=track.title,
-                SUMMARY=track.summary,
+                SUMMARY=Prose(track.summary),
                 LINK=track.title,
             )
             for track in site.tracks
@@ -77,7 +77,7 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             WHERE=" ".join(by_id[card["policy"]].where),
             CHIP=chip(site, templates, by_id[card["policy"]], "coding"),
             TITLE=card["title"],
-            SAYS=by_id[card["policy"]].says,
+            SAYS=Prose(by_id[card["policy"]].says),
         )
         for card in home["examples"]
     )
@@ -85,7 +85,7 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
         render_file(
             templates / PARTIALS / "home-card.html",
             TITLE=point["title"],
-            BODY=data_fill(point["body"], subs),
+            BODY=Prose(data_fill(point["body"], subs)),
         )
         for point in home["why"]
     )
@@ -94,7 +94,7 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
     ][:4]
     questions = "".join(
         render_file(
-            templates / PARTIALS / "question-card.html", Q=item["q"], A=item["a"]
+            templates / PARTIALS / "question-card.html", Q=item["q"], A=Prose(item["a"])
         )
         for item in faq_teaser
     )
@@ -112,8 +112,8 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 templates / "index.html",
                 EYEBROW=home["eyebrow"],
                 HERO_HEADLINE=texts["hero_headline"],
-                HERO_SUB=texts["hero_sub"],
-                HERO_NOTE=texts["hero_note"],
+                HERO_SUB=Prose(texts["hero_sub"]),
+                HERO_NOTE=Prose(texts["hero_note"]),
                 PRIMARY_CTA=home["primary_cta"],
                 SECONDARY_CTA=home["secondary_cta"],
                 DEMO_TOOL=home["demo"]["tool"],
@@ -122,7 +122,7 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 DEMO_FOOTER=data_fill(home["demo"]["footer"], subs),
                 SECTIONS_BLOCK=Safe(sections_block),
                 STOPS_HEADING=home["stops_heading"],
-                STOPS_INTRO=home["stops_intro"],
+                STOPS_INTRO=Prose(home["stops_intro"]),
                 STOP_CARDS=Safe(stop_cards),
                 STEPS=render_steps(site, templates),
                 WHY_HEADING=home["why_heading"],
@@ -131,7 +131,7 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 QUESTIONS_LINK=home["questions_link"],
                 QUESTION_CARDS=Safe(questions),
                 CTA_HEADING=home["cta_heading"],
-                CTA_SUB=home["cta_sub"],
+                CTA_SUB=Prose(home["cta_sub"]),
             )
         ),
         jsonld_data={
@@ -185,7 +185,7 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
         content=Safe(
             render_file(
                 templates / "security.html",
-                SUB=page["description"],
+                SUB=Prose(page["description"]),
                 SECTIONS=Safe(text_sections(site, templates, data["security"])),
             )
         ),
@@ -199,7 +199,7 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
     )
     twin = render_text_file(
         templates / MD / "security.md",
-        SUB=page["description"],
+        SUB=Prose(page["description"]),
         SECTIONS=md_sections(data["security"], data["links"]),
     )
     write_md(out_dir, "/security/", twin)
@@ -221,7 +221,7 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                         templates / PARTIALS / "faq-item.html",
                         ID=item["id"],
                         Q=item["q"],
-                        A=item["a"],
+                        A=Prose(item["a"]),
                     )
                     for item in data["faq"]["questions"]
                     if item["group"] == group["id"]
@@ -240,7 +240,7 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
         content=Safe(
             render_file(
                 templates / "faq.html",
-                SUB=page["description"],
+                SUB=Prose(page["description"]),
                 FAQ_GROUPS=Safe(groups),
             )
         ),
@@ -260,7 +260,7 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
     )
     twin = render_text_file(
         templates / MD / "faq.md",
-        SUB=page["description"],
+        SUB=Prose(page["description"]),
         FAQ_LINES="".join(
             f"## {group['title']}\n\n"
             + "".join(
@@ -289,7 +289,7 @@ def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, s
         content=Safe(
             render_file(
                 templates / "for-agents.html",
-                SUB=page["description"],
+                SUB=Prose(page["description"]),
                 SECTIONS=Safe(
                     text_sections(site, templates, data["agents"]["sections"])
                 ),
@@ -304,7 +304,7 @@ def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, s
     )
     twin = render_text_file(
         templates / MD / "for-agents.md",
-        SUB=page["description"],
+        SUB=Prose(page["description"]),
         SECTIONS=md_sections(data["agents"]["sections"], data["links"]),
     )
     write_md(out_dir, "/for-agents/", twin)
@@ -323,7 +323,9 @@ def _not_found(site: Site, out_dir: Path, templates: Path) -> str:
         title=page["title"],
         description=page["description"],
         content=Safe(
-            render_file(templates / "404.html", SUB=data["texts"]["notfound_sub"])
+            render_file(
+                templates / "404.html", SUB=Prose(data["texts"]["notfound_sub"])
+            )
         ),
         jsonld_data={
             "@context": "https://schema.org",

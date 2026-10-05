@@ -169,3 +169,37 @@ def test_skip_link_and_main(built) -> None:
         text = page.read_text(encoding="utf-8")
         assert 'class="skip-link" href="#content">Skip to content' in text, page
         assert '<main id="content">' in text, page
+
+
+class _TextOutsideCode(HTMLParser):
+    """Rendered text, skipping <pre>, <code>, <script> and <style> subtrees."""
+
+    SKIP = frozenset({"pre", "code", "script", "style"})
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.depth = 0
+        self.text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag in self.SKIP:
+            self.depth += 1
+
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        pass
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in self.SKIP and self.depth:
+            self.depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if not self.depth:
+            self.text.append(data)
+
+
+def test_no_literal_backticks_in_rendered_text(built) -> None:
+    """Backticks in prose become <code>; none survive as literal text."""
+    for page in _pages(built):
+        parser = _TextOutsideCode()
+        parser.feed(page.read_text(encoding="utf-8"))
+        assert "`" not in "".join(parser.text), page

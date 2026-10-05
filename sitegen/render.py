@@ -11,8 +11,20 @@ class Safe(str):
     """A value that is itself rendered HTML and must not be escaped again."""
 
 
+class Prose(str):
+    """Escaped text in which `inline code` backticks become <code> elements."""
+
+
 class RenderError(ValueError):
     """A template token without a value, or a value without a token."""
+
+
+CODE_SPAN_RE = re.compile(r"`([^`]+)`")
+
+
+def _prose(value: object) -> str:
+    escaped = html.escape(str(value), quote=True)
+    return CODE_SPAN_RE.sub(r"<code>\1</code>", escaped)
 
 
 def _check(template: str, tokens: dict[str, object]) -> set[str]:
@@ -37,6 +49,8 @@ def render(template: str, **tokens: object) -> str:
         value = tokens[match.group(0)[2:-2]]
         if isinstance(value, Safe):
             return str(value)
+        if isinstance(value, Prose):
+            return _prose(value)
         return html.escape(str(value), quote=True)
 
     return TOKEN_RE.sub(_fill, template)

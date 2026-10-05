@@ -9,6 +9,24 @@ const chips = Array.from(document.querySelectorAll(".chip[data-facet]"));
 
 const active = { label: new Set(), where: new Set() };
 
+// Full descriptions live in site.json, fetched once when a search term first
+// appears; before that the haystack is the row's own text.
+const descriptions = {};
+let descriptionsPromise = null;
+
+function ensureDescriptions() {
+  if (!descriptionsPromise) {
+    descriptionsPromise = fetch("/data/site.json")
+      .then((res) => res.json())
+      .then((data) => {
+        for (const p of data.policies) {
+          descriptions[p.id] = p.description.toLowerCase();
+        }
+      });
+  }
+  return descriptionsPromise;
+}
+
 function matches(row, facets) {
   const labels = facets.label;
   const wheres = facets.where;
@@ -24,7 +42,8 @@ function matches(row, facets) {
     if (!groups.includes(facets.group)) return false;
   }
   if (facets.q) {
-    const haystack = (row.dataset.search || "") + " " + row.textContent.toLowerCase();
+    const haystack =
+      row.textContent.toLowerCase() + " " + (descriptions[row.dataset.policyId] || "");
     if (!haystack.includes(facets.q)) return false;
   }
   return true;
@@ -98,5 +117,7 @@ chips.forEach((chip) => {
   });
 });
 
-search.addEventListener("input", apply);
+search.addEventListener("input", () => {
+  ensureDescriptions().then(apply, apply);
+});
 group.addEventListener("change", apply);
