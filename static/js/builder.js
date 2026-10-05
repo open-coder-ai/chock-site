@@ -47,8 +47,10 @@ async function main() {
   const panels = $$("[role='tabpanel']");
   const codeEl = $("[data-selection-code]");
   const shareEl = $("#share-url");
+  const bar = $("#mobile-bar");
   const labelOn = new Set();
   let notesKey = "";
+  let noteCount = 0;
 
   // ----- the selection object (plan 8.1) -----
 
@@ -158,6 +160,7 @@ async function main() {
 
   function renderNotes() {
     const items = warnings();
+    noteCount = items.length;
     const key = items.join("\n");
     if (key === notesKey) return;
     notesKey = key;
@@ -203,6 +206,16 @@ async function main() {
     showTab(activeTab);
   }
 
+  // The phone bar: count, notes and Copy command; hidden while nothing is picked.
+  function renderBar() {
+    bar.hidden = picked.size === 0;
+    let text = selCount.textContent;
+    if (noteCount) {
+      text += ` ${noteCount === 1 ? T.bar_notes_one : fill(T.bar_notes_many, { n: noteCount })}`;
+    }
+    $("#mb-count").textContent = text;
+  }
+
   function syncStart() {
     const ids = [...picked];
     const match = presets.find((p) => sameMembers(p.members, ids));
@@ -221,6 +234,7 @@ async function main() {
     renderSelectionList();
     renderNotes();
     renderOutputs();
+    renderBar();
     syncStart();
     if (writeUrl) writeFragment();
   }
@@ -341,6 +355,17 @@ async function main() {
   $("#copy-share").addEventListener("click", (event) => {
     copyText(event.currentTarget, shareEl.value, shareEl);
   });
+  $("#mb-copy").addEventListener("click", (event) => {
+    copyText(event.currentTarget, codeEl.textContent, codeEl);
+  });
+  // A real hash jump would fire hashchange; scroll and focus the panel instead.
+  $("#mb-jump").addEventListener("click", (event) => {
+    event.preventDefault();
+    const heading = $("#your-selection");
+    heading.tabIndex = -1;
+    heading.scrollIntoView();
+    heading.focus();
+  });
   $("#download-file").addEventListener("click", () => {
     const body = `${JSON.stringify(buildSelection(), null, 2)}\n`;
     const url = URL.createObjectURL(new Blob([body], { type: "application/x-yaml" }));
@@ -434,7 +459,9 @@ async function main() {
     render(writeUrl);
   }
 
-  window.addEventListener("hashchange", applyFragment);
+  window.addEventListener("hashchange", () => {
+    if (/^#(s|preset|add)=/.test(location.hash)) applyFragment();
+  });
   applyFragment();
 }
 

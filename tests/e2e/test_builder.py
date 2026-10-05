@@ -296,3 +296,70 @@ def test_builder_screenshots(browser, site_url) -> None:
         assert_clean(page)
     finally:
         mobile.close()
+
+
+def test_sticky_panel_keeps_outputs_reachable(browser, site_url) -> None:
+    """1280x800 with git-hygiene: the panel fits the window, so the command stays on screen."""
+    context = browser.new_context(viewport={"width": 1280, "height": 800})
+    try:
+        page = context.new_page()
+        collect(page, site_url)
+        _open(page, site_url, "#preset=git-hygiene")
+        for scroll in (0, 1500, 3000):
+            page.evaluate(f"window.scrollTo(0, {scroll})")
+            tab = page.locator("#tab-command").bounding_box()
+            panel = page.locator(".selection").bounding_box()
+            assert panel["height"] <= 800, panel
+            if scroll:
+                assert 0 <= tab["y"] and tab["y"] + tab["height"] <= 800, (scroll, tab)
+        assert_clean(page)
+    finally:
+        context.close()
+
+
+def test_phone_bar_and_chips(browser, site_url) -> None:
+    """390x844: bottom bar with count and Copy command; chips keep their natural width."""
+    context = browser.new_context(
+        viewport=MOBILE, permissions=["clipboard-read", "clipboard-write"]
+    )
+    try:
+        page = context.new_page()
+        collect(page, site_url)
+        _open(page, site_url)
+        bar = page.locator("#mobile-bar")
+        assert not bar.is_visible()
+        page.select_option("#builder-start", "git-hygiene")
+        assert bar.is_visible()
+        assert "6 policies" in bar.inner_text()
+        assert "note" in bar.inner_text()
+        page.locator("#mb-copy").click()
+        page.locator("#mb-copy", has_text="Copied").wait_for()
+        command = page.locator("[data-selection-code]").inner_text()
+        assert page.evaluate("navigator.clipboard.readText()") == command
+        page.get_by_role("link", name="Your selection").click()
+        assert page.locator("#your-selection").is_visible()
+        for _ in range(40):  # the jump scrolls smoothly; wait for it to settle
+            top = page.locator("#your-selection").bounding_box()["y"]
+            if 0 <= top < 844:
+                break
+            page.wait_for_timeout(100)
+        assert 0 <= top < 844, top
+        assert _count(page) == "6 policies"
+        row = page.locator(".bmember").first
+        chip = row.locator(".label")
+        assert chip.bounding_box()["width"] < row.bounding_box()["width"] * 0.5
+        width = page.evaluate(
+            "[document.scrollingElement.scrollWidth, window.innerWidth]"
+        )
+        assert width[0] <= width[1], width
+        while page.locator(".sel-item .remove").count():
+            page.locator(".sel-item .remove").first.click()
+        assert not bar.is_visible()
+        assert_clean(page)
+    finally:
+        context.close()
+
+
+def test_phone_bar_is_hidden_on_desktop(page, site_url) -> None:
+    _open(page, site_url, "#preset=git-hygiene")
+    assert not page.locator("#mobile-bar").is_visible()

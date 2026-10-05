@@ -127,6 +127,8 @@
     "removed": "Removed {name}",
     "preset_applied": "Picked the {title} preset",
     "cleared": "Cleared your picks",
+    "bar_notes_one": "· 1 note",
+    "bar_notes_many": "· {n} notes",
     "download_name": "chock.selection.yaml"
   }
 }

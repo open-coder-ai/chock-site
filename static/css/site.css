@@ -651,6 +651,7 @@ footer {
 }
 
 .bmember:last-child { border-bottom: 0; }
+.bmember .label { justify-self: start; align-self: start; }
 .bpick { display: flex; align-items: center; gap: 10px; color: var(--white); font-size: 14px; cursor: pointer; }
 .bpick input {
   accent-color: var(--gold);
@@ -669,7 +670,12 @@ footer {
   padding: 18px;
   position: sticky;
   top: 80px;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
 }
+
+/* Long pick lists scroll inside the panel so the notes and outputs stay on screen. */
+.selection .sel-list { max-height: 35vh; overflow-y: auto; }
 
 .bmember.hidden, .bgroup.hidden { display: none; }
 .sel-items { list-style: none; margin: 0; padding: 0; }
@@ -776,12 +782,15 @@ table.fields {
 .fields th { color: var(--white); background: var(--panel); }
 .fields td { color: var(--cool); }
 
+.mobile-bar { display: none; }
+
 /* mobile */
 
 @media (max-width: 960px) {
   .builder-grid, .policy-grid { grid-template-columns: minmax(0, 1fr); }
   .policy-side { position: static; }
-  .selection { position: static; }
+  .selection { position: static; max-height: none; overflow-y: visible; }
+  .selection .sel-list { max-height: none; overflow-y: visible; }
   .cards-4, .cards-presets { grid-template-columns: repeat(2, 1fr); }
   .stats { grid-template-columns: repeat(3, 1fr); }
 }
@@ -802,6 +811,22 @@ table.fields {
   .row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .row-version { text-align: left; }
   .bmember { grid-template-columns: minmax(0, 1fr); }
+  .builder-grid { padding-bottom: 88px; }
+  html.js .mobile-bar:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-top: 1px solid var(--gold);
+  }
+  .mb-count { color: var(--white); font-size: 13px; flex: 1; min-width: 0; }
+  .mb-jump { font-size: 13px; white-space: nowrap; }
   .section-nav-title { display: none; }
   .section-nav-inner { flex-wrap: wrap; gap: 0 16px; overflow-x: visible; }
   .cta { padding: 28px 20px; }
