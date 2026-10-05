@@ -12,10 +12,10 @@
     {"key": "clients", "label": "Other clients"}
   ],
   "pages": {
-    "home": {"title": "Guardrails for your AI coding agent", "description": "Pick the rules you want. chock turns them into one Claude Code plugin that refuses the risky moves before they happen."},
-    "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ in the catalog, each labelled blocks, asks, warns or advisory."},
-    "policies": {"title": "Policies", "description": "All __COUNT__ policies in the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
-    "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one Claude Code plugin that enforces them. Free and open source."},
+    "home": {"title": "Guardrails for your AI coding agent", "description": "Pick the rules you want. chock turns them into one Claude Code plugin that blocks, asks or warns before a risky move happens."},
+    "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ of them, each labelled blocks, asks, warns or advisory."},
+    "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
+    "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one Claude Code plugin from them. Free and open source."},
     "clients": {"title": "Other clients", "description": "chock policies also ship as plugins for Cursor, Codex, GitHub Copilot and Devin."},
     "security": {"title": "Security", "description": "What chock is and is not: friction, not a security boundary. How the pieces are verified and how to report a bug."},
     "install": {"title": "Install", "description": "Install chock, build a plugin from a selection code, and update or remove it."},
@@ -26,7 +26,7 @@
   "texts": {
     "footer_line": "Friction, not a security boundary.",
     "hero_headline": "Guardrails for your AI coding agent.",
-    "hero_sub": "Pick the rules you want. chock turns them into one Claude Code plugin that refuses the risky moves before they happen.",
+    "hero_sub": "Pick the rules you want. chock turns them into one Claude Code plugin that blocks, asks or warns before a risky move happens.",
     "hero_note": "Free and open source · No sign-up · Nothing tracked",
     "builder_empty": "Pick a preset or add policies.",
     "builder_noscript": "The builder needs JavaScript. You can still browse the policies and write a selection file by hand; see Install.",
@@ -50,7 +50,7 @@
   "label_meanings": {
     "blocks": "Claude Code refuses the action.",
     "asks": "Claude Code stops and asks you.",
-    "warns": "The action goes ahead, with a warning, while the policy is measured.",
+    "warns": "The action goes ahead, with a warning.",
     "advisory": "Text the agent reads; nothing stops a violation."
   },
   "glyphs": {
@@ -74,14 +74,14 @@
   "security": [
     {"heading": "What the policies are", "body": "Friction, not a security boundary. A policy makes a risky action refused, asked about, warned on or flagged — not impossible. Advisory text can be ignored, and a block on the shell can be sidestepped by a determined agent. Each label says exactly how far a policy goes."},
     {"heading": "What the site does", "body": "The site is static files: nothing you pick leaves your machine, and the builder runs in your browser. Your selection lives in the URL fragment after the #, which browsers never send to a server. There is no analytics, no cookie, no account."},
-    {"heading": "Why the command is safe to read before running", "body": "The command fetches one pinned catalog commit and checks every policy against its sha256 — the same hash shown on the policy's page. If the pack does not match, the install fails and nothing is written."},
+    {"heading": "Why the command is safe to read before running", "body": "The command fetches one pinned catalog commit and checks every policy against its sha256 — the same hash shown on the policy's page. If the pack does not match, the install fails and nothing is written. The commit must be on a branch or tag the catalog publishes, so a link cannot point at a fork's code."},
     {"heading": "How to report a problem", "body": "Report it as a security issue in the chock-catalog repository, not as a public issue in the engine or the site.", "link": "security_policy", "link_label": "Report a security issue"}
   ],
   "install": {
     "install_heading": "Install chock",
     "install_command": "pip install \"chock @ git+https://github.com/open-coder-ai/chock@__FRAMEWORK_REF__\"",
     "install_command_released": "pipx install chock",
-    "install_note": "Python 3.12 or newer. The engine is the only install; the plugin is generated from the pinned catalog.",
+    "install_note": "Python 3.11 or newer. The engine is the only install; the plugin is generated from the pinned catalog.",
     "run_heading": "Run the command",
     "run_body": "Pick your policies on the builder, copy the command and run it in your repo. --apply writes the plugin under .claude; without it, chock only prints the two claude plugin commands that install it.",
     "run_command": "chock install --selection 'eyJzY2hlbWEiOjEsImNsaWVudCI6ImNsYXVkZS1jb2RlIiwi…' --apply",
@@ -107,7 +107,7 @@
     "missing_partner": "__PRESENT__ is picked without __ABSENT__: the two cover one rule by different means; pick both.",
     "all_present": "__PRESENT__ are all picked and overlap: keep one, or the same action is checked twice.",
     "file_absent": "__PRESENT__ refuses everything until your repo has __FILE__. Create it before you install.",
-    "grade:warn": "__PRESENT__ only warns while it is measured: nothing is refused.",
+    "grade:warn": "__PRESENT__ only warns: nothing is refused.",
     "grade:advise": "__PRESENT__ is text only: nothing stops a violation."
   },
   "builder_texts": {
