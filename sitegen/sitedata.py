@@ -149,6 +149,7 @@ def site_dict(site: Site) -> dict[str, Any]:
         "warning_rules": site.warning_rules,
         "warning_texts": site.warning_texts,
         "command": site.command,
+        "builder_texts": site.data["builder_texts"],
     }
 
 

@@ -671,10 +671,40 @@ footer {
   top: 80px;
 }
 
+.bmember.hidden, .bgroup.hidden { display: none; }
+.sel-items { list-style: none; margin: 0; padding: 0; }
+.sel-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sel-item:last-child { border-bottom: 0; }
+.sel-name { color: var(--white); font-size: 14px; overflow-wrap: anywhere; }
+.sel-says { grid-column: 1 / 3; color: var(--cool); font-size: 12px; }
+.sel-item .remove {
+  grid-column: 3;
+  grid-row: 1;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--cool);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.sel-item .remove:hover { color: var(--white); border-color: var(--dim-gold); }
+.need-one { color: var(--cool); font-size: 13px; margin: 16px 0 0; }
 .sel-count { color: var(--cool); font-size: 13px; font-weight: 400; }
 .sel-list .empty { color: var(--cool); }
 
-.notes .note-card {
+.link-notice .note-card { margin: 0 0 16px; }
+.notice-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.notes .note-card,
+.link-notice .note-card {
   border: 1px solid var(--dim-gold);
   border-radius: 8px;
   padding: 10px 12px;
@@ -772,6 +802,8 @@ table.fields {
   .row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .row-version { text-align: left; }
   .bmember { grid-template-columns: minmax(0, 1fr); }
+  .section-nav-title { display: none; }
+  .section-nav-inner { flex-wrap: wrap; gap: 0 16px; overflow-x: visible; }
   .cta { padding: 28px 20px; }
 }
 

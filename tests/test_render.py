@@ -115,3 +115,10 @@ def test_jsonld_escapes_parser_breakouts(built, tmp_path) -> None:
     counter.feed(page)
     assert counter.h1 == 1
     assert "Friction, not a security boundary." in page
+
+
+def test_data_fill_is_one_pass() -> None:
+    from sitegen.pageparts import data_fill
+
+    out = data_fill("__A__ and __B__", {"__A__": "x __B__", "__B__": "y"})
+    assert out == "x __B__ and y"

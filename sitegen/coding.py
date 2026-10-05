@@ -405,7 +405,7 @@ def _member_rows(
 def _builder(
     site: Site, track: Track, out_dir: Path, templates: Path, counts_: dict[str, Any]
 ) -> tuple[str, str]:
-    """The builder's static layout and noscript text (behaviour is PR 3)."""
+    """The builder's static layout and noscript text; builder.js adds the behaviour."""
     texts = site.data["texts"]
     subs = {"__CATALOG_REF_12__": site.catalog_ref[:12]}
     options = "".join(
@@ -475,6 +475,7 @@ def _builder(
         },
         nav=track.id,
         section=(track, "builder"),
+        scripts=("common.js", "builder.js"),
     )
     twin = render_text_file(
         templates / MD / track.slug / "builder.md",
