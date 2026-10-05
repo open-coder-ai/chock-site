@@ -363,3 +363,24 @@ def test_phone_bar_and_chips(browser, site_url) -> None:
 def test_phone_bar_is_hidden_on_desktop(page, site_url) -> None:
     _open(page, site_url, "#preset=git-hygiene")
     assert not page.locator("#mobile-bar").is_visible()
+
+
+def test_phone_bar_does_not_cover_the_footer(browser, site_url) -> None:
+    """390x844, git-hygiene picked, scrolled to the end: the last footer link
+    sits wholly above the bar (plan 9, PR 4 item 2)."""
+    context = browser.new_context(viewport=MOBILE)
+    try:
+        page = context.new_page()
+        collect(page, site_url)
+        _open(page, site_url, "#preset=git-hygiene")
+        page.evaluate("window.scrollTo(0, document.scrollingElement.scrollHeight)")
+        bar = page.locator("#mobile-bar").bounding_box()
+        link = page.locator(".footer-links a").last.bounding_box()
+        assert bar and link, (bar, link)
+        assert link["y"] + link["height"] <= bar["y"], (
+            f"footer link bottom {link['y'] + link['height']:.1f} "
+            f"is below bar top {bar['y']:.1f}"
+        )
+        assert_clean(page)
+    finally:
+        context.close()

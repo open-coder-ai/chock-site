@@ -476,6 +476,7 @@ def _builder(
         nav=track.id,
         section=(track, "builder"),
         scripts=("common.js", "builder.js"),
+        body_end=render_file(templates / PARTIALS / "mobile-bar.html"),
     )
     twin = render_text_file(
         templates / MD / track.slug / "builder.md",

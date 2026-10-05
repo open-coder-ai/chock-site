@@ -132,6 +132,7 @@ def write_page(
     scripts: tuple[str, ...] = ("common.js",),
     alt_json: str = "",
     md_href: str = "index.md",
+    body_end: str = "",
 ) -> None:
     """Render base.html around one page's content and write it under out_dir."""
     track_links = nav_items(
@@ -164,6 +165,7 @@ def write_page(
         CATALOG_REF=site.catalog_ref,
         CATALOG_REF_12=site.catalog_ref[:12],
         SCRIPTS=script_tags,
+        BODY_END=Safe(body_end),
         ARIA_FAQ=Safe(' aria-current="page"') if nav == "faq" else "",
         ARIA_SECURITY=Safe(' aria-current="page"') if nav == "security" else "",
     )
