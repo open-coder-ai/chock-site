@@ -20,19 +20,25 @@ def _wide_elements(page) -> list[str]:
     return page.evaluate(
         """() => {
             const w = window.innerWidth;
-            const out = [];
+            const out = [
+                'scrollWidth=' + document.scrollingElement.scrollWidth,
+                'innerWidth=' + w,
+                'htmlRect=' + document.documentElement.getBoundingClientRect().width.toFixed(2),
+                'bodyRect=' + document.body.getBoundingClientRect().width.toFixed(2),
+            ];
             document.querySelectorAll('body *').forEach(el => {
                 const r = el.getBoundingClientRect();
-                if (r.right > w + 0.5 || r.left < -0.5) {
+                if (r.right > w - 1 || r.left < -0.5 || el.scrollWidth > el.clientWidth + 1) {
                     const cls = (el.className && el.className.baseVal === undefined)
                         ? '.' + String(el.className).trim().split(/\\s+/).join('.')
                         : '';
                     out.push(el.tagName.toLowerCase() + cls
-                        + ' [' + r.left.toFixed(0) + ',' + r.right.toFixed(0) + ']'
+                        + ' [' + r.left.toFixed(1) + ',' + r.right.toFixed(1) + ']'
+                        + ' sw=' + el.scrollWidth + ' cw=' + el.clientWidth
                         + ' ' + (el.textContent || '').trim().slice(0, 40));
                 }
             });
-            return out.slice(0, 8);
+            return out.slice(0, 15);
         }"""
     )
 
