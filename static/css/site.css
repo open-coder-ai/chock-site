@@ -843,9 +843,9 @@ table.fields {
 /* A policy page prints like a document: no navigation, actions or fixed
    chrome, and dark-on-light ink instead of the navy screen palette. */
 @media print {
-  header, .section-nav, .skip-link, footer, .nav-toggle, .mobile-bar,
-  .side-buttons, .filters, .breadcrumb, button.copy, button.download,
-  .sel-item .remove, .tabs {
+  body > header, .section-nav, .skip-link, footer, .nav-toggle,
+  .mobile-bar, .side-buttons, .filters, .breadcrumb, button.copy,
+  button.download, .sel-item .remove, .tabs {
     display: none;
   }
   * { color: #000 !important; background: none !important; }
