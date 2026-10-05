@@ -1,0 +1,48 @@
+eyebrow: "OPEN SOURCE · FOR CLAUDE CODE"
+primary_cta: "Build your plugin"
+secondary_cta: "Browse the policies"
+demo:
+  tool: "Claude Code"
+  policy: "block-no-verify"
+  lines:
+    - {actor: "You", text: "Run the migration script."}
+    - {actor: "Claude Code", text: "Bash(git commit --no-verify -m \"fix\")"}
+    - {actor: "guard", text: "BLOCKED: git commit --no-verify is not allowed. Fix the failing hook instead; if it must be skipped, ask the person to run the command themselves."}
+    - {actor: "Claude Code", text: "The pre-commit hook is failing on a lint error. Fixing that first, then committing normally."}
+  footer: "Policy: block-no-verify · Catalog __CATALOG_REF_12__ · __COUNT__ policies · __TESTED__ tests"
+sections_heading: "Sections"
+stops_heading: "What it stops"
+stops_intro: "Six of the policies in the catalog. Each card says what the policy does, in plain words, and links to its page."
+examples:
+  - {policy: "block-no-verify", title: "Skipping git hooks"}
+  - {policy: "scan-secrets", title: "Writing an API key into a file"}
+  - {policy: "block-curl-pipe-sh", title: "Downloading and running a script in one go"}
+  - {policy: "block-destructive-commands", title: "rm -rf on your home folder"}
+  - {policy: "protect-agent-config", title: "The agent editing its own guardrails"}
+  - {policy: "block-test-skips", title: "Skipping a failing test to get green"}
+stops_link: "Read the policy"
+steps_heading: "How it works"
+steps:
+  - {title: "Pick policies", body: "Tick the ones you want, or start from a preset such as Git hygiene or Secrets."}
+  - {title: "Run one command", body: "Ask before running `chock install --selection …`: it builds one plugin on your machine and checks every policy against its hash."}
+  - {title: "Keep working", body: "Claude Code now checks each risky action. Change your picks any time and run the command again."}
+why_heading: "Why chock"
+why:
+  - {title: "Each rule says what it does", body: "Every policy is labelled exactly what it does: blocks, asks, warns or advises."}
+  - {title: "Every policy is tested", body: "__TESTED__ cases run automatically against the catalog."}
+  - {title: "Pinned and checked", body: "Your install is verified against a hash of each policy."}
+  - {title: "Open source", body: "Apache-2.0. Read every rule on GitHub before you install it."}
+questions_heading: "Questions"
+questions_link: "All questions"
+cta_heading: "Ready in a minute."
+cta_sub: "Pick your guardrails and copy one command."
+coding:
+  h1: "Guardrails for AI coding agents"
+  intro: "Pick the rules you want. chock turns them into one Claude Code plugin that refuses the risky moves before they happen."
+  glance_heading: "The catalog at a glance"
+  glance_link: "See every policy"
+  presets_heading: "Start from a preset"
+  presets_intro: "A preset fills the builder with a group of policies. You can remove any of them before you install."
+  clients_heading: "Other coding agents"
+  clients_line: "Cursor, Codex, Copilot and Devin install the same policies from their own plugin repositories."
+  clients_link: "See other clients"

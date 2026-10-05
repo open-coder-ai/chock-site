@@ -1,0 +1,27 @@
+# chock.sh
+
+__HERO_SUB__
+
+__HERO_NOTE__
+
+## __STOPS_HEADING__
+
+__STOPS_INTRO__
+
+__STOP_LINES__
+
+## __STEPS_HEADING__
+
+__STEP_LINES__
+
+## __WHY_HEADING__
+
+__WHY_LINES__
+
+## __QUESTIONS_HEADING__
+
+__QUESTION_LINES__
+
+## __CTA_HEADING__
+
+__CTA_SUB__

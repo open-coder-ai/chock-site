@@ -1,0 +1,31 @@
+<section class="page-head">
+<h1 id="policies">Policies</h1>
+<p class="sub">__INTRO__</p>
+</section>
+<section class="filters" aria-label="Policy filters">
+<div class="filter-row">
+<div class="field">
+<label for="policy-search">Search</label>
+<input id="policy-search" type="search" placeholder="__SEARCH_PLACEHOLDER__" autocomplete="off">
+</div>
+<div class="field">
+<label for="policy-group">Group</label>
+<select id="policy-group">
+<option value="">All groups</option>
+__GROUP_OPTIONS__<option value="none">In no group</option>
+</select>
+</div>
+</div>
+<div class="filter-row">
+<span class="filter-label" id="label-filter-label">Label</span>
+<div class="chips" role="group" aria-labelledby="label-filter-label">__LABEL_CHIPS__</div>
+</div>
+<div class="filter-row">
+<span class="filter-label" id="where-filter-label">Acts on</span>
+<div class="chips" role="group" aria-labelledby="where-filter-label">__WHERE_CHIPS__</div>
+</div>
+</section>
+<p id="policies-status" class="status" role="status">__SHOWING__</p>
+<section class="rows" aria-label="Policy list">
+__ROWS__
+</section>

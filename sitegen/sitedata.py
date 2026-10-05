@@ -4,28 +4,59 @@ import json
 from pathlib import Path
 from typing import Any
 
+import yaml
+
 from . import catalog as catalog_mod
 from . import engine
 from . import presets as presets_mod
-from .model import Site
+from .model import Site, Track
 
 SITE_JSON = "data/site.json"
+YAML_DATA = ("home", "faq", "agents")
+TRACK_FIELDS = ("id", "slug", "title", "summary")
 
 
 def load_site_data(data_dir: Path) -> dict[str, Any]:
-    """The repo's data/site.json: nav, texts, links, command template and warning texts."""
-    return json.loads((data_dir / "site.json").read_text(encoding="utf-8"))
+    """site.json plus the YAML page copy (home.yaml, faq.yaml, agents.yaml)."""
+    data = json.loads((data_dir / "site.json").read_text(encoding="utf-8"))
+    for name in YAML_DATA:
+        data[name] = yaml.safe_load(
+            (data_dir / f"{name}.yaml").read_text(encoding="utf-8")
+        )
+    return data
+
+
+def load_tracks(data_dir: Path) -> list[Track]:
+    """The site sections from tracks.yaml; a missing field is a build error."""
+    raw = yaml.safe_load((data_dir / "tracks.yaml").read_text(encoding="utf-8"))
+    tracks = []
+    for row in raw["tracks"]:
+        missing = [key for key in TRACK_FIELDS if key not in row]
+        if missing:
+            msg = f"tracks.yaml row {row.get('id', '?')}: missing {missing}"
+            raise ValueError(msg)
+        tracks.append(
+            Track(
+                id=row["id"],
+                slug=row["slug"],
+                title=row["title"],
+                summary=row["summary"],
+            )
+        )
+    return tracks
 
 
 def build_site(
     catalog: Path,
     catalog_ref: str,
+    framework_ref: str,
     catalog_source: str,
     release: str | None,
     data_dir: Path,
 ) -> Site:
     """Every input the generated site needs, computed from the pinned catalog."""
     site_data = load_site_data(data_dir)
+    tracks = load_tracks(data_dir)
     hidden = catalog_mod.load_hidden(data_dir)
     presets = presets_mod.load_presets(data_dir / "presets.yaml")
     policies = catalog_mod.load_policies(catalog, hidden, catalog_ref)
@@ -48,8 +79,13 @@ def build_site(
     return Site(
         catalog_source=catalog_source,
         catalog_ref=catalog_ref,
+        framework_ref=framework_ref,
         release=release,
-        label_words=engine.label_words(),
+        tracks=tracks,
+        label_words={
+            track.id: engine.label_words() if track.id == "coding" else {}
+            for track in tracks
+        },
         policies=policies,
         presets=presets,
         warning_rules=rules,
@@ -66,10 +102,15 @@ def site_dict(site: Site) -> dict[str, Any]:
         catalog["release"] = site.release
     return {
         "catalog": catalog,
+        "tracks": [
+            {"id": t.id, "slug": t.slug, "title": t.title, "summary": t.summary}
+            for t in site.tracks
+        ],
         "label_words": site.label_words,
         "policies": [
             {
                 "id": p.id,
+                "track": p.track,
                 "name": p.name,
                 "version": p.version,
                 "sha256": p.sha256,
@@ -88,6 +129,11 @@ def site_dict(site: Site) -> dict[str, Any]:
                     "change": p.latest.change,
                 },
                 "source_url": p.source_url,
+                "enforces": p.enforces,
+                "examples": [
+                    {"word": e.word, "prompt": e.prompt, "command": e.command}
+                    for e in p.examples
+                ],
             }
             for p in site.policies
         ],

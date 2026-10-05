@@ -1,0 +1,46 @@
+<section class="page-head">
+<h1 id="build-your-plugin">Build your plugin</h1>
+<p class="sub">__SUB__</p>
+</section>
+<noscript><p class="noscript-note">__NOSCRIPT__</p></noscript>
+<div class="builder-grid">
+<section class="pick" aria-labelledby="pick-policies">
+<h2 id="pick-policies">Pick policies</h2>
+<div class="filter-row">
+<div class="field">
+<label for="builder-start">Start from</label>
+<select id="builder-start">
+<option value="">Nothing</option>
+__PRESET_OPTIONS__</select>
+</div>
+<div class="field">
+<label for="builder-search">Search</label>
+<input id="builder-search" type="search" autocomplete="off">
+</div>
+</div>
+<div class="chips" aria-label="Labels">__LABEL_CHIPS__</div>
+<div class="groups">
+__GROUP_SECTIONS__
+</div>
+</section>
+<section class="selection" aria-label="Your selection" aria-labelledby="your-selection">
+<h2 id="your-selection">Your selection <span class="sel-count">0 policies</span></h2>
+<div class="sel-list"><p class="empty">__EMPTY__</p></div>
+<div class="notes" aria-live="polite"></div>
+<div class="outputs">
+<div class="tabs" role="tablist" aria-label="Outputs">
+<button type="button" role="tab" id="tab-command" aria-selected="false" aria-controls="output-panel" disabled>Command</button>
+<button type="button" role="tab" id="tab-share" aria-selected="false" aria-controls="output-panel" disabled>Share link</button>
+<button type="button" role="tab" id="tab-file" aria-selected="false" aria-controls="output-panel" disabled>Selection file</button>
+</div>
+<div class="output-box" role="tabpanel" id="output-panel" aria-labelledby="tab-command">
+<pre><code class="language-bash" data-selection-code>__NEED_ONE__</code></pre>
+<label class="visually-hidden" for="share-url">Share link</label>
+<input class="share-url" id="share-url" type="text" readonly data-selection-url hidden>
+<button type="button" class="copy" disabled>Copy</button>
+<button type="button" class="download" disabled>Download chock.selection.yaml</button>
+</div>
+<p class="hint">__HINT__</p>
+</div>
+</section>
+</div>

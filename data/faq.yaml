@@ -1,0 +1,46 @@
+groups:
+- id: common
+  title: "Common"
+- id: coding
+  title: "Coding agents"
+questions:
+- id: what-is-chock
+  group: common
+  q: "What is chock?"
+  a: "A catalog of guardrail policies for AI coding agents, and the engine that turns a picked set of them into one Claude Code plugin. This site is the catalog's front door: every policy is listed with its label, its hash and its source."
+- id: security-boundary
+  group: common
+  q: "Is this a security boundary?"
+  a: "No. It is friction: it stops common mistakes and makes risky actions visible. Each label says exactly how far a policy goes."
+- id: tracking
+  group: common
+  q: "Do you collect anything about me?"
+  a: "No. Your selection lives in the link after the #, which browsers never send to a server. There is no analytics, no cookie, no account."
+- id: free
+  group: common
+  q: "Is it free?"
+  a: "Yes. The engine, the catalog and this site are open source under Apache-2.0."
+- id: which-agents
+  group: coding
+  q: "Which coding agents does this work with?"
+  a: "This site builds for Claude Code. Cursor, Codex, Copilot and Devin install the same policies from their own plugin repositories — see Other clients."
+- id: labels
+  group: coding
+  q: "What does \"blocks / asks / warns / advisory\" mean?"
+  a: "It is the policy's label — what happens when it fires. blocks: Claude Code refuses the action. asks: it stops and asks you. warns: the action goes ahead with a warning while the policy is measured. advisory: text the agent reads; nothing stops a violation."
+- id: update-remove
+  group: coding
+  q: "How do I update or remove the plugin?"
+  a: "Change your picks in the builder and run the new command, then restart the session or run /reload-plugins. To remove the plugin, run claude plugin uninstall chock-guardrails@chock-local."
+- id: what-command-does
+  group: coding
+  q: "What does the command do on my machine?"
+  a: "It fetches the pinned catalog, checks each policy's hash, builds one plugin and prints the two Claude Code commands to install it."
+- id: share
+  group: coding
+  q: "Can my team share one selection?"
+  a: "Yes. The builder makes a share link and a selection file; anyone running the same command gets the same policies, checked against the same pinned commit."
+- id: report
+  group: coding
+  q: "How do I report a wrong block?"
+  a: "Open an issue in the chock-catalog repository against the policy, or a security issue there if the policy itself is the problem."
