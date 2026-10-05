@@ -32,6 +32,8 @@ main {
 
 p, dd, td, li { overflow-wrap: break-word; }
 
+.row-name, .row-id, .row-says, .row-desc, .bsays { overflow-wrap: anywhere; }
+
 h1, h2, h3 {
   color: var(--white);
   line-height: 1.25;
