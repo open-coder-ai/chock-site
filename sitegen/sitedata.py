@@ -7,7 +7,7 @@ from typing import Any
 import yaml
 
 from . import catalog as catalog_mod
-from . import engine
+from . import engine, homedata
 from . import presets as presets_mod
 from .model import Site, Track
 
@@ -75,6 +75,10 @@ def build_site(
     catalog_mod.apply_labels(policies, labels, engine.label_words())
     catalog_mod.apply_groups(policies, presets)
 
+    demo = homedata.load_demo(catalog, data_dir, policies)
+    incident_copy, incidents = homedata.load_incidents(data_dir, policies)
+    site_data["incidents"] = incident_copy
+
     visible = {p.id for p in policies}
     rules = [
         rule
@@ -96,6 +100,8 @@ def build_site(
         warning_texts=dict(site_data["warning_texts"]),
         command=str(site_data["command"]),
         data=site_data,
+        demo=demo,
+        incidents=incidents,
     )
 
 

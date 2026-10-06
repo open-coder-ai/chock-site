@@ -12,7 +12,7 @@
     {"key": "clients", "label": "Other clients"}
   ],
   "pages": {
-    "home": {"title": "Guardrails for your AI coding agent", "description": "Pick the rules you want. chock turns them into one Claude Code plugin that blocks, asks or warns before a risky move happens."},
+    "home": {"title": "Guardrails for AI agents", "description": "chock stops an AI agent before it takes a risky step. Coding-agent guardrails are available now; guardrails for general agents are in design."},
     "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ of them, each labelled blocks, asks, warns or advisory."},
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one Claude Code plugin from them. Free and open source."},
@@ -26,9 +26,6 @@
   },
   "texts": {
     "footer_line": "Friction, not a security boundary.",
-    "hero_headline": "Guardrails for your AI coding agent.",
-    "hero_sub": "Pick the rules you want. chock turns them into one Claude Code plugin that blocks, asks or warns before a risky move happens.",
-    "hero_note": "Free and open source · No sign-up · Nothing tracked",
     "builder_empty": "Pick a preset or add policies.",
     "builder_noscript": "The builder needs JavaScript. You can still browse the policies and write a selection file by hand; see Install.",
     "builder_outputs_hint": "You need chock on your machine; see Install. Read the command before you run it: it checks each policy against its hash at catalog __CATALOG_REF_12__.",
@@ -51,6 +48,7 @@
     "catalog_tree": "https://github.com/open-coder-ai/chock-catalog/tree/",
     "catalog_commit": "https://github.com/open-coder-ai/chock-catalog/commit/",
     "security_policy": "https://github.com/open-coder-ai/chock-catalog/blob/main/SECURITY.md",
+    "catalog_contributing": "https://github.com/open-coder-ai/chock-catalog/blob/main/CONTRIBUTING.md",
     "claude_marketplace": "https://github.com/open-coder-ai/chock-claude-plugins"
   },
   "label_meanings": {

@@ -14,6 +14,7 @@ from .pageparts import (
     chip,
     counts,
     data_fill,
+    install_command,
     label_chips,
     policies_sorted,
     render_steps,
@@ -576,15 +577,7 @@ def _install(
     """Install page: engine install, the command, update, remove, file format."""
     data = site.data
     inst = data["install"]
-    subs = {
-        "__CATALOG_REF_12__": site.catalog_ref[:12],
-        "__FRAMEWORK_REF__": site.framework_ref,
-    }
-    install_cmd = (
-        inst["install_command_released"]
-        if data.get("released")
-        else data_fill(inst["install_command"], subs)
-    )
+    install_cmd = install_command(site)
     field_rows = Safe(
         "".join(
             render_file(

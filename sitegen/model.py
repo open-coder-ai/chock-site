@@ -56,6 +56,26 @@ class Policy:
     where: list[str] = field(default_factory=list)
     groups: list[str] = field(default_factory=list)
     examples: list[Example] = field(default_factory=list)
+    client_labels: dict[str, dict[str, str]] = field(default_factory=dict)
+
+
+@dataclass
+class DemoCase:
+    """One home-page terminal tab: a blocking eval case taken from a policy's suite."""
+
+    policy: str
+    case: str
+    command: str | None
+    files: dict[str, str]
+
+
+@dataclass
+class Incident:
+    """One row of the home incident table; every policy id is a visible policy."""
+
+    incident: str
+    flaw: str
+    policies: list[str]
 
 
 @dataclass
@@ -84,6 +104,8 @@ class Site:
     warning_texts: dict[str, str]
     command: str
     data: dict[str, Any] = field(default_factory=dict)
+    demo: list[DemoCase] = field(default_factory=list)
+    incidents: list[Incident] = field(default_factory=list)
 
 
 @dataclass

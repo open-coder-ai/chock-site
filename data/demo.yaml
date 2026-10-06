@@ -1,0 +1,8 @@
+# The home terminal demo: one tab per entry. `case` is an id from that policy's
+# eval suite and must expect a block (the build fails otherwise).
+demo:
+  - {policy: "block-no-verify", case: "tc-001"}
+  - {policy: "scan-secrets", case: "tc-002"}
+  - {policy: "block-curl-pipe-sh", case: "tc-001"}
+  - {policy: "block-destructive-commands", case: "tc-001"}
+  - {policy: "protect-agent-config", case: "tc-001"}

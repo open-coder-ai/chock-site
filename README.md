@@ -69,3 +69,21 @@ pytest -q tests/e2e
 
 See `AGENTS.md` for the rules and `templates/`, `data/`, `static/`, `sitegen/`,
 `tests/` for the sources. Everything under `dist/` is generated and git-ignored.
+
+## Home page data
+
+The landing page (`sitegen/home.py`) reads these files; every count, label and
+policy line on it is computed from the catalog at build time.
+
+- `data/home.yaml`, under `landing:`: the page copy. `videos: []` at the top holds the
+  home page's videos. **The video block ships hidden**: it renders only when `videos`
+  has entries (`{title, href}`), and the board's placeholders and clip grid are not
+  built at all.
+- `data/demo.yaml`: one entry per terminal-demo tab, a policy id and a case id from
+  that policy's eval suite. The build fails if the case is missing or does not
+  expect a block.
+- `data/incidents.yaml`: the incident table. The build fails on a policy id that is not
+  a visible catalog policy.
+- `static/js/home.js` (tabs) and `static/js/cost.js` (the cost calculator) are
+  optional: without JavaScript the demo and the use cases render as lists and the
+  calculator shows its formula and worked example as text.
