@@ -108,6 +108,16 @@ def _examples(path: Path) -> list[Example]:
     return examples
 
 
+def _client_labels(row: dict) -> dict[str, dict[str, str]]:
+    """The registry's per-agent label block (L1), without its `misses` note."""
+    block = row.get("label") or {}
+    return {
+        client: {"keyword": str(v["keyword"]), "says": str(v["says"])}
+        for client, v in block.items()
+        if isinstance(v, dict) and "keyword" in v
+    }
+
+
 def _latest_entry(changelog: list[dict], version: str) -> Latest:
     """The entry whose version equals the manifest's, else the newest by date (plan 5.1)."""
     entry = next((e for e in changelog if str(e.get("version")) == version), None)
@@ -152,6 +162,7 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
                 source_url=f"{CATALOG_TREE}{catalog_ref}/{row['path']}",
                 enforces=str(row.get("enforces") or ""),
                 examples=_examples(catalog / row["path"]),
+                client_labels=_client_labels(row),
             )
         )
     return sorted(policies, key=lambda p: p.id)
