@@ -80,7 +80,11 @@ def test_each_agent_gets_its_command_steps_and_labels(page, site_url, client) ->
     assert untested == ([] if about["witness"] == "witnessed" else [client])
     if untested:
         link = page.locator(f".client-untested[data-client='{client}'] a")
-        assert link.get_attribute("href") == site["builder_clients"]["checklist"]
+        assert link.get_attribute("href") == about["report"]
+        assert link.get_attribute("href").startswith(
+            "https://github.com/open-coder-ai/chock/issues/new?"
+        )
+        assert link.get_attribute("href").endswith(f"%20{client}")
         assert about["untested_label"] in page.locator("#panel-command").inner_text()
     rows = page.locator(".bmember[data-policy-id]").evaluate_all(
         "els => els.map(e => [e.dataset.policyId, e.dataset.label,"

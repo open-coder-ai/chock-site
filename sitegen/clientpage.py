@@ -44,7 +44,7 @@ def picker(block: dict[str, Any], templates: Path) -> str:
 
 
 def untested_lines(block: dict[str, Any], templates: Path) -> str:
-    """The "untested in <client>" line with the checklist link, one per untested client."""
+    """The "untested in <client>" line with the report link, one per untested client."""
     return "".join(
         render_file(
             templates / "builder-untested.html",
@@ -52,8 +52,8 @@ def untested_lines(block: dict[str, Any], templates: Path) -> str:
             HIDDEN=_hidden(client, block["default"]),
             LABEL=data["untested_label"],
             LINE=Prose(data["untested_line"]),
-            CHECKLIST=block["checklist"],
-            CHECKLIST_TEXT=block["texts"]["checklist"],
+            REPORT=data["report"],
+            REPORT_TEXT=block["texts"]["report"],
         )
         for client in block["order"]
         if (data := block["clients"][client])["witness"] == "untested"
@@ -98,7 +98,7 @@ def markdown(block: dict[str, Any]) -> str:
         if state == "untested":
             lines.append(
                 f"{data['untested_label']} {data['untested_line']} "
-                f"[{block['texts']['checklist']}]({block['checklist']})\n\n"
+                f"[{block['texts']['report']}]({data['report']}).\n\n"
             )
         lines.append(
             f"{block['texts']['command_md']}\n\n    {command}\n\n{data['steps_heading']}\n\n"

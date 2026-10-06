@@ -85,9 +85,9 @@ export function commandOutputs(site, T, ids, client = site.builder_clients.defau
     const line = element("p", "client-untested");
     line.appendChild(element("strong", "", about.untested_label));
     line.appendChild(document.createTextNode(` ${about.untested_line} `));
-    const link = element("a", "", site.builder_clients.texts.checklist);
-    link.href = site.builder_clients.checklist;
-    line.appendChild(link);
+    const link = element("a", "", site.builder_clients.texts.report);
+    link.href = about.report;
+    line.append(link, ".");
     box.appendChild(line);
   }
   const pre = element("pre");

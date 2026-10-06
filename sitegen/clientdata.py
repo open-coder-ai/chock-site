@@ -83,13 +83,13 @@ def builder_clients(
             "untested_label": data_fill(texts["untested_label"], {"__NAME__": name}),
             "untested_line": data_fill(texts["untested_line"], {"__NAME__": name}),
             "steps_heading": data_fill(texts[f"steps_{state}"], {"__NAME__": name}),
+            "report": data_fill(witness["report"], {"__CLIENT__": client}),
             "steps": engine.client_steps(client),
             "labels": client_labels(policies, client, graded, words),
         }
     return {
         "default": witness["default"],
         "order": list(witness["clients"]),
-        "checklist": witness["checklist"],
         "graded": graded,
         "bundle_version": config["bundle_version"],
         "commands": config["commands"],
