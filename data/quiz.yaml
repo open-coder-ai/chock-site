@@ -58,3 +58,41 @@ questions:
       - {id: hard-stops, label: "Only hard stops", sub: "Policies that block or ask you", allow: [block, ask]}
       - {id: stops-warnings, label: "Stops and warnings", sub: "Plus policies that warn", allow: [block, ask, warn], default: true}
       - {id: everything, label: "Everything", sub: "Including advice the agent reads", allow: [block, ask, warn, advise]}
+
+# The Git repositories builder reuses the questions above: it replaces the agent question with
+# `host`, keeps the worries, and reads strictness in repository tiers (commit, agent, advise).
+repos:
+  texts:
+    clients_note: ""
+    result_one: "Your setup: 1 guardrail"
+    result_many: "Your setup: {n} guardrails"
+    result_hint: "Picked from your answers. Remove anything you do not want, then run the commands in your repository."
+    empty: "Nothing is left. Go back and change your answers."
+    command_label: "Your commands"
+    copy: "Copy commands"
+    download: "Download chock-setup.sh"
+    share: "Copy share link"
+    ci_label: "Add the GitHub Actions gate (--ci)"
+    unknown: "Not available here: {ids}"
+    unknown_more: "{n} more"
+    shared_note: "These picks came from a share link. Every commit and hash below comes from this site's build."
+  questions:
+    - id: host
+      kind: single
+      title: "Where does your code live?"
+      hint: "Only GitHub gets the CI workflow. The git hooks work on any host."
+      options:
+        - {id: github, label: "GitHub", sub: "Adds the GitHub Actions gate", default: true, ci: true}
+        - {id: gitlab, label: "GitLab", sub: "Git hooks only", ci: false, note: "The CI workflow is GitHub Actions only. The git hooks still work on GitLab."}
+        - {id: other, label: "Other git host", sub: "Git hooks only", ci: false, note: "The CI workflow is GitHub Actions only. The git hooks still work on any git host."}
+    - id: worries
+      kind: multi
+      same_as: coding
+    - id: strictness
+      kind: single
+      title: "How strict should it be?"
+      hint: "You can remove single policies on the next screen."
+      options:
+        - {id: hard-stops, label: "Only hard stops", sub: "Policies that refuse the commit", allow: [commit]}
+        - {id: stops-warnings, label: "Stops and warnings", sub: "Plus checks run by the agent's hooks", allow: [commit, agent], default: true}
+        - {id: everything, label: "Everything", sub: "Including advice the agent reads", allow: [commit, agent, advise]}

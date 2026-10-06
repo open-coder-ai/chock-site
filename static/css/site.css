@@ -741,6 +741,8 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .label-ask { border: 1px solid var(--accent); color: var(--accent); }
 .label-warn { background: var(--warn-bg); color: var(--warn-fg); }
 .label-advise { border: 1px dashed var(--dash); color: var(--body); }
+.label-commit { background: var(--accent); color: var(--on-accent); }
+.label-agent { border: 1px solid var(--accent); color: var(--accent); }
 
 .label-anchor { display: inline-flex; }
 
@@ -748,6 +750,7 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .glyph-ask { color: var(--accent); }
 .glyph-warn { color: var(--warn-fg); }
 .glyph-advise { color: var(--dash); }
+.glyph-commit, .glyph-agent { color: var(--accent); }
 .glyph-none { display: none; }
 
 /* policy page */
@@ -1532,6 +1535,21 @@ body { overflow-x: clip; }
 .quiz-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .quiz-actions .button { min-height: 46px; cursor: pointer; font-family: var(--sans); }
 
+/* git repositories */
+
+.stats-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tier-card .stat-label { margin-bottom: 10px; }
+.tier-meaning { color: var(--body); font-size: 14px; margin: 0; }
+.repos-group { margin-top: 28px; }
+.repos-group h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin: 0 0 12px; }
+.repos-count { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+.repos-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; }
+.repos-list li { min-width: 0; overflow-wrap: anywhere; }
+.repos-list code { color: var(--muted); font-size: 13px; }
+.quiz-ci { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; color: var(--body); }
+.quiz-ci input { width: 18px; height: 18px; accent-color: var(--accent); }
+.quiz-unknown, .quiz-shared { color: var(--muted); font-size: 14px; margin: 12px 0 0; overflow-wrap: anywhere; }
+
 .mobile-bar { display: none; }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1571,6 +1589,7 @@ body { overflow-x: clip; }
   .hero { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .cards-2, .cards-3, .cards-4, .steps, .examples { grid-template-columns: minmax(0, 1fr); }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats-tiers, .repos-list { grid-template-columns: minmax(0, 1fr); }
   .footer-inner { grid-template-columns: minmax(0, 1fr); padding: 32px 16px 20px; }
   .footer-line { padding: 12px 16px 32px; }
   .bmember { grid-template-columns: minmax(0, 1fr); }

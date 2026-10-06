@@ -1,9 +1,29 @@
 // The builder's start screen: three questions, then a result with the real install command.
 // The questions and their answers come from data/quiz.yaml (site.json "quiz"); the command is
-// built by common.js, exactly as the full builder builds it.
+// built by common.js, exactly as the full builder builds it. The Git repositories builder reuses
+// this module with section "repos": same flow, its own questions, tiers and outputs.
 import { announce, buildSelection, copyText, installCommand } from "./common.js";
 
 const LABEL_ORDER = ["block", "ask", "warn", "advise"];
+
+// What differs between sections: the quiz data, the label words, their order and each policy's keyword.
+export function sectionConfig(site, section = "coding") {
+  if (section === "repos") {
+    return {
+      quiz: site.repos.quiz,
+      words: site.label_words.repos,
+      order: site.repos.tiers.map((tier) => tier.key),
+      keywordOf: (id) => site.repos.tier_of[id],
+    };
+  }
+  const byId = new Map(site.policies.map((p) => [p.id, p]));
+  return {
+    quiz: site.quiz,
+    words: site.label_words.coding,
+    order: LABEL_ORDER,
+    keywordOf: (id) => byId.get(id).keyword,
+  };
+}
 
 const fill = (text, values) =>
   text.replace(/\{(\w+)\}/g, (match, key) => (key in values ? String(values[key]) : match));
@@ -27,8 +47,7 @@ export function defaultAnswers(quiz) {
 
 // The picks for a set of answers: each policy once, with every worry that reached it.
 // Presets are read in the order the worries and their presets are listed in the data.
-export function quizPicks(quiz, site, answers) {
-  const byId = new Map(site.policies.map((p) => [p.id, p]));
+export function quizPicks(quiz, site, answers, keywordOf) {
   const presets = new Map(site.presets.map((p) => [p.id, p]));
   const worries = quiz.questions.find((q) => q.id === "worries");
   const strictness = quiz.questions.find((q) => q.id === "strictness");
@@ -38,7 +57,7 @@ export function quizPicks(quiz, site, answers) {
     if (!answers.worries.includes(worry.id)) continue;
     for (const presetId of worry.presets) {
       for (const id of presets.get(presetId).members) {
-        if (!allowed.has(byId.get(id).keyword)) continue;
+        if (!allowed.has(keywordOf(id))) continue;
         if (!picks.has(id)) picks.set(id, []);
         if (!picks.get(id).includes(worry.label)) picks.get(id).push(worry.label);
       }
@@ -48,19 +67,43 @@ export function quizPicks(quiz, site, answers) {
 }
 
 // The label mix of some policy ids as one line: "3 blocks · 1 asks · ...".
-export function mixLine(quiz, site, ids) {
-  const byId = new Map(site.policies.map((p) => [p.id, p]));
-  const words = site.label_words.coding;
-  const counts = Object.fromEntries(LABEL_ORDER.map((key) => [key, 0]));
-  for (const id of ids) counts[byId.get(id).keyword] += 1;
-  return LABEL_ORDER.map((key) => fill(quiz.texts.mix, { n: counts[key], word: words[key] })).join(
+export function mixLine(quiz, ids, { words, order, keywordOf }) {
+  const counts = Object.fromEntries(order.map((key) => [key, 0]));
+  for (const id of ids) counts[keywordOf(id)] += 1;
+  return order.map((key) => fill(quiz.texts.mix, { n: counts[key], word: words[key] })).join(
     quiz.texts.mix_separator,
   );
 }
 
-export function initQuiz({ site, chipFor, onSkip }) {
-  const quiz = site.quiz;
+// The coding result's output: the install command, Copy, and the way into the full builder.
+export function commandOutputs(site, T, ids) {
+  const { code, command } = installCommand(site, buildSelection(site, ids));
+  const box = element("div", "quiz-command");
+  box.appendChild(element("h3", "quiz-command-title", T.command_label));
+  const pre = element("pre");
+  const codeEl = element("code", "language-bash", command);
+  codeEl.dataset.quizCommand = "";
+  pre.appendChild(codeEl);
+  box.appendChild(pre);
+  const actions = element("div", "quiz-actions");
+  const copy = element("button", "button button-primary", T.copy);
+  copy.type = "button";
+  copy.addEventListener("click", () => copyText(copy, command, codeEl));
+  const open = element("a", "button button-secondary", T.open_full);
+  open.id = "quiz-open";
+  open.href = `#s=${code}`;
+  actions.append(copy, open);
+  box.appendChild(actions);
+  return box;
+}
+
+// `outputs(ids, context)` returns the node shown under the picks; `picks` (an array of ids) skips the
+// questions and opens the result with exactly those policies (a share link).
+export function initQuiz({ site, section = "coding", chipFor, onSkip, outputs, picks: sharedPicks }) {
+  const config = sectionConfig(site, section);
+  const quiz = config.quiz;
   const T = quiz.texts;
+  const makeOutputs = outputs || ((ids) => commandOutputs(site, T, ids));
   const total = quiz.questions.length;
   const bars = document.getElementById("quiz-bars");
   const stepEl = document.getElementById("quiz-step");
@@ -68,12 +111,16 @@ export function initQuiz({ site, chipFor, onSkip }) {
   const body = document.getElementById("quiz-body");
   const back = document.getElementById("quiz-back");
   const next = document.getElementById("quiz-next");
-  let step = 1;
+  let step = sharedPicks ? total + 1 : 1;
   let answers = defaultAnswers(quiz);
   let removed = new Set();
+  let shared = sharedPicks || null;
 
   function currentPicks() {
-    return quizPicks(quiz, site, answers).filter((pick) => !removed.has(pick.id));
+    const all = shared
+      ? shared.map((id) => ({ id, why: [] }))
+      : quizPicks(quiz, site, answers, config.keywordOf);
+    return all.filter((pick) => !removed.has(pick.id));
   }
 
   function renderBars() {
@@ -98,8 +145,10 @@ export function initQuiz({ site, chipFor, onSkip }) {
       const link = element("a", "", T.clients_link);
       link.href = "/coding/clients/";
       note.appendChild(link);
+    } else if (option && option.note) {
+      note.appendChild(element("span", "", option.note));
     }
-    note.hidden = !ends;
+    note.hidden = !ends && !(option && option.note);
     const missing = question.kind === "multi" && answers[question.id].length === 0;
     hint.textContent = missing ? T.need_worry : "";
     hint.hidden = !missing;
@@ -157,7 +206,7 @@ export function initQuiz({ site, chipFor, onSkip }) {
     const ids = picks.map((pick) => pick.id);
     titleEl.textContent = picks.length === 1 ? T.result_one : fill(T.result_many, { n: picks.length });
     body.replaceChildren();
-    body.appendChild(element("p", "quiz-mix", mixLine(quiz, site, ids)));
+    body.appendChild(element("p", "quiz-mix", mixLine(quiz, ids, config)));
     body.appendChild(element("p", "quiz-hint-text", T.result_hint));
     if (!picks.length) {
       body.appendChild(element("p", "quiz-empty", T.empty));
@@ -170,7 +219,9 @@ export function initQuiz({ site, chipFor, onSkip }) {
       const chip = chipFor(pick.id);
       if (chip) item.appendChild(chip.cloneNode(true));
       item.appendChild(element("code", "quiz-pick-id", pick.id));
-      item.appendChild(element("span", "quiz-pick-why", fill(T.because, { why: pick.why.join(", ").toLowerCase() })));
+      if (pick.why.length) {
+        item.appendChild(element("span", "quiz-pick-why", fill(T.because, { why: pick.why.join(", ").toLowerCase() })));
+      }
       const remove = element("button", "remove", T.remove);
       remove.type = "button";
       remove.setAttribute("aria-label", fill(T.remove_label, { id: pick.id }));
@@ -180,24 +231,7 @@ export function initQuiz({ site, chipFor, onSkip }) {
     }
     body.appendChild(list);
 
-    const { code, command } = installCommand(site, buildSelection(site, ids));
-    const box = element("div", "quiz-command");
-    box.appendChild(element("h3", "quiz-command-title", T.command_label));
-    const pre = element("pre");
-    const codeEl = element("code", "language-bash", command);
-    codeEl.dataset.quizCommand = "";
-    pre.appendChild(codeEl);
-    box.appendChild(pre);
-    const actions = element("div", "quiz-actions");
-    const copy = element("button", "button button-primary", T.copy);
-    copy.type = "button";
-    copy.addEventListener("click", () => copyText(copy, command, codeEl));
-    const open = element("a", "button button-secondary", T.open_full);
-    open.id = "quiz-open";
-    open.href = `#s=${code}`;
-    actions.append(copy, open);
-    box.appendChild(actions);
-    body.appendChild(box);
+    body.appendChild(makeOutputs(ids, { answers, T, rerender: renderResult }));
   }
 
   function removePick(id) {
@@ -233,6 +267,7 @@ export function initQuiz({ site, chipFor, onSkip }) {
   }
 
   back.addEventListener("click", () => {
+    shared = null;
     step = Math.max(1, step - 1);
     render(true);
   });
@@ -241,12 +276,22 @@ export function initQuiz({ site, chipFor, onSkip }) {
       step = 1;
       answers = defaultAnswers(quiz);
       removed = new Set();
+      shared = null;
     } else {
       step += 1;
       removed = new Set();
     }
     render(true);
   });
-  document.getElementById("quiz-skip").addEventListener("click", onSkip);
+  const skip = document.getElementById("quiz-skip");
+  if (skip && onSkip) skip.addEventListener("click", onSkip);
   render(false);
+  return {
+    openShared(ids) {
+      shared = ids;
+      step = total + 1;
+      removed = new Set();
+      render(true);
+    },
+  };
 }

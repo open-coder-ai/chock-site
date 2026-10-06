@@ -379,6 +379,8 @@ def _policy_pages(
                 CHIP=chip(site, templates, policy, track.id),
                 PRESET_CHIP=Safe(preset_chip),
                 SAYS=Prose(policy.says.rstrip(".") + "."),
+                TIER=policy.tier,
+                TIER_WORD=site.label_words["repos"][policy.tier],
                 ACTS_ON=_where_text(site, policy),
                 WHEN=_when_text(site, policy),
                 LABEL_NOTE=Prose(texts["label_box_note"]),
@@ -434,6 +436,10 @@ def _policy_pages(
             NAME=policy.name,
             VERSION=policy.version,
             WORD=policy.word,
+            TIER_WORD=site.label_words["repos"][policy.tier],
+            TIER_MEANING=site.data["label_meanings"][
+                site.label_words["repos"][policy.tier]
+            ],
             KEYWORD=policy.keyword,
             WHERE=" ".join(policy.where) or "none",
             SHA256=policy.sha256,
@@ -480,10 +486,10 @@ def _member_rows(
     )
 
 
-def _quiz_lines(site: Site) -> str:
+def quiz_lines(questions: list[dict[str, Any]]) -> str:
     """The start screen's questions and answers as Markdown lines for the twin."""
     lines = []
-    for number, question in enumerate(site.data["quiz"]["questions"], start=1):
+    for number, question in enumerate(questions, start=1):
         lines.append(f"{number}. {question['title']} {question['hint']}\n")
         for option in question["options"]:
             extra = ""
@@ -552,7 +558,17 @@ def _builder(
                 templates / track.slug / "builder.html",
                 SUB=Prose(page["description"]),
                 NOSCRIPT=Prose(texts["builder_noscript"]),
-                QUIZ_SKIP=site.data["quiz"]["texts"]["skip"],
+                QUIZ=Safe(
+                    render_file(
+                        templates / PARTIALS / "quiz.html",
+                        TOP=Safe(
+                            render_file(
+                                templates / PARTIALS / "quiz-top.html",
+                                SKIP=site.data["quiz"]["texts"]["skip"],
+                            )
+                        ),
+                    )
+                ),
                 PRESET_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
                 GROUP_SECTIONS=Safe(groups),
@@ -576,7 +592,7 @@ def _builder(
         templates / MD / track.slug / "builder.md",
         SUB=Prose(page["description"]),
         NOSCRIPT=texts["builder_noscript"],
-        QUIZ_LINES=_quiz_lines(site),
+        QUIZ_LINES=quiz_lines(site.data["quiz"]["questions"]),
         PRESET_LINES="".join(
             f"- {preset.title} ({len(preset.members)} policies): {preset.summary}\n"
             for preset in site.presets
@@ -725,6 +741,7 @@ def _api(site: Site, track: Track, out_dir: Path) -> None:
     api.mkdir(parents=True, exist_ok=True)
     catalog = {"schema_version": 1, "track": track.id, **site_dict(site)}
     catalog.pop("tracks", None)
+    catalog.pop("repos", None)
     catalog["label_words"] = {track.id: site.label_words.get(track.id, {})}
     catalog["policies"] = [p for p in catalog["policies"] if p.get("track") == track.id]
     (api / "catalog.json").write_text(
