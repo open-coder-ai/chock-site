@@ -111,6 +111,7 @@ def test_incident_copy_never_claims_prevention(built) -> None:
     text = _main_text(_home(built))
     assert "The class of flaw behind real incidents" in text
     assert "aligns with MITRE ATT&CK Initial Access, OWASP ASI01–10" in text
+    assert "OWASP ASI01–10 (every mapping partial)" in text
     assert "CISA Secure by Design and NIST SSDF" in text
     assert (
         "chock doesn't stop every attack. It closes common, known entry points." in text
