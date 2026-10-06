@@ -251,6 +251,9 @@ def test_picks_never_leave_the_browser(page, site_url) -> None:
     _open(page, site_url)
     page.select_option("#builder-start", "git-hygiene")
     code = _code(page)
+    page.evaluate(
+        "document.fonts.ready.then(() => true)"
+    )  # no font fetch left to abort
     page.reload()
     page.wait_for_selector(".sel-item")
     assert requests
