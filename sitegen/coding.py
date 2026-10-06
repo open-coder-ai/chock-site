@@ -476,6 +476,7 @@ def _builder(
         nav=track.id,
         section=(track, "builder"),
         scripts=("common.js", "builder.js"),
+        body_end=render_file(templates / PARTIALS / "mobile-bar.html"),
     )
     twin = render_text_file(
         templates / MD / track.slug / "builder.md",
@@ -711,7 +712,7 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
     llms += f"- [{track.title} home](/{track.slug}/index.md): {track.summary}\n"
     llms += (
         f"- [Policies](/{track.slug}/policies/index.md): "
-        "every policy in the catalog\n"
+        "every policy shown on this site\n"
         f"- [Builder](/{track.slug}/builder/index.md): "
         "pick policies, get the command and file\n"
         f"- [Install](/{track.slug}/install/index.md): "

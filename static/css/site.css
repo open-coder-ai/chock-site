@@ -811,14 +811,13 @@ table.fields {
   .row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .row-version { text-align: left; }
   .bmember { grid-template-columns: minmax(0, 1fr); }
-  .builder-grid { padding-bottom: 88px; }
+  /* The bar is the last element in <body>: its own box is the bottom space that
+     keeps the footer clear, and sticky pins it to the viewport until the end. */
   html.js .mobile-bar:not([hidden]) {
     display: flex;
     align-items: center;
     gap: 12px;
-    position: fixed;
-    left: 0;
-    right: 0;
+    position: sticky;
     bottom: 0;
     z-index: 10;
     padding: 10px 16px;
@@ -834,4 +833,38 @@ table.fields {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* A policy page prints like a document: no navigation, actions or fixed
+   chrome, and dark-on-light ink instead of the navy screen palette. */
+@media print {
+  body > header, .section-nav, .skip-link, footer, .nav-toggle,
+  .mobile-bar, .side-buttons, .filters, .breadcrumb, button.copy,
+  button.download, .sel-item .remove, .tabs {
+    display: none;
+  }
+  * { color: #000 !important; background: none !important; }
+  a { text-decoration: underline; }
+  .card, .example, .label-box, .provenance, .stat, .step, .demo, .cta,
+  pre, .row, .bmember, .sel-item, .fields th, .fields td, table.fields,
+  .label, .chip, code {
+    border-color: #000;
+  }
+  pre { border: 1px solid #000; white-space: pre-wrap; }
+  main, .policy-grid, .builder-grid, .hero, .examples, .steps, .stats,
+  .cards-2, .cards-3, .cards-4, .cards-presets, .section-nav-inner {
+    max-width: none;
+    display: block;
+    padding: 0;
+  }
+  .policy-side, .selection, .selection .sel-list {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
 }

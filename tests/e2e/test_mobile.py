@@ -60,19 +60,23 @@ def test_no_horizontal_scroll_at_mobile_width(browser, site_url) -> None:
 
 
 def test_screenshots_for_the_pr(browser, site_url) -> None:
-    """The PR body needs home, policies, a policy page and clients, both sizes."""
+    """The PR body needs the six PR-4 pages at both sizes."""
     shots = {
-        "home": "/",
-        "policies": "/coding/policies/",
-        "block-no-verify": "/coding/policies/block-no-verify/",
-        "clients": "/coding/clients/",
+        "home": ("/", None),
+        "coding-home": ("/coding/", None),
+        "policies": ("/coding/policies/", None),
+        "policy-block-no-verify": ("/coding/policies/block-no-verify/", None),
+        "builder-empty": ("/coding/builder/", "#builder-status:not(:empty)"),
+        "builder-git-hygiene": ("/coding/builder/#preset=git-hygiene", ".sel-item"),
     }
     for size_name, viewport in (("desktop", DESKTOP), ("mobile", MOBILE)):
         context = browser.new_context(viewport=viewport)
         try:
             page = context.new_page()
-            for name, path in shots.items():
+            for name, (path, wait) in shots.items():
                 page.goto(site_url + path)
+                if wait:
+                    page.wait_for_selector(wait)
                 screenshot(page, f"{name}-{size_name}")
         finally:
             context.close()

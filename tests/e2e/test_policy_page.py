@@ -18,6 +18,18 @@ def test_policy_page_content(page, site_url, request) -> None:
     screenshot(page, request.node.name)
 
 
+def test_policy_page_print_keeps_title_and_label(page, site_url) -> None:
+    page.goto(site_url + PAGE)
+    page.emulate_media(media="print")
+    expect(page.locator("#policy-name")).to_be_visible()
+    expect(page.locator("#label")).to_be_visible()
+    expect(page.locator("body > header")).to_be_hidden()
+    expect(page.locator("footer")).to_be_hidden()
+    expect(page.locator(".side-buttons")).to_be_hidden()
+    expect(page.locator(".breadcrumb")).to_be_hidden()
+    assert_clean(page)
+
+
 def test_copy_button_shows_copied(browser, site_url) -> None:
     context = browser.new_context(permissions=["clipboard-read", "clipboard-write"])
     try:
