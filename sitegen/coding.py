@@ -10,6 +10,7 @@ from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
     PARTIALS,
     PageError,
+    badge,
     chip,
     counts,
     data_fill,
@@ -30,11 +31,13 @@ def _home(
 ) -> tuple[str, str]:
     """The coding section home (plan 6.7): glance counts, presets, steps."""
     home = site.data["home"]["coding"]
+    texts = site.data["texts"]
     subs = {"__COUNT__": str(counts_["total"])}
     stats = "".join(
         [
             render_file(
                 templates / PARTIALS / "home-stat.html",
+                EXTRA="",
                 NUM=str(counts_["total"]),
                 LABEL="policies",
             )
@@ -42,6 +45,7 @@ def _home(
         + [
             render_file(
                 templates / PARTIALS / "home-stat.html",
+                EXTRA=" stat-block" if key == "block" else "",
                 NUM=str(counts_["label"][key]),
                 LABEL=f"{site.data['glyphs'][key]} {site.label_words[track.id][key]}",
             )
@@ -50,6 +54,7 @@ def _home(
         + [
             render_file(
                 templates / PARTIALS / "home-stat.html",
+                EXTRA="",
                 NUM=str(counts_["presets"]),
                 LABEL="presets",
             )
@@ -65,6 +70,22 @@ def _home(
         )
         for preset in site.presets
     )
+    client_cards = render_file(
+        templates / PARTIALS / "agent-card.html",
+        URL="/coding/builder/",
+        NAME="Claude Code",
+        REPO=home["claude_repo"],
+        HOW=home["claude_how"],
+    ) + "".join(
+        render_file(
+            templates / PARTIALS / "agent-card.html",
+            URL=client["repo"],
+            NAME=client["name"],
+            REPO=client["repo"].rsplit("/", 1)[-1],
+            HOW=home["repo_how"],
+        )
+        for client in site.data["clients"]
+    )
     page = site.data["pages"]["coding"]
     write_page(
         site,
@@ -76,6 +97,7 @@ def _home(
         content=Safe(
             render_file(
                 templates / track.slug / "home.html",
+                BADGE=badge(site, templates, "available"),
                 H1=home["h1"],
                 INTRO=Prose(home["intro"]),
                 PRIMARY_CTA=site.data["home"]["primary_cta"],
@@ -83,13 +105,14 @@ def _home(
                 GLANCE_HEADING=home["glance_heading"],
                 GLANCE_LINK=home["glance_link"],
                 STAT_CARDS=Safe(stats),
+                COMPUTED_NOTE=texts["computed_note"],
                 PRESETS_HEADING=home["presets_heading"],
                 PRESETS_INTRO=Prose(home["presets_intro"]),
                 PRESET_CARDS=Safe(preset_cards),
                 STEPS=render_steps(site, templates),
                 CLIENTS_HEADING=home["clients_heading"],
                 CLIENTS_LINE=Prose(home["clients_line"]),
-                CLIENTS_LINK=home["clients_link"],
+                CLIENT_CARDS=Safe(client_cards),
             )
         ),
         jsonld_data={
@@ -132,6 +155,38 @@ def _home(
     return f"/{track.slug}/", twin
 
 
+def _where_text(site: Site, policy: Policy) -> str:
+    """'Shell command · file write' — the policy's where tags as one line."""
+    text = " · ".join(site.data["where_names"][tag] for tag in policy.where)
+    return text[:1].upper() + text[1:]
+
+
+def _when_text(site: Site, policy: Policy) -> str:
+    """'Before the command runs' — when the policy fires, from its where tags."""
+    text = " · ".join(site.data["when_names"][tag] for tag in policy.where)
+    return text[:1].upper() + text[1:]
+
+
+def _dist_bar(
+    site: Site, track: Track, templates: Path, counts_: dict[str, Any]
+) -> tuple[str, str]:
+    """The label-distribution segments (text inside) and its aria label."""
+    words = site.label_words[track.id]
+    segs = "".join(
+        render_file(
+            templates / PARTIALS / "dist-seg.html",
+            KEY=key,
+            NUM=str(counts_["label"][key]),
+            WORD=words[key],
+        )
+        for key in words
+    )
+    label = "Label mix: " + ", ".join(
+        f"{counts_['label'][key]} {words[key]}" for key in words
+    )
+    return label, segs
+
+
 def _policies_list(
     site: Site, track: Track, out_dir: Path, templates: Path, counts_: dict[str, Any]
 ) -> tuple[str, str]:
@@ -149,8 +204,8 @@ def _policies_list(
                 GROUPS=" ".join(policy.groups),
                 NAME=policy.name,
                 CHIP=chip(site, templates, policy, track.id),
-                SAYS=Prose(policy.says),
                 DESC=Prose(first_sentence(policy.description)),
+                WHERE_TEXT=_where_text(site, policy),
                 VERSION=policy.version,
             )
         )
@@ -176,6 +231,7 @@ def _policies_list(
         for preset in site.presets
     )
     intro = data_fill(texts["policies_intro"], subs)
+    dist_label, dist_segs = _dist_bar(site, track, templates, counts_)
     page = site.data["pages"]["policies"]
     path = f"/{track.slug}/policies/"
     write_page(
@@ -188,8 +244,12 @@ def _policies_list(
         content=Safe(
             render_file(
                 templates / track.slug / "policies.html",
+                H1=f"{counts_['total']} guardrails, each labelled with what it does.",
                 INTRO=Prose(intro),
-                SEARCH_PLACEHOLDER="Search by name, id or what it stops",
+                DIST_LABEL=dist_label,
+                DIST_SEGS=Safe(dist_segs),
+                COMPUTED_NOTE=texts["computed_note"],
+                SEARCH_PLACEHOLDER=data_fill(texts["policies_search"], subs),
                 GROUP_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
                 WHERE_CHIPS=Safe(where_chips),
@@ -245,30 +305,44 @@ def _policy_pages(
                 templates / PARTIALS / "plugin-note.html",
                 NOTE=texts["plugin_repo_note"],
             )
-        groups = ""
+        preset_chip = ""
+        also_in = ""
         if policy.groups:
-            links = " · ".join(
-                render_file(
-                    templates / PARTIALS / "group-link.html",
-                    ID=group,
-                    TITLE=presets[group].title,
+            first = presets[policy.groups[0]]
+            preset_chip = render_file(
+                templates / PARTIALS / "preset-chip.html",
+                ID=first.id,
+                TITLE=first.title,
+            )
+            others = [m for m in first.members if m != policy.id][:5]
+            if others:
+                also_in = render_file(
+                    templates / PARTIALS / "also-in.html",
+                    TITLE=first.title,
+                    LINKS=Safe(
+                        "".join(
+                            render_file(
+                                templates / PARTIALS / "also-in-link.html",
+                                ID=member,
+                            )
+                            for member in others
+                        )
+                    ),
                 )
-                for group in policy.groups
-            )
-            groups = render_file(
-                templates / PARTIALS / "in-preset.html",
-                GROUP_LINKS=Safe(links),
-            )
         examples = ""
         examples_md = ""
         if policy.examples:
             cards = "".join(
                 render_file(
                     templates / PARTIALS / "example-card.html",
-                    KIND=example.word.lower(),
-                    GLYPH=site.data["glyphs"].get(policy.keyword, "")
-                    if example.word != "Allowed"
-                    else "✓",
+                    KIND="allowed" if example.word == "Allowed" else "refused",
+                    ICON=Safe(
+                        render_file(
+                            templates / PARTIALS / "icon-allowed.html"
+                            if example.word == "Allowed"
+                            else templates / PARTIALS / "icon-refused.html"
+                        )
+                    ),
                     WORD=example.word,
                     PROMPT=Prose(example.prompt),
                     COMMAND=Safe(
@@ -302,7 +376,10 @@ def _policy_pages(
                 NAME=policy.name,
                 VERSION=policy.version,
                 CHIP=chip(site, templates, policy, track.id),
+                PRESET_CHIP=Safe(preset_chip),
                 SAYS=Prose(policy.says.rstrip(".") + "."),
+                ACTS_ON=_where_text(site, policy),
+                WHEN=_when_text(site, policy),
                 LABEL_NOTE=Prose(texts["label_box_note"]),
                 PLUGIN_NOTE=Safe(plugin_note),
                 DESCRIPTION=Prose(policy.description),
@@ -319,7 +396,7 @@ def _policy_pages(
                 CATALOG_REF_12=site.catalog_ref[:12],
                 SOURCE_URL=policy.source_url,
                 PATH=policy.path,
-                GROUPS_SECTION=Safe(groups),
+                ALSO_IN=Safe(also_in),
             )
         )
         path = f"/{track.slug}/policies/{policy.id}/"

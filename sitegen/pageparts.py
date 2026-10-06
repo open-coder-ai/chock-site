@@ -1,5 +1,6 @@
 """Shared page helpers: one-pass rendering glue used by every section."""
 
+import html
 import json
 import re
 from pathlib import Path
@@ -82,36 +83,64 @@ def jsonld(kind: dict[str, Any]) -> Safe:
     return Safe(f'<script type="application/ld+json">\n{body}\n</script>')
 
 
-def nav_items(templates: Path, items: list[tuple[str, str]], current: str) -> Safe:
-    """One nav-item link per (href, label); `current` is the href marked."""
+_BADGES = {
+    "available": ("available_badge", "ok"),
+    "in_design": ("design_badge", "design"),
+}
+
+
+def badge(site: Site, templates: Path, status: str) -> Safe:
+    """The small mono badge a track status shows (AVAILABLE NOW, DESIGN IN PROGRESS)."""
+    key, kind = _BADGES[status]
     return Safe(
-        "".join(
-            render_file(
-                templates / PARTIALS / "nav-item.html",
-                HREF=href,
-                LABEL=label,
-                EXTRA=Safe(' aria-current="page"') if href == current else "",
-            )
-            for href, label in items
+        render_file(
+            templates / PARTIALS / "badge.html",
+            KIND=kind,
+            TEXT=site.data["texts"][key],
         )
     )
 
 
-def section_nav(site: Site, track: Track, templates: Path, current: str) -> Safe:
+def nav_items(templates: Path, items: list[tuple], current: str) -> Safe:
+    """One nav-item link per (href, label[, badge]); `current` is the href marked."""
+    links = []
+    for item in items:
+        content = html.escape(item[1])
+        if len(item) > 2 and item[2]:
+            content += " " + str(item[2])
+        links.append(
+            render_file(
+                templates / PARTIALS / "nav-item.html",
+                HREF=item[0],
+                LABEL=Safe(content),
+                EXTRA=Safe(' aria-current="page"') if item[0] == current else "",
+            )
+        )
+    return Safe("".join(links))
+
+
+def section_nav(
+    site: Site, track: Track, templates: Path, current: str, rows: list | None = None
+) -> Safe:
     """The section nav below the header on a section's pages (plan 6.1)."""
+    rows = rows if rows is not None else site.data["section_nav"]
     hrefs = {
         item["key"]: (
             f"/{track.slug}/"
             if item["key"] == "overview"
             else f"/{track.slug}/{item['key']}/"
         )
-        for item in site.data["section_nav"]
+        for item in rows
     }
-    items = [(hrefs[item["key"]], item["label"]) for item in site.data["section_nav"]]
+    items = [(hrefs[item["key"]], item["label"]) for item in rows]
+    title = html.escape(track.title)
+    if track.status == "in_design":
+        title += " " + str(badge(site, templates, track.status))
     return Safe(
         render_file(
             templates / PARTIALS / "section-nav.html",
-            TITLE=track.title,
+            TITLE=Safe(title),
+            NAV_LABEL=track.title,
             ITEMS=nav_items(templates, items, hrefs.get(current, "")),
         )
     )
@@ -128,7 +157,7 @@ def write_page(
     content: Safe,
     jsonld_data: dict[str, Any],
     nav: str = "",
-    section: tuple[Track, str] | None = None,
+    section: tuple | None = None,
     scripts: tuple[str, ...] = ("common.js",),
     alt_json: str = "",
     md_href: str = "index.md",
@@ -137,12 +166,23 @@ def write_page(
     """Render base.html around one page's content and write it under out_dir."""
     track_links = nav_items(
         templates,
-        [(f"/{t.slug}/", t.title) for t in site.tracks],
+        [
+            (
+                f"/{t.slug}/",
+                t.title,
+                str(badge(site, templates, t.status))
+                if t.status == "in_design"
+                else "",
+            )
+            for t in site.tracks
+        ],
         next((f"/{t.slug}/" for t in site.tracks if t.id == nav), ""),
     )
+    footer = _footer_links(site, templates)
     nav_html = ""
     if section is not None:
-        nav_html = str(section_nav(site, section[0], templates, section[1]))
+        nav_rows = section[2] if len(section) > 2 else None
+        nav_html = str(section_nav(site, section[0], templates, section[1], nav_rows))
     script_tags = Safe(
         "".join(
             render_file(templates / PARTIALS / "script-tag.html", SRC=name)
@@ -161,6 +201,10 @@ def write_page(
         TRACK_LINKS=track_links,
         SECTION_NAV=Safe(nav_html),
         CONTENT=content,
+        FOOTER_TAGLINE=site.data["texts"]["footer_tagline"],
+        PRODUCT_LINKS=footer["product"],
+        AGENT_LINKS=footer["agents"],
+        PROJECT_LINKS=footer["project"],
         FOOTER_LINE=site.data["texts"]["footer_line"],
         CATALOG_REF=site.catalog_ref,
         CATALOG_REF_12=site.catalog_ref[:12],
@@ -186,6 +230,41 @@ def write_md(out_dir: Path, path: str, text: str) -> Path:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8", newline="\n")
     return target
+
+
+def _footer_links(site: Site, templates: Path) -> dict[str, Safe]:
+    """The three footer link columns: sections, agents and project."""
+    links = site.data["links"]
+    product = [(f"/{t.slug}/", t.title) for t in site.tracks]
+    product += [
+        ("/coding/policies/", "Policies"),
+        ("/coding/builder/", "Builder"),
+    ]
+    repos = [links["claude_marketplace"]] + [c["repo"] for c in site.data["clients"]]
+    agents = [(url, url.rstrip("/").rsplit("/", 1)[-1]) for url in repos]
+    project = [
+        (links["engine_repo"], "GitHub"),
+        ("/faq/", "FAQ"),
+        ("/security/", "Security"),
+        ("/for-agents/", "For AI agents"),
+        ("/llms.txt", "llms.txt"),
+    ]
+    return {
+        "product": nav_items(templates, product, ""),
+        "agents": nav_items(templates, agents, ""),
+        "project": nav_items(templates, project, ""),
+    }
+
+
+def css_tokens(site: Site) -> dict[str, str]:
+    """The data-driven placeholders inside static/css/site.css."""
+    label = counts(site, "coding")["label"]
+    return {
+        "SEG_BLOCK": str(label["block"]),
+        "SEG_ASK": str(label["ask"]),
+        "SEG_WARN": str(label["warn"]),
+        "SEG_ADVISE": str(label["advise"]),
+    }
 
 
 def policies_sorted(site: Site) -> list[Policy]:

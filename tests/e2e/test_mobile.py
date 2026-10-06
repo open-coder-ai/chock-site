@@ -60,14 +60,21 @@ def test_no_horizontal_scroll_at_mobile_width(browser, site_url) -> None:
 
 
 def test_screenshots_for_the_pr(browser, site_url) -> None:
-    """The PR body needs the six PR-4 pages at both sizes."""
+    """Every changed page at 1280px and 390px, for the PR body."""
     shots = {
         "home": ("/", None),
         "coding-home": ("/coding/", None),
+        "general": ("/general/", None),
         "policies": ("/coding/policies/", None),
         "policy-block-no-verify": ("/coding/policies/block-no-verify/", None),
         "builder-empty": ("/coding/builder/", "#builder-status:not(:empty)"),
         "builder-git-hygiene": ("/coding/builder/#preset=git-hygiene", ".sel-item"),
+        "install": ("/coding/install/", None),
+        "clients": ("/coding/clients/", None),
+        "faq": ("/faq/", None),
+        "security": ("/security/", None),
+        "for-agents": ("/for-agents/", None),
+        "not-found": ("/404.html", None),
     }
     for size_name, viewport in (("desktop", DESKTOP), ("mobile", MOBILE)):
         context = browser.new_context(viewport=viewport)

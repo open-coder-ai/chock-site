@@ -11,6 +11,7 @@ class Track:
     id: str
     slug: str
     title: str
+    status: str
     summary: str
 
 

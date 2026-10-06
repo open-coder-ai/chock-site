@@ -79,5 +79,22 @@ function initNavToggle() {
   });
 }
 
+// Sticky panels park just under the header; its real height is measured so a
+// wrapped nav or a different font size never leaves a gap or an overlap.
+function initStickyTop() {
+  const header = document.querySelector("body > header");
+  if (!header) return;
+  const set = () =>
+    document.documentElement.style.setProperty(
+      "--sticky-top",
+      `${header.offsetHeight}px`,
+    );
+  set();
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(set).observe(header);
+  }
+}
+
 initNavToggle();
+initStickyTop();
 initCopyButtons();

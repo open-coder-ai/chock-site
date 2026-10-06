@@ -73,7 +73,7 @@ def test_every_visible_policy_has_a_page(built) -> None:
 
 def test_every_page_has_one_h1_lang_csp_title(built) -> None:
     pages = _pages(built)
-    assert len(pages) == len(_policy_ids(built)) + 10  # shared + coding pages + 404
+    assert len(pages) == len(_policy_ids(built)) + 11  # shared + sections + 404
     for page in pages:
         parser = PageParser()
         parser.feed(page.read_text(encoding="utf-8"))
@@ -119,7 +119,7 @@ def test_block_no_verify_page_content(built) -> None:
     assert 'id="provenance"' in html
     assert 'id="latest-change"' in html
     assert "git commit --no-verify -m wip" in html
-    assert "107 of 107 cases run automatically" in html
+    assert "107 of 107 pass" in html
     assert "older aliases, scripts, $VARs." in html
     assert "/coding/builder/#add=block-no-verify" in html
     assert "/coding/builder/#preset=git-hygiene" in html
@@ -169,6 +169,47 @@ def test_skip_link_and_main(built) -> None:
         text = page.read_text(encoding="utf-8")
         assert 'class="skip-link" href="#content">Skip to content' in text, page
         assert '<main id="content">' in text, page
+
+
+class _FooterLinks(HTMLParser):
+    """The visible text of every <a> inside <footer>."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.footer = 0
+        self.in_a = False
+        self.texts: list[str] = []
+        self._a: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag == "footer":
+            self.footer += 1
+        elif tag == "a" and self.footer:
+            self.in_a = True
+            self._a = []
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "footer" and self.footer:
+            self.footer -= 1
+        elif tag == "a" and self.in_a:
+            self.in_a = False
+            self.texts.append("".join(self._a))
+
+    def handle_data(self, data: str) -> None:
+        if self.in_a:
+            self._a.append(data)
+
+
+def test_footer_link_text_is_never_a_url_or_path(built) -> None:
+    """A (href, label) swap shows the raw link as text; catch it on every page."""
+    for page in _pages(built):
+        parser = _FooterLinks()
+        parser.feed(page.read_text(encoding="utf-8"))
+        assert parser.texts, f"{page}: no footer links"
+        for text in parser.texts:
+            text = text.strip()
+            assert text, f"{page}: empty footer link text"
+            assert not text.startswith(("/", "http")), f"{page}: {text!r}"
 
 
 class _TextOutsideCode(HTMLParser):

@@ -1,0 +1,9 @@
+# __TITLE__
+
+__BADGE__
+
+__SUMMARY__
+
+__NOTHING__
+
+[__FOLLOW_LABEL__](__FOLLOW_URL__)

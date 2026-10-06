@@ -13,7 +13,8 @@ from .model import Site, Track
 
 SITE_JSON = "data/site.json"
 YAML_DATA = ("home", "faq", "agents")
-TRACK_FIELDS = ("id", "slug", "title", "summary")
+TRACK_FIELDS = ("id", "slug", "title", "status", "summary")
+TRACK_STATUSES = ("available", "in_design")
 
 
 def load_site_data(data_dir: Path) -> dict[str, Any]:
@@ -35,11 +36,15 @@ def load_tracks(data_dir: Path) -> list[Track]:
         if missing:
             msg = f"tracks.yaml row {row.get('id', '?')}: missing {missing}"
             raise ValueError(msg)
+        if row["status"] not in TRACK_STATUSES:
+            msg = f"tracks.yaml row {row['id']}: status {row['status']!r} not in {TRACK_STATUSES}"
+            raise ValueError(msg)
         tracks.append(
             Track(
                 id=row["id"],
                 slug=row["slug"],
                 title=row["title"],
+                status=row["status"],
                 summary=row["summary"],
             )
         )
@@ -83,8 +88,7 @@ def build_site(
         release=release,
         tracks=tracks,
         label_words={
-            track.id: engine.label_words() if track.id == "coding" else {}
-            for track in tracks
+            track.id: engine.label_words() for track in tracks if track.id == "coding"
         },
         policies=policies,
         presets=presets,
@@ -103,7 +107,13 @@ def site_dict(site: Site) -> dict[str, Any]:
     return {
         "catalog": catalog,
         "tracks": [
-            {"id": t.id, "slug": t.slug, "title": t.title, "summary": t.summary}
+            {
+                "id": t.id,
+                "slug": t.slug,
+                "title": t.title,
+                "status": t.status,
+                "summary": t.summary,
+            }
             for t in site.tracks
         ],
         "label_words": site.label_words,

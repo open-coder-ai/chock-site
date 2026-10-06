@@ -21,6 +21,7 @@ def test_llms_txt_lists_block_no_verify(site_url) -> None:
         "## Coding agents",
         "## Coding agents: policies",
         "## Coding agents: presets",
+        "## General agents",
         "## Data",
     ):
         assert heading in text
@@ -34,8 +35,15 @@ def test_api_index_and_catalog(site_url) -> None:
             "id": "coding",
             "title": "Coding agents",
             "home": "/coding/",
+            "status": "available",
             "api": "/api/coding/",
-        }
+        },
+        {
+            "id": "general",
+            "title": "General agents",
+            "home": "/general/",
+            "status": "in_design",
+        },
     ]
     catalog = json.loads(_get(site_url, "/api/coding/catalog.json"))
     assert catalog["schema_version"] == 1

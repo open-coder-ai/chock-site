@@ -5,6 +5,7 @@ from conftest import assert_clean
 PAGES_TO_SWEEP = [
     "/",
     "/coding/",
+    "/general/",
     "/coding/policies/",
     "/coding/policies/block-no-verify/",
     "/coding/builder/",
