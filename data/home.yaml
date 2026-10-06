@@ -37,7 +37,7 @@ cta_heading: "Ready in a minute."
 cta_sub: "Pick your guardrails and copy one command."
 coding:
   h1: "Guardrails for AI coding agents"
-  intro: "Pick the rules you want. chock turns them into one Claude Code plugin that refuses the risky moves before they happen."
+  intro: "Pick the rules you want. chock turns them into one Claude Code plugin that blocks, asks or warns before a risky move happens."
   glance_heading: "The catalog at a glance"
   glance_link: "See every policy"
   presets_heading: "Start from a preset"
