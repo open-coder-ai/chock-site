@@ -14,8 +14,10 @@ _FOCUSABLE = (
     " #mobile-bar a[href], #mobile-bar button'"
 )
 
+# A radio group is one tab stop (arrow keys move inside it), so it counts once, by name.
 _DESCRIBE = """
-    e => e.id || e.getAttribute('href') || e.value
+    e => (e.type === 'radio' ? 'radio-group:' + e.name : '')
+      || e.id || e.getAttribute('href') || e.value
       || (e.textContent || '').trim().slice(0, 40)
 """
 

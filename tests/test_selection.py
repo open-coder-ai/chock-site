@@ -39,3 +39,36 @@ def test_bad_ref_fails(built) -> None:
     selection = engine.build_selection(picks, site.catalog_source, "not-a-hex-ref")
     with pytest.raises(SelectionError):
         engine.check_selection(selection)
+
+
+@pytest.mark.parametrize("client", engine.client_ids())
+def test_every_preset_builds_a_valid_schema_2_selection_per_client(
+    built, client
+) -> None:
+    site = built.site
+    version = site.data["builder_clients"]["bundle_version"]
+    for preset in site.presets:
+        picks = _picks(site.policies, preset.members)
+        selection = engine.build_selection_v2(
+            picks,
+            site.catalog_source,
+            site.catalog_ref,
+            client,
+            version,
+            None,
+            preset.id,
+        )
+        assert engine.check_selection(selection)["client"] == client
+        code = engine.encode_selection(selection)
+        loaded = engine.load_selection(code)
+        assert [p["id"] for p in loaded["policies"]] == sorted(preset.members)
+
+
+def test_schema_2_rejects_an_unknown_client(built) -> None:
+    site = built.site
+    picks = _picks(site.policies, [site.policies[0].id])
+    selection = engine.build_selection_v2(
+        picks, site.catalog_source, site.catalog_ref, "vim", "1.0.0"
+    )
+    with pytest.raises(SelectionError):
+        engine.check_selection(selection)

@@ -1007,6 +1007,45 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 }
 
 .hint { color: var(--muted); font-size: 12px; margin: 12px 0 0; }
+
+/* the agent picker and each agent's install panel (BV-S1) */
+.client-picker { border: 0; margin: 0 0 24px; padding: 0; min-width: 0; }
+.client-picker legend { color: var(--text); font-size: 14px; font-weight: 600; padding: 0; margin-bottom: 10px; }
+.client-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.client-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  background: var(--panel);
+  color: var(--body);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.client-option:hover { border-color: var(--accent); color: var(--text); }
+.client-option:has(input:checked) { border-color: var(--accent); color: var(--text); }
+.client-option:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.client-option input { accent-color: var(--accent); margin: 0; }
+.client-state { color: var(--muted); font-size: 12px; }
+.state-witnessed { color: var(--accent); }
+.client-note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+.client-untested {
+  border: 1px dashed var(--dash);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--body);
+}
+.client-untested strong { color: var(--text); font-weight: 600; }
+.client-steps { margin-top: 12px; }
+.steps-heading { color: var(--text); font-size: 13px; margin: 0 0 8px; }
+.steps-list { margin: 0; padding-left: 20px; font-size: 13px; color: var(--body); }
+.steps-list .client-step { margin: 0 0 8px; }
+.steps-list pre { margin: 0; padding: 10px 12px; }
+.steps-list pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .noscript-note {
   background: var(--warn-bg);
   border: 1px solid color-mix(in srgb, var(--warn-fg) 45%, var(--line));

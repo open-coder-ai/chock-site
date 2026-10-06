@@ -7,7 +7,7 @@ from typing import Any
 import yaml
 
 from . import catalog as catalog_mod
-from . import engine, homedata, quiz, repodata
+from . import clientdata, engine, homedata, quiz, repodata
 from . import presets as presets_mod
 from .model import Site, Track
 
@@ -70,15 +70,28 @@ def build_site(
     for policy in policies:
         policy.sha256 = engine.pack_hash(catalog / policy.path)
     picks = [{"id": p.id, "version": p.version, "sha256": p.sha256} for p in policies]
-    selection = engine.build_selection(picks, catalog_source, catalog_ref, release)
+    selection = engine.build_selection_v2(
+        picks,
+        catalog_source,
+        catalog_ref,
+        clientdata.ENGINE_CLIENT,
+        site_data["builder_clients"]["bundle_version"],
+        release,
+    )
     labels = engine.policy_labels(catalog, selection)
     catalog_mod.apply_labels(policies, labels, engine.label_words())
     catalog_mod.apply_groups(policies, presets)
+    site_data["builder_clients"] = clientdata.builder_clients(
+        data_dir, site_data, policies, engine.label_words()
+    )
 
     demo = homedata.load_demo(catalog, data_dir, policies)
     incident_copy, incidents = homedata.load_incidents(data_dir, policies)
     site_data["incidents"] = incident_copy
     site_data["quiz"] = quiz.load_quiz(data_dir, presets, set(engine.label_words()))
+    clientdata.check_quiz_agents(
+        site_data["quiz"], site_data["builder_clients"]["order"]
+    )
 
     tiers = repodata.check_tiers(site_data["repos"]["tiers"])
     repodata.apply_tiers(policies, tiers)
@@ -178,6 +191,7 @@ def site_dict(site: Site) -> dict[str, Any]:
         "warning_texts": site.warning_texts,
         "command": site.command,
         "builder_texts": site.data["builder_texts"],
+        "builder_clients": site.data["builder_clients"],
         "quiz": site.data["quiz"],
         "repos": {
             "tiers": [

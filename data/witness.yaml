@@ -1,0 +1,13 @@
+# Which agents a person has seen chock's refusals fire in (design D3, D4).
+# Only the owner changes this file. A witnessed agent gets the one-command
+# install (--apply); an untested one gets the same command without --apply,
+# the label "untested in <agent>", and a link to the witness checklist.
+# The order here is the order of the builder's agent picker.
+default: claude-code
+checklist: https://github.com/open-coder-ai/org-plan/blob/main/witness/CHECKLIST.md
+clients:
+  claude-code: witnessed
+  cursor: untested
+  codex: untested
+  copilot: untested
+  devin: untested

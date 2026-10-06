@@ -75,11 +75,21 @@ export function mixLine(quiz, ids, { words, order, keywordOf }) {
   );
 }
 
-// The coding result's output: the install command, Copy, and the way into the full builder.
-export function commandOutputs(site, T, ids) {
-  const { code, command } = installCommand(site, buildSelection(site, ids));
+// The coding result's output: the install command for the client, Copy, and the way into the full builder.
+export function commandOutputs(site, T, ids, client = site.builder_clients.default) {
+  const { code, command } = installCommand(site, buildSelection(site, ids, client));
   const box = element("div", "quiz-command");
   box.appendChild(element("h3", "quiz-command-title", T.command_label));
+  const about = site.builder_clients.clients[client];
+  if (about.witness === "untested") {
+    const line = element("p", "client-untested");
+    line.appendChild(element("strong", "", about.untested_label));
+    line.appendChild(document.createTextNode(` ${about.untested_line} `));
+    const link = element("a", "", site.builder_clients.texts.checklist);
+    link.href = site.builder_clients.checklist;
+    line.appendChild(link);
+    box.appendChild(line);
+  }
   const pre = element("pre");
   const codeEl = element("code", "language-bash", command);
   codeEl.dataset.quizCommand = "";
@@ -98,9 +108,21 @@ export function commandOutputs(site, T, ids) {
 }
 
 // `outputs(ids, context)` returns the node shown under the picks; `picks` (an array of ids) skips the
-// questions and opens the result with exactly those policies (a share link).
-export function initQuiz({ site, section = "coding", chipFor, onSkip, outputs, picks: sharedPicks }) {
+// questions and opens the result with exactly those policies (a share link); `keywordOf` replaces the
+// section's label lookup (the coding builder passes the picked client's labels); `agent` ({get, set})
+// ties the "agent" question to the builder's agent picker, so both always show one choice.
+export function initQuiz({
+  site,
+  section = "coding",
+  chipFor,
+  onSkip,
+  outputs,
+  picks: sharedPicks,
+  keywordOf,
+  agent,
+}) {
   const config = sectionConfig(site, section);
+  if (keywordOf) config.keywordOf = keywordOf;
   const quiz = config.quiz;
   const T = quiz.texts;
   const makeOutputs = outputs || ((ids) => commandOutputs(site, T, ids));
@@ -131,8 +153,11 @@ export function initQuiz({ site, section = "coding", chipFor, onSkip, outputs, p
 
   // ----- a question -----
 
+  const linked = (question) => Boolean(agent) && question.id === "agent";
+  const answerOf = (question) => (linked(question) ? agent.get() : answers[question.id]);
+
   function selectedOption(question) {
-    return question.options.find((o) => o.id === answers[question.id]);
+    return question.options.find((o) => o.id === answerOf(question));
   }
 
   function refreshQuestion(question, note, hint) {
@@ -169,7 +194,7 @@ export function initQuiz({ site, section = "coding", chipFor, onSkip, outputs, p
       input.type = multi ? "checkbox" : "radio";
       input.name = `quiz-${question.id}`;
       input.value = option.id;
-      input.checked = multi ? answers[question.id].includes(option.id) : answers[question.id] === option.id;
+      input.checked = multi ? answers[question.id].includes(option.id) : answerOf(question) === option.id;
       const box = element("span", "quiz-opt-box");
       box.appendChild(element("span", "quiz-opt-label", option.label));
       box.appendChild(element("span", "quiz-opt-sub", option.sub));
@@ -192,6 +217,7 @@ export function initQuiz({ site, section = "coding", chipFor, onSkip, outputs, p
         answers[question.id] = question.options.map((o) => o.id).filter((id) => ids.has(id));
       } else {
         answers[question.id] = input.value;
+        if (linked(question)) agent.set(input.value);
       }
       removed = new Set();
       refreshQuestion(question, note, hint);
@@ -287,6 +313,10 @@ export function initQuiz({ site, section = "coding", chipFor, onSkip, outputs, p
   if (skip && onSkip) skip.addEventListener("click", onSkip);
   render(false);
   return {
+    // Re-draw the current step after something it shows changed (the coding builder's agent).
+    refresh() {
+      render(false);
+    },
     openShared(ids) {
       shared = ids;
       step = total + 1;

@@ -66,10 +66,10 @@ def test_strictness_levels_nest() -> None:
     ]
 
 
-def test_only_claude_code_continues() -> None:
+def test_every_agent_continues_and_matches_the_engine_clients() -> None:
     options = load_quiz(DATA, _presets(), LABELS)["questions"][0]["options"]
-    assert [o["label"] for o in options if not o.get("other")] == ["Claude Code"]
-    assert len(options) == 4
+    assert not [o["id"] for o in options if o.get("other")]
+    assert sorted(o["id"] for o in options) == sorted(engine.client_ids())
 
 
 def test_unknown_preset_id_fails(tmp_path: Path) -> None:
