@@ -176,14 +176,18 @@ def test_home_fits_a_phone(browser, site_url) -> None:
             "#demo",
             "#track-coding",
             "#track-general",
+            "#track-repos",
         ):
             box = page.locator(selector).first.bounding_box()
             assert box["x"] >= 0 and box["x"] + box["width"] <= MOBILE["width"] + 1, (
                 selector
             )
         cards = page.locator(".track-card")
-        assert cards.count() == 2
-        assert cards.nth(0).bounding_box()["y"] < cards.nth(1).bounding_box()["y"]
+        assert cards.count() == 3
+        for i in (0, 1):
+            assert (
+                cards.nth(i).bounding_box()["y"] < cards.nth(i + 1).bounding_box()["y"]
+            )
         heading = page.locator("h1").inner_text()
         assert re.sub(r"\s+", " ", heading) == "Teach your AI agent what not to do."
     finally:

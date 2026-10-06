@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from . import homedata
+from . import homedata, repodata
 from .catalog import first_sentence
 from .model import Policy, Site
 from .pageparts import (
@@ -130,17 +130,21 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     cards = []
     for track in site.tracks:
         conf = land["track_cards"].get(track.id, {})
-        has_catalog = track.id in site.label_words
+        has_catalog = track.id == COUNTED
         c = counts(site, track.id) if has_catalog else {}
         numbers = {
             "policies": c.get("total"),
             "presets": c.get("presets"),
             "agents": agents,
         }
+        labels = dict(land["stat_labels"])
+        if track.id in site.label_words and not has_catalog:
+            numbers |= repodata.counts(site.policies, site.data["repos"]["tiers"])
+            labels |= site.label_words[track.id]
         stats = "".join(
             render_file(
                 templates / PARTIALS / "track-stat.html",
-                LABEL=land["stat_labels"][key],
+                LABEL=labels[key],
                 NUM=f"{numbers[key]:,}",
             )
             for key in conf.get("stats", [])
@@ -193,6 +197,7 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
             EYEBROW=land["sections_eyebrow"],
             HEADING=land["sections_heading"],
             INTRO=Prose(land["sections_intro"]),
+            COLUMNS=str(min(len(cards), 3)),
             CARDS=Safe("".join(cards)),
         )
     )

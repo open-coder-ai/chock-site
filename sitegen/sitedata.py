@@ -7,12 +7,12 @@ from typing import Any
 import yaml
 
 from . import catalog as catalog_mod
-from . import engine, homedata, quiz
+from . import engine, homedata, quiz, repodata
 from . import presets as presets_mod
 from .model import Site, Track
 
 SITE_JSON = "data/site.json"
-YAML_DATA = ("home", "faq", "agents")
+YAML_DATA = ("home", "faq", "agents", "repos")
 TRACK_FIELDS = ("id", "slug", "title", "status", "summary")
 TRACK_STATUSES = ("available", "in_design")
 
@@ -80,6 +80,16 @@ def build_site(
     site_data["incidents"] = incident_copy
     site_data["quiz"] = quiz.load_quiz(data_dir, presets, set(engine.label_words()))
 
+    tiers = repodata.check_tiers(site_data["repos"]["tiers"])
+    repodata.apply_tiers(policies, tiers)
+    repodata.merge_display(tiers, site_data["glyphs"], site_data["label_meanings"])
+    site_data["repos_quiz"] = quiz.load_repos_quiz(
+        data_dir,
+        presets,
+        set(engine.label_words()),
+        {t["key"] for t in tiers},
+    )
+
     visible = {p.id for p in policies}
     rules = [
         rule
@@ -93,7 +103,8 @@ def build_site(
         release=release,
         tracks=tracks,
         label_words={
-            track.id: engine.label_words() for track in tracks if track.id == "coding"
+            "coding": engine.label_words(),
+            "repos": {t["key"]: t["word"] for t in tiers},
         },
         policies=policies,
         presets=presets,
@@ -168,6 +179,15 @@ def site_dict(site: Site) -> dict[str, Any]:
         "command": site.command,
         "builder_texts": site.data["builder_texts"],
         "quiz": site.data["quiz"],
+        "repos": {
+            "tiers": [
+                {k: t[k] for k in ("key", "word", "glyph", "meaning")}
+                for t in site.data["repos"]["tiers"]
+            ],
+            "tier_of": {p.id: p.tier for p in site.policies},
+            "commands": site.data["repos"]["commands"],
+            "quiz": site.data["repos_quiz"],
+        },
     }
 
 

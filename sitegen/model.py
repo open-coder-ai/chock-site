@@ -50,6 +50,7 @@ class Policy:
     enforces: str = ""
     sha256: str = ""
     keyword: str = ""
+    tier: str = ""
     word: str = ""
     says: str = ""
     misses: str | None = None
@@ -115,3 +116,4 @@ class SectionResult:
     pages: list[str]
     llms: str
     docs: list[tuple[str, str]]
+    data_lines: str = ""

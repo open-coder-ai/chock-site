@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import coding, engine, general, home
+from . import coding, engine, general, home, repos
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
@@ -21,7 +21,11 @@ from .render import Prose, Safe, render_file, render_text_file
 MD = "md"
 
 # Plan 0.1 rule 2: a section id maps to the function that builds its pages.
-SECTION_BUILDERS = {"coding": coding.build, "general": general.build}
+SECTION_BUILDERS = {
+    "coding": coding.build,
+    "general": general.build,
+    "repos": repos.build,
+}
 
 
 def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
@@ -282,7 +286,7 @@ def _llms(
         "with its home and api paths\n"
     )
     for track in site.tracks:
-        if not (out_dir / "api" / track.slug).is_dir():
+        if not (out_dir / "api" / track.slug / "catalog.json").is_file():
             continue
         lines.append(
             f"- [/api/{track.slug}/catalog.json](/api/{track.slug}/catalog.json): "
@@ -294,6 +298,7 @@ def _llms(
             f"(/api/{track.slug}/selection.schema.json): the schema a "
             "selection file is checked against\n"
         )
+    lines.extend(section.data_lines for section in sections)
     lines.append("- [/data/site.json](/data/site.json): the generated site data\n")
     (out_dir / "llms.txt").write_text("".join(lines), encoding="utf-8", newline="\n")
 

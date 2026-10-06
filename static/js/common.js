@@ -1,7 +1,7 @@
 // Shared behaviour for every page: nav toggle, copy buttons, chip factory.
 document.documentElement.classList.add("js");
 
-const GLYPHS = { block: "■", ask: "◆", warn: "▲", advise: "○" };
+const GLYPHS = { block: "■", ask: "◆", warn: "▲", advise: "○", commit: "■", agent: "◆" };
 
 export function labelChip(keyword, word, meaning) {
   const chip = document.createElement("span");

@@ -44,6 +44,13 @@ def test_api_index_and_catalog(site_url) -> None:
             "home": "/general/",
             "status": "in_design",
         },
+        {
+            "id": "repos",
+            "title": "Git repositories",
+            "home": "/repos/",
+            "status": "available",
+            "api": "/api/repos/",
+        },
     ]
     catalog = json.loads(_get(site_url, "/api/coding/catalog.json"))
     assert catalog["schema_version"] == 1

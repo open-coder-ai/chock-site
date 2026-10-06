@@ -33,6 +33,7 @@ def load_quiz(
 ) -> dict[str, Any]:
     """quiz.yaml; a worry naming an unknown preset or a strictness naming an unknown label fails."""
     quiz = yaml.safe_load((data_dir / QUIZ_YAML).read_text(encoding="utf-8"))
+    quiz.pop("repos", None)
     preset_ids = {p.id for p in presets}
     questions = quiz.get("questions") or []
     if [q.get("id") for q in questions] != ["agent", "worries", "strictness"]:
@@ -60,3 +61,45 @@ def load_quiz(
             if question["id"] == "strictness" and not option.get("allow"):
                 raise PageError(f"quiz.yaml: strictness {option['id']} allows nothing")
     return quiz
+
+
+def load_repos_quiz(
+    data_dir: Path,
+    presets: list[Preset],
+    label_keywords: set[str],
+    tier_keys: set[str],
+) -> dict[str, Any]:
+    """The Git repositories quiz: the coding quiz's worries, a host question, tier-based strictness."""
+    raw = yaml.safe_load((data_dir / QUIZ_YAML).read_text(encoding="utf-8"))
+    coding = load_quiz(data_dir, presets, label_keywords)
+    repos = raw["repos"]
+    questions = []
+    for question in repos["questions"]:
+        if question.get("same_as") == "coding":
+            question = next(q for q in coding["questions"] if q["id"] == question["id"])
+        questions.append(question)
+    if [q.get("id") for q in questions] != ["host", "worries", "strictness"]:
+        raise PageError(
+            "quiz.yaml repos: the questions must be host, worries, strictness"
+        )
+    for question in questions:
+        options = _check_options(question)
+        defaults = [o for o in options if o.get("default")]
+        if question["kind"] == "single" and len(defaults) != 1:
+            raise PageError(
+                f"quiz.yaml repos: {question['id']} needs exactly one default"
+            )
+        if question["id"] == "host":
+            for option in options:
+                if not isinstance(option.get("ci"), bool):
+                    raise PageError(
+                        f"quiz.yaml repos: host {option['id']} needs ci: true or false"
+                    )
+        if question["id"] == "strictness":
+            for option in options:
+                bad = [k for k in option.get("allow", []) if k not in tier_keys]
+                if bad or not option.get("allow"):
+                    raise PageError(
+                        f"quiz.yaml repos: {option['id']} allows unknown tiers {bad}"
+                    )
+    return {"texts": {**coding["texts"], **repos["texts"]}, "questions": questions}

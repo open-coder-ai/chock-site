@@ -1,0 +1,62 @@
+# The Git repositories section: tier words, page copy and the command lines.
+# A tier is read from each policy's registry `enforces` value: `equals` must match it exactly,
+# `starts_with` its first characters. Any other value fails the build. Counts are never typed here.
+# Command lines use {name} for runtime values; the browser and sitegen fill them in one pass.
+tiers:
+  - key: commit
+    word: "at commit"
+    glyph: "■"
+    meaning: "The commit is refused, locally and in CI."
+    equals: "enforced-at-commit"
+  - key: agent
+    word: "in agent"
+    glyph: "◆"
+    meaning: "Checked by the agent's hooks once chock sync wires them; fails open if the hook crashes."
+    starts_with: "best-effort"
+  - key: advise
+    word: "advisory"
+    glyph: "○"
+    meaning: "Text the agent reads; nothing stops a violation."
+    equals: "advisory"
+
+commands:
+  init: "chock init ."
+  add: "chock add {id} --ref {ref} --verify-sha {sha256} --skip-compile"
+  sync: "chock sync --repo ."
+  sync_ci: "chock sync --repo . --ci"
+  commit: 'git add -A && git commit -m "Add chock guardrails"'
+  script_header: ["#!/bin/sh", "set -eu"]
+  script_name: "chock-setup.sh"
+
+pages:
+  home:
+    title: "Git repositories"
+    description: "Install chock policies into your own git repository: committed with the code, enforced at commit and in CI for every contributor and every agent."
+  builder:
+    title: "Set up your repository"
+    description: "Answer three questions and get one block of commands that installs the policies into your own git repository."
+
+home:
+  h1: "Guardrails that live in your repository"
+  cta: "Pick your policies"
+  tiers_heading: "What each policy does in a git repository"
+  list_heading: "Every policy, by what it does in a repository"
+  list_intro: "Each name opens the policy's page. A policy's tier here is read from the catalog, not from what it does inside Claude Code."
+  steps_heading: "How it works"
+  steps:
+    - {title: "Pick your policies", body: "Answer three questions, or take a preset. The builder writes one block of commands."}
+    - {title: "Run the commands in your repo", body: "They add each policy at a pinned commit and hash, wire the hooks and write files. You commit those files with your code."}
+    - {title: "Every clone runs one command", body: "Git never clones hooks, so each person who clones the repository runs `chock sync --repo .` once."}
+  install_heading: "Install chock first"
+  install_note: "The commands need chock on your machine. Read the command before you run it."
+  install_link: "The Install page has the details and the other ways to install."
+  computed_note: "Counts are computed from the catalog at each build."
+
+builder:
+  h1: "Set up your repository"
+  noscript: "The repository builder needs JavaScript. You can still read every policy and its tier on the Git repositories page, and write the commands by hand from the command template below."
+  template_heading: "The command template"
+  template_note: "One line per policy, sorted by id. The builder fills in the catalog commit and each policy's sha256; they come from this site's build and never from a link."
+  install_heading: "Before you run it"
+  install_note: "You need chock on your machine. Read the commands first: they change files in your repository."
+  install_link: "More on the Install page"

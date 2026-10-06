@@ -62,6 +62,7 @@ def test_llms_txt_structure(built) -> None:
         "## Coding agents: policies",
         "## Coding agents: presets",
         "## General agents",
+        "## Git repositories",
         "## Data",
     ]
     policies_section = text.split("## Coding agents: policies")[1].split("## ")[0]

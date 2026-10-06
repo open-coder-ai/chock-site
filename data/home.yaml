@@ -29,9 +29,9 @@ landing:
   works_label: "WORKS WITH"
   works_claude: "builder on this site"
   works_other: "plugin repository"
-  sections_eyebrow: "TWO KINDS OF AGENT"
+  sections_eyebrow: "THREE PLACES TO USE CHOCK"
   sections_heading: "One idea: name the wrong action, then stop it."
-  sections_intro: "Agents that write code get guardrails today. Guardrails for general agents are being designed."
+  sections_intro: "Agents that write code get guardrails today, and so can your own git repository. Guardrails for general agents are being designed."
   track_cards:
     coding:
       stats: ["policies", "presets", "agents"]
@@ -41,6 +41,11 @@ landing:
     general:
       note: "Nothing to install yet."
       link: "About general agents"
+    repos:
+      stats: ["commit", "agent", "advise"]
+      buttons:
+        - {label: "Pick your policies", href: "/repos/builder/", primary: true}
+        - {label: "Explore git repositories", href: "/repos/"}
   stat_labels: {policies: "policies", presets: "presets", agents: "agents"}
   how_eyebrow: "HOW IT WORKS FOR CODING AGENTS"
   how_heading: "Ready in a minute. Three steps, one command."
