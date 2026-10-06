@@ -73,7 +73,7 @@ def test_every_visible_policy_has_a_page(built) -> None:
 
 def test_every_page_has_one_h1_lang_csp_title(built) -> None:
     pages = _pages(built)
-    assert len(pages) == len(_policy_ids(built)) + 10  # shared + coding pages + 404
+    assert len(pages) == len(_policy_ids(built)) + 11  # shared + sections + 404
     for page in pages:
         parser = PageParser()
         parser.feed(page.read_text(encoding="utf-8"))
@@ -119,7 +119,7 @@ def test_block_no_verify_page_content(built) -> None:
     assert 'id="provenance"' in html
     assert 'id="latest-change"' in html
     assert "git commit --no-verify -m wip" in html
-    assert "107 of 107 cases run automatically" in html
+    assert "107 of 107 pass" in html
     assert "older aliases, scripts, $VARs." in html
     assert "/coding/builder/#add=block-no-verify" in html
     assert "/coding/builder/#preset=git-hygiene" in html

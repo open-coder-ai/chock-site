@@ -21,6 +21,7 @@
     "install": {"title": "Install", "description": "Install chock, build a plugin from a selection code, and update or remove it."},
     "faq": {"title": "FAQ", "description": "Answers about chock: what the labels mean, what the command does and what it cannot do."},
     "agents": {"title": "For AI agents", "description": "How to read chock.sh: the machine-readable catalog at /api/index.json, per-policy JSON and Markdown twins, and the selection format."},
+    "general": {"title": "General agents", "description": "Guardrails for agents that act for a person or a business. Design in progress."},
     "notfound": {"title": "Not found", "description": "That page is not part of chock.sh."}
   },
   "texts": {
@@ -37,7 +38,12 @@
     "plugin_repo_note": "Advisory inside Claude Code. In a repo set up with chock init, it is enforced at commit.",
     "misses_empty": "This policy does not state what it misses.",
     "examples_note": "Both examples are this policy's own test cases.",
-    "notfound_sub": "That page is not part of chock.sh."
+    "notfound_sub": "That page is not part of chock.sh.",
+    "design_badge": "DESIGN IN PROGRESS",
+    "available_badge": "AVAILABLE NOW",
+    "footer_tagline": "Guardrails for AI agents. Part of open-coder-ai.",
+    "policies_search": "Search __COUNT__ policies: secrets, git, curl…",
+    "computed_note": "Counts are computed from the catalog at each build."
   },
   "links": {
     "engine_repo": "https://github.com/open-coder-ai/chock",
@@ -63,7 +69,18 @@
     "command": "shell command",
     "write": "file write",
     "turn-end": "turn end",
-    "text": "text"
+    "text": "agent instructions"
+  },
+  "when_names": {
+    "command": "before the command runs",
+    "write": "before the file write",
+    "turn-end": "at turn end",
+    "text": "as instructions the agent reads"
+  },
+  "general": {
+    "nothing": "There is nothing to install yet.",
+    "follow_label": "Follow open-coder-ai on GitHub",
+    "follow_url": "https://github.com/open-coder-ai"
   },
   "clients": [
     {"name": "Cursor", "repo": "https://github.com/open-coder-ai/chock-cursor-plugins", "note": "Install policies from the Cursor plugins repo."},

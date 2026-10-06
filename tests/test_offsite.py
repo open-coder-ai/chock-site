@@ -74,12 +74,17 @@ def test_no_style_or_event_attributes(built) -> None:
         assert not parser.bad_attrs, f"{page}: {parser.bad_attrs[:5]}"
 
 
-def test_css_has_no_urls_or_imports(built) -> None:
+def test_css_has_no_external_urls_or_imports(built) -> None:
+    """url() is allowed for root-relative files (self-hosted fonts) only."""
     for css in built.out.rglob("*.css"):
         text = css.read_text(encoding="utf-8")
-        assert "url(" not in text, css
         assert "@import" not in text, css
         assert "http" not in text, css
+        for quoted in re.findall(
+            r'url\("([^"]*)"\)|url\(\'([^\']*)\'\)|url\(([^)]*)\)', text
+        ):
+            target = next(part for part in quoted if part)
+            assert target.startswith("/"), f"{css}: non-local url({target})"
 
 
 def test_js_has_no_urls_eval_or_innerhtml(built) -> None:

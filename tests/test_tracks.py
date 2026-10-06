@@ -15,7 +15,8 @@ from sitegen.pageparts import write_md, write_page
 from sitegen.render import Safe
 
 ROOT = Path(__file__).resolve().parents[1]
-REQUIRED_FIELDS = {"id", "slug", "title", "summary"}
+REQUIRED_FIELDS = {"id", "slug", "title", "status", "summary"}
+STATUSES = {"available", "in_design"}
 # Plan 0.1 rule 5: the root holds only section slugs and these shared paths.
 SHARED_TOP_LEVEL = {
     "index.html",
@@ -34,6 +35,7 @@ SHARED_TOP_LEVEL = {
     "css",
     "js",
     "img",
+    "fonts",
     "data",
     # The plan-4 output-safety marker; a build artefact, not a page.
     ".sitegen-output",
@@ -42,6 +44,7 @@ EXAMPLE = Track(
     id="example",
     slug="example",
     title="Example agents",
+    status="in_design",
     summary="A stub section that exists only in this test fixture.",
 )
 
@@ -61,6 +64,48 @@ def test_tracks_yaml_has_every_field() -> None:
         assert row["id"] not in ids, f"duplicate track id {row['id']}"
         ids.add(row["id"])
         assert row["id"] != "common", "common is the shared FAQ group, not a track"
+        assert row["status"] in STATUSES, row
+
+
+def test_tracks_carried_into_site_json_and_api_index(built) -> None:
+    data = _site_json(built)
+    assert [t["id"] for t in data["tracks"]] == ["coding", "general"]
+    assert data["tracks"][0]["status"] == "available"
+    assert data["tracks"][1]["status"] == "in_design"
+    index = json.loads((built.out / "api" / "index.json").read_text(encoding="utf-8"))
+    assert [t["id"] for t in index["tracks"]] == ["coding", "general"]
+    assert index["tracks"][0] == {
+        "id": "coding",
+        "title": "Coding agents",
+        "home": "/coding/",
+        "status": "available",
+        "api": "/api/coding/",
+    }
+    assert index["tracks"][1] == {
+        "id": "general",
+        "title": "General agents",
+        "home": "/general/",
+        "status": "in_design",
+    }
+
+
+def test_general_page_is_the_fixed_placeholder(built) -> None:
+    page = (built.out / "general" / "index.html").read_text(encoding="utf-8")
+    main = re.search(r'<main id="content">(.*?)</main>', page, re.DOTALL).group(1)
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", main)).strip()
+    assert text == (
+        "DESIGN IN PROGRESS General agents Guardrails for agents that act "
+        "for a person or a business. Design in progress. There is nothing "
+        "to install yet. Follow open-coder-ai on GitHub"
+    )
+    banned = ("deny", "step_up", "modify", "profile", "approval", "specification")
+    for word in banned:
+        assert word not in main.lower(), word
+    assert not (built.out / "api" / "general").exists()
+    llms = (built.out / "llms.txt").read_text(encoding="utf-8")
+    assert "General agents](/general/index.md): design in progress" in llms
+    twin = (built.out / "general" / "index.md").read_text(encoding="utf-8")
+    assert "design in progress" in twin.lower()
 
 
 def test_every_record_carries_track(built) -> None:
@@ -126,9 +171,10 @@ def _stub_build(site: Site, track: Track, out_dir: Path, templates: Path):
     )
 
 
-def _strip_header(text: str) -> str:
-    """Remove the shared header, the one element a second section changes."""
-    return re.sub(r"<header>.*?</header>\n", "", text, flags=re.DOTALL)
+def _strip_shell(text: str) -> str:
+    """Remove the shared header and footer, the chrome a second section changes."""
+    text = re.sub(r"<header>.*?</header>\n", "", text, flags=re.DOTALL)
+    return re.sub(r"<footer>.*?</footer>", "", text, flags=re.DOTALL)
 
 
 @pytest.fixture()
@@ -145,8 +191,8 @@ def two_section_build(built, tmp_path, monkeypatch) -> Path:
 def test_stub_section_appears_in_shared_outputs(built, two_section_build) -> None:
     out = two_section_build
     index = json.loads((out / "api" / "index.json").read_text(encoding="utf-8"))
-    assert [t["id"] for t in index["tracks"]] == ["coding", "example"]
-    assert index["tracks"][1]["home"] == "/example/"
+    assert [t["id"] for t in index["tracks"]] == ["coding", "general", "example"]
+    assert index["tracks"][2]["home"] == "/example/"
     llms = (out / "llms.txt").read_text(encoding="utf-8")
     assert "## Example agents" in llms
     assert (
@@ -176,9 +222,9 @@ def test_coding_pages_do_not_move_or_change(built, two_section_build) -> None:
             old = (base / rel).read_bytes()
             new = (out / sub / rel).read_bytes()
             if rel.endswith(".html"):
-                # The shared header nav legitimately gains the stub link on
-                # every page; the section-owned body stays byte-identical.
-                assert _strip_header(old.decode()) == _strip_header(new.decode()), rel
+                # The shared header and footer legitimately gain the stub link
+                # on every page; the section-owned body stays byte-identical.
+                assert _strip_shell(old.decode()) == _strip_shell(new.decode()), rel
             else:
                 assert old == new, rel
 
@@ -188,4 +234,4 @@ def test_shared_docs_unchanged_apart_from_stub(built, two_section_build) -> None
     for name in ("security", "faq", "for-agents"):
         old = (built.out / name / "index.html").read_text(encoding="utf-8")
         new = (out / name / "index.html").read_text(encoding="utf-8")
-        assert _strip_header(old) == _strip_header(new), name
+        assert _strip_shell(old) == _strip_shell(new), name

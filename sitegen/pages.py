@@ -4,13 +4,15 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import coding, engine
+from . import coding, engine, general
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
     PageError,
+    badge,
     chip,
     counts,
+    css_tokens,
     data_fill,
     md_sections,
     render_steps,
@@ -24,7 +26,7 @@ MD = "md"
 DEMO_MARKS = {"You": "›", "Claude Code": "●", "guard": "⎿"}
 
 # Plan 0.1 rule 2: a section id maps to the function that builds its pages.
-SECTION_BUILDERS = {"coding": coding.build}
+SECTION_BUILDERS = {"coding": coding.build, "general": general.build}
 
 
 def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
@@ -51,6 +53,7 @@ def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 ID=track.id,
                 SLUG=track.slug,
                 TITLE=track.title,
+                BADGE=badge(site, templates, track.status),
                 SUMMARY=Prose(track.summary),
                 LINK=track.title,
             )
@@ -378,7 +381,12 @@ def _api_index(site: Site, out_dir: Path) -> None:
                 "id": track.id,
                 "title": track.title,
                 "home": f"/{track.slug}/",
-                "api": f"/api/{track.slug}/",
+                "status": track.status,
+                **(
+                    {"api": f"/api/{track.slug}/"}
+                    if (api / track.slug).is_dir()
+                    else {}
+                ),
             }
             for track in site.tracks
         ],
@@ -425,6 +433,8 @@ def _llms(
         "with its home and api paths\n"
     )
     for track in site.tracks:
+        if not (out_dir / "api" / track.slug).is_dir():
+            continue
         lines.append(
             f"- [/api/{track.slug}/catalog.json](/api/{track.slug}/catalog.json): "
             "every policy and preset (schema_version 1)\n"
@@ -468,6 +478,12 @@ def _sitemap(site: Site, out_dir: Path, paths: list[str]) -> None:
         f"Sitemap: {site.data['site_url']}/sitemap.xml\n"
     )
     (out_dir / "robots.txt").write_text(robots, encoding="utf-8", newline="\n")
+
+
+def write_css(site: Site, out_dir: Path, static_dir: Path) -> None:
+    """dist/css/site.css: the stylesheet with this build's computed values filled."""
+    css = render_text_file(static_dir / "css" / "site.css", **css_tokens(site))
+    (out_dir / "css" / "site.css").write_text(css, encoding="utf-8", newline="\n")
 
 
 def write_pages(site: Site, out_dir: Path, templates_dir: Path) -> None:

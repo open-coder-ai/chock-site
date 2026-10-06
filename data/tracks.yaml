@@ -2,4 +2,10 @@ tracks:
   - id: coding
     slug: coding
     title: Coding agents
+    status: available
     summary: "Rules for agents that write code: refuse git commit --no-verify, keep secrets out of files, stop the agent editing its own guardrails. Pick them and install one Claude Code plugin."
+  - id: general
+    slug: general
+    title: General agents
+    status: in_design
+    summary: "Guardrails for agents that act for a person or a business. Design in progress."

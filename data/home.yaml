@@ -45,3 +45,6 @@ coding:
   clients_heading: "Other coding agents"
   clients_line: "Cursor, Codex, Copilot and Devin install the same policies from their own plugin repositories."
   clients_link: "See other clients"
+  claude_repo: "built here"
+  claude_how: "Use the builder"
+  repo_how: "Install from repo"
