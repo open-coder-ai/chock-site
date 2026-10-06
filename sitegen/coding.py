@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import engine
+from . import clientpage, engine
 from .catalog import first_sentence
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
@@ -544,6 +544,7 @@ def _builder(
             COUNT=str(len(ungrouped)),
             MEMBERS=Safe(_member_rows(site, track, templates, ungrouped, "none")),
         )
+    clients = site.data["builder_clients"]
     page = site.data["pages"]["builder"]
     path = f"/{track.slug}/builder/"
     write_page(
@@ -558,6 +559,7 @@ def _builder(
                 templates / track.slug / "builder.html",
                 SUB=Prose(page["description"]),
                 NOSCRIPT=Prose(texts["builder_noscript"]),
+                CLIENT_PICKER=Safe(clientpage.picker(clients, templates / track.slug)),
                 QUIZ=Safe(
                     render_file(
                         templates / PARTIALS / "quiz.html",
@@ -574,6 +576,10 @@ def _builder(
                 GROUP_SECTIONS=Safe(groups),
                 EMPTY=Prose(texts["builder_empty"]),
                 NEED_ONE=Prose(texts["builder_need_one"]),
+                UNTESTED=Safe(
+                    clientpage.untested_lines(clients, templates / track.slug)
+                ),
+                CLIENT_STEPS=Safe(clientpage.steps(clients, templates / track.slug)),
                 HINT=data_fill(texts["builder_outputs_hint"], subs),
             )
         ),
@@ -599,6 +605,10 @@ def _builder(
         ),
         NEED_ONE=texts["builder_need_one"],
         HINT=data_fill(texts["builder_outputs_hint"], subs),
+        GRADES_NOTE=""
+        if clients["graded"]
+        else f"{clients['texts']['grades_pending']}\n",
+        AGENT_LINES=clientpage.markdown(clients),
     )
     write_md(out_dir, path, twin)
     return path, twin

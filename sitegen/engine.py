@@ -3,18 +3,27 @@
 import base64
 import importlib.resources
 import json
+import re
+import shlex
 from pathlib import Path
 from typing import Any
 
 import chock.install.package
+import chock.install.place
 import chock.install.resolve
 import chock.install.selection
+import chock.install.steps
 import chock.lock
 from chock.validation.loading import load_schema
 
 INSTALL_JSON = "data/install.json"
 WARNINGS_JSON = "data/warnings.json"
 SelectionError = chock.install.selection.SelectionError
+SCHEMA2 = chock.install.selection.SCHEMA2
+CATALOG_ENTRY = chock.install.selection.CATALOG
+BUNDLE_NAME = chock.install.selection.DEFAULT_BUNDLE
+# An argument shown as is: shell-safe characters, with a leading ~ kept for the shell to expand.
+PLAIN_ARG = re.compile(r"~?[\w@%+=:,./-]+")
 
 
 def _resource(name: str) -> dict[str, Any]:
@@ -47,7 +56,7 @@ def build_selection(
     release: str | None = None,
     preset: str | None = None,
 ) -> dict[str, Any]:
-    """A selection object in the engine's key order (plan 8.1)."""
+    """A schema-1 selection object in the engine's key order (plan 8.1)."""
     catalog: dict[str, Any] = {"source": catalog_source, "ref": catalog_ref}
     if release is not None:
         catalog["release"] = release
@@ -62,6 +71,33 @@ def build_selection(
     return selection
 
 
+def build_selection_v2(
+    picks: list[dict[str, str]],
+    catalog_source: str,
+    catalog_ref: str,
+    client: str,
+    bundle_version: str,
+    release: str | None = None,
+    preset: str | None = None,
+) -> dict[str, Any]:
+    """A schema-2 selection of catalog policies for one client, in the schema's key order."""
+    catalog: dict[str, Any] = {"source": catalog_source, "ref": catalog_ref}
+    if release is not None:
+        catalog["release"] = release
+    selection: dict[str, Any] = {
+        "schema": SCHEMA2,
+        "client": client,
+        "bundle": {"version": bundle_version},
+        "catalog": catalog,
+    }
+    if preset is not None:
+        selection["preset"] = preset
+    selection["policies"] = [
+        {"from": CATALOG_ENTRY, **pick} for pick in sorted(picks, key=lambda p: p["id"])
+    ]
+    return selection
+
+
 def encode_selection(selection: dict[str, Any]) -> str:
     """The share code: base64url of compact UTF-8 JSON, no padding (plan 8.2)."""
     raw = json.dumps(selection, separators=(",", ":"), ensure_ascii=False)
@@ -69,12 +105,52 @@ def encode_selection(selection: dict[str, Any]) -> str:
 
 
 def policy_labels(catalog: Path, selection: dict[str, Any]) -> dict[str, Any]:
-    """Each selected policy's Label (policy_id, keyword, says, description), keyed by id."""
+    """Each selected policy's Label (policy_id, keyword, says, description) on the selection's client."""
     members = chock.install.resolve.members(catalog, selection)
     return {
         label.policy_id: label
-        for label in chock.install.package.labels(members, catalog)
+        for label in chock.install.package.labels(members, catalog, selection["client"])
     }
+
+
+def client_ids() -> list[str]:
+    """The ids of every client `chock install --client` accepts."""
+    return list(chock.install.package.settings()["clients"])
+
+
+def client_name(client: str) -> str:
+    """The client's display name from the engine's install data."""
+    return chock.install.package.client(client)["name"]
+
+
+def _shell_line(argv: list[str]) -> str:
+    """An argv as one line to type: unsafe arguments quoted, a leading ~ left unquoted."""
+    return " ".join(
+        arg if PLAIN_ARG.fullmatch(arg) else shlex.quote(arg) for arg in argv
+    )
+
+
+def client_steps(client: str) -> list[dict[str, str]]:
+    """The client's apply steps as `chock install` prints them for the default folder and bundle.
+
+    Each step is {"command": a line to type}, {"note": text to read} or {"settings": JSON to paste}.
+    """
+    dest = Path(chock.install.package.client(client)["dest"])
+    folder = chock.install.place.plugin_dir(client, dest, BUNDLE_NAME)
+    tokens = {
+        "__DEST__": str(dest),
+        "__PLUGIN_DIR__": str(folder),
+        "__PLUGIN__": BUNDLE_NAME,
+        "__MARKETPLACE__": chock.install.package.settings()["marketplace"],
+    }
+    raw = chock.install.package.client(client)["steps"]
+    rendered = chock.install.steps.render(client, tokens)
+    return [
+        {"command": _shell_line(step.command)}
+        if step.command
+        else {("settings" if "settings" in source else "note"): step.text}
+        for source, step in zip(raw, rendered, strict=True)
+    ]
 
 
 def check_selection(obj: dict[str, Any]) -> dict[str, Any]:
@@ -83,7 +159,7 @@ def check_selection(obj: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_selection(arg: str) -> dict[str, Any]:
-    """The checked selection named by a file path, a URL with #s=..., or a bare code."""
+    """The checked selection named by a file path, a URL with #s=..., or a bare code, as schema 2."""
     return chock.install.selection.load(arg)
 
 

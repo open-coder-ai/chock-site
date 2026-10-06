@@ -1,0 +1,14 @@
+# Which agents a person has seen chock's refusals fire in (design D3, D4).
+# Only the owner changes this file. A witnessed agent gets the one-command
+# install (--apply); an untested one gets the same command without --apply,
+# the label "untested in <agent>", and a link to report a witness run.
+# `report` is a public link; __CLIENT__ is filled with the agent id.
+# The order here is the order of the builder's agent picker.
+default: claude-code
+report: https://github.com/open-coder-ai/chock/issues/new?title=Witness%20report:%20__CLIENT__
+clients:
+  claude-code: witnessed
+  cursor: untested
+  codex: untested
+  copilot: untested
+  devin: untested

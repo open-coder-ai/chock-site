@@ -123,7 +123,28 @@
     "all_present": "__PRESENT__ are all picked and overlap: keep one, or the same action is checked twice.",
     "file_absent": "__PRESENT__ refuses everything until your repo has __FILE__. Create it before you install.",
     "grade:warn": "__PRESENT__ only warns: nothing is refused.",
-    "grade:advise": "__PRESENT__ is text only: nothing stops a violation."
+    "grade:advise": "__PRESENT__ is text only: nothing stops a violation.",
+    "client": "__SAYS__",
+    "overlap": "chock install warns when a picked policy is already in another chock plugin for the same agent: both copies would fire."
+  },
+  "builder_clients": {
+    "bundle_version": "1.0.0",
+    "commands": {
+      "witnessed": "chock install --selection '__CODE__' --client __CLIENT__ --apply",
+      "untested": "chock install --selection '__CODE__' --client __CLIENT__"
+    },
+    "texts": {
+      "legend": "Your agent",
+      "witnessed": "tested",
+      "untested": "untested",
+      "untested_label": "Untested in __NAME__.",
+      "untested_line": "Nobody has seen these policies fire in __NAME__ yet, so the command builds the plugin without --apply. Apply the steps below yourself, check that a refusal fires, and",
+      "report": "help test it",
+      "command_md": "The command (ask the user before running it: it builds a plugin of hooks that change how their agent behaves):",
+      "steps_witnessed": "With --apply, chock runs these steps for __NAME__:",
+      "steps_untested": "Then, in __NAME__:",
+      "grades_pending": "Per-client grades arrive with the next catalog; until then every agent shows the Claude Code labels."
+    }
   },
   "builder_texts": {
     "count_one": "1 policy",
@@ -144,6 +165,8 @@
     "cleared": "Cleared your picks",
     "bar_notes_one": "· 1 note",
     "bar_notes_many": "· {n} notes",
+    "client_chosen": "Building for {name}",
+    "client_unknown": "This link names an agent this site does not know: {id}.",
     "download_name": "chock.selection.yaml"
   }
 }

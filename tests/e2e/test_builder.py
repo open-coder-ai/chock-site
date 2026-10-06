@@ -55,9 +55,13 @@ def test_preset_gives_command_share_link_and_valid_selection(page, site_url) -> 
     assert _count(page) == f"{len(members)} policies"
     assert "--selection '" in page.locator("[data-selection-code]").inner_text()
     share = _share(page)
-    assert "#s=" in share
-    assert sorted(p["id"] for p in engine.load_selection(share)["policies"]) == members
+    assert share.endswith(f"#client=claude-code&p={','.join(members)}")
+    assert (
+        sorted(p["id"] for p in engine.load_selection(_code(page))["policies"])
+        == members
+    )
     assert page.evaluate("location.hash").startswith("#s=")
+    assert engine.load_selection(page.url)["client"] == "claude-code"
     screenshot(page, "builder_git_hygiene")
     assert_clean(page)
 
@@ -141,7 +145,7 @@ def test_unreadable_link_says_so_and_starts_empty(page, site_url) -> None:
 def test_other_catalog_ref_shows_notice_and_can_be_used_anyway(page, site_url) -> None:
     _open(page, site_url)
     page.select_option("#builder-start", "git-hygiene")
-    selection = engine.load_selection(_share(page))
+    selection = engine.load_selection(_code(page))
     selection["catalog"]["ref"] = "0" * 40
     _open(page, site_url, "#s=" + engine.encode_selection(selection))
     notice = page.locator("#link-notice").inner_text()
@@ -156,9 +160,14 @@ def test_other_catalog_ref_shows_notice_and_can_be_used_anyway(page, site_url) -
 def test_unknown_id_is_listed_not_dropped_silently(page, site_url) -> None:
     _open(page, site_url)
     page.select_option("#builder-start", "test-integrity")
-    selection = engine.load_selection(_share(page))
+    selection = engine.load_selection(_code(page))
     selection["policies"].append(
-        {"id": "no-such-policy", "version": "0.0.1", "sha256": "0" * 64}
+        {
+            "from": "catalog",
+            "id": "no-such-policy",
+            "version": "0.0.1",
+            "sha256": "0" * 64,
+        }
     )
     _open(page, site_url, "#s=" + engine.encode_selection(selection))
     assert (

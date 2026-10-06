@@ -57,7 +57,8 @@ def test_api_index_and_catalog(site_url) -> None:
     assert catalog["track"] == "coding"
     assert all(p["track"] == "coding" for p in catalog["policies"])
     schema = json.loads(_get(site_url, "/api/coding/selection.schema.json"))
-    assert "policies" in schema["properties"]
+    for version in ("v1", "v2"):
+        assert "policies" in schema["definitions"][version]["properties"]
 
 
 def test_twin_front_matter_sha_matches_page(site_url) -> None:

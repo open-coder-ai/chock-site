@@ -95,18 +95,19 @@ def test_skip_opens_the_full_builder_empty(page, site_url) -> None:
     assert_clean(page)
 
 
-def test_other_agents_see_the_clients_note_and_the_quiz_ends(page, site_url) -> None:
+def test_the_agent_answer_and_the_agent_picker_are_one_choice(page, site_url) -> None:
     _start(page, site_url)
-    for name in ("Cursor", "Codex", "Copilot or Devin"):
-        page.get_by_role("radio", name=name).check()
-        note = page.locator(".quiz-note")
-        assert note.is_visible()
-        link = note.get_by_role("link")
-        assert link.get_attribute("href") == "/coding/clients/"
-        assert page.locator("#quiz-next").is_hidden()
-    page.get_by_role("radio", name="Claude Code").check()
-    assert page.locator(".quiz-note").is_hidden()
-    assert page.locator("#quiz-next").is_visible()
+    for client in ("cursor", "codex", "copilot", "devin", "claude-code"):
+        page.locator(f"input[name='quiz-agent'][value='{client}']").check()
+        assert page.locator(f"#client-{client}").is_checked()
+        assert page.locator(".quiz-note").is_hidden()
+        assert page.locator("#quiz-next").is_visible()
+    page.locator("input[name='quiz-agent'][value='codex']").check()
+    _answer_secrets_and_skipped(page, "Only hard stops")
+    command = page.locator("[data-quiz-command]").inner_text()
+    assert command.endswith(" --client codex")
+    assert engine.load_selection(command.split("'")[1])["client"] == "codex"
+    assert "Untested in Codex." in page.locator(".quiz-command").inner_text()
     assert_clean(page)
 
 
@@ -206,7 +207,7 @@ def test_command_is_a_valid_selection_with_the_picked_ids(page, site_url) -> Non
     _answer_secrets_and_skipped(page, "Only hard stops")
     command = page.locator("[data-quiz-command]").inner_text()
     assert command.startswith("chock install --selection '")
-    assert command.endswith("' --apply")
+    assert command.endswith("' --client claude-code --apply")
     selection = engine.load_selection(command.split("'")[1])
     assert sorted(p["id"] for p in selection["policies"]) == sorted(_result_ids(page))
     site = _site(page, site_url)
@@ -248,10 +249,12 @@ def test_the_whole_quiz_works_by_keyboard(page, site_url) -> None:
     page.locator("#quiz-title").focus()
     keys.press("Tab")
     assert page.evaluate("document.activeElement.name") == "quiz-agent"
-    keys.press("ArrowDown")  # Cursor
-    assert page.locator(".quiz-note").is_visible()
+    keys.press("ArrowDown")  # Cursor: the agent picker follows, focus stays here
+    assert page.locator("#client-cursor").is_checked()
+    assert page.evaluate("document.activeElement.value") == "cursor"
     keys.press("ArrowUp")  # Claude Code again
-    assert page.locator(".quiz-note").is_hidden()
+    assert page.locator("#client-claude-code").is_checked()
+    assert page.evaluate("document.activeElement.name") == "quiz-agent"
     while page.evaluate("document.activeElement.id") != "quiz-next":
         keys.press("Tab")
     keys.press("Enter")

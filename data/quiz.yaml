@@ -29,12 +29,13 @@ questions:
   - id: agent
     kind: single
     title: "Which agent do you use?"
-    hint: "The builder makes a Claude Code plugin; the others install policies from their own plugin repositories."
+    hint: "The builder makes one plugin for one agent. The agent picker above the questions shows the same choice; change it at any time."
     options:
-      - {id: claude-code, label: "Claude Code", sub: "Native plugin, built here", default: true}
-      - {id: cursor, label: "Cursor", sub: "Installs from its plugin repository", other: true}
-      - {id: codex, label: "Codex", sub: "Installs from its plugin repository", other: true}
-      - {id: copilot-devin, label: "Copilot or Devin", sub: "Each installs from its own plugin repository", other: true}
+      - {id: claude-code, label: "Claude Code", sub: "Tested: one command builds and installs it", default: true}
+      - {id: cursor, label: "Cursor", sub: "Untested: the command builds it, you apply it"}
+      - {id: codex, label: "Codex", sub: "Untested: the command builds it, you apply it"}
+      - {id: copilot, label: "GitHub Copilot", sub: "Untested: the command builds it, you apply it"}
+      - {id: devin, label: "Devin", sub: "Untested: the command builds it, you apply it"}
 
   - id: worries
     kind: multi
