@@ -1,7 +1,16 @@
 // The builder: pick policies, then read the command, share link and selection file.
 // Everything runs in the browser. The picks live in the URL fragment, which browsers
 // never send to a server.
-import { announce, copyText, decodeSelection, encodeSelection } from "./common.js";
+import {
+  announce,
+  buildSelection as selectionFor,
+  copyText,
+  decodeSelection,
+  encodeSelection,
+  installCommand,
+  sameMembers,
+} from "./common.js";
+import { initQuiz } from "./quiz.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -13,16 +22,22 @@ const fill = (text, values) =>
 const fillTokens = (text, values) =>
   text.replace(/__([A-Z]+)__/g, (match, key) => (key in values ? values[key] : match));
 
-function sameMembers(a, b) {
-  return a.length === b.length && a.every((id) => b.includes(id));
-}
-
 async function loadSite() {
   const response = await fetch("/data/site.json");
   return response.json();
 }
 
+// These fragments open the full builder; with none of them the start screen shows first.
+const FULL_FRAGMENT = /^#(s|preset|add)=/;
+
 async function main() {
+  const quizEl = $("#quiz");
+  const fullEl = $("#builder-full");
+  const showQuiz = (on) => {
+    quizEl.hidden = !on;
+    fullEl.hidden = on;
+  };
+  showQuiz(!FULL_FRAGMENT.test(location.hash));
   const site = await loadSite();
   const T = site.builder_texts;
   const policies = new Map(site.policies.map((p) => [p.id, p]));
@@ -55,17 +70,7 @@ async function main() {
   // ----- the selection object (plan 8.1) -----
 
   function buildSelection() {
-    const ids = [...picked].sort();
-    const catalog = { source: site.catalog.source, ref: site.catalog.ref };
-    if (site.catalog.release) catalog.release = site.catalog.release;
-    const selection = { schema: 1, client: "claude-code", catalog };
-    const preset = presets.find((p) => sameMembers(p.members, ids));
-    if (preset) selection.preset = preset.id;
-    selection.policies = ids.map((id) => {
-      const p = policies.get(id);
-      return { id, version: p.version, sha256: p.sha256 };
-    });
-    return selection;
+    return selectionFor(site, picked);
   }
 
   // ----- warnings (plan 8.3) -----
@@ -197,9 +202,9 @@ async function main() {
       showTab(activeTab);
       return;
     }
-    const code = encodeSelection(buildSelection());
+    const { code, command } = installCommand(site, buildSelection());
     const url = `${location.origin}${location.pathname}#s=${code}`;
-    codeEl.textContent = site.command.replace("__CODE__", () => code);
+    codeEl.textContent = command;
     codeEl.dataset.selectionCode = code;
     shareEl.value = url;
     shareEl.setAttribute("data-selection-url", url);
@@ -460,9 +465,21 @@ async function main() {
   }
 
   window.addEventListener("hashchange", () => {
-    if (/^#(s|preset|add)=/.test(location.hash)) applyFragment();
+    if (!FULL_FRAGMENT.test(location.hash)) return;
+    showQuiz(false);
+    applyFragment();
   });
   applyFragment();
+
+  const chipOf = new Map(rows.map((row) => [row.dataset.policyId, $(".label", row)]));
+  initQuiz({
+    site,
+    chipFor: (id) => chipOf.get(id),
+    onSkip: () => {
+      showQuiz(false);
+      start.focus();
+    },
+  });
 }
 
 main();

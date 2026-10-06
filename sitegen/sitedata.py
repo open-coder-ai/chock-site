@@ -7,7 +7,7 @@ from typing import Any
 import yaml
 
 from . import catalog as catalog_mod
-from . import engine, homedata
+from . import engine, homedata, quiz
 from . import presets as presets_mod
 from .model import Site, Track
 
@@ -78,6 +78,7 @@ def build_site(
     demo = homedata.load_demo(catalog, data_dir, policies)
     incident_copy, incidents = homedata.load_incidents(data_dir, policies)
     site_data["incidents"] = incident_copy
+    site_data["quiz"] = quiz.load_quiz(data_dir, presets, set(engine.label_words()))
 
     visible = {p.id for p in policies}
     rules = [
@@ -166,6 +167,7 @@ def site_dict(site: Site) -> dict[str, Any]:
         "warning_texts": site.warning_texts,
         "command": site.command,
         "builder_texts": site.data["builder_texts"],
+        "quiz": site.data["quiz"],
     }
 
 

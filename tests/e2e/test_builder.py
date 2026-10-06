@@ -17,7 +17,10 @@ MOBILE = {"width": 390, "height": 844}
 
 
 def _open(page, site_url: str, fragment: str = "") -> None:
+    """Open the full builder; with no fragment the start screen shows, so skip it."""
     page.goto(site_url + BUILDER + fragment)
+    if not fragment:
+        page.get_by_role("button", name="Skip to the full builder").click()
     page.wait_for_selector("#builder-status:not(:empty)")
 
 
@@ -248,6 +251,9 @@ def test_picks_never_leave_the_browser(page, site_url) -> None:
     _open(page, site_url)
     page.select_option("#builder-start", "git-hygiene")
     code = _code(page)
+    page.evaluate(
+        "document.fonts.ready.then(() => true)"
+    )  # no font fetch left to abort
     page.reload()
     page.wait_for_selector(".sel-item")
     assert requests

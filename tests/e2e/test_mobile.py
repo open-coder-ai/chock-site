@@ -67,7 +67,7 @@ def test_screenshots_for_the_pr(browser, site_url) -> None:
         "general": ("/general/", None),
         "policies": ("/coding/policies/", None),
         "policy-block-no-verify": ("/coding/policies/block-no-verify/", None),
-        "builder-empty": ("/coding/builder/", "#builder-status:not(:empty)"),
+        "builder-start": ("/coding/builder/", "#quiz-title:not(:empty)"),
         "builder-git-hygiene": ("/coding/builder/#preset=git-hygiene", ".sel-item"),
         "install": ("/coding/install/", None),
         "clients": ("/coding/clients/", None),
