@@ -35,8 +35,9 @@ def test_general_badges_and_section_nav(page, site_url) -> None:
     page.goto(site_url + "/general/")
     badge = page.locator('#nav-links a[href="/general/"] .badge')
     assert badge.inner_text() == "DESIGN IN PROGRESS"
-    footer_badge = page.locator('.footer-links a[href="/general/"] .badge')
-    assert footer_badge.count() == 1
+    # The badge lives in the header; footer links stay plain text.
+    assert page.locator('.footer-links a[href="/general/"]').count() == 1
+    assert page.locator('.footer-links a[href="/general/"] .badge').count() == 0
     nav = page.locator('nav[aria-label="General agents"]')
     assert nav.count() == 1
     links = nav.locator("a")

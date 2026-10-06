@@ -171,6 +171,47 @@ def test_skip_link_and_main(built) -> None:
         assert '<main id="content">' in text, page
 
 
+class _FooterLinks(HTMLParser):
+    """The visible text of every <a> inside <footer>."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.footer = 0
+        self.in_a = False
+        self.texts: list[str] = []
+        self._a: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag == "footer":
+            self.footer += 1
+        elif tag == "a" and self.footer:
+            self.in_a = True
+            self._a = []
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "footer" and self.footer:
+            self.footer -= 1
+        elif tag == "a" and self.in_a:
+            self.in_a = False
+            self.texts.append("".join(self._a))
+
+    def handle_data(self, data: str) -> None:
+        if self.in_a:
+            self._a.append(data)
+
+
+def test_footer_link_text_is_never_a_url_or_path(built) -> None:
+    """A (href, label) swap shows the raw link as text; catch it on every page."""
+    for page in _pages(built):
+        parser = _FooterLinks()
+        parser.feed(page.read_text(encoding="utf-8"))
+        assert parser.texts, f"{page}: no footer links"
+        for text in parser.texts:
+            text = text.strip()
+            assert text, f"{page}: empty footer link text"
+            assert not text.startswith(("/", "http")), f"{page}: {text!r}"
+
+
 class _TextOutsideCode(HTMLParser):
     """Rendered text, skipping <pre>, <code>, <script> and <style> subtrees."""
 

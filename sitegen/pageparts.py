@@ -235,26 +235,19 @@ def write_md(out_dir: Path, path: str, text: str) -> Path:
 def _footer_links(site: Site, templates: Path) -> dict[str, Safe]:
     """The three footer link columns: sections, agents and project."""
     links = site.data["links"]
-    product = [
-        (
-            f"/{t.slug}/",
-            t.title,
-            str(badge(site, templates, t.status)) if t.status == "in_design" else "",
-        )
-        for t in site.tracks
-    ]
+    product = [(f"/{t.slug}/", t.title) for t in site.tracks]
     product += [
-        ("/coding/policies/", "Policies", ""),
-        ("/coding/builder/", "Builder", ""),
+        ("/coding/policies/", "Policies"),
+        ("/coding/builder/", "Builder"),
     ]
     repos = [links["claude_marketplace"]] + [c["repo"] for c in site.data["clients"]]
-    agents = [(url, url.rstrip("/").rsplit("/", 1)[-1], "") for url in repos]
+    agents = [(url, url.rstrip("/").rsplit("/", 1)[-1]) for url in repos]
     project = [
-        ("GitHub", links["engine_repo"], ""),
-        ("FAQ", "/faq/", ""),
-        ("Security", "/security/", ""),
-        ("For AI agents", "/for-agents/", ""),
-        ("llms.txt", "/llms.txt", ""),
+        (links["engine_repo"], "GitHub"),
+        ("/faq/", "FAQ"),
+        ("/security/", "Security"),
+        ("/for-agents/", "For AI agents"),
+        ("/llms.txt", "llms.txt"),
     ]
     return {
         "product": nav_items(templates, product, ""),

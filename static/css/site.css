@@ -75,6 +75,9 @@
   --dots: #34405E;
   --sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Sticky panels park this far down: common.js overwrites it with the
+     measured header height; this fallback is the static 1280px value. */
+  --sticky-top: 117px;
   color-scheme: dark;
 }
 
@@ -508,6 +511,7 @@ button.copy[disabled], button.download[disabled] { opacity: 0.5; cursor: default
 
 .step h3 { font-size: 16px; }
 .step p { margin: 0; font-size: 14px; }
+.step code { white-space: nowrap; }
 
 .stats {
   display: grid;
@@ -838,7 +842,7 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .latest-line { color: var(--body); font-size: 14px; }
 .latest-line .mono { color: var(--text); }
 
-.policy-side { align-self: start; position: sticky; top: 118px; display: grid; gap: 14px; }
+.policy-side { align-self: start; position: sticky; top: calc(var(--sticky-top) + 16px); display: grid; gap: 14px; }
 
 .side-card {
   background: var(--panel);
@@ -915,8 +919,8 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
   border-radius: 16px;
   padding: 20px;
   position: sticky;
-  top: 118px;
-  max-height: calc(100vh - 134px);
+  top: var(--sticky-top);
+  max-height: calc(100vh - var(--sticky-top) - 16px);
   overflow-y: auto;
 }
 
