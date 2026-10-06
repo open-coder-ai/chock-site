@@ -69,6 +69,32 @@ export function decodeSelection(code) {
   return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
 }
 
+export function sameMembers(a, b) {
+  return a.length === b.length && a.every((id) => b.includes(id));
+}
+
+// The selection object (plan 8.1) for a set of picked ids; the builder and its start screen share it.
+export function buildSelection(site, picked) {
+  const ids = [...picked].sort();
+  const policies = new Map(site.policies.map((p) => [p.id, p]));
+  const catalog = { source: site.catalog.source, ref: site.catalog.ref };
+  if (site.catalog.release) catalog.release = site.catalog.release;
+  const selection = { schema: 1, client: "claude-code", catalog };
+  const preset = site.presets.find((p) => sameMembers(p.members, ids));
+  if (preset) selection.preset = preset.id;
+  selection.policies = ids.map((id) => {
+    const p = policies.get(id);
+    return { id, version: p.version, sha256: p.sha256 };
+  });
+  return selection;
+}
+
+// The install command for a selection: the engine's command template with the code filled in.
+export function installCommand(site, selection) {
+  const code = encodeSelection(selection);
+  return { code, command: site.command.replace("__CODE__", () => code) };
+}
+
 function initNavToggle() {
   const button = document.querySelector(".nav-toggle");
   const nav = document.getElementById("nav-links");

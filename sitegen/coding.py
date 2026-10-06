@@ -480,6 +480,21 @@ def _member_rows(
     )
 
 
+def _quiz_lines(site: Site) -> str:
+    """The start screen's questions and answers as Markdown lines for the twin."""
+    lines = []
+    for number, question in enumerate(site.data["quiz"]["questions"], start=1):
+        lines.append(f"{number}. {question['title']} {question['hint']}\n")
+        for option in question["options"]:
+            extra = ""
+            if option.get("presets"):
+                extra = f" (presets: {', '.join(option['presets'])})"
+            elif option.get("allow"):
+                extra = f" (labels: {', '.join(option['allow'])})"
+            lines.append(f"   - {option['label']}: {option['sub']}{extra}\n")
+    return "".join(lines)
+
+
 def _builder(
     site: Site, track: Track, out_dir: Path, templates: Path, counts_: dict[str, Any]
 ) -> tuple[str, str]:
@@ -537,6 +552,7 @@ def _builder(
                 templates / track.slug / "builder.html",
                 SUB=Prose(page["description"]),
                 NOSCRIPT=Prose(texts["builder_noscript"]),
+                QUIZ_SKIP=site.data["quiz"]["texts"]["skip"],
                 PRESET_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
                 GROUP_SECTIONS=Safe(groups),
@@ -560,6 +576,7 @@ def _builder(
         templates / MD / track.slug / "builder.md",
         SUB=Prose(page["description"]),
         NOSCRIPT=texts["builder_noscript"],
+        QUIZ_LINES=_quiz_lines(site),
         PRESET_LINES="".join(
             f"- {preset.title} ({len(preset.members)} policies): {preset.summary}\n"
             for preset in site.presets
