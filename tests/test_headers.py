@@ -1,4 +1,4 @@
-"""The Cloudflare Pages deploy: the _headers file and the deploy workflow."""
+"""The Cloudflare Pages _headers file and the workflow hardening."""
 
 import re
 from html.parser import HTMLParser
@@ -8,7 +8,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 HEADERS = ROOT / "deploy" / "_headers"
-WORKFLOW = ROOT / ".github" / "workflows" / "deploy.yml"
+WORKFLOWS = ROOT / ".github" / "workflows"
 PINNED = re.compile(r"^\s*(?:- )?uses: [\w.-]+/[\w./-]+@[0-9a-f]{40} # v\d")
 
 
@@ -64,6 +64,7 @@ def test_headers_hardening_and_noindex() -> None:
     for feature in ("camera", "microphone", "geolocation", "payment"):
         assert f"{feature}=()" in every["Permissions-Policy"]
     assert rules["https://:project.pages.dev/*"] == {"X-Robots-Tag": "noindex"}
+    assert rules["https://:version.:project.pages.dev/*"] == {"X-Robots-Tag": "noindex"}
     assert "Strict-Transport-Security" not in text
     for folder in ("css", "js", "img", "fonts"):
         assert rules[f"/{folder}/*"] == {"Cache-Control": "public, max-age=300"}
@@ -72,27 +73,25 @@ def test_headers_hardening_and_noindex() -> None:
     assert max(len(line) for line in text.splitlines()) <= 2000
 
 
-def test_deploy_workflow_is_pinned_and_least_privilege() -> None:
-    text = WORKFLOW.read_text(encoding="utf-8")
-    flow = yaml.safe_load(text)
-    triggers = flow[True]  # YAML 1.1 reads the key `on` as true
-    assert triggers == {"push": {"branches": ["main"]}}
-    assert "pull_request" not in text
-    assert flow["jobs"]["deploy"]["environment"] == "production"
-    assert flow["permissions"] == {"contents": "read"}
-    for job in flow["jobs"].values():
-        assert "permissions" not in job
-    uses = [line for line in text.splitlines() if "uses:" in line]
-    assert uses
-    for line in uses:
-        assert PINNED.match(line), line
-    secrets = set(re.findall(r"secrets\.(\w+)", text))
-    assert secrets == {"CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"}
-    assert "deploy skipped: Cloudflare secrets not set" in text
+def test_workflows_are_pinned_and_least_privilege() -> None:
+    paths = sorted(WORKFLOWS.glob("*.yml"))
+    assert [p.name for p in paths] == ["ci.yml"]
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        flow = yaml.safe_load(text)
+        assert flow["permissions"] == {"contents": "read"}, path.name
+        for job in flow["jobs"].values():
+            assert "permissions" not in job, path.name
+            assert "environment" not in job, path.name
+        assert "pull_request_target" not in text, path.name
+        assert "secrets." not in text, path.name
+        for line in text.splitlines():
+            if "uses:" in line:
+                assert PINNED.match(line), line
 
 
 def test_every_checkout_drops_credentials() -> None:
-    for path in sorted(WORKFLOW.parent.glob("*.yml")):
+    for path in sorted(WORKFLOWS.glob("*.yml")):
         flow = yaml.safe_load(path.read_text(encoding="utf-8"))
         for job in flow["jobs"].values():
             for step in job["steps"]:

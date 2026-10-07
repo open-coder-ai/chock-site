@@ -41,6 +41,8 @@ SHARED_TOP_LEVEL = {
     ".sitegen-output",
     # Cloudflare Pages response headers (DEPLOY-1); read by the host, not a page.
     "_headers",
+    # The release version marker (REL-3), read by the release check.
+    "version.json",
 }
 EXAMPLE = Track(
     id="example",

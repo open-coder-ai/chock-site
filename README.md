@@ -39,54 +39,74 @@ python -m sitegen serve --catalog .catalog --port 8080
 `serve` runs the same build as `python -m sitegen --catalog .catalog --out dist`, then
 serves `dist/` with the standard library's `http.server`, bound to `127.0.0.1` only.
 It prints `Serving chock.sh locally at http://127.0.0.1:<port>/ (Ctrl+C to stop)`.
-It is a local test server only. Deploys run in CI; see "Deploy".
+It is a local test server only. Cloudflare builds the hosted site; see "Deploy".
 
 ## Deploy (Cloudflare Pages)
 
-`.github/workflows/deploy.yml` builds the site exactly as `ci.yml` does (the catalog at
-`.catalog-ref`, the engine at `.framework-ref`) and uploads `dist/` to the Cloudflare
-Pages project `chock-site` with the official wrangler action (Direct Upload, so every
-build runs in this repo's pinned CI, never on Cloudflare).
+Cloudflare Pages builds the site itself, through its **Git integration**. There is no
+deploy workflow and no Cloudflare token in GitHub.
 
-- Only a push to `main` deploys, to the production branch `chock-site.pages.dev`.
-  Pull requests never deploy and never see the Cloudflare secrets; before launch,
-  `chock-site.pages.dev` is the staging site.
-- The deploy job runs in the GitHub environment `production`, whose secrets only `main`
-  can read.
-- Without the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the job still
-  builds, prints `deploy skipped: Cloudflare secrets not set` and succeeds.
-- `ci.yml` runs `actionlint` and `zizmor` on every workflow; every checkout sets
-  `persist-credentials: false`.
+- **Production is the `release` branch.** chock.sh changes only when the release job
+  (in open-coder-ai/chock-release) moves `release` to a release commit.
+- **Every other branch, `main` and PR branches included, builds a preview** on a
+  `*.chock-site.pages.dev` URL. Before launch, these previews are the staging site.
+
+**The build: `sh build.sh`** (POSIX sh, `set -eu`). Cloudflare runs it, and CI's
+`build` job runs it on every PR, so the Cloudflare build path is tested before merge.
+It:
+
+1. reads `.framework-ref` and `.catalog-ref` and refuses any pin that is not a full
+   40-hex commit;
+2. fetches chock-catalog at `.catalog-ref` and refuses if `HEAD` is not exactly that
+   commit;
+3. installs, in a fresh venv, `requirements-build.txt` (pinned, from PyPI) and the
+   engine at `.framework-ref`;
+4. runs `python -m sitegen --catalog <catalog> --out dist`;
+5. checks that `dist/_headers` and `dist/version.json` exist.
+
+It reads no secrets. Its only network sources are the two GitHub repos above and PyPI.
+It needs Python 3.12 and stops otherwise. Both GitHub repos must be readable without
+credentials.
+
+**Version marker.** `data/release.yaml` holds the site version (`X.Y.Z`). The build
+writes `dist/version.json` as `{"version", "engine", "catalog"}` (the version and the
+two pins) and shows `v<version>` in every page footer. The release job reads
+`/version.json` to check that the live site is the release it moved `release` to.
 
 **Response headers.** `deploy/_headers` is copied into `dist/_headers` by the build.
 It sets, on every path, the page CSP plus `frame-ancestors 'none'`,
 `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and
-`Cross-Origin-Opener-Policy`. `tests/test_deploy.py` checks that its CSP equals the
+`Cross-Origin-Opener-Policy`. `tests/test_headers.py` checks that its CSP equals the
 `<meta>` CSP in `templates/base.html` plus `frame-ancestors`; change both together.
 Asset names are not content-hashed, so `/css/*`, `/js/*`, `/img/*` and `/fonts/*` get a
 short cache (`max-age=300`). There is no HSTS until launch.
 
-**Not indexed before launch.** Every `*.pages.dev` URL is served with
-`X-Robots-Tag: noindex`.
+**Not indexed.** Every `*.pages.dev` URL is served with `X-Robots-Tag: noindex`:
+`https://:project.pages.dev/*` covers production and `https://:version.:project.pages.dev/*`
+covers previews (a placeholder stops at `.`, per Cloudflare's `_headers` docs).
+
+**CI hardening.** `ci.yml` runs `actionlint` and `zizmor` on every workflow, every
+action is pinned by commit SHA, and every checkout sets `persist-credentials: false`.
 
 **Owner setup, once.**
 
-1. Create a Cloudflare Pages project named `chock-site` with **Direct Upload**, not Git
-   integration.
-2. Create an API token with only **Account → Cloudflare Pages → Edit**; copy the Account ID.
-3. In this repo's Settings → Environments, create `production` and set **Deployment
-   branches** to `main` only.
-4. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as secrets of the `production`
-   environment, never as repository secrets.
-5. At launch: add the custom domain `chock.sh` in the Pages project, update DNS as
+1. Make chock-site **public** (branch rules on a private repo need a paid plan).
+2. Add a branch rule (ruleset) on `release`: only the owner and the GitHub App
+   `chock-release-bot` may push it, or bypass the rule. No force-push, no deletion.
+3. In Cloudflare → Workers & Pages → Create → Pages → **Connect to Git**. Grant the
+   Cloudflare GitHub app access to **chock-site only**, then pick it.
+4. Project settings:
+   - production branch: `release`;
+   - build command: `sh build.sh`;
+   - build output directory: `dist`;
+   - environment variable `PYTHON_VERSION` = `3.12` (production and preview).
+5. Preview deployments: **all non-production branches**.
+6. At launch: add the custom domain `chock.sh` in the Pages project, update DNS as
    Cloudflare shows, then set `launched: true` and add HSTS in a small PR.
 
-Environment branch rules need a public repo, or a paid plan for a private one. Without
-them, any workflow on any branch pushed to this repo can read the token.
-
 **Rollback.** Pages keeps every deployment. In the Pages project → Deployments, pick an
-earlier production deployment and choose **Rollback to this deployment**; or revert the
-commit on `main` and let the workflow deploy again.
+earlier production deployment and choose **Rollback to this deployment**; or move
+`release` back to the earlier release commit.
 
 ## Windows (PowerShell)
 

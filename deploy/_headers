@@ -1,6 +1,6 @@
 # Cloudflare Pages response headers, copied into dist/ by sitegen.
 # The CSP is the <meta> CSP in templates/base.html plus frame-ancestors;
-# tests/test_deploy.py checks that the two agree.
+# tests/test_headers.py checks that the two agree.
 # No HSTS until launch, once chock.sh serves HTTPS.
 
 /*
@@ -20,6 +20,9 @@
 /fonts/*
   Cache-Control: public, max-age=300
 
-# No *.pages.dev URL is indexed before launch.
+# No *.pages.dev URL is indexed: production, and previews (main, PR branches).
+# A placeholder stops at ".", so previews need their own rule.
 https://:project.pages.dev/*
+  X-Robots-Tag: noindex
+https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex

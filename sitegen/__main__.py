@@ -14,6 +14,7 @@ from .catalog import CatalogError, catalog_head
 from .model import Site
 from .pages import PageError
 from .presets import PresetError
+from .version import VersionError, load_version, write_version_json
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -106,9 +107,11 @@ def build(catalog: Path, out: Path, source: str, release: str | None) -> Site:
             else:
                 shutil.copy2(item, dest)
     shutil.copy2(HEADERS, out / "_headers")
-    site = sitedata.build_site(
-        catalog, ref, _pin(".framework-ref"), source, release, DATA
-    )
+    engine_ref = _pin(".framework-ref")
+    version = load_version(DATA)
+    site = sitedata.build_site(catalog, ref, engine_ref, source, release, DATA)
+    site.data["version"] = version
+    write_version_json(out, version, engine_ref, ref)
     sitedata.write_site_json(site, out)
     pages_mod.write_css(site, out, STATIC)
     pages_mod.write_pages(site, out, TEMPLATES)
@@ -134,7 +137,7 @@ def _build_parser(prog: str, out_required: bool) -> argparse.ArgumentParser:
 def _run(args: argparse.Namespace) -> Site:
     try:
         return build(args.catalog, args.out, args.catalog_source, args.release)
-    except (CatalogError, PresetError, PageError) as exc:
+    except (CatalogError, PresetError, PageError, VersionError) as exc:
         print(exc, file=sys.stderr)
         raise SystemExit(2) from exc
 
