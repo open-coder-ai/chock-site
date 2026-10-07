@@ -20,7 +20,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, render_file, render_text_file
+from .render import Prose, Safe, md, md_code, render_file, render_text_file
 
 HOME = "home"
 MD = "md"
@@ -207,13 +207,22 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     )
 
 
+def how_command(site: Site) -> str:
+    """The home page's command form: the untested one, since --apply is only for tested agents."""
+    return data_fill(site.data["builder_clients"]["commands"]["untested"], COMMAND_FORM)
+
+
 def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
-    command = data_fill(site.command, COMMAND_FORM)
+    command = how_command(site)
     steps = []
     for i, step in enumerate(land["how"], start=1):
         extra = ""
         if i == 2:
-            extra = render_file(templates / PARTIALS / "how-code.html", CODE=command)
+            extra = render_file(
+                templates / PARTIALS / "how-code.html", CODE=command
+            ) + render_file(
+                templates / PARTIALS / "how-note.html", NOTE=land["how_apply_note"]
+            )
         steps.append(
             {
                 "NUM": str(i),
@@ -573,8 +582,8 @@ def _twin(
     )
     incidents = site.data["incidents"]
     demo = "".join(
-        f"- {c.policy}: `{_demo_input(land, c)}` → "
-        f"{land['demo_refused']} {c.policy}: {_policy(site, c.policy).says}\n"
+        f"- {c.policy}: {md_code(_demo_input(land, c))} → "
+        f"{land['demo_refused']} {c.policy}: {md(_policy(site, c.policy).says)}\n"
         for c in site.demo
     )
     tracks = "".join(
@@ -584,9 +593,9 @@ def _twin(
     surfaces = "".join(
         f"- {row['name']} ({row['state_word']}): "
         + (
-            row["says"]
+            md(row["says"])
             if row["keyword"] is None
-            else f"{site.label_words[COUNTED][row['keyword']]} — {row['says']}"
+            else f"{site.label_words[COUNTED][row['keyword']]} — {md(row['says'])}"
         )
         + "\n"
         for row in _surface_rows(site, policy)
@@ -614,7 +623,8 @@ def _twin(
         HOW_LINES="".join(
             f"{i}. {s['title']} — {s['body']}\n" for i, s in enumerate(land["how"], 1)
         ),
-        COMMAND=data_fill(site.command, COMMAND_FORM),
+        COMMAND=how_command(site),
+        APPLY_NOTE=land["how_apply_note"],
         SURFACE_BODY=data_fill(land["surface_body"], {"__POLICY__": policy.id}),
         SURFACE_LINES=surfaces,
         USECASE_LINES=cases,

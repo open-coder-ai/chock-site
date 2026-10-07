@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import authordata, clientpage, engine
+from . import authordata, clientdata, clientpage, engine
 from .catalog import first_sentence
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
@@ -23,7 +23,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, render_file, render_text_file
+from .render import Prose, Safe, md, md_code, render_file, render_text_file
 from .sitedata import site_dict
 
 MD = "md"
@@ -104,7 +104,7 @@ def _home(
                 GLANCE_HEADING=home["glance_heading"],
                 GLANCE_LINK=home["glance_link"],
                 STAT_CARDS=Safe(stats),
-                COMPUTED_NOTE=texts["computed_note"],
+                COMPUTED_NOTE=f"{texts['computed_note']} {grades_note(site)}",
                 PRESETS_HEADING=home["presets_heading"],
                 PRESETS_INTRO=Prose(home["presets_intro"]),
                 PRESET_CARDS=Safe(preset_cards),
@@ -152,6 +152,19 @@ def _home(
     )
     write_md(out_dir, f"/{track.slug}/", twin)
     return f"/{track.slug}/", twin
+
+
+def engine_client_name(site: Site) -> str:
+    """The agent whose grades the build-time labels and counts show."""
+    return site.data["builder_clients"]["clients"][clientdata.ENGINE_CLIENT]["name"]
+
+
+def grades_note(site: Site) -> str:
+    """The sentence naming the agent behind the labels and counts."""
+    return data_fill(
+        site.data["texts"]["grades_agent_note"],
+        {"__AGENT__": engine_client_name(site)},
+    )
 
 
 def _where_text(site: Site, policy: Policy) -> str:
@@ -259,7 +272,7 @@ def _policies_list(
                 INTRO=Prose(intro),
                 DIST_LABEL=dist_label,
                 DIST_SEGS=Safe(dist_segs),
-                COMPUTED_NOTE=texts["computed_note"],
+                COMPUTED_NOTE=f"{texts['computed_note']} {grades_note(site)}",
                 SEARCH_PLACEHOLDER=data_fill(texts["policies_search"], subs),
                 GROUP_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
@@ -289,11 +302,11 @@ def _policies_list(
     )
     twin = render_text_file(
         templates / MD / track.slug / "policies.md",
-        INTRO=Prose(intro),
+        INTRO=Prose(f"{intro} {grades_note(site)}"),
         ROWS="".join(
-            f"- [{policy.name}](/{track.slug}/policies/{policy.id}/index.md) "
-            f"(`{policy.id}`, v{policy.version}): {policy.word} — {policy.says}. "
-            f"{first_sentence(policy.description)}\n"
+            f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md) "
+            f"({md_code(policy.id)}, v{md(policy.version)}): {policy.word} — "
+            f"{md(policy.says)}. {md(first_sentence(policy.description))}\n"
             for policy in policies_sorted(site)
         ),
     )
@@ -418,8 +431,8 @@ def _policy_pages(
                 EXAMPLES_NOTE=Prose(texts["examples_note"]),
             )
             examples_md = "\n## Examples\n\n" + "".join(
-                f"- {e.word}: {e.prompt}"
-                + (f" — `{e.command}`" if e.command else "")
+                f"- {e.word}: {md(e.prompt)}"
+                + (f" — {md_code(e.command)}" if e.command else "")
                 + "\n"
                 for e in policy.examples
             )
@@ -492,8 +505,8 @@ def _policy_pages(
             templates / MD / track.slug / "policy.md",
             ID=policy.id,
             TRACK=policy.track,
-            NAME=policy.name,
-            VERSION=policy.version,
+            NAME=md(policy.name),
+            VERSION=md(policy.version),
             WORD=policy.word,
             TIER_WORD=site.label_words["repos"][policy.tier],
             TIER_MEANING=site.data["label_meanings"][
@@ -504,7 +517,7 @@ def _policy_pages(
             SHA256=policy.sha256,
             SOURCE_URL=policy.source_url,
             CATALOG_REF=site.catalog_ref,
-            SAYS=policy.says.rstrip(".") + ".",
+            SAYS=md(policy.says.rstrip(".") + "."),
             LABEL_NOTE=texts["label_box_note"],
             STATUS_MD=(
                 f"Status: {policy.status}."
@@ -515,16 +528,16 @@ def _policy_pages(
             AGENT_LINES="".join(
                 f"- {row['name']} ({row['state_word']}): "
                 + (f"{row['word']} — " if row["word"] else "")
-                + f"{row['says']}. Builder: /coding/builder/#client={row['client']}&p={policy.id}\n"
+                + f"{md(row['says'])}. Builder: /coding/builder/#client={row['client']}&p={policy.id}\n"
                 for row in _agent_labels(site, policy)
             ),
             PLUGIN_NOTE=(" " + texts["plugin_repo_note"] if plugin_note else ""),
-            DESCRIPTION=policy.description,
-            MISSES=policy.misses or texts["misses_empty"],
+            DESCRIPTION=md(policy.description),
+            MISSES=md(policy.misses) if policy.misses else texts["misses_empty"],
             EXAMPLES_MD=examples_md,
-            LATEST_VERSION=policy.latest.version,
-            LATEST_DATE=policy.latest.date,
-            LATEST_CHANGE=policy.latest.change,
+            LATEST_VERSION=md(policy.latest.version),
+            LATEST_DATE=md(policy.latest.date),
+            LATEST_CHANGE=md(policy.latest.change),
             EVAL_EXECUTED=str(policy.eval_executed),
             EVAL_CASES=str(policy.eval_cases),
             CATALOG_COMMIT_URL=site.data["links"]["catalog_commit"] + site.catalog_ref,
@@ -652,6 +665,10 @@ def _builder(
                 ),
                 PRESET_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
+                GRADES_AGENT=data_fill(
+                    site.data["builder_texts"]["grades_for"],
+                    {"{name}": engine_client_name(site)},
+                ),
                 GROUP_SECTIONS=Safe(groups),
                 EMPTY=Prose(texts["builder_empty"]),
                 NEED_ONE=Prose(texts["builder_need_one"]),
@@ -1080,8 +1097,8 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
     llms += f"\n## {track.title}: policies\n\n"
     for policy in policies_sorted(site):
         llms += (
-            f"- [{policy.name}](/{track.slug}/policies/{policy.id}/index.md): "
-            f"{policy.word}, {policy.says}\n"
+            f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md): "
+            f"{policy.word}, {md(policy.says)}\n"
         )
     llms += f"\n## {track.title}: presets\n\n"
     for preset in site.presets:

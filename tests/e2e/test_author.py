@@ -485,3 +485,90 @@ def test_script_validates_inputs_and_never_evaluates_the_folder(
     assert not (tmp_path / "c" / "INJECTED").exists()
     assert injected.returncode == 0
     assert_clean(page)
+
+
+@pytest.mark.parametrize("fragment", ["#client=constructor", "#client=__proto__&p=x"])
+def test_prototype_client_names_do_not_break_the_page(page, site_url, fragment) -> None:
+    _open(page, site_url, fragment)
+    assert page.locator("input[name='client']:checked").count() == 1
+    assert page.locator("input[name='client'][value='constructor']").count() == 0
+    assert_clean(page)
+
+
+def test_prototype_names_in_a_draft_do_not_break_the_page(page, site_url) -> None:
+    _open(page, site_url)
+    page.evaluate(
+        "localStorage.setItem('chock.author.draft.v1', JSON.stringify("
+        "{kind: 'constructor', client: '__proto__', name: 'x'}))"
+    )
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+    assert page.locator("input[name='author-kind']:checked").count() == 1
+    assert page.locator("input[name='client']:checked").count() == 1
+    assert_clean(page)
+
+
+def test_link_notice_echoes_only_short_catalog_shaped_ids(page, site_url) -> None:
+    long_id = "a" * 65
+    ids = [f"no-such-{i}" for i in range(7)] + ["Evil<b>Text", long_id]
+    _open(page, site_url, "#client=codex&p=" + ",".join(ids))
+    notice = page.locator("#link-notice").inner_text()
+    assert "no-such-0" in notice and "no-such-4" in notice
+    assert "no-such-5" not in notice
+    assert "Evil" not in notice and long_id not in notice
+    assert "4 ids not shown" in notice
+    assert_clean(page)
+
+
+@pytest.mark.parametrize("answer", ["true", "null", "0x1f", "- x", "foo:"])
+def test_yaml_values_that_look_typed_stay_strings(page, site_url, answer) -> None:
+    _open(page, site_url)
+    page.evaluate("localStorage.removeItem('chock.author.draft.v1')")
+    page.check("input[name='author-kind'][value='guard']")
+    page.fill("#author-name", "typed values")
+    page.fill("#af-stop", "terraform destroy")
+    page.fill("#af-message", "Run terraform yourself.")
+    page.fill("#af-refuse_example", "terraform destroy -auto-approve")
+    page.fill("#af-pass_example", answer)
+    page.wait_for_function(
+        "document.querySelector('#author-script').textContent.startsWith('#!')"
+    )
+    boxes = page.locator(".afile")
+    suite = next(
+        boxes.nth(i).locator(".afile-text").input_value()
+        for i in range(boxes.count())
+        if boxes.nth(i).locator("code").inner_text() == "evals/suite.yaml"
+    )
+    cases = yaml.safe_load(suite)["suite"]["cases"]
+    commands = [case["execute"]["command"] for case in cases if "execute" in case]
+    assert answer in commands
+    assert all(isinstance(command, str) for command in commands)
+    assert_clean(page)
+
+
+@pytest.mark.parametrize("answer", ["a\u001bb", "bell\u0007", "zero\u200bwidth"])
+def test_control_characters_reach_yaml_double_quoted(page, site_url, answer) -> None:
+    """A single-quoted scalar cannot carry them; the script stays refused meanwhile."""
+    _open(page, site_url)
+    page.evaluate("localStorage.removeItem('chock.author.draft.v1')")
+    page.check("input[name='author-kind'][value='guard']")
+    page.fill("#author-name", "control chars")
+    page.fill("#af-stop", "terraform destroy")
+    page.fill("#af-message", "Run terraform yourself.")
+    page.fill("#af-refuse_example", "terraform destroy -auto-approve")
+    page.fill("#af-pass_example", answer)
+    suite_box = page.locator(".afile").filter(
+        has=page.locator("code", has_text="evals/suite.yaml")
+    )
+    text = suite_box.locator(".afile-text")
+    page.wait_for_function(
+        "el => el.value.includes('expect: allow') && !el.value.includes(\"'terraform plan'\")",
+        arg=text.element_handle(),
+    )
+    suite = text.input_value()
+    assert all(ch not in suite for ch in "\u001b\u0007\u200b")
+    cases = yaml.safe_load(suite)["suite"]["cases"]
+    commands = [case["execute"]["command"] for case in cases if "execute" in case]
+    assert answer in commands
+    assert not page.locator("#author-script").text_content().startswith("#!")
+    assert_clean(page)

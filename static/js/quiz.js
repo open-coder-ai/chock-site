@@ -132,6 +132,7 @@ export function initQuiz({
   const quiz = config.quiz;
   const T = quiz.texts;
   const makeOutputs = outputs || ((ids) => commandOutputs(site, T, ids));
+  const names = new Map(site.policies.map((p) => [p.id, p.name]));
   const total = quiz.questions.length;
   const bars = document.getElementById("quiz-bars");
   const stepEl = document.getElementById("quiz-step");
@@ -240,7 +241,9 @@ export function initQuiz({
       item.dataset.policyId = pick.id;
       const chip = chipFor(pick.id);
       if (chip) item.appendChild(chip.cloneNode(true));
-      item.appendChild(element("code", "quiz-pick-id", pick.id));
+      const name = element("span", "quiz-pick-name", names.get(pick.id) || pick.id);
+      name.append(" ", element("code", "quiz-pick-id", pick.id));
+      item.appendChild(name);
       if (pick.why.length) {
         item.appendChild(element("span", "quiz-pick-why", fill(T.because, { why: pick.why.join(", ").toLowerCase() })));
       }

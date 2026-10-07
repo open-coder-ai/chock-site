@@ -6,6 +6,7 @@ import {
   announce,
   copyText,
   decodeSelection,
+  idList,
   labelChip,
   parseShareFragment,
   shareFragment,
@@ -48,12 +49,10 @@ function dq(text) {
   });
 }
 
-// A plain scalar when the text is safe on a YAML line, else a single-quoted one.
-function yamlStr(text) {
-  if (/[\n\t]/.test(text)) return `"${dq(text)}"`;
-  const plain = /^[^[\]{}'"\s&*!|>%@`][^#\n]*$/.test(text) && !text.includes(": ") && !/ #/.test(text) && !/\s$/.test(text);
-  return plain ? text : sq(text);
-}
+// Always a quoted scalar, so text like true, null, 0x1f, "- x" or "foo:" stays a string; a
+// single-quoted scalar cannot carry a control or format character, so those go double-quoted.
+const yamlStr = (text) =>
+  /[\n\t\r\p{Cc}\p{Cf}\p{Cs}\p{Co}]/u.test(text) ? `"${dq(text)}"` : sq(text);
 
 // A Python "..." literal: backslash escapes, no f-string interpolation.
 const pyStr = (text) => `"${text.replace(/[\\"]/g, "\\$&")}"`;
@@ -844,23 +843,30 @@ async function main() {
 
   // ----- first paint -----
 
+  const knownClient = (id) => Object.hasOwn(C.clients, id);
+  const unknownNotice = (ids) =>
+    notice(
+      fill(T.unknown_catalog, {
+        ids: idList(ids, (n) => fill(n === 1 ? T.ids_hidden_one : T.ids_hidden_many, { n })),
+      }),
+    );
   const draft = loadDraft();
   if (draft) {
-    if (draft.kind in kinds) kind = draft.kind;
+    if (Object.hasOwn(kinds, draft.kind)) kind = draft.kind;
     if (typeof draft.name === "string") name = draft.name;
     if (draft.answers && typeof draft.answers === "object") answers = draft.answers;
     if (Array.isArray(draft.picked))
       picked = new Set(draft.picked.filter((id) => policies.has(id)));
     if (draft.overrides && typeof draft.overrides === "object") overrides = draft.overrides;
-    if (C.clients[draft.client]) client = draft.client;
+    if (knownClient(draft.client)) client = draft.client;
   }
   const shared = parseShareFragment(location.hash);
   if (shared) {
-    if (C.clients[shared.client]) client = shared.client;
+    if (knownClient(shared.client)) client = shared.client;
     if (shared.ids) {
       const unknown = shared.ids.filter((id) => !policies.has(id));
       picked = new Set(shared.ids.filter((id) => policies.has(id)));
-      if (unknown.length) notice(fill(T.unknown_catalog, { ids: unknown.join(", ") }));
+      if (unknown.length) unknownNotice(unknown);
     }
   }
   // The builder's own fragment is the schema-2 selection code: #s=<base64url>.
@@ -877,13 +883,13 @@ async function main() {
     if (!entries || !entries.every((entry) => entry && typeof entry.id === "string")) {
       notice(T.link_unreadable);
     } else {
-      if (C.clients[selection.client]) client = selection.client;
+      if (knownClient(selection.client)) client = selection.client;
       const catalogIds = entries
         .filter((entry) => entry.from !== "local")
         .map((entry) => entry.id);
       const unknown = catalogIds.filter((id) => !policies.has(id));
       picked = new Set(catalogIds.filter((id) => policies.has(id)));
-      if (unknown.length) notice(fill(T.unknown_catalog, { ids: unknown.join(", ") }));
+      if (unknown.length) unknownNotice(unknown);
     }
   }
   nameInput.value = name;

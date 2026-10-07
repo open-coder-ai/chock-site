@@ -7,6 +7,7 @@ import {
   copyText,
   decodeSelection,
   encodeSelection,
+  idList,
   installCommand,
   labelChip,
   parseShareFragment,
@@ -85,7 +86,10 @@ async function main() {
 
   const labelOf = (id) => C.clients[client].labels[id];
 
+  const gradesAgent = $("#builder-grades-agent");
+
   function renderClient() {
+    gradesAgent.textContent = fill(T.grades_for, { name: C.clients[client].name });
     for (const input of clientInputs) input.checked = input.value === client;
     for (const part of clientParts) part.hidden = part.dataset.client !== client;
     for (const row of rows) {
@@ -112,14 +116,16 @@ async function main() {
 
   function warnings() {
     const out = [];
-    const text = (key, values) => {
-      const template = site.warning_texts[key];
+    // A `<key>:many` text, when there is one, is the plural form for more than one policy.
+    const text = (key, values, count = 1) => {
+      const many = count > 1 && Object.hasOwn(site.warning_texts, `${key}:many`);
+      const template = site.warning_texts[many ? `${key}:many` : key];
       if (template) out.push(fillTokens(template, values));
     };
     for (const rule of site.warning_rules) {
       if (rule.kind === "grade") {
         const ids = [...picked].filter((id) => labelOf(id).keyword === rule.grade).sort();
-        if (ids.length) text(`grade:${rule.grade}`, { PRESENT: ids.join(", ") });
+        if (ids.length) text(`grade:${rule.grade}`, { PRESENT: ids.join(", ") }, ids.length);
         continue;
       }
       if (rule.kind === "client") {
@@ -132,11 +138,11 @@ async function main() {
       const absent = rule.policies.filter((id) => !picked.has(id));
       if (!here.length) continue;
       if (rule.kind === "missing_partner" && absent.length) {
-        text("missing_partner", { PRESENT: here.join(", "), ABSENT: absent.join(", ") });
+        text("missing_partner", { PRESENT: here.join(", "), ABSENT: absent.join(", ") }, here.length);
       } else if (rule.kind === "all_present" && !absent.length) {
         text("all_present", { PRESENT: here.join(" and ") });
       } else if (rule.kind === "file_absent") {
-        text("file_absent", { PRESENT: here.join(", "), FILE: rule.file });
+        text("file_absent", { PRESENT: here.join(", "), FILE: rule.file }, here.length);
       }
     }
     return out;
@@ -431,8 +437,11 @@ async function main() {
 
   // ----- the fragment on load -----
 
+  const shownIds = (ids) =>
+    idList(ids, (n) => fill(n === 1 ? T.ids_hidden_one : T.ids_hidden_many, { n }));
+
   function notAvailable(ids) {
-    return { text: fill(T.not_available, { ids: ids.join(", ") }) };
+    return { text: fill(T.not_available, { ids: shownIds(ids) }) };
   }
 
   function restore(ids) {
@@ -449,7 +458,7 @@ async function main() {
     const shared = parseShareFragment(location.hash);
     if (shared) {
       if (!knownClient(shared.client)) {
-        notices.push({ text: fill(T.client_unknown, { id: shared.client }) });
+        notices.push({ text: fill(T.client_unknown, { id: shownIds([shared.client]) }) });
         return false;
       }
       client = shared.client;
@@ -462,7 +471,7 @@ async function main() {
     if (key === "preset") {
       const preset = presets.find((p) => p.id === value);
       if (preset) picked = new Set(preset.members);
-      else notices.push({ text: fill(T.preset_unknown, { id: value }) });
+      else notices.push({ text: fill(T.preset_unknown, { id: shownIds([value]) }) });
       return true;
     }
     if (key === "add") {

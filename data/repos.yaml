@@ -41,7 +41,7 @@ home:
   cta: "Pick your policies"
   tiers_heading: "What each policy does in a git repository"
   list_heading: "Every policy, by what it does in a repository"
-  list_intro: "Each name opens the policy's page. A policy's tier here is read from the catalog, not from what it does inside Claude Code."
+  list_intro: "Each name opens the policy's page. A policy's tier here is read from the catalog, not from how it is graded on any one agent."
   steps_heading: "How it works"
   steps:
     - {title: "Pick your policies", body: "Answer three questions, or take a preset. The builder writes one block of commands."}

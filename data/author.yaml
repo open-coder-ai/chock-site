@@ -46,6 +46,8 @@ texts:
   not_ready: "Answer the questions above."
   unknown_catalog: "The link names catalog policies this site does not have: {ids}."
   link_unreadable: "The link could not be read; it starts empty."
+  ids_hidden_one: "1 id not shown"
+  ids_hidden_many: "{n} ids not shown"
   untested_note: "chock has not been witnessed applying to {agent} yet, so the script never adds --apply for it."
   file_edited: "edited"
 

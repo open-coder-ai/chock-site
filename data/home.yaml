@@ -47,6 +47,7 @@ landing:
   stat_labels: {policies: "policies", presets: "presets", agents: "agents"}
   how_eyebrow: "HOW IT WORKS FOR CODING AGENTS"
   how_heading: "Ready in a minute. Three steps, one command."
+  how_apply_note: "For an agent marked tested, the command adds --apply and installs the plugin too; for the others you apply it yourself."
   how:
     - {title: "Pick your guardrails", body: "Tick policies one by one, or start from a preset such as Git hygiene or Secrets."}
     - {title: "Run one command", body: "Read it first. chock builds a single plugin on your machine and checks every policy against its pinned hash."}

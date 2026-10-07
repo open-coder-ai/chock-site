@@ -16,7 +16,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, render_file, render_text_file
+from .render import Prose, Safe, md, md_code, render_file, render_text_file
 
 MD = "md"
 SECTION = "repos"
@@ -154,7 +154,7 @@ def _home(site: Site, track: Track, out_dir: Path, templates: Path) -> tuple[str
         GROUP_LINES="".join(
             f"### {t['word']}\n\n"
             + "".join(
-                f"- [{p.name}](/coding/policies/{p.id}/index.md) (`{p.id}`)\n"
+                f"- [{md(p.name)}](/coding/policies/{p.id}/index.md) ({md_code(p.id)})\n"
                 for p in policies_sorted(site)
                 if p.tier == t["key"]
             )
