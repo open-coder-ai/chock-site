@@ -20,7 +20,7 @@ class RenderError(ValueError):
 
 
 CODE_SPAN_RE = re.compile(r"`([^`]+)`")
-MD_SPECIAL_RE = re.compile(r"([\\`\[\]()<>])")
+MD_SPECIAL_RE = re.compile(r"([\\`\[\]<>])")
 
 
 def md(value: object) -> str:

@@ -16,7 +16,11 @@ LINK_RE = re.compile(r"(?<!\\)\]\(" + re.escape(EVIL) + r"|(?<!\\)<" + re.escape
 
 
 def test_md_escapes_link_syntax() -> None:
-    assert md("a](b) [c] <d> `e` \\") == r"a\]\(b\) \[c\] \<d\> \`e\` \\"
+    assert md("a](b) [c] <d> `e` \\") == r"a\](b) \[c\] \<d\> \`e\` \\"
+
+
+def test_md_leaves_plain_parentheses_alone() -> None:
+    assert md("Warns only (observe).") == "Warns only (observe)."
 
 
 def test_md_code_fence_outlasts_backticks_in_the_text() -> None:

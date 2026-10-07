@@ -49,8 +49,10 @@ function dq(text) {
   });
 }
 
-// Always a quoted scalar, so text like true, null, 0x1f, "- x" or "foo:" stays a string.
-const yamlStr = (text) => (/[\n\t\r]/.test(text) ? `"${dq(text)}"` : sq(text));
+// Always a quoted scalar, so text like true, null, 0x1f, "- x" or "foo:" stays a string; a
+// single-quoted scalar cannot carry a control or format character, so those go double-quoted.
+const yamlStr = (text) =>
+  /[\n\t\r\p{Cc}\p{Cf}\p{Cs}\p{Co}]/u.test(text) ? `"${dq(text)}"` : sq(text);
 
 // A Python "..." literal: backslash escapes, no f-string interpolation.
 const pyStr = (text) => `"${text.replace(/[\\"]/g, "\\$&")}"`;
