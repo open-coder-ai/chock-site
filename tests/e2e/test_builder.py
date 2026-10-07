@@ -384,13 +384,18 @@ def test_phone_bar_is_hidden_on_desktop(page, site_url) -> None:
 
 def test_phone_bar_does_not_cover_the_footer(browser, site_url) -> None:
     """390x844, git-hygiene picked, scrolled to the end: the last footer link
-    sits wholly above the bar (plan 9, PR 4 item 2)."""
-    context = browser.new_context(viewport=MOBILE)
+    sits wholly above the bar (plan 9, PR 4 item 2). Reduced motion turns off
+    smooth scrolling, so the jump to the end lands before the boxes are read."""
+    context = browser.new_context(viewport=MOBILE, reduced_motion="reduce")
     try:
         page = context.new_page()
         collect(page, site_url)
         _open(page, site_url, "#preset=git-hygiene")
         page.evaluate("window.scrollTo(0, document.scrollingElement.scrollHeight)")
+        page.wait_for_function(
+            "Math.ceil(window.scrollY + window.innerHeight)"
+            " >= document.scrollingElement.scrollHeight"
+        )
         bar = page.locator("#mobile-bar").bounding_box()
         link = page.locator(".footer-links a").last.bounding_box()
         assert bar and link, (bar, link)
@@ -401,3 +406,42 @@ def test_phone_bar_does_not_cover_the_footer(browser, site_url) -> None:
         assert_clean(page)
     finally:
         context.close()
+
+
+def test_smooth_scroll_respects_reduced_motion(browser, site_url) -> None:
+    for motion, expected in (("reduce", "auto"), ("no-preference", "smooth")):
+        context = browser.new_context(reduced_motion=motion)
+        try:
+            page = context.new_page()
+            page.goto(site_url + BUILDER)
+            behavior = page.evaluate(
+                "getComputedStyle(document.documentElement).scrollBehavior"
+            )
+            assert behavior == expected, motion
+        finally:
+            context.close()
+
+
+def test_link_notices_echo_only_short_catalog_shaped_ids(page, site_url) -> None:
+    long_id = "a" * 65
+    ids = [f"no-such-{i}" for i in range(6)] + ["Evil<b>Text", long_id]
+    cases = (
+        (
+            "#client=codex&p=" + ",".join(ids),
+            ["no-such-0", "no-such-4", "3 ids not shown"],
+        ),
+        ("#preset=" + "x" * 200, ["1 id not shown"]),
+        ("#client=" + "b" * 80, ["1 id not shown"]),
+    )
+    for fragment, expected in cases:
+        # A hash-only goto does not reload: open each fragment on a fresh page.
+        other = page.context.new_page()
+        collect(other, site_url)
+        other.goto(site_url + BUILDER + fragment)
+        other.wait_for_selector("#link-notice:not(:empty)")
+        notes = other.locator("#link-notice").inner_text()
+        for text in expected:
+            assert text in notes, (fragment, notes)
+        for text in ("no-such-5", "Evil", long_id, "x" * 65, "b" * 65):
+            assert text not in notes, (fragment, notes)
+        assert_clean(other)

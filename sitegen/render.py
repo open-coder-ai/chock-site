@@ -20,6 +20,20 @@ class RenderError(ValueError):
 
 
 CODE_SPAN_RE = re.compile(r"`([^`]+)`")
+MD_SPECIAL_RE = re.compile(r"([\\`\[\]()<>])")
+
+
+def md(value: object) -> str:
+    """Catalog text for Markdown output, with link, code and autolink syntax escaped."""
+    return MD_SPECIAL_RE.sub(r"\\\1", str(value))
+
+
+def md_code(value: object) -> str:
+    """A Markdown code span around catalog text, fenced longer than any backtick run in it."""
+    text = str(value)
+    fence = "`" * (max((len(run) for run in re.findall(r"`+", text)), default=0) + 1)
+    pad = " " if text.startswith("`") or text.endswith("`") else ""
+    return f"{fence}{pad}{text}{pad}{fence}"
 
 
 def _prose(value: object) -> str:

@@ -185,6 +185,8 @@
     "start_fresh": "Start fresh",
     "not_available": "Not available here: {ids} (retired or not in this catalog).",
     "preset_unknown": "No preset called {id} on this site.",
+    "ids_hidden_one": "1 id not shown",
+    "ids_hidden_many": "{n} ids not shown",
     "added": "Added {name}",
     "removed": "Removed {name}",
     "preset_applied": "Picked the {title} preset",

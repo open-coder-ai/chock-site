@@ -20,7 +20,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, render_file, render_text_file
+from .render import Prose, Safe, md, md_code, render_file, render_text_file
 
 HOME = "home"
 MD = "md"
@@ -573,8 +573,8 @@ def _twin(
     )
     incidents = site.data["incidents"]
     demo = "".join(
-        f"- {c.policy}: `{_demo_input(land, c)}` → "
-        f"{land['demo_refused']} {c.policy}: {_policy(site, c.policy).says}\n"
+        f"- {c.policy}: {md_code(_demo_input(land, c))} → "
+        f"{land['demo_refused']} {c.policy}: {md(_policy(site, c.policy).says)}\n"
         for c in site.demo
     )
     tracks = "".join(
@@ -584,9 +584,9 @@ def _twin(
     surfaces = "".join(
         f"- {row['name']} ({row['state_word']}): "
         + (
-            row["says"]
+            md(row["says"])
             if row["keyword"] is None
-            else f"{site.label_words[COUNTED][row['keyword']]} — {row['says']}"
+            else f"{site.label_words[COUNTED][row['keyword']]} — {md(row['says'])}"
         )
         + "\n"
         for row in _surface_rows(site, policy)

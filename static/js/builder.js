@@ -7,6 +7,7 @@ import {
   copyText,
   decodeSelection,
   encodeSelection,
+  idList,
   installCommand,
   labelChip,
   parseShareFragment,
@@ -431,8 +432,11 @@ async function main() {
 
   // ----- the fragment on load -----
 
+  const shownIds = (ids) =>
+    idList(ids, (n) => fill(n === 1 ? T.ids_hidden_one : T.ids_hidden_many, { n }));
+
   function notAvailable(ids) {
-    return { text: fill(T.not_available, { ids: ids.join(", ") }) };
+    return { text: fill(T.not_available, { ids: shownIds(ids) }) };
   }
 
   function restore(ids) {
@@ -449,7 +453,7 @@ async function main() {
     const shared = parseShareFragment(location.hash);
     if (shared) {
       if (!knownClient(shared.client)) {
-        notices.push({ text: fill(T.client_unknown, { id: shared.client }) });
+        notices.push({ text: fill(T.client_unknown, { id: shownIds([shared.client]) }) });
         return false;
       }
       client = shared.client;
@@ -462,7 +466,7 @@ async function main() {
     if (key === "preset") {
       const preset = presets.find((p) => p.id === value);
       if (preset) picked = new Set(preset.members);
-      else notices.push({ text: fill(T.preset_unknown, { id: value }) });
+      else notices.push({ text: fill(T.preset_unknown, { id: shownIds([value]) }) });
       return true;
     }
     if (key === "add") {

@@ -112,6 +112,18 @@ export function shareFragment(client, ids) {
   return `#client=${client}&p=${[...ids].sort().join(",")}`;
 }
 
+// A link notice echoes only short catalog-shaped ids, and at most SHOWN_IDS of them.
+const ECHO_ID = /^[a-z0-9.-]{1,64}$/;
+const SHOWN_IDS = 5;
+
+// The ids for a notice: the echoable ones, then `hidden(n)` for the n it leaves out.
+export function idList(ids, hidden) {
+  const shown = ids.filter((id) => ECHO_ID.test(id)).slice(0, SHOWN_IDS);
+  const rest = ids.length - shown.length;
+  if (rest) shown.push(hidden(rest));
+  return shown.join(", ");
+}
+
 // The client and ids a share fragment names, ids in order without repeats; null for any other fragment.
 // `ids` is null for a bare #client=<id>, which picks the agent and nothing else.
 export function parseShareFragment(hash) {
