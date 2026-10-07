@@ -76,8 +76,9 @@ def test_deploy_workflow_is_pinned_and_least_privilege() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     flow = yaml.safe_load(text)
     triggers = flow[True]  # YAML 1.1 reads the key `on` as true
-    assert set(triggers) == {"push", "pull_request"}
-    assert "pull_request_target" not in text
+    assert triggers == {"push": {"branches": ["main"]}}
+    assert "pull_request" not in text
+    assert flow["jobs"]["deploy"]["environment"] == "production"
     assert flow["permissions"] == {"contents": "read"}
     for job in flow["jobs"].values():
         assert "permissions" not in job
@@ -88,3 +89,12 @@ def test_deploy_workflow_is_pinned_and_least_privilege() -> None:
     secrets = set(re.findall(r"secrets\.(\w+)", text))
     assert secrets == {"CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"}
     assert "deploy skipped: Cloudflare secrets not set" in text
+
+
+def test_every_checkout_drops_credentials() -> None:
+    for path in sorted(WORKFLOW.parent.glob("*.yml")):
+        flow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for job in flow["jobs"].values():
+            for step in job["steps"]:
+                if step.get("uses", "").startswith("actions/checkout@"):
+                    assert step["with"]["persist-credentials"] is False, path.name

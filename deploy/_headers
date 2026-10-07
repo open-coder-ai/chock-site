@@ -20,6 +20,6 @@
 /fonts/*
   Cache-Control: public, max-age=300
 
-# Previews and the pre-launch production URL are never indexed.
+# No *.pages.dev URL is indexed before launch.
 https://:project.pages.dev/*
   X-Robots-Tag: noindex

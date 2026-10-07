@@ -48,12 +48,15 @@ It is a local test server only. Deploys run in CI; see "Deploy".
 Pages project `chock-site` with the official wrangler action (Direct Upload, so every
 build runs in this repo's pinned CI, never on Cloudflare).
 
-- A push to `main` deploys to the production branch, `chock-site.pages.dev`.
-- A pull request from a branch of this repo deploys a preview on branch `pr-<number>`;
-  the job summary prints its URL. PRs from forks never deploy (they cannot read secrets).
+- Only a push to `main` deploys, to the production branch `chock-site.pages.dev`.
+  Pull requests never deploy and never see the Cloudflare secrets; before launch,
+  `chock-site.pages.dev` is the staging site.
+- The deploy job runs in the GitHub environment `production`, whose secrets only `main`
+  can read.
 - Without the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the job still
   builds, prints `deploy skipped: Cloudflare secrets not set` and succeeds.
-- The same workflow runs `actionlint` on every workflow and `zizmor` on `deploy.yml`.
+- `ci.yml` runs `actionlint` and `zizmor` on every workflow; every checkout sets
+  `persist-credentials: false`.
 
 **Response headers.** `deploy/_headers` is copied into `dist/_headers` by the build.
 It sets, on every path, the page CSP plus `frame-ancestors 'none'`,
@@ -63,18 +66,23 @@ It sets, on every path, the page CSP plus `frame-ancestors 'none'`,
 Asset names are not content-hashed, so `/css/*`, `/js/*`, `/img/*` and `/fonts/*` get a
 short cache (`max-age=300`). There is no HSTS until launch.
 
-**Not indexed before launch.** Every `*.pages.dev` URL (previews and the pre-launch
-production URL) is served with `X-Robots-Tag: noindex`.
+**Not indexed before launch.** Every `*.pages.dev` URL is served with
+`X-Robots-Tag: noindex`.
 
 **Owner setup, once.**
 
 1. Create a Cloudflare Pages project named `chock-site` with **Direct Upload**, not Git
    integration.
 2. Create an API token with only **Account → Cloudflare Pages → Edit**; copy the Account ID.
-3. In this repo's Settings → Secrets → Actions, add `CLOUDFLARE_API_TOKEN` and
-   `CLOUDFLARE_ACCOUNT_ID`.
-4. At launch: add the custom domain `chock.sh` in the Pages project, update DNS as
+3. In this repo's Settings → Environments, create `production` and set **Deployment
+   branches** to `main` only.
+4. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as secrets of the `production`
+   environment, never as repository secrets.
+5. At launch: add the custom domain `chock.sh` in the Pages project, update DNS as
    Cloudflare shows, then set `launched: true` and add HSTS in a small PR.
+
+Environment branch rules need a public repo, or a paid plan for a private one. Without
+them, any workflow on any branch pushed to this repo can read the token.
 
 **Rollback.** Pages keeps every deployment. In the Pages project → Deployments, pick an
 earlier production deployment and choose **Rollback to this deployment**; or revert the
