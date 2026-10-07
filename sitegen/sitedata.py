@@ -6,8 +6,8 @@ from typing import Any
 
 import yaml
 
+from . import authordata, clientdata, engine, homedata, quiz, repodata
 from . import catalog as catalog_mod
-from . import clientdata, engine, homedata, quiz, repodata
 from . import presets as presets_mod
 from .model import Site, Track
 
@@ -84,6 +84,8 @@ def build_site(
     site_data["builder_clients"] = clientdata.builder_clients(
         data_dir, site_data, policies, engine.label_words()
     )
+
+    site_data["author"] = authordata.load_author(data_dir)
 
     demo = homedata.load_demo(catalog, data_dir, policies)
     incident_copy, incidents = homedata.load_incidents(data_dir, policies)

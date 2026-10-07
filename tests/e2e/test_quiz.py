@@ -102,12 +102,12 @@ def test_the_agent_answer_and_the_agent_picker_are_one_choice(page, site_url) ->
         assert page.locator(f"#client-{client}").is_checked()
         assert page.locator(".quiz-note").is_hidden()
         assert page.locator("#quiz-next").is_visible()
-    page.locator("input[name='quiz-agent'][value='codex']").check()
+    page.locator("input[name='quiz-agent'][value='copilot']").check()
     _answer_secrets_and_skipped(page, "Only hard stops")
     command = page.locator("[data-quiz-command]").inner_text()
-    assert command.endswith(" --client codex")
-    assert engine.load_selection(command.split("'")[1])["client"] == "codex"
-    assert "Untested in Codex." in page.locator(".quiz-command").inner_text()
+    assert command.endswith(" --client copilot")
+    assert engine.load_selection(command.split("'")[1])["client"] == "copilot"
+    assert "Untested in GitHub Copilot." in page.locator(".quiz-command").inner_text()
     assert_clean(page)
 
 

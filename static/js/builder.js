@@ -277,6 +277,9 @@ async function main() {
   function render(writeUrl = true) {
     for (const box of $$(".bmember input[type='checkbox']")) box.checked = picked.has(box.value);
     selCount.textContent = picked.size === 1 ? T.count_one : fill(T.count_many, { n: picked.size });
+    // The author page reads the same fragment form, so the link carries the picks along.
+    const authorLink = $("#author-link");
+    if (authorLink) authorLink.href = `/coding/author/${shareFragment(client, picked)}`;
     renderSelectionList();
     renderNotes();
     renderOutputs();

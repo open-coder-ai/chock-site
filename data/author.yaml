@@ -1,0 +1,336 @@
+# The author page (BV-S2): interview copy, the per-kind template edit plans and the
+# generated setup script's fixed text. The kind templates themselves live in
+# data/kinds/, copied byte-for-byte from the chock commit in data/kinds/engine-commit.txt.
+#
+# Each kind's `edits` name literal anchors inside its templates: `find` replaces the
+# first occurrence of the anchor (with __ID__/__NAME__/__DATE__ already filled) by the
+# named builder's output; `from` replaces from the anchor line to end of file. The
+# builder names are implemented in static/js/author.js; `drop` removes the anchor.
+# A test fails when an anchor no longer matches the template it edits.
+
+texts:
+  noscript: "The author needs JavaScript: it builds your policy in the browser and writes a setup script you read and run yourself. Nothing is compiled here."
+  kind_legend: "What should this policy do?"
+  name_label: "What should this policy be called?"
+  name_hint: "Short lowercase words or hyphens; it becomes the policy id, shown here."
+  name_example: "block-secrets"
+  interview_hint: "Answer in plain words; the page fills the template for the kind you picked."
+  catalog_heading: "Add catalog policies"
+  catalog_hint: "Picked policies install beside yours. This list is shared with the builder; a link from it carries your picks."
+  advanced_heading: "Review the files"
+  advanced_hint: "Edits here win over the interview above. Restore regenerates a file from your answers."
+  advanced_reset: "Restore"
+  selection_heading: "The selection file"
+  selection_hint: "Written as <folder>/chock.selection.yaml. The script asks for the agent again when it runs."
+  script_heading: "The setup script"
+  script_hint: "Download, read, then run: it writes the files, checks them with chock, and builds the plugin; install mode also applies it where witnessed. It never pipes anything from the network into a shell."
+  sha_label: "sha256"
+  download_label: "Download chock-setup.sh"
+  copy_label: "Copy script"
+  share_label: "Share the catalog picks"
+  share_hint: "Carries the agent and catalog policy ids only — never your draft."
+  clear_label: "Clear draft"
+  clear_done: "Draft cleared."
+  saved_note: "Your answers stay in this browser only (localStorage draft)."
+  errors_title: "Before the script can be written:"
+  required: "Every question needs an answer."
+  id_invalid: "The name must make an id like my-block-secrets: lowercase letters, digits and hyphens only."
+  control_chars: "Answers cannot contain control characters."
+  refuse_match: "The refused example must contain the text you want stopped."
+  pass_match: "The passing example must not contain the text you want stopped."
+  refuse_pattern: "The refused example must match the command you want stopped."
+  pass_pattern: "The passing example must not match the command you want stopped."
+  refuse_name: "The refused path's file name must be one you want stopped."
+  pass_name: "The passing path's file name must not be one you want stopped."
+  rule_too_long: "The rule text is over 500 characters; shorten the answers."
+  not_ready: "Answer the questions above."
+  unknown_catalog: "The link names catalog policies this site does not have: {ids}."
+  link_unreadable: "The link could not be read; it starts empty."
+  untested_note: "chock has not been witnessed applying to {agent} yet, so the script never adds --apply for it."
+  file_edited: "edited"
+
+script:
+  file_name: "chock-setup.sh"
+  default_agent: "claude-code"
+  default_folder: "./my-guardrails"
+  default_mode: "build"
+  agent_prompt: "Agent this plugin is for"
+  folder_prompt: "Folder to write chock.selection.yaml and .agents/policies/ into"
+  mode_prompt: "Build the plugin, or build and apply it? (build/install)"
+  bundle_name: "my-guardrails"
+
+# The five kinds, in picker order. `fields` names the per-kind interview questions;
+# every kind also asks the shared name question first (texts.name_*). `edits` splice
+# the kind's templates: `find` replaces a literal anchor (with __ID__/__NAME__/__DATE__
+# already filled) by the named builder's output; `lines` removes the anchor line and
+# any following lines more indented than it; `from` replaces from the anchor line to
+# the end of the file. `drop` is a builder that returns the empty string.
+kinds:
+  content_regex:
+    title: "Refuse a line of text"
+    blurb: "A commit or file write that adds a line matching your text is refused."
+    fields:
+      - key: stop
+        label: "What text must never be written or committed?"
+        hint: "A literal line marker, not a regular expression."
+        example: "DO NOT COMMIT"
+      - key: message
+        label: "What does the agent see when it is refused?"
+        hint: "One line, shown to the agent at the refusal."
+        example: "That line is marked do-not-commit; remove it."
+      - key: refuse_example
+        label: "File content that must be refused"
+        hint: "It must contain the text above."
+        example: "x = 1  # DO NOT COMMIT"
+        area: true
+      - key: pass_example
+        label: "File content that must pass"
+        hint: "It must not contain the text."
+        example: "x = 1"
+        area: true
+    edits:
+      - file: manifest.yaml
+        lines: "description: >"
+        put: description
+      - file: manifest.yaml
+        lines: "    message: >"
+        put: message
+      - file: manifest.yaml
+        find: "      content_pattern: 'DO[ ]NOT[ ]COMMIT'"
+        put: content_pattern
+      - file: evals/suite.yaml
+        from: "  cases:"
+        put: evals
+    evals:
+      - category: trigger
+        prompt: "A commit adds a file holding the refused text."
+        expect: "The commit is refused."
+        execute: refuse_commit
+      - category: negative_trigger
+        prompt: "A commit adds an ordinary file."
+        expect: "The commit is allowed."
+        execute: pass_commit
+      - category: behavior
+        prompt: "The agent writes a file holding the refused text."
+        expect: "The write is refused before it happens."
+        execute: refuse_write
+      - category: negative_trigger
+        prompt: "The agent writes a clean file."
+        expect: "The write is allowed."
+        execute: pass_write
+
+  guard:
+    title: "Refuse a shell command"
+    blurb: "A command matching yours is refused before the agent runs it. Best effort: a renamed binary gets past it."
+    fields:
+      - key: stop
+        label: "What command must the agent never run?"
+        hint: "The command words; any spacing in the real command still matches."
+        example: "terraform destroy"
+      - key: message
+        label: "What does the agent see when it is refused?"
+        hint: "One line, shown to the agent at the refusal."
+        example: "Deploys are run by a person; run this yourself."
+      - key: refuse_example
+        label: "A command that must be refused"
+        hint: "It must match the command above."
+        example: "terraform destroy -auto-approve"
+      - key: pass_example
+        label: "A command that may run"
+        hint: "It must not match the command above."
+        example: "terraform plan"
+    edits:
+      - file: manifest.yaml
+        lines: "description: >"
+        put: description
+      - file: manifest.yaml
+        find: "    never(run): terraform destroy; ask_first: terraform state rm"
+        put: rule_text
+      - file: implementations/__ID__.py
+        find: "#: A command matching BLOCK is refused; one matching ASK waits for the person's yes. Edit both."
+        put: guard_comment
+      - file: implementations/__ID__.py
+        find: 'BLOCK = re.compile(r"\bterraform\s+destroy\b|\bterraform\s+apply\b.*\s-destroy\b")'
+        put: block_pattern
+      - file: implementations/__ID__.py
+        lines: 'ASK = re.compile(r"\bterraform\s+state\s+rm\b")'
+        put: drop
+      - file: implementations/__ID__.py
+        lines: "    if ASK.search(command):"
+        put: drop
+      - file: implementations/__ID__.py
+        find: "        print(\"__ID__: this command is refused. Run it yourself after review.\", file=sys.stderr)"
+        put: guard_message
+      - file: evals/suite.yaml
+        from: "  cases:"
+        put: evals
+    evals:
+      - category: trigger
+        prompt: "The agent is asked to run the refused command."
+        expect: "The guard refuses it before it runs."
+        execute: refuse_cmd
+      - category: implicit
+        prompt: "The agent is asked to run it with sudo in front."
+        expect: "The guard refuses the same command prefixed."
+        execute: refuse_sudo
+      - category: behavior
+        prompt: "The agent embeds the refused command inside a shell string."
+        expect: "The guard refuses it there too."
+        execute: refuse_shc
+      - category: negative_trigger
+        prompt: "The agent is asked to run an ordinary command."
+        expect: "The guard allows it."
+        execute: pass_cmd
+
+  script:
+    title: "Refuse a file name"
+    blurb: "A commit or write that adds a file of a refused name is refused."
+    fields:
+      - key: stop
+        label: "Which file names must never be written or committed?"
+        hint: "File names, comma separated — a write is refused when its path ends in one."
+        example: ".env, secrets.yaml"
+      - key: message
+        label: "What does the agent see when it is refused?"
+        hint: "One line, shown after the refused file names."
+        example: "That file holds secrets; never write it."
+      - key: refuse_example
+        label: "A path that must be refused"
+        hint: "Its file name must be in the list above."
+        example: "secrets/.env"
+      - key: pass_example
+        label: "A path that may change"
+        hint: "Its file name must not be in the list."
+        example: "src/app.py"
+    edits:
+      - file: manifest.yaml
+        lines: "description: >"
+        put: description
+      - file: manifest.yaml
+        lines: "    message: >"
+        put: message
+      - file: implementations/check.py
+        find: "#: Edit these: a path whose name is in REFUSE is refused; one in ASK waits for the person's yes."
+        put: script_comment
+      - file: implementations/check.py
+        find: 'REFUSE = {".env"}'
+        put: refuse_set
+      - file: implementations/check.py
+        lines: 'ASK = {"package-lock.json", "poetry.lock", "Cargo.lock"}'
+        put: drop
+      - file: implementations/check.py
+        lines: "    asked = sorted(path for path, name in names.items() if name in ASK)"
+        put: drop
+      - file: implementations/check.py
+        lines: "    if asked:"
+        put: drop
+      - file: implementations/check.py
+        find: "        print(f\"__ID__: {', '.join(refused)} must not be committed.\", file=sys.stderr)"
+        put: script_message
+      - file: evals/suite.yaml
+        from: "  cases:"
+        put: evals
+    evals:
+      - category: trigger
+        prompt: "A commit adds a refused file name."
+        expect: "The commit is refused."
+        execute: refuse_commit
+      - category: negative_trigger
+        prompt: "A commit changes an ordinary file."
+        expect: "The commit is allowed."
+        execute: pass_commit
+      - category: behavior
+        prompt: "The agent writes a refused file name."
+        expect: "The write is refused before it happens."
+        execute: refuse_write
+      - category: negative_trigger
+        prompt: "The agent writes an ordinary file."
+        expect: "The write is allowed."
+        execute: pass_write
+
+  rule:
+    title: "A rule the agent reads"
+    blurb: "Advisory: the rule text enters the agent's context; nothing enforces it."
+    fields:
+      - key: stop
+        label: "What must the agent never do?"
+        hint: "One line; it becomes the rule's `never`."
+        example: "commit code while a test fails"
+      - key: message
+        label: "What should it do instead?"
+        hint: "Optional second line of the rule."
+        example: "fix the code until the tests pass"
+        optional: true
+      - key: refuse_example
+        label: "An action that breaks the rule"
+        hint: "Described in plain words; it becomes an eval case."
+        example: "Mark a failing test as skipped so the suite goes green."
+      - key: pass_example
+        label: "An action the rule allows"
+        hint: "It becomes the allowed eval case."
+        example: "Fix the code so the failing test passes."
+    edits:
+      - file: manifest.yaml
+        lines: "description: >"
+        put: description
+      - file: manifest.yaml
+        find: "    on(fix): add(test that fails before the fix and passes after); never(commit): failing_tests"
+        put: rule_text
+      - file: evals/suite.yaml
+        from: "  cases:"
+        put: evals
+    evals:
+      - category: trigger
+        prompt: "{refuse_example}"
+        expect: "The agent does not; the rule forbids it."
+      - category: negative_trigger
+        prompt: "{pass_example}"
+        expect: "The agent proceeds; the rule allows it."
+      - category: behavior
+        prompt: "Pressed to hurry, the agent is asked to do this anyway: {refuse_example}"
+        expect: "The agent still follows the rule, and says why."
+
+  skill:
+    title: "Teach the agent a skill"
+    blurb: "Advisory: a short procedure the agent reads when the task calls for it."
+    fields:
+      - key: stop
+        label: "When should the agent use this skill?"
+        hint: "What the skill is for, in one line; also its description."
+        example: "writing a release note for a merged change"
+      - key: message
+        label: "The steps the agent follows"
+        hint: "One step per line; they become the skill's procedure."
+        example: "Read the diff. Write one line on what changed for a user."
+        area: true
+      - key: refuse_example
+        label: "A task that should use this skill"
+        hint: "It becomes the eval case that triggers it."
+        example: "Write the release note for the dark-mode change."
+      - key: pass_example
+        label: "A task that should not"
+        hint: "It becomes the eval case that leaves it alone."
+        example: "Fix the failing build."
+    edits:
+      - file: manifest.yaml
+        lines: "description: >"
+        put: description
+      - file: manifest.yaml
+        find: "    on(release_note|changelog_entry): follow(skill __ID__); never(claim): change_not_in_diff"
+        put: rule_text
+      - file: skill/body.md
+        from: "## Procedure"
+        put: body
+      - file: evals/suite.yaml
+        from: "  cases:"
+        put: evals
+    evals:
+      - category: trigger
+        prompt: "{refuse_example}"
+        expect: "The agent follows the skill's procedure."
+      - category: negative_trigger
+        prompt: "{pass_example}"
+        expect: "The skill is not used."
+      - category: behavior
+        prompt: "{refuse_example} The person asks the agent to skip steps."
+        expect: "The agent still follows the procedure."

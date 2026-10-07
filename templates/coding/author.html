@@ -1,0 +1,62 @@
+<section class="page-head">
+<h1 id="author-a-policy">Author a policy</h1>
+<p class="sub">__SUB__</p>
+</section>
+<noscript><p class="noscript-note">__NOSCRIPT__</p></noscript>
+<div class="link-notice" id="link-notice" role="status"></div>
+<div class="builder-grid author-grid" id="author-app">
+<section class="pick" aria-labelledby="author-interview">
+<h2 id="author-interview">The interview</h2>
+__CLIENT_PICKER__
+<fieldset class="kind-picker">
+<legend>__KIND_LEGEND__</legend>
+<div class="kind-options">
+__KIND_OPTIONS__</div>
+</fieldset>
+<div class="field">
+<label for="author-name">__NAME_LABEL__</label>
+<input id="author-name" type="text" autocomplete="off" spellcheck="false" placeholder="__NAME_EXAMPLE__">
+<p class="hint">__NAME_HINT__</p>
+</div>
+<div id="author-fields"></div>
+<p class="hint">__INTERVIEW_HINT__</p>
+<section class="author-catalog" aria-labelledby="author-catalog-h">
+<h3 id="author-catalog-h">__CATALOG_HEADING__</h3>
+<p class="hint">__CATALOG_HINT__</p>
+<div class="field author-catalog-filter">
+<label class="visually-hidden" for="author-catalog-search">Filter catalog policies</label>
+<input id="author-catalog-search" type="search" autocomplete="off" placeholder="Filter">
+</div>
+<div id="author-catalog-list" class="author-catalog-list"></div>
+</section>
+<p class="hint saved-note">__SAVED_NOTE__ <button type="button" class="linkish" id="author-clear">__CLEAR_LABEL__</button><span id="author-clear-done" hidden> __CLEAR_DONE__</span></p>
+</section>
+<section class="selection author-review" aria-labelledby="author-review-h">
+<h2 id="author-review-h">__ADVANCED_HEADING__</h2>
+<p class="hint">__ADVANCED_HINT__</p>
+<div id="author-files"></div>
+<div class="author-errors" id="author-errors" hidden>
+<p>__ERRORS_TITLE__</p>
+<ul id="author-error-list"></ul>
+</div>
+<div class="output-box">
+<h3>__SELECTION_HEADING__</h3>
+<p class="hint">__SELECTION_HINT__</p>
+<pre><code class="language-yaml" id="author-selection"></code></pre>
+</div>
+<div class="output-box">
+<h3>__SCRIPT_HEADING__</h3>
+<p class="hint">__SCRIPT_HINT__</p>
+<pre><code class="language-bash" id="author-script"></code></pre>
+<p class="hint author-sha">__SHA_LABEL__ <code id="author-sha"></code></p>
+<div class="author-actions">
+<button type="button" class="download" id="author-download" disabled>__DOWNLOAD_LABEL__</button>
+<button type="button" class="copy" id="author-copy" disabled>__COPY_LABEL__</button>
+<button type="button" class="copy" id="author-share">__SHARE_LABEL__</button>
+</div>
+<p class="hint">__SHARE_HINT__</p>
+<label class="visually-hidden" for="author-share-url">Share link</label>
+<input class="share-url" id="author-share-url" type="text" readonly hidden>
+</div>
+</section>
+</div>
