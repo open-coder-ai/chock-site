@@ -4,18 +4,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import coding, engine, general
+from . import coding, engine, general, home, repos
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
     PageError,
-    badge,
-    chip,
-    counts,
     css_tokens,
     data_fill,
     md_sections,
-    render_steps,
     text_sections,
     write_md,
     write_page,
@@ -23,156 +19,13 @@ from .pageparts import (
 from .render import Prose, Safe, render_file, render_text_file
 
 MD = "md"
-DEMO_MARKS = {"You": "›", "Claude Code": "●", "guard": "⎿"}
 
 # Plan 0.1 rule 2: a section id maps to the function that builds its pages.
-SECTION_BUILDERS = {"coding": coding.build, "general": general.build}
-
-
-def _home(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
-    """The landing page (plan 6.7) and its Markdown twin."""
-    home = site.data["home"]
-    texts = site.data["texts"]
-    coding_counts = counts(site, "coding")
-    subs = {
-        "__CATALOG_REF_12__": site.catalog_ref[:12],
-        "__COUNT__": str(coding_counts["total"]),
-        "__TESTED__": f"{coding_counts['tested']:,}",
-    }
-    by_id = {p.id: p for p in site.policies}
-    for card in home["examples"]:
-        if card["policy"] not in by_id:
-            msg = f"home.yaml examples: policy {card['policy']} is not visible"
-            raise PageError(msg)
-
-    sections_block = ""
-    if len(site.tracks) >= 2:
-        cards = "".join(
-            render_file(
-                templates / PARTIALS / "track-card.html",
-                ID=track.id,
-                SLUG=track.slug,
-                TITLE=track.title,
-                BADGE=badge(site, templates, track.status),
-                SUMMARY=Prose(track.summary),
-                LINK=track.title,
-            )
-            for track in site.tracks
-        )
-        sections_block = render_file(
-            templates / PARTIALS / "sections-block.html",
-            HEADING=home["sections_heading"],
-            CARDS=Safe(cards),
-        )
-    demo_lines = "\n".join(
-        render_file(
-            templates / PARTIALS / "demo-line.html",
-            KIND=line["actor"].lower().replace(" ", "-"),
-            MARK=DEMO_MARKS.get(line["actor"], ""),
-            TEXT=line["text"],
-        )
-        for line in home["demo"]["lines"]
-    )
-    stop_cards = "".join(
-        render_file(
-            templates / PARTIALS / "home-stop-card.html",
-            ID=card["policy"],
-            KEYWORD=by_id[card["policy"]].keyword,
-            WHERE=" ".join(by_id[card["policy"]].where),
-            CHIP=chip(site, templates, by_id[card["policy"]], "coding"),
-            TITLE=card["title"],
-            SAYS=Prose(by_id[card["policy"]].says),
-        )
-        for card in home["examples"]
-    )
-    why = "".join(
-        render_file(
-            templates / PARTIALS / "home-card.html",
-            TITLE=point["title"],
-            BODY=Prose(data_fill(point["body"], subs)),
-        )
-        for point in home["why"]
-    )
-    faq_teaser = [
-        item for item in site.data["faq"]["questions"] if item["group"] == "common"
-    ][:4]
-    questions = "".join(
-        render_file(
-            templates / PARTIALS / "question-card.html", Q=item["q"], A=Prose(item["a"])
-        )
-        for item in faq_teaser
-    )
-
-    page = site.data["pages"]["home"]
-    write_page(
-        site,
-        out_dir,
-        templates,
-        path="/",
-        title=page["title"],
-        description=page["description"],
-        content=Safe(
-            render_file(
-                templates / "index.html",
-                EYEBROW=home["eyebrow"],
-                HERO_HEADLINE=texts["hero_headline"],
-                HERO_SUB=Prose(texts["hero_sub"]),
-                HERO_NOTE=Prose(texts["hero_note"]),
-                PRIMARY_CTA=home["primary_cta"],
-                SECONDARY_CTA=home["secondary_cta"],
-                DEMO_TOOL=home["demo"]["tool"],
-                DEMO_POLICY=home["demo"]["policy"],
-                DEMO_LINES=Safe(demo_lines),
-                DEMO_FOOTER=data_fill(home["demo"]["footer"], subs),
-                SECTIONS_BLOCK=Safe(sections_block),
-                STOPS_HEADING=home["stops_heading"],
-                STOPS_INTRO=Prose(home["stops_intro"]),
-                STOP_CARDS=Safe(stop_cards),
-                STEPS=render_steps(site, templates),
-                WHY_HEADING=home["why_heading"],
-                WHY_CARDS=Safe(why),
-                QUESTIONS_HEADING=home["questions_heading"],
-                QUESTIONS_LINK=home["questions_link"],
-                QUESTION_CARDS=Safe(questions),
-                CTA_HEADING=home["cta_heading"],
-                CTA_SUB=Prose(home["cta_sub"]),
-            )
-        ),
-        jsonld_data={
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "name": site.data["wordmark"],
-            "url": site.data["site_url"] + "/",
-        },
-    )
-    twin = render_text_file(
-        templates / MD / "index.md",
-        HERO_SUB=texts["hero_sub"],
-        HERO_NOTE=texts["hero_note"],
-        STOPS_HEADING=home["stops_heading"],
-        STOPS_INTRO=home["stops_intro"],
-        STOP_LINES="".join(
-            f"- [{card['title']}](/coding/policies/{card['policy']}/index.md): "
-            f"{by_id[card['policy']].word} — {by_id[card['policy']].says}\n"
-            for card in home["examples"]
-        ),
-        STEPS_HEADING=home["steps_heading"],
-        STEP_LINES="".join(
-            f"{i}. {step['title']} — {step['body']}\n"
-            for i, step in enumerate(home["steps"], start=1)
-        ),
-        WHY_HEADING=home["why_heading"],
-        WHY_LINES="".join(
-            f"- {point['title']}: {data_fill(point['body'], subs)}\n"
-            for point in home["why"]
-        ),
-        QUESTIONS_HEADING=home["questions_heading"],
-        QUESTION_LINES="".join(f"- {item['q']} {item['a']}\n" for item in faq_teaser),
-        CTA_HEADING=home["cta_heading"],
-        CTA_SUB=home["cta_sub"],
-    )
-    write_md(out_dir, "/", twin)
-    return "/", "/index.md", twin
+SECTION_BUILDERS = {
+    "coding": coding.build,
+    "general": general.build,
+    "repos": repos.build,
+}
 
 
 def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
@@ -433,7 +286,7 @@ def _llms(
         "with its home and api paths\n"
     )
     for track in site.tracks:
-        if not (out_dir / "api" / track.slug).is_dir():
+        if not (out_dir / "api" / track.slug / "catalog.json").is_file():
             continue
         lines.append(
             f"- [/api/{track.slug}/catalog.json](/api/{track.slug}/catalog.json): "
@@ -445,6 +298,7 @@ def _llms(
             f"(/api/{track.slug}/selection.schema.json): the schema a "
             "selection file is checked against\n"
         )
+    lines.extend(section.data_lines for section in sections)
     lines.append("- [/data/site.json](/data/site.json): the generated site data\n")
     (out_dir / "llms.txt").write_text("".join(lines), encoding="utf-8", newline="\n")
 
@@ -488,7 +342,7 @@ def write_css(site: Site, out_dir: Path, static_dir: Path) -> None:
 
 def write_pages(site: Site, out_dir: Path, templates_dir: Path) -> None:
     """Every page, twin, index and API file described in plan 6.3 and 6.8."""
-    home_path, home_md, home_twin = _home(site, out_dir, templates_dir)
+    home_path, home_md, home_twin = home.build(site, out_dir, templates_dir)
     paths = [home_path]
     sections: list[SectionResult] = []
     for track in site.tracks:

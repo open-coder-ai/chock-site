@@ -1,5 +1,6 @@
 """Plan 6.8 checks: markdown twins, llms files, JSON API, agent-safe phrasing."""
 
+import base64
 import json
 import re
 from pathlib import Path
@@ -62,6 +63,7 @@ def test_llms_txt_structure(built) -> None:
         "## Coding agents: policies",
         "## Coding agents: presets",
         "## General agents",
+        "## Git repositories",
         "## Data",
     ]
     policies_section = text.split("## Coding agents: policies")[1].split("## ")[0]
@@ -115,7 +117,8 @@ def test_api_files(built) -> None:
             encoding="utf-8"
         )
     )
-    assert "policies" in schema.get("properties", {})
+    for version in ("v1", "v2"):
+        assert "policies" in schema["definitions"][version]["properties"]
 
 
 def test_policy_rows_carry_data_attributes(built) -> None:
@@ -179,9 +182,13 @@ def test_worked_example_decodes_and_validates(built) -> None:
     code = re.search(r"# Share code\n(\S+)\n", text).group(1)
     command = re.search(r"\n(chock install --selection '[^']+' --apply)", text).group(1)
     assert command == f"chock install --selection '{code}' --apply"
-    selection = engine.load_selection(code)
-    assert selection == json.loads(object_block)
+    selection = json.loads(object_block)
+    raw = base64.urlsafe_b64decode(code + "=" * (-len(code) % 4))
+    assert json.loads(raw) == selection
     engine.check_selection(selection)
+    assert engine.load_selection(code)["policies"] == [
+        {"from": "catalog", **p} for p in selection["policies"]
+    ]
     members = next(
         p.members
         for p in load_presets(Path(__file__).parents[1] / "data" / "presets.yaml")

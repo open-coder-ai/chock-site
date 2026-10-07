@@ -20,6 +20,10 @@ questions:
   group: common
   q: "Is it free?"
   a: "Yes. The engine, the catalog and this site are open source under Apache-2.0."
+- id: general-agents
+  group: common
+  q: "What are general agents?"
+  a: "Agents that act for a person or a business. Their guardrails are being designed; there is nothing to install yet."
 - id: which-agents
   group: coding
   q: "Which coding agents does this work with?"

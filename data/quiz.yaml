@@ -1,0 +1,99 @@
+# The builder's start screen: three questions, then a result. Texts use {name} for runtime values.
+# Every preset id under `worries` must be a preset in presets.yaml; every `allow` entry a label keyword.
+texts:
+  skip: "Skip to the full builder →"
+  step: "QUESTION {n} OF {total}"
+  result_step: "YOUR RESULT"
+  back: "Back"
+  next: "Next"
+  show: "Show my plugin"
+  start_over: "Start over"
+  need_worry: "Pick at least one worry to continue."
+  clients_note: "{agent} installs the same policies from its own plugin repository. The builder makes a Claude Code plugin."
+  clients_link: "See how to install for other agents →"
+  result_one: "Your plugin: 1 guardrail"
+  result_many: "Your plugin: {n} guardrails"
+  result_hint: "Picked from your answers. Remove anything you do not want, or open the full builder."
+  because: "because: {why}"
+  remove: "Remove"
+  remove_label: "Remove {id}"
+  removed: "Removed {id}"
+  empty: "Nothing is left. Go back and change your answers, or open the full builder."
+  command_label: "Your command"
+  copy: "Copy command"
+  open_full: "Open in the full builder"
+  mix: "{n} {word}"
+  mix_separator: " · "
+
+questions:
+  - id: agent
+    kind: single
+    title: "Which agent do you use?"
+    hint: "The builder makes one plugin for one agent. The agent picker above the questions shows the same choice; change it at any time."
+    options:
+      - {id: claude-code, label: "Claude Code", sub: "Tested: one command builds and installs it", default: true}
+      - {id: cursor, label: "Cursor", sub: "Untested: the command builds it, you apply it"}
+      - {id: codex, label: "Codex", sub: "Untested: the command builds it, you apply it"}
+      - {id: copilot, label: "GitHub Copilot", sub: "Untested: the command builds it, you apply it"}
+      - {id: devin, label: "Devin", sub: "Untested: the command builds it, you apply it"}
+
+  - id: worries
+    kind: multi
+    title: "What worries you most?"
+    hint: "Pick as many as you like. Each answer adds one or two presets."
+    options:
+      - {id: secrets, label: "Leaked secrets", sub: "Keys and tokens in files", presets: [secrets]}
+      - {id: skipped-checks, label: "Skipped checks", sub: "Hooks and tests bypassed", presets: [git-hygiene, test-integrity]}
+      - {id: risky-shell, label: "Destructive or risky shell", sub: "rm -rf, curl | sh, data leaving", presets: [shell-containment]}
+      - {id: own-rules, label: "The agent changing its rules", sub: "Its own config and permissions", presets: [agent-config]}
+      - {id: packages-ci, label: "Packages and CI", sub: "Supply chain and workflows", presets: [supply-chain, ci-pipeline]}
+      - {id: injection, label: "Injected instructions", sub: "Hidden text and poisoned memory", presets: [prompt-injection]}
+      - {id: code-cloud, label: "Insecure code and cloud", sub: "Hardening, IAM, containers", presets: [code-hardening, cloud-iac]}
+      - {id: compliance, label: "Compliance", sub: "OWASP agentic top 10, EU AI Act", presets: [owasp-agentic-top10, eu-ai-act]}
+
+  - id: strictness
+    kind: single
+    title: "How strict should it be?"
+    hint: "You can change this later in the full builder."
+    options:
+      - {id: hard-stops, label: "Only hard stops", sub: "Policies that block or ask you", allow: [block, ask]}
+      - {id: stops-warnings, label: "Stops and warnings", sub: "Plus policies that warn", allow: [block, ask, warn], default: true}
+      - {id: everything, label: "Everything", sub: "Including advice the agent reads", allow: [block, ask, warn, advise]}
+
+# The Git repositories builder reuses the questions above: it replaces the agent question with
+# `host`, keeps the worries, and reads strictness in repository tiers (commit, agent, advise).
+repos:
+  texts:
+    clients_note: ""
+    result_one: "Your setup: 1 guardrail"
+    result_many: "Your setup: {n} guardrails"
+    result_hint: "Picked from your answers. Remove anything you do not want, then run the commands in your repository."
+    empty: "Nothing is left. Go back and change your answers."
+    command_label: "Your commands"
+    copy: "Copy commands"
+    download: "Download chock-setup.sh"
+    share: "Copy share link"
+    ci_label: "Add the GitHub Actions gate (--ci)"
+    unknown: "Not available here: {ids}"
+    unknown_more: "{n} more"
+    shared_note: "These picks came from a share link. Every commit and hash below comes from this site's build."
+  questions:
+    - id: host
+      kind: single
+      title: "Where does your code live?"
+      hint: "Only GitHub gets the CI workflow. The git hooks work on any host."
+      options:
+        - {id: github, label: "GitHub", sub: "Adds the GitHub Actions gate", default: true, ci: true}
+        - {id: gitlab, label: "GitLab", sub: "Git hooks only", ci: false, note: "The CI workflow is GitHub Actions only. The git hooks still work on GitLab."}
+        - {id: other, label: "Other git host", sub: "Git hooks only", ci: false, note: "The CI workflow is GitHub Actions only. The git hooks still work on any git host."}
+    - id: worries
+      kind: multi
+      same_as: coding
+    - id: strictness
+      kind: single
+      title: "How strict should it be?"
+      hint: "You can remove single policies on the next screen."
+      options:
+        - {id: hard-stops, label: "Only hard stops", sub: "Policies that refuse the commit", allow: [commit]}
+        - {id: stops-warnings, label: "Stops and warnings", sub: "Plus checks run by the agent's hooks", allow: [commit, agent], default: true}
+        - {id: everything, label: "Everything", sub: "Including advice the agent reads", allow: [commit, agent, advise]}

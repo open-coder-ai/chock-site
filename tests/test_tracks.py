@@ -71,11 +71,12 @@ def test_tracks_yaml_has_every_field() -> None:
 
 def test_tracks_carried_into_site_json_and_api_index(built) -> None:
     data = _site_json(built)
-    assert [t["id"] for t in data["tracks"]] == ["coding", "general"]
+    assert [t["id"] for t in data["tracks"]] == ["coding", "general", "repos"]
     assert data["tracks"][0]["status"] == "available"
     assert data["tracks"][1]["status"] == "in_design"
+    assert data["tracks"][2]["status"] == "available"
     index = json.loads((built.out / "api" / "index.json").read_text(encoding="utf-8"))
-    assert [t["id"] for t in index["tracks"]] == ["coding", "general"]
+    assert [t["id"] for t in index["tracks"]] == ["coding", "general", "repos"]
     assert index["tracks"][0] == {
         "id": "coding",
         "title": "Coding agents",
@@ -130,8 +131,13 @@ def test_every_record_carries_track(built) -> None:
 
 def test_label_words_keyed_by_section(built) -> None:
     data = _site_json(built)
-    assert set(data["label_words"]) == {"coding"}
+    assert set(data["label_words"]) == {"coding", "repos"}
     assert data["label_words"]["coding"]["block"] == "blocks"
+    assert data["label_words"]["repos"] == {
+        "commit": "at commit",
+        "agent": "in agent",
+        "advise": "advisory",
+    }
     catalog = json.loads(
         (built.out / "api" / "coding" / "catalog.json").read_text(encoding="utf-8")
     )
@@ -193,8 +199,13 @@ def two_section_build(built, tmp_path, monkeypatch) -> Path:
 def test_stub_section_appears_in_shared_outputs(built, two_section_build) -> None:
     out = two_section_build
     index = json.loads((out / "api" / "index.json").read_text(encoding="utf-8"))
-    assert [t["id"] for t in index["tracks"]] == ["coding", "general", "example"]
-    assert index["tracks"][2]["home"] == "/example/"
+    assert [t["id"] for t in index["tracks"]] == [
+        "coding",
+        "general",
+        "repos",
+        "example",
+    ]
+    assert index["tracks"][3]["home"] == "/example/"
     llms = (out / "llms.txt").read_text(encoding="utf-8")
     assert "## Example agents" in llms
     assert (

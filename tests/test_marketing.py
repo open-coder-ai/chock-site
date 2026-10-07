@@ -51,15 +51,16 @@ def test_home_uses_only_catalog_examples(built) -> None:
 
 def test_home_hero_demo_and_stats(built) -> None:
     html = (built.out / "index.html").read_text(encoding="utf-8")
-    assert "Guardrails for your AI coding agent." in html
-    assert "BLOCKED: git commit --no-verify is not allowed." in html
-    assert "ask the person to run the command themselves." in html
+    assert "Teach your AI agent" in html
+    assert "what not to do." in html
     data = json.loads((built.out / "data" / "site.json").read_text(encoding="utf-8"))
     ids = {p["id"] for p in data["policies"]}
     for pid in ("block-no-verify", "protect-main-branch", "scan-secrets"):
         assert pid in ids, pid
-    assert "70 policies" in html
-    assert "tests" in html
+    tested = sum(p["eval_executed"] for p in data["policies"])
+    assert f"{len(ids)} POLICIES · {tested:,} TESTS" in html
+    assert "git commit --no-verify -m wip" in html
+    assert "Refused by block-no-verify" in html
     assert f"{data['catalog']['ref'][:12]}" in html
 
 

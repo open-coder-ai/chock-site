@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import engine
+from . import authordata, clientpage, engine
 from .catalog import first_sentence
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
@@ -14,6 +14,7 @@ from .pageparts import (
     chip,
     counts,
     data_fill,
+    install_command,
     label_chips,
     policies_sorted,
     render_steps,
@@ -378,6 +379,8 @@ def _policy_pages(
                 CHIP=chip(site, templates, policy, track.id),
                 PRESET_CHIP=Safe(preset_chip),
                 SAYS=Prose(policy.says.rstrip(".") + "."),
+                TIER=policy.tier,
+                TIER_WORD=site.label_words["repos"][policy.tier],
                 ACTS_ON=_where_text(site, policy),
                 WHEN=_when_text(site, policy),
                 LABEL_NOTE=Prose(texts["label_box_note"]),
@@ -433,6 +436,10 @@ def _policy_pages(
             NAME=policy.name,
             VERSION=policy.version,
             WORD=policy.word,
+            TIER_WORD=site.label_words["repos"][policy.tier],
+            TIER_MEANING=site.data["label_meanings"][
+                site.label_words["repos"][policy.tier]
+            ],
             KEYWORD=policy.keyword,
             WHERE=" ".join(policy.where) or "none",
             SHA256=policy.sha256,
@@ -479,6 +486,21 @@ def _member_rows(
     )
 
 
+def quiz_lines(questions: list[dict[str, Any]]) -> str:
+    """The start screen's questions and answers as Markdown lines for the twin."""
+    lines = []
+    for number, question in enumerate(questions, start=1):
+        lines.append(f"{number}. {question['title']} {question['hint']}\n")
+        for option in question["options"]:
+            extra = ""
+            if option.get("presets"):
+                extra = f" (presets: {', '.join(option['presets'])})"
+            elif option.get("allow"):
+                extra = f" (labels: {', '.join(option['allow'])})"
+            lines.append(f"   - {option['label']}: {option['sub']}{extra}\n")
+    return "".join(lines)
+
+
 def _builder(
     site: Site, track: Track, out_dir: Path, templates: Path, counts_: dict[str, Any]
 ) -> tuple[str, str]:
@@ -522,6 +544,7 @@ def _builder(
             COUNT=str(len(ungrouped)),
             MEMBERS=Safe(_member_rows(site, track, templates, ungrouped, "none")),
         )
+    clients = site.data["builder_clients"]
     page = site.data["pages"]["builder"]
     path = f"/{track.slug}/builder/"
     write_page(
@@ -536,12 +559,29 @@ def _builder(
                 templates / track.slug / "builder.html",
                 SUB=Prose(page["description"]),
                 NOSCRIPT=Prose(texts["builder_noscript"]),
+                CLIENT_PICKER=Safe(clientpage.picker(clients, templates / track.slug)),
+                QUIZ=Safe(
+                    render_file(
+                        templates / PARTIALS / "quiz.html",
+                        TOP=Safe(
+                            render_file(
+                                templates / PARTIALS / "quiz-top.html",
+                                SKIP=site.data["quiz"]["texts"]["skip"],
+                            )
+                        ),
+                    )
+                ),
                 PRESET_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
                 GROUP_SECTIONS=Safe(groups),
                 EMPTY=Prose(texts["builder_empty"]),
                 NEED_ONE=Prose(texts["builder_need_one"]),
+                UNTESTED=Safe(
+                    clientpage.untested_lines(clients, templates / track.slug)
+                ),
+                CLIENT_STEPS=Safe(clientpage.steps(clients, templates / track.slug)),
                 HINT=data_fill(texts["builder_outputs_hint"], subs),
+                AUTHOR_LINK=Prose(site.data["builder_texts"]["author_link"]),
             )
         ),
         jsonld_data={
@@ -559,12 +599,105 @@ def _builder(
         templates / MD / track.slug / "builder.md",
         SUB=Prose(page["description"]),
         NOSCRIPT=texts["builder_noscript"],
+        QUIZ_LINES=quiz_lines(site.data["quiz"]["questions"]),
         PRESET_LINES="".join(
             f"- {preset.title} ({len(preset.members)} policies): {preset.summary}\n"
             for preset in site.presets
         ),
         NEED_ONE=texts["builder_need_one"],
         HINT=data_fill(texts["builder_outputs_hint"], subs),
+        GRADES_NOTE=""
+        if clients["graded"]
+        else f"{clients['texts']['grades_pending']}\n",
+        AGENT_LINES=clientpage.markdown(clients),
+    )
+    write_md(out_dir, path, twin)
+    return path, twin
+
+
+def _author(
+    site: Site, track: Track, out_dir: Path, templates: Path
+) -> tuple[str, str]:
+    """The author page's static layout; author.js runs the interview and generators (BV-S2)."""
+    author = site.data["author"]
+    texts = author["texts"]
+    kinds = author["kinds"]
+    options = "".join(
+        render_file(
+            templates / PARTIALS / "author-kind.html",
+            ID=kind,
+            CHECKED=Safe(" checked" if i == 0 else ""),
+            TITLE=spec["title"],
+            BLURB=spec["blurb"],
+        )
+        for i, (kind, spec) in enumerate(kinds.items())
+    )
+    page = site.data["pages"]["author"]
+    path = f"/{track.slug}/author/"
+    write_page(
+        site,
+        out_dir,
+        templates,
+        path=path,
+        title=page["title"],
+        description=page["description"],
+        content=Safe(
+            render_file(
+                templates / track.slug / "author.html",
+                SUB=Prose(page["description"]),
+                NOSCRIPT=Prose(texts["noscript"]),
+                CLIENT_PICKER=Safe(
+                    clientpage.picker(
+                        site.data["builder_clients"], templates / track.slug
+                    )
+                ),
+                KIND_LEGEND=texts["kind_legend"],
+                KIND_OPTIONS=Safe(options),
+                NAME_LABEL=texts["name_label"],
+                NAME_HINT=texts["name_hint"],
+                NAME_EXAMPLE=texts["name_example"],
+                INTERVIEW_HINT=texts["interview_hint"],
+                CATALOG_HEADING=texts["catalog_heading"],
+                CATALOG_HINT=texts["catalog_hint"],
+                SAVED_NOTE=texts["saved_note"],
+                CLEAR_LABEL=texts["clear_label"],
+                CLEAR_DONE=texts["clear_done"],
+                ADVANCED_HEADING=texts["advanced_heading"],
+                ADVANCED_HINT=texts["advanced_hint"],
+                ERRORS_TITLE=texts["errors_title"],
+                SELECTION_HEADING=texts["selection_heading"],
+                SELECTION_HINT=texts["selection_hint"],
+                SCRIPT_HEADING=texts["script_heading"],
+                SCRIPT_HINT=texts["script_hint"],
+                SHA_LABEL=texts["sha_label"],
+                DOWNLOAD_LABEL=texts["download_label"],
+                COPY_LABEL=texts["copy_label"],
+                SHARE_LABEL=texts["share_label"],
+                SHARE_HINT=texts["share_hint"],
+            )
+        ),
+        jsonld_data={
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": page["title"],
+            "description": page["description"],
+        },
+        nav=track.id,
+        section=(track, "author"),
+        scripts=("common.js", "author.js"),
+    )
+    twin = render_text_file(
+        templates / MD / track.slug / "author.md",
+        SUB=Prose(page["description"]),
+        NOSCRIPT=texts["noscript"],
+        KIND_LINES="".join(
+            f"- {spec['title']}: {spec['blurb']}\n  "
+            + " ".join(f"Q: {field['label']}" for field in spec["fields"])
+            + "\n"
+            for spec in kinds.values()
+        ),
+        ENGINE_COMMIT_12=author["engine_commit"][:12],
+        SCRIPT_HINT=texts["script_hint"],
     )
     write_md(out_dir, path, twin)
     return path, twin
@@ -576,15 +709,7 @@ def _install(
     """Install page: engine install, the command, update, remove, file format."""
     data = site.data
     inst = data["install"]
-    subs = {
-        "__CATALOG_REF_12__": site.catalog_ref[:12],
-        "__FRAMEWORK_REF__": site.framework_ref,
-    }
-    install_cmd = (
-        inst["install_command_released"]
-        if data.get("released")
-        else data_fill(inst["install_command"], subs)
-    )
+    install_cmd = install_command(site)
     field_rows = Safe(
         "".join(
             render_file(
@@ -715,6 +840,7 @@ def _api(site: Site, track: Track, out_dir: Path) -> None:
     api.mkdir(parents=True, exist_ok=True)
     catalog = {"schema_version": 1, "track": track.id, **site_dict(site)}
     catalog.pop("tracks", None)
+    catalog.pop("repos", None)
     catalog["label_words"] = {track.id: site.label_words.get(track.id, {})}
     catalog["policies"] = [p for p in catalog["policies"] if p.get("track") == track.id]
     (api / "catalog.json").write_text(
@@ -768,22 +894,25 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
     pages += policy_paths
 
     builder_path, builder_doc = _builder(site, track, out_dir, templates, counts_)
+    author_path, author_doc = _author(site, track, out_dir, templates)
     clients_path, clients_doc = _clients(site, track, out_dir, templates)
-    pages += [builder_path, clients_path]
+    pages += [builder_path, author_path, clients_path]
 
     # docs stay in the order llms.txt lists them (plan 6.8)
     docs += [
         (f"{list_path}index.md", list_doc),
         (f"{builder_path}index.md", builder_doc),
+        (f"{author_path}index.md", author_doc),
         (f"{install_path}index.md", install_doc),
         (f"{clients_path}index.md", clients_doc),
     ]
     docs += policy_docs
 
     _api(site, track, out_dir)
+    authordata.write_author_json(site.data, out_dir)
 
-    if len(pages) != counts_["total"] + 5:
-        raise PageError(f"{track.slug}: expected {counts_['total'] + 5} pages")
+    if len(pages) != counts_["total"] + 6:
+        raise PageError(f"{track.slug}: expected {counts_['total'] + 6} pages")
 
     llms = f"## {track.title}\n\n"
     llms += f"- [{track.title} home](/{track.slug}/index.md): {track.summary}\n"
@@ -792,6 +921,8 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
         "every policy shown on this site\n"
         f"- [Builder](/{track.slug}/builder/index.md): "
         "pick policies, get the command and file\n"
+        f"- [Author](/{track.slug}/author/index.md): "
+        "describe a safeguard, get a setup script\n"
         f"- [Install](/{track.slug}/install/index.md): "
         "the command and the selection file\n"
         f"- [Other clients](/{track.slug}/clients/index.md): "

@@ -6,13 +6,13 @@ from typing import Any
 
 import yaml
 
+from . import authordata, clientdata, engine, homedata, quiz, repodata
 from . import catalog as catalog_mod
-from . import engine
 from . import presets as presets_mod
 from .model import Site, Track
 
 SITE_JSON = "data/site.json"
-YAML_DATA = ("home", "faq", "agents")
+YAML_DATA = ("home", "faq", "agents", "repos")
 TRACK_FIELDS = ("id", "slug", "title", "status", "summary")
 TRACK_STATUSES = ("available", "in_design")
 
@@ -70,10 +70,40 @@ def build_site(
     for policy in policies:
         policy.sha256 = engine.pack_hash(catalog / policy.path)
     picks = [{"id": p.id, "version": p.version, "sha256": p.sha256} for p in policies]
-    selection = engine.build_selection(picks, catalog_source, catalog_ref, release)
+    selection = engine.build_selection_v2(
+        picks,
+        catalog_source,
+        catalog_ref,
+        clientdata.ENGINE_CLIENT,
+        site_data["builder_clients"]["bundle_version"],
+        release,
+    )
     labels = engine.policy_labels(catalog, selection)
     catalog_mod.apply_labels(policies, labels, engine.label_words())
     catalog_mod.apply_groups(policies, presets)
+    site_data["builder_clients"] = clientdata.builder_clients(
+        data_dir, site_data, policies, engine.label_words()
+    )
+
+    site_data["author"] = authordata.load_author(data_dir)
+
+    demo = homedata.load_demo(catalog, data_dir, policies)
+    incident_copy, incidents = homedata.load_incidents(data_dir, policies)
+    site_data["incidents"] = incident_copy
+    site_data["quiz"] = quiz.load_quiz(data_dir, presets, set(engine.label_words()))
+    clientdata.check_quiz_agents(
+        site_data["quiz"], site_data["builder_clients"]["order"]
+    )
+
+    tiers = repodata.check_tiers(site_data["repos"]["tiers"])
+    repodata.apply_tiers(policies, tiers)
+    repodata.merge_display(tiers, site_data["glyphs"], site_data["label_meanings"])
+    site_data["repos_quiz"] = quiz.load_repos_quiz(
+        data_dir,
+        presets,
+        set(engine.label_words()),
+        {t["key"] for t in tiers},
+    )
 
     visible = {p.id for p in policies}
     rules = [
@@ -88,7 +118,8 @@ def build_site(
         release=release,
         tracks=tracks,
         label_words={
-            track.id: engine.label_words() for track in tracks if track.id == "coding"
+            "coding": engine.label_words(),
+            "repos": {t["key"]: t["word"] for t in tiers},
         },
         policies=policies,
         presets=presets,
@@ -96,6 +127,8 @@ def build_site(
         warning_texts=dict(site_data["warning_texts"]),
         command=str(site_data["command"]),
         data=site_data,
+        demo=demo,
+        incidents=incidents,
     )
 
 
@@ -160,6 +193,17 @@ def site_dict(site: Site) -> dict[str, Any]:
         "warning_texts": site.warning_texts,
         "command": site.command,
         "builder_texts": site.data["builder_texts"],
+        "builder_clients": site.data["builder_clients"],
+        "quiz": site.data["quiz"],
+        "repos": {
+            "tiers": [
+                {k: t[k] for k in ("key", "word", "glyph", "meaning")}
+                for t in site.data["repos"]["tiers"]
+            ],
+            "tier_of": {p.id: p.tier for p in site.policies},
+            "commands": site.data["repos"]["commands"],
+            "quiz": site.data["repos_quiz"],
+        },
     }
 
 

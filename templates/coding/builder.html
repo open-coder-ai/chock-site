@@ -4,8 +4,10 @@
 </section>
 <noscript><p class="noscript-note">__NOSCRIPT__</p></noscript>
 <div class="link-notice" id="link-notice" role="status"></div>
-<div class="builder-grid">
+__QUIZ__
+<div class="builder-grid" id="builder-full">
 <section class="pick" aria-labelledby="pick-policies">
+__CLIENT_PICKER__
 <h2 id="pick-policies">Pick policies</h2>
 <div class="filter-row">
 <div class="field">
@@ -24,6 +26,7 @@ __PRESET_OPTIONS__</select>
 <div class="groups">
 __GROUP_SECTIONS__
 </div>
+<p class="author-link"><a id="author-link" href="/coding/author/">__AUTHOR_LINK__</a></p>
 </section>
 <section class="selection" aria-label="Your selection" aria-labelledby="your-selection">
 <h2 id="your-selection">Your selection <span class="sel-count">0 policies</span></h2>
@@ -37,9 +40,9 @@ __GROUP_SECTIONS__
 <button type="button" role="tab" id="tab-file" aria-selected="false" aria-controls="panel-file" disabled>Selection file</button>
 </div>
 <div class="output-box" role="tabpanel" id="panel-command" aria-labelledby="tab-command" hidden>
-<pre><code class="language-bash" data-selection-code></code></pre>
+__UNTESTED__<pre><code class="language-bash" data-selection-code></code></pre>
 <button type="button" class="copy" id="copy-command">Copy command</button>
-</div>
+__CLIENT_STEPS__</div>
 <div class="output-box" role="tabpanel" id="panel-share" aria-labelledby="tab-share" hidden>
 <label class="visually-hidden" for="share-url">Share link</label>
 <input class="share-url" id="share-url" type="text" readonly data-selection-url>

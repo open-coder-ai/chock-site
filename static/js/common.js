@@ -1,7 +1,7 @@
 // Shared behaviour for every page: nav toggle, copy buttons, chip factory.
 document.documentElement.classList.add("js");
 
-const GLYPHS = { block: "■", ask: "◆", warn: "▲", advise: "○" };
+const GLYPHS = { block: "■", ask: "◆", warn: "▲", advise: "○", commit: "■", agent: "◆" };
 
 export function labelChip(keyword, word, meaning) {
   const chip = document.createElement("span");
@@ -67,6 +67,69 @@ export function decodeSelection(code) {
   const b64 = code.replaceAll("-", "+").replaceAll("_", "/");
   const bin = atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
   return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
+}
+
+export function sameMembers(a, b) {
+  return a.length === b.length && a.every((id) => b.includes(id));
+}
+
+// The selection object (schema 2) for a set of picked ids and one client; the builder and its
+// start screen share it.
+export function buildSelection(site, picked, client = site.builder_clients.default) {
+  const ids = [...picked].sort();
+  const policies = new Map(site.policies.map((p) => [p.id, p]));
+  const catalog = { source: site.catalog.source, ref: site.catalog.ref };
+  if (site.catalog.release) catalog.release = site.catalog.release;
+  const selection = {
+    schema: 2,
+    client,
+    bundle: { version: site.builder_clients.bundle_version },
+    catalog,
+  };
+  const preset = site.presets.find((p) => sameMembers(p.members, ids));
+  if (preset) selection.preset = preset.id;
+  selection.policies = ids.map((id) => {
+    const p = policies.get(id);
+    return { from: "catalog", id, version: p.version, sha256: p.sha256 };
+  });
+  return selection;
+}
+
+// The install command for a selection: the command for its client's witness state, filled in one pass.
+export function installCommand(site, selection) {
+  const code = encodeSelection(selection);
+  const clients = site.builder_clients;
+  const template = clients.commands[clients.clients[selection.client].witness];
+  const values = { CODE: code, CLIENT: selection.client };
+  const command = template.replace(/__([A-Z]+)__/g, (match, key) =>
+    Object.hasOwn(values, key) ? values[key] : match,
+  );
+  return { code, command };
+}
+
+// A share link carries the client and the policy ids only: #client=<id>&p=<id>,<id>.
+export function shareFragment(client, ids) {
+  return `#client=${client}&p=${[...ids].sort().join(",")}`;
+}
+
+// The client and ids a share fragment names, ids in order without repeats; null for any other fragment.
+// `ids` is null for a bare #client=<id>, which picks the agent and nothing else.
+export function parseShareFragment(hash) {
+  const match = /^#client=([a-z0-9-]+)(?:&p=([^&]*))?$/.exec(hash);
+  if (!match) return null;
+  if (match[2] === undefined) return { client: match[1], ids: null };
+  let raw = match[2];
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {
+    // keep the raw text; unknown ids are reported by the caller
+  }
+  const ids = [];
+  for (const part of raw.split(",")) {
+    const id = part.trim();
+    if (id && !ids.includes(id)) ids.push(id);
+  }
+  return { client: match[1], ids };
 }
 
 function initNavToggle() {

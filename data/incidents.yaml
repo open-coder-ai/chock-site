@@ -1,0 +1,19 @@
+# The home page incident table (R-2 7d). Every row names real catalog policies;
+# the build fails on a policy id that is not visible. Rows say "the class of
+# flaw behind", never "would have prevented".
+heading: "The class of flaw behind real incidents"
+intro: "Most breaches start with a flaw someone shipped. Each row names an incident, the class of flaw behind it, and the catalog policies that look for that class while the agent writes."
+columns: {incident: "Incident", flaw: "The class of flaw behind it", policy: "Policy"}
+framework: "chock aligns with MITRE ATT&CK Initial Access, OWASP ASI01–10 (every mapping partial), CISA Secure by Design and NIST SSDF."
+honesty: "chock doesn't stop every attack. It closes common, known entry points."
+rows:
+  - {incident: "Log4Shell (CVE-2021-44228)", flaw: "A logging library that evaluates lookups inside logged text", policies: ["java-security"]}
+  - {incident: "Spring4Shell (CVE-2022-22965)", flaw: "A known-exploited framework version pinned in the build", policies: ["java-security"]}
+  - {incident: "Text4Shell (CVE-2022-42889)", flaw: "A known-exploited string-interpolation library in the build", policies: ["java-security"]}
+  - {incident: "Struts OGNL (CVE-2017-5638, the Equifax class)", flaw: "Expression-language injection from untrusted input", policies: ["java-security"]}
+  - {incident: "SSRF, then wildcard IAM", flaw: "A server-side request forgery reaching a role that can do everything", policies: ["java-security", "block-wildcard-iam"]}
+  - {incident: "tj-actions moved tag (2025)", flaw: "A CI action referenced by a tag that can be moved", policies: ["pin-github-actions"]}
+  - {incident: "Codecov bash uploader (2021)", flaw: "A script downloaded and piped straight into a shell", policies: ["block-curl-pipe-sh"]}
+  - {incident: "MCP servers at @latest", flaw: "An agent component fetched at a floating version", policies: ["block-unpinned-agent-components", "verify-mcp-allowlist"]}
+  - {incident: "Leaked keys", flaw: "A credential committed to source", policies: ["scan-secrets"]}
+  - {incident: "Trojan Source (CVE-2021-42574)", flaw: "Hidden Unicode that makes code read differently from how it runs", policies: ["block-invisible-unicode"]}

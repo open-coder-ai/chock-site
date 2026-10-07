@@ -38,19 +38,31 @@ def data_fill(text: str, subs: dict[str, str]) -> str:
     return pattern.sub(lambda match: subs[match.group(0)], text)
 
 
-def chip(site: Site, templates: Path, policy: Policy, section: str) -> Safe:
-    """The label chip for one policy (plan 6.4); the section picks the words."""
+def keyword_chip(site: Site, templates: Path, keyword: str, section: str) -> Safe:
+    """The label chip for a label keyword (plan 6.4); the section picks the words."""
+    word = site.label_words[section][keyword]
     return Safe(
         render_file(
             templates / PARTIALS / "label-chip.html",
-            KEYWORD=policy.keyword,
-            WORD=site.label_words[section][policy.keyword],
-            MEANING=site.data["label_meanings"][
-                site.label_words[section][policy.keyword]
-            ],
-            GLYPH=site.data["glyphs"][policy.keyword],
+            KEYWORD=keyword,
+            WORD=word,
+            MEANING=site.data["label_meanings"][word],
+            GLYPH=site.data["glyphs"][keyword],
         )
     )
+
+
+def chip(site: Site, templates: Path, policy: Policy, section: str) -> Safe:
+    """The label chip for one policy (plan 6.4); the section picks the words."""
+    return keyword_chip(site, templates, policy.keyword, section)
+
+
+def install_command(site: Site) -> str:
+    """The engine install line the Install page shows, chosen by `released`."""
+    inst = site.data["install"]
+    if site.data.get("released"):
+        return inst["install_command_released"]
+    return data_fill(inst["install_command"], {"__FRAMEWORK_REF__": site.framework_ref})
 
 
 def label_chips(

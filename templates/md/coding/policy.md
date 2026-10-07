@@ -16,6 +16,8 @@ __ID__ · version __VERSION__
 
 __WORD__ — __SAYS__. __LABEL_NOTE__
 
+In a git repo: __TIER_WORD__ (__TIER_MEANING__)
+
 __PLUGIN_NOTE__
 
 ## What it does

@@ -1,7 +1,19 @@
-// The builder: pick policies, then read the command, share link and selection file.
-// Everything runs in the browser. The picks live in the URL fragment, which browsers
+// The builder: pick an agent and policies, then read the command, share link and selection file.
+// Everything runs in the browser. The agent and the picks live in the URL fragment, which browsers
 // never send to a server.
-import { announce, copyText, decodeSelection, encodeSelection } from "./common.js";
+import {
+  announce,
+  buildSelection as selectionFor,
+  copyText,
+  decodeSelection,
+  encodeSelection,
+  installCommand,
+  labelChip,
+  parseShareFragment,
+  sameMembers,
+  shareFragment,
+} from "./common.js";
+import { commandOutputs, initQuiz } from "./quiz.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -13,20 +25,29 @@ const fill = (text, values) =>
 const fillTokens = (text, values) =>
   text.replace(/__([A-Z]+)__/g, (match, key) => (key in values ? values[key] : match));
 
-function sameMembers(a, b) {
-  return a.length === b.length && a.every((id) => b.includes(id));
-}
-
 async function loadSite() {
   const response = await fetch("/data/site.json");
   return response.json();
 }
 
+// These fragments open the full builder; with none of them the start screen shows first.
+// A bare #client=<id> only picks the agent.
+const FULL_FRAGMENT = /^#((s|preset|add)=|client=[a-z0-9-]+&p=)/;
+
 async function main() {
+  const quizEl = $("#quiz");
+  const fullEl = $("#builder-full");
+  const showQuiz = (on) => {
+    quizEl.hidden = !on;
+    fullEl.hidden = on;
+  };
+  showQuiz(!FULL_FRAGMENT.test(location.hash));
   const site = await loadSite();
   const T = site.builder_texts;
   const policies = new Map(site.policies.map((p) => [p.id, p]));
   const presets = site.presets;
+  const C = site.builder_clients;
+  let client = C.default;
   let picked = new Set();
   let notices = [];
   let activeTab = "command";
@@ -48,6 +69,8 @@ async function main() {
   const codeEl = $("[data-selection-code]");
   const shareEl = $("#share-url");
   const bar = $("#mobile-bar");
+  const clientInputs = $$("#client-picker input[name='client']");
+  const clientParts = $$("[data-client]");
   const labelOn = new Set();
   let notesKey = "";
   let noteCount = 0;
@@ -55,17 +78,32 @@ async function main() {
   // ----- the selection object (plan 8.1) -----
 
   function buildSelection() {
-    const ids = [...picked].sort();
-    const catalog = { source: site.catalog.source, ref: site.catalog.ref };
-    if (site.catalog.release) catalog.release = site.catalog.release;
-    const selection = { schema: 1, client: "claude-code", catalog };
-    const preset = presets.find((p) => sameMembers(p.members, ids));
-    if (preset) selection.preset = preset.id;
-    selection.policies = ids.map((id) => {
-      const p = policies.get(id);
-      return { id, version: p.version, sha256: p.sha256 };
-    });
-    return selection;
+    return selectionFor(site, picked, client);
+  }
+
+  // ----- the agent (BV-S1): each policy's own label on it, its command and its steps -----
+
+  const labelOf = (id) => C.clients[client].labels[id];
+
+  function renderClient() {
+    for (const input of clientInputs) input.checked = input.value === client;
+    for (const part of clientParts) part.hidden = part.dataset.client !== client;
+    for (const row of rows) {
+      const label = labelOf(row.dataset.policyId);
+      row.dataset.label = label.keyword;
+      const word = site.label_words.coding[label.keyword];
+      $(".label", row).replaceWith(labelChip(label.keyword, word, C.meanings[label.keyword]));
+      $(".bsays", row).textContent = label.says;
+    }
+  }
+
+  // `redrawQuiz` is false when the quiz's own agent question made the change: it already shows it.
+  function setClient(next, redrawQuiz = true) {
+    client = next;
+    renderClient();
+    applyFilters();
+    render();
+    if (redrawQuiz) quiz.refresh();
   }
 
   // ----- warnings (plan 8.3) -----
@@ -78,10 +116,16 @@ async function main() {
     };
     for (const rule of site.warning_rules) {
       if (rule.kind === "grade") {
-        const ids = [...picked].filter((id) => policies.get(id).keyword === rule.grade).sort();
+        const ids = [...picked].filter((id) => labelOf(id).keyword === rule.grade).sort();
         if (ids.length) text(`grade:${rule.grade}`, { PRESENT: ids.join(", ") });
         continue;
       }
+      if (rule.kind === "client") {
+        if (picked.size && rule.clients.includes(client)) text("client", { SAYS: rule.says });
+        continue;
+      }
+      // chock install checks this one against the plugins already installed; a browser cannot.
+      if (rule.kind === "overlap") continue;
       const here = rule.policies.filter((id) => picked.has(id));
       const absent = rule.policies.filter((id) => !picked.has(id));
       if (!here.length) continue;
@@ -144,7 +188,7 @@ async function main() {
       item.appendChild(name);
       const says = document.createElement("span");
       says.className = "sel-says";
-      says.textContent = p.says;
+      says.textContent = labelOf(p.id).says;
       item.appendChild(says);
       const remove = document.createElement("button");
       remove.type = "button";
@@ -197,9 +241,9 @@ async function main() {
       showTab(activeTab);
       return;
     }
-    const code = encodeSelection(buildSelection());
-    const url = `${location.origin}${location.pathname}#s=${code}`;
-    codeEl.textContent = site.command.replace("__CODE__", () => code);
+    const { code, command } = installCommand(site, buildSelection());
+    const url = `${location.origin}${location.pathname}${shareFragment(client, picked)}`;
+    codeEl.textContent = command;
     codeEl.dataset.selectionCode = code;
     shareEl.value = url;
     shareEl.setAttribute("data-selection-url", url);
@@ -224,13 +268,18 @@ async function main() {
 
   function writeFragment() {
     const base = `${location.pathname}${location.search}`;
-    const next = picked.size ? `${base}#s=${encodeSelection(buildSelection())}` : base;
+    let next = base;
+    if (picked.size) next = `${base}#s=${encodeSelection(buildSelection())}`;
+    else if (client !== C.default) next = `${base}#client=${client}`;
     history.replaceState(null, "", next);
   }
 
   function render(writeUrl = true) {
     for (const box of $$(".bmember input[type='checkbox']")) box.checked = picked.has(box.value);
     selCount.textContent = picked.size === 1 ? T.count_one : fill(T.count_many, { n: picked.size });
+    // The author page reads the same fragment form, so the link carries the picks along.
+    const authorLink = $("#author-link");
+    if (authorLink) authorLink.href = `/coding/author/${shareFragment(client, picked)}`;
     renderSelectionList();
     renderNotes();
     renderOutputs();
@@ -391,8 +440,20 @@ async function main() {
     if (dropped.length) notices.push(notAvailable(dropped));
   }
 
+  const knownClient = (id) => Object.hasOwn(C.clients, id);
+
   // Returns false when the fragment must stay as it was (nothing was applied).
   function loadFragment() {
+    const shared = parseShareFragment(location.hash);
+    if (shared) {
+      if (!knownClient(shared.client)) {
+        notices.push({ text: fill(T.client_unknown, { id: shared.client }) });
+        return false;
+      }
+      client = shared.client;
+      if (shared.ids) restore(shared.ids);
+      return true;
+    }
     const found = /^(s|preset|add)=(.*)$/.exec(location.hash.slice(1));
     if (!found) return true;
     const [, key, value] = found;
@@ -419,6 +480,8 @@ async function main() {
       return false;
     }
     const ids = entries.map((entry) => entry.id);
+    // Schema 1 named claude-code only; schema 2 names the agent it was built for.
+    if (typeof selection.client === "string" && knownClient(selection.client)) client = selection.client;
     const theirs = selection.catalog && typeof selection.catalog.ref === "string" ? selection.catalog.ref : "";
     if (theirs === site.catalog.ref) {
       restore(ids);
@@ -453,16 +516,43 @@ async function main() {
   function applyFragment() {
     picked = new Set();
     notices = [];
+    client = C.default;
     const writeUrl = loadFragment();
     renderNotices();
+    renderClient();
     applyFilters();
     render(writeUrl);
   }
 
+  for (const input of clientInputs) {
+    input.addEventListener("change", () => {
+      if (!input.checked) return;
+      setClient(input.value);
+      announce(fill(T.client_chosen, { name: C.clients[client].name }));
+    });
+  }
+
+  const rowOf = new Map(rows.map((row) => [row.dataset.policyId, row]));
+  const quiz = initQuiz({
+    site,
+    chipFor: (id) => $(".label", rowOf.get(id)),
+    keywordOf: (id) => labelOf(id).keyword,
+    agent: { get: () => client, set: (id) => setClient(id, false) },
+    outputs: (ids, context) => commandOutputs(site, context.T, ids, client),
+    onSkip: () => {
+      showQuiz(false);
+      start.focus();
+    },
+  });
+
   window.addEventListener("hashchange", () => {
-    if (/^#(s|preset|add)=/.test(location.hash)) applyFragment();
+    if (!FULL_FRAGMENT.test(location.hash)) return;
+    showQuiz(false);
+    applyFragment();
+    quiz.refresh();
   });
   applyFragment();
+  quiz.refresh();
 }
 
 main();
