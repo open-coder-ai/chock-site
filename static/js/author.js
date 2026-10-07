@@ -283,12 +283,20 @@ async function sha256bytes(parts) {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// The text a file's quoted heredoc writes: it always ends in a newline.
+const asWritten = (text) => (text.endsWith("\n") ? text : `${text}\n`);
+
 // The pack hash over a policy's {path, text} files, sorted by POSIX path as the engine sorts.
 function packHash(files) {
   const enc = new TextEncoder();
   const parts = [];
   for (const file of [...files].sort((a, b) => (a.path < b.path ? -1 : 1)))
-    parts.push(enc.encode(file.path), new Uint8Array([0]), enc.encode(file.text), new Uint8Array([0]));
+    parts.push(
+      enc.encode(file.path),
+      new Uint8Array([0]),
+      enc.encode(asWritten(file.text)),
+      new Uint8Array([0]),
+    );
   return sha256bytes(parts);
 }
 

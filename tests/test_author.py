@@ -2,8 +2,9 @@
 
 import json
 import re
+from importlib.metadata import distribution
 from importlib.resources import files
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 import yaml
@@ -104,6 +105,26 @@ def test_kind_templates_match_the_engine_byte_for_byte() -> None:
 def test_engine_commit_matches_framework_ref() -> None:
     commit = (DATA / "kinds" / "engine-commit.txt").read_text(encoding="utf-8").strip()
     assert commit == (ROOT / ".framework-ref").read_text(encoding="utf-8").strip()
+
+
+def test_installed_engine_is_the_pinned_commit() -> None:
+    commit = (DATA / "kinds" / "engine-commit.txt").read_text(encoding="utf-8").strip()
+    direct_url = json.loads(distribution("chock").read_text("direct_url.json") or "{}")
+    assert direct_url.get("vcs_info", {}).get("commit_id") == commit, (
+        "install chock from git at data/kinds/engine-commit.txt"
+    )
+
+
+@pytest.mark.parametrize("policy_id", ["my-a", "my-a-b", "my-0"])
+def test_js_path_order_matches_the_engine(policy_id: str) -> None:
+    # author.js sorts paths as strings; compute_pack_hash sorts Path objects by part.
+    author = authordata.load_author(DATA)
+    for kind, spec in author["kinds"].items():
+        paths = [path.replace("__ID__", policy_id) for path in spec["files"]]
+        assert all(path.isascii() for path in paths), kind
+        assert sorted(paths) == [
+            p.as_posix() for p in sorted(map(PurePosixPath, paths))
+        ], kind
 
 
 def test_author_yaml_covers_the_five_kinds() -> None:

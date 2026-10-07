@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from chock.lock import compute_pack_hash
 from conftest import SCREENSHOTS, assert_clean, collect, screenshot
 
 AUTHOR = "/coding/author/"
@@ -373,6 +374,61 @@ def test_generated_script_runs_end_to_end(page, site_url, tmp_path, kind) -> Non
     assert (root / "chock.selection.yaml").is_file()
     assert (root / ".agents" / "policies" / KIND_IDS[kind] / "manifest.yaml").is_file()
     assert "custom, not reviewed" in result.stdout
+    _assert_engine_hash(page, root / ".agents" / "policies" / KIND_IDS[kind])
+    assert_clean(page)
+
+
+def _assert_engine_hash(page, policy_dir: Path) -> None:
+    """The page's JS pack hash equals the pinned engine's hash of the written files."""
+    js_hash = re.search(r"sha256: ([0-9a-f]{64})", _selection(page)).group(1)
+    assert compute_pack_hash(policy_dir) == js_hash
+
+
+def test_pack_hash_matches_engine_on_nested_executable_utf8_pack(
+    page, site_url, tmp_path
+) -> None:
+    _open(page, site_url)
+    page.evaluate("localStorage.removeItem('chock.author.draft.v1')")
+    page.check("input[name='author-kind'][value='guard']")
+    page.fill("#author-name", "no destroy")
+    page.fill("#af-stop", "terraform destroy")
+    # Non-ASCII UTF-8: accents, guillemets, an em dash and a 4-byte emoji.
+    page.fill("#af-message", "Ne lancez pas « terraform destroy » — ça casse tout ✋🙂")
+    page.fill("#af-refuse_example", "terraform destroy -auto-approve")
+    page.fill("#af-pass_example", "terraform plan")
+    page.wait_for_function(
+        "document.querySelector('#author-script').textContent.startsWith('#!')"
+    )
+    # An advanced edit adds a non-ASCII last line, with no final newline, to the
+    # executable implementation; the heredoc writes that newline.
+    impl = page.locator(".afile").filter(
+        has=page.locator("code", has_text="implementations/")
+    )
+    area = impl.locator(".afile-text")
+    area.fill(area.input_value() + "# Résumé: naïve façade, 日本語 ✓")
+    page.wait_for_function(
+        "document.querySelector('#author-script').textContent.includes('日本語')"
+    )
+    result = _run_script(
+        _script(page), tmp_path, "claude-code\n./my-guardrails\nbuild\n"
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    policy_dir = tmp_path / "my-guardrails" / ".agents" / "policies" / "my-no-destroy"
+    written = sorted(
+        p.relative_to(policy_dir).as_posix()
+        for p in policy_dir.rglob("*")
+        if p.is_file()
+    )
+    assert written == [
+        "evals/suite.yaml",
+        "implementations/my-no-destroy.py",
+        "manifest.yaml",
+    ]
+    executable = policy_dir / "implementations" / "my-no-destroy.py"
+    assert os.access(executable, os.X_OK)
+    assert "日本語".encode() in executable.read_bytes()
+    assert any("✋🙂".encode() in p.read_bytes() for p in policy_dir.rglob("*.*"))
+    _assert_engine_hash(page, policy_dir)
     assert_clean(page)
 
 
