@@ -7,6 +7,7 @@ from . import homedata, repodata
 from .catalog import first_sentence
 from .model import Policy, Site
 from .pageparts import (
+    COMMAND_FORM,
     PARTIALS,
     PageError,
     badge,
@@ -109,11 +110,14 @@ def _hero(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> Safe
 
 
 def _works(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
+    clients = site.data["builder_clients"]
     items = [
-        {"HREF": "/coding/builder/", "NAME": "Claude Code", "HOW": land["works_claude"]}
-    ] + [
-        {"HREF": c["repo"], "NAME": c["name"], "HOW": land["works_other"]}
-        for c in site.data["clients"]
+        {
+            "HREF": f"/coding/builder/#client={client}",
+            "NAME": clients["clients"][client]["name"],
+            "HOW": clients["texts"][clients["clients"][client]["witness"]],
+        }
+        for client in clients["order"]
     ]
     return Safe(
         render_file(
@@ -126,7 +130,7 @@ def _works(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
 
 def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     """The sections block: one card per track in tracks.yaml, its copy from there."""
-    agents = 1 + len(site.data["clients"])
+    agents = len(site.data["builder_clients"]["order"])
     cards = []
     for track in site.tracks:
         conf = land["track_cards"].get(track.id, {})
@@ -204,7 +208,7 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
 
 
 def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
-    command = data_fill(site.command, {"__CODE__": "…"})
+    command = data_fill(site.command, COMMAND_FORM)
     steps = []
     for i, step in enumerate(land["how"], start=1):
         extra = ""
@@ -228,21 +232,43 @@ def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     )
 
 
+def _surface_rows(site: Site, policy: Policy) -> list[dict[str, Any]]:
+    """The policy's catalog label on each agent, with the agent's witness state; None when ungraded."""
+    clients = site.data["builder_clients"]
+    rows = []
+    for client in clients["order"]:
+        about = clients["clients"][client]
+        label = policy.client_labels.get(client)
+        rows.append(
+            {
+                "name": about["name"],
+                "state": about["witness"],
+                "state_word": clients["texts"][about["witness"]],
+                "keyword": label and label["keyword"],
+                "says": label["says"]
+                if label
+                else data_fill(
+                    clients["texts"]["ungraded_says"], {"__NAME__": about["name"]}
+                ),
+            }
+        )
+    return rows
+
+
 def _surface(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> Safe:
     policy = _policy(site, land["surface_policy"])
-    rows = []
-    for client in land["surface_clients"]:
-        if client["key"] is None:
-            chip_html, says = Safe(""), land["surface_devin"]
-        else:
-            data = policy.client_labels.get(client["key"])
-            if data is None:
-                raise PageError(
-                    f"{policy.id}: registry has no label for {client['key']}"
-                )
-            chip_html = keyword_chip(site, templates, data["keyword"], COUNTED)
-            says = data["says"]
-        rows.append({"NAME": client["name"], "CHIP": chip_html, "SAYS": says})
+    rows = [
+        {
+            "NAME": row["name"],
+            "STATE": row["state"],
+            "STATE_WORD": row["state_word"],
+            "CHIP": Safe("")
+            if row["keyword"] is None
+            else keyword_chip(site, templates, row["keyword"], COUNTED),
+            "SAYS": row["says"],
+        }
+        for row in _surface_rows(site, policy)
+    ]
     tests = data_fill(
         land["surface_tests"],
         {
@@ -556,16 +582,14 @@ def _twin(
         for t in site.tracks
     )
     surfaces = "".join(
-        "- {}: {}\n".format(
-            c["name"],
-            land["surface_devin"]
-            if c["key"] is None
-            else "{} — {}".format(
-                site.label_words[COUNTED][policy.client_labels[c["key"]]["keyword"]],
-                policy.client_labels[c["key"]]["says"],
-            ),
+        f"- {row['name']} ({row['state_word']}): "
+        + (
+            row["says"]
+            if row["keyword"] is None
+            else f"{site.label_words[COUNTED][row['keyword']]} — {row['says']}"
         )
-        for c in land["surface_clients"]
+        + "\n"
+        for row in _surface_rows(site, policy)
     )
     cases = "".join(
         f"- {c['tab']} (preset {c['preset']}): {c['headline']} "
@@ -590,7 +614,7 @@ def _twin(
         HOW_LINES="".join(
             f"{i}. {s['title']} — {s['body']}\n" for i, s in enumerate(land["how"], 1)
         ),
-        COMMAND=data_fill(site.command, {"__CODE__": "…"}),
+        COMMAND=data_fill(site.command, COMMAND_FORM),
         SURFACE_BODY=data_fill(land["surface_body"], {"__POLICY__": policy.id}),
         SURFACE_LINES=surfaces,
         USECASE_LINES=cases,

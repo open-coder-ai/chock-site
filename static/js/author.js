@@ -304,11 +304,11 @@ const scriptHash = (text) => sha256bytes([new TextEncoder().encode(text)]);
 
 // ----- the selection file -----
 
-// A schema-2 selection: the local policy first, then the catalog picks.
-function selectionYaml(hash, ctx, site, picked, client) {
+// A schema-2 selection: the local policy first, then the catalog picks. It comes in two parts,
+// before and after the `client:` line, so the script can write the agent it asked for between them.
+function selectionParts(hash, ctx, site, picked) {
+  const head = ["schema: 2"];
   const lines = [
-    "schema: 2",
-    `client: ${client}`,
     "bundle:",
     `  name: ${ctx.cfg.bundle_name}`,
     `  version: ${sq(ctx.version)}`,
@@ -336,7 +336,13 @@ function selectionYaml(hash, ctx, site, picked, client) {
       `  sha256: ${policy.sha256}`,
     );
   }
-  return `${lines.join("\n")}\n`;
+  return [`${head.join("\n")}\n`, `${lines.join("\n")}\n`];
+}
+
+// The selection as the page shows it, for the agent picked here.
+function selectionYaml(hash, ctx, site, picked, client) {
+  const [head, tail] = selectionParts(hash, ctx, site, picked);
+  return `${head}client: ${client}\n${tail}`;
 }
 
 // ----- the setup script -----
@@ -351,6 +357,7 @@ function heredocDelim(text, base) {
 // The POSIX script: asks, writes the files, chock check, then chock install
 // (install mode adds --apply where the agent's own install step was witnessed).
 function buildScript(files, selection, hash, ctx, site, client, clients) {
+  const [selHead, selTail] = selection;
   const cfg = ctx.cfg;
   const lines = [
     "#!/bin/sh",
@@ -401,10 +408,15 @@ function buildScript(files, selection, hash, ctx, site, client, clients) {
     ...new Set(files.map((f) => f.path.split("/").slice(0, -1).join("/")).filter(Boolean)),
   ];
   for (const dir of dirs) lines.push(`mkdir -p "$FOLDER/.agents/policies/${ctx.id}/${dir}"`);
-  const selDelim = heredocDelim(selection, "CHOCK_SELECTION_YAML");
+  // The agent line is the one unquoted write: $AGENT matched the fixed list above.
+  const selDelim = heredocDelim(selHead + selTail, "CHOCK_SELECTION_YAML");
   lines.push(
     `cat > "$FOLDER/chock.selection.yaml" <<'${selDelim}'`,
-    selection.replace(/\n$/, ""),
+    selHead.replace(/\n$/, ""),
+    selDelim,
+    `printf 'client: %s\\n' "$AGENT" >> "$FOLDER/chock.selection.yaml"`,
+    `cat >> "$FOLDER/chock.selection.yaml" <<'${selDelim}'`,
+    selTail.replace(/\n$/, ""),
     selDelim,
   );
   files.forEach((file, i) => {
@@ -605,10 +617,14 @@ async function main() {
             schedule(false);
           });
           label.appendChild(box);
-          label.appendChild(labelChip(p.keyword, site.label_words.coding[p.keyword], C.meanings[p.keyword]));
+          // The policy's own label on the picked agent, as the builder shows it.
+          const own = C.clients[client].labels[p.id];
+          const word =
+            own.keyword === C.ungraded ? C.texts.ungraded_word : site.label_words.coding[own.keyword];
+          label.appendChild(labelChip(own.keyword, word, C.clients[client].meanings[own.keyword]));
           const nameEl = document.createElement("span");
           nameEl.className = "amember-name";
-          nameEl.textContent = `${p.name} — ${p.says}`;
+          nameEl.textContent = `${p.name} — ${own.says}`;
           label.appendChild(nameEl);
           return label;
         }),
@@ -720,7 +736,7 @@ async function main() {
     const hash = await packHash(files);
     const selYaml = selectionYaml(hash, c, site, picked, client);
     selEl.textContent = selYaml;
-    script = buildScript(files, selYaml, hash, c, site, client, clients);
+    script = buildScript(files, selectionParts(hash, c, site, picked), hash, c, site, client, clients);
     scriptEl.textContent = script;
     shaEl.textContent = await scriptHash(script);
     saveDraft();
@@ -775,6 +791,7 @@ async function main() {
     input.addEventListener("change", () => {
       if (!input.checked) return;
       client = input.value;
+      renderCatalog();
       writeShare();
       schedule(false);
     });

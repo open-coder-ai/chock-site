@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from sitegen import clientdata, engine
+from sitegen import catalog, clientdata, engine
 from sitegen.model import Latest, Policy
 from sitegen.pageparts import PageError
 
@@ -65,23 +65,63 @@ def test_witness_state_is_witnessed_or_untested(tmp_path: Path) -> None:
         clientdata.load_witness(folder, engine.client_ids())
 
 
-def test_per_client_grades_need_all_five_clients() -> None:
+def test_graded_clients_are_those_the_catalog_grades_on_every_policy() -> None:
     clients = engine.client_ids()
     full = {c: {"keyword": "block", "says": f"{c} says"} for c in clients}
-    assert clientdata.has_client_grades([_policy(full)], clients)
     partial = {c: v for c, v in full.items() if c != "devin"}
-    assert not clientdata.has_client_grades([_policy(partial)], clients)
+    graded = clientdata.graded_clients([_policy(full), _policy(partial)], clients)
+    assert graded == [c for c in clients if c != "devin"]
+    # The engine grades claude-code itself, so it counts with no catalog block at all.
+    assert clientdata.graded_clients([_policy({})], clients) == ["claude-code"]
 
 
-def test_labels_come_from_the_catalog_only_when_graded() -> None:
-    full = {c: {"keyword": "block", "says": f"{c} says"} for c in engine.client_ids()}
-    policy = _policy(full)
-    graded = clientdata.client_labels([policy], "cursor", True, WORDS)
+def test_labels_are_each_agents_own_grade_or_not_graded() -> None:
+    partial = {
+        c: {"keyword": "block", "says": f"{c} says"}
+        for c in engine.client_ids()
+        if c != "devin"
+    }
+    policy = _policy(partial)
+    graded = clientdata.client_labels([policy], "cursor", WORDS, "not graded yet")
     assert graded["p-one"] == {"keyword": "block", "says": "cursor says"}
-    fallback = clientdata.client_labels([policy], "cursor", False, WORDS)
-    assert fallback["p-one"] == {"keyword": "ask", "says": "claude says"}
-    claude = clientdata.client_labels([policy], "claude-code", True, WORDS)
+    # No grade for devin: "not graded", never Claude's label in its place.
+    devin = clientdata.client_labels([policy], "devin", WORDS, "not graded yet")
+    assert devin["p-one"] == {"keyword": clientdata.UNGRADED, "says": "not graded yet"}
+    claude = clientdata.client_labels([policy], "claude-code", WORDS, "x")
     assert claude["p-one"] == {"keyword": "ask", "says": "claude says"}
+
+
+def test_label_status_and_extras_are_not_agents() -> None:
+    row = {
+        "label": {
+            "cursor": {"keyword": "block", "says": "s"},
+            "status": {"keyword": "deprecated", "says": "lifecycle status: deprecated"},
+            "misses": None,
+        }
+    }
+    assert set(catalog._client_labels(row)) == {"cursor"}
+    assert catalog._label_status(row) == "deprecated"
+    # A missing status key means no status, never an error (BV-C3).
+    assert catalog._label_status({"label": {"cursor": row["label"]["cursor"]}}) is None
+    assert catalog._label_status({}) is None
+
+
+def test_engine_untested_note_is_dropped_once(built) -> None:
+    """witness.yaml says which agents are untested; the engine's own note would say it twice."""
+    site = _site(built)
+    prefix = site["builder_clients"]["engine_untested_prefix"]
+    assert not [
+        r for r in site["warning_rules"] if r.get("says", "").startswith(prefix)
+    ]
+    assert [r for r in engine.warning_rules() if r.get("says", "").startswith(prefix)]
+
+
+def test_remove_steps_and_repos_name_every_agent(built) -> None:
+    block = _site(built)["builder_clients"]
+    for client, data in block["clients"].items():
+        assert data["remove"], client
+        assert data["plugin_repo"].startswith("https://github.com/open-coder-ai/")
+        assert "__" not in json.dumps(data["remove"]), client
 
 
 def test_site_json_carries_each_client(built) -> None:

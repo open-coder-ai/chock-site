@@ -7,7 +7,7 @@ questions:
 - id: what-is-chock
   group: common
   q: "What is chock?"
-  a: "A catalog of guardrail policies for AI coding agents, and the engine that turns a picked set of them into one Claude Code plugin. This site is the catalog's front door: every policy is listed with its label, its hash and its source."
+  a: "A catalog of guardrail policies for AI coding agents, and the engine that turns a picked set of them into one plugin for your agent. This site is the catalog's front door: every policy is listed with its label, its hash and its source."
 - id: security-boundary
   group: common
   q: "Is this a security boundary?"
@@ -27,19 +27,19 @@ questions:
 - id: which-agents
   group: coding
   q: "Which coding agents does this work with?"
-  a: "This site builds for Claude Code. Cursor, Codex, Copilot and Devin install the same policies from their own plugin repositories — see Other clients."
+  a: "The builder makes one plugin for any of these agents: __AGENTS__. Agents marked tested install with one command; for the others the command builds the plugin and you apply it — see Agents."
 - id: labels
   group: coding
   q: "What does \"blocks / asks / warns / advisory\" mean?"
-  a: "It is the policy's label — what happens when it fires. blocks: Claude Code refuses the action. asks: it stops and asks you. warns: the action goes ahead with a warning. advisory: text the agent reads; nothing stops a violation."
+  a: "It is the policy's label — what happens when it fires. blocks: the agent refuses the action. asks: it stops and asks you. warns: the action goes ahead with a warning. advisory: text the agent reads; nothing stops a violation."
 - id: update-remove
   group: coding
   q: "How do I update or remove the plugin?"
-  a: "Change your picks in the builder and run the new command, then restart the session or run /reload-plugins. To remove the plugin, run claude plugin uninstall chock-guardrails@chock-local."
+  a: "Change your picks in the builder and run the new command. The Install page lists, for each agent, how it picks up a rebuild and how to remove the plugin."
 - id: what-command-does
   group: coding
   q: "What does the command do on my machine?"
-  a: "It fetches the pinned catalog, checks each policy's hash, builds one plugin and prints the two Claude Code commands to install it."
+  a: "It fetches the pinned catalog, checks each policy's hash and builds one plugin for your agent. With --apply, given only for an agent marked tested, it also runs that agent's own install commands; without it, it prints them for you."
 - id: share
   group: coding
   q: "Can my team share one selection?"

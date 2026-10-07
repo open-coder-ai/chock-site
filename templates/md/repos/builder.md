@@ -2,7 +2,7 @@
 
 __SUB__
 
-The builder on this page needs JavaScript. __NOSCRIPT__
+__NOSCRIPT__
 
 ## Start screen
 

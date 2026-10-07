@@ -91,8 +91,10 @@ async function main() {
     for (const row of rows) {
       const label = labelOf(row.dataset.policyId);
       row.dataset.label = label.keyword;
-      const word = site.label_words.coding[label.keyword];
-      $(".label", row).replaceWith(labelChip(label.keyword, word, C.meanings[label.keyword]));
+      const word =
+        label.keyword === C.ungraded ? C.texts.ungraded_word : site.label_words.coding[label.keyword];
+      const meaning = C.clients[client].meanings[label.keyword];
+      $(".label", row).replaceWith(labelChip(label.keyword, word, meaning));
       $(".bsays", row).textContent = label.says;
     }
   }
@@ -417,7 +419,7 @@ async function main() {
   });
   $("#download-file").addEventListener("click", () => {
     const body = `${JSON.stringify(buildSelection(), null, 2)}\n`;
-    const url = URL.createObjectURL(new Blob([body], { type: "application/x-yaml" }));
+    const url = URL.createObjectURL(new Blob([body], { type: "application/json" }));
     const link = document.createElement("a");
     link.href = url;
     link.download = T.download_name;

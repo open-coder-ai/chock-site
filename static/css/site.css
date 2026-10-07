@@ -1739,8 +1739,12 @@ body { overflow-x: clip; }
   #nav-links { order: 4; flex-basis: 100%; }
   .header-inner .button-small { margin-left: auto; }
 
-  .section-nav-inner { flex-wrap: wrap; gap: 0 16px; overflow-x: visible; padding: 0 16px; }
-  .section-nav nav { flex-wrap: wrap; row-gap: 0; }
+  /* One opaque row of section links keeps the sticky header short on a phone. */
+  header { background: var(--bg); }
+  .header-inner { padding: 8px 16px; }
+  .section-nav-inner { gap: 0 14px; padding: 0 16px; scrollbar-width: none; }
+  .section-nav nav { gap: 14px; }
+  .section-nav a { font-size: 13px; padding: 8px 0; }
   .section-nav-title { display: none; }
 
   .hero-band { padding: 44px 0 36px; }
@@ -1826,4 +1830,30 @@ body { overflow-x: clip; }
     max-height: none;
     overflow: visible;
   }
+}
+
+/* BV-S1b: per-agent labels, install steps, the agents page and the status badge */
+
+.bgroup-note { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.selection .outputs { margin-bottom: 16px; }
+.label-ungraded { border: 1px dashed var(--dash); color: var(--muted); }
+.status-badge { color: var(--warn-fg); background: var(--warn-bg); border-color: var(--warn-fg); }
+.by-agent .agent-labels { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.agent-label {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) auto;
+  gap: 8px 16px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.agent-label-name { color: var(--text); font-weight: 600; }
+.agent-label-grade { color: var(--body); font-size: 14px; }
+.install-agent { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 16px; }
+.install-agent h3 { display: flex; align-items: center; gap: 10px; }
+.client-repo { color: var(--muted); font-size: 13px; }
+.surface-name .client-state, .agent-label-name .client-state { margin-left: 6px; }
+
+@media (max-width: 760px) {
+  .agent-label { grid-template-columns: minmax(0, 1fr); }
 }

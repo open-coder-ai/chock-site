@@ -103,7 +103,7 @@ def test_label_chip_carries_word_glyph_and_title(built) -> None:
         built.out / "coding" / "policies" / "block-no-verify" / "index.html"
     ).read_text(encoding="utf-8")
     assert 'class="label label-block"' in html
-    assert 'title="blocks: Claude Code refuses the action."' in html
+    assert 'title="blocks: The agent refuses the action."' in html
     assert 'aria-hidden="true">■' in html
 
 
@@ -132,7 +132,7 @@ def test_block_no_verify_page_content(built) -> None:
 
 
 def test_plugin_note_only_on_advisory_enforced_at_commit(built) -> None:
-    note = "Advisory inside Claude Code"
+    note = "Advisory inside the agent"
     protect = (
         built.out / "coding" / "policies" / "protect-main-branch" / "index.html"
     ).read_text(encoding="utf-8")

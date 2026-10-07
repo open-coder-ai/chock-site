@@ -5,6 +5,7 @@ from typing import Any
 
 import yaml
 
+from .clientdata import quiz_agent_options
 from .model import Preset
 from .pageparts import PageError
 
@@ -29,15 +30,22 @@ def _check_options(question: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def load_quiz(
-    data_dir: Path, presets: list[Preset], label_keywords: set[str]
+    data_dir: Path,
+    presets: list[Preset],
+    label_keywords: set[str],
+    clients: dict[str, Any],
 ) -> dict[str, Any]:
-    """quiz.yaml; a worry naming an unknown preset or a strictness naming an unknown label fails."""
+    """quiz.yaml; a worry naming an unknown preset or a strictness naming an unknown label fails.
+
+    The agent question's options come from `clients` (the builder_clients block), never from quiz.yaml.
+    """
     quiz = yaml.safe_load((data_dir / QUIZ_YAML).read_text(encoding="utf-8"))
     quiz.pop("repos", None)
     preset_ids = {p.id for p in presets}
     questions = quiz.get("questions") or []
     if [q.get("id") for q in questions] != ["agent", "worries", "strictness"]:
         raise PageError("quiz.yaml: the questions must be agent, worries, strictness")
+    quiz_agent_options(quiz, clients)
     for question in questions:
         if question.get("kind") not in KINDS:
             raise PageError(f"quiz.yaml: {question['id']} kind not in {KINDS}")
@@ -68,10 +76,11 @@ def load_repos_quiz(
     presets: list[Preset],
     label_keywords: set[str],
     tier_keys: set[str],
+    clients: dict[str, Any],
 ) -> dict[str, Any]:
     """The Git repositories quiz: the coding quiz's worries, a host question, tier-based strictness."""
     raw = yaml.safe_load((data_dir / QUIZ_YAML).read_text(encoding="utf-8"))
-    coding = load_quiz(data_dir, presets, label_keywords)
+    coding = load_quiz(data_dir, presets, label_keywords, clients)
     repos = raw["repos"]
     questions = []
     for question in repos["questions"]:
