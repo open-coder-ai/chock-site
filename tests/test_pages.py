@@ -73,7 +73,7 @@ def test_every_visible_policy_has_a_page(built) -> None:
 
 def test_every_page_has_one_h1_lang_csp_title(built) -> None:
     pages = _pages(built)
-    assert len(pages) == len(_policy_ids(built)) + 13  # shared + sections + 404
+    assert len(pages) == len(_policy_ids(built)) + 14  # shared + sections + 404
     for page in pages:
         parser = PageParser()
         parser.feed(page.read_text(encoding="utf-8"))

@@ -122,14 +122,16 @@ def test_section_nav_band_aligns_with_header(browser, site_url) -> None:
 
 
 def test_section_nav_shows_all_links_at_390(browser, site_url) -> None:
-    """390px: all five section-nav links are fully on screen and the nav does not scroll."""
+    """390px: all six section-nav links are fully on screen and the nav does not scroll."""
     context = browser.new_context(viewport={"width": 390, "height": 844})
     try:
         page = context.new_page()
         page.goto(site_url + "/coding/policies/")
         links = page.locator(".section-nav a")
-        assert links.count() == 5
-        for label in ("Overview", "Policies", "Builder", "Install", "Other clients"):
+        assert links.count() == 6
+        for label in (
+            "Overview", "Policies", "Builder", "Author", "Install", "Other clients"
+        ):
             link = page.locator(".section-nav a", has_text=label)
             assert link.is_visible(), label
             box = link.bounding_box()

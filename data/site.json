@@ -8,6 +8,7 @@
     {"key": "overview", "label": "Overview"},
     {"key": "policies", "label": "Policies"},
     {"key": "builder", "label": "Builder"},
+    {"key": "author", "label": "Author"},
     {"key": "install", "label": "Install"},
     {"key": "clients", "label": "Other clients"}
   ],
@@ -15,7 +16,8 @@
     "home": {"title": "Guardrails for AI agents", "description": "chock stops an AI agent before it takes a risky step. Coding-agent guardrails are available now; guardrails for general agents are in design."},
     "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ of them, each labelled blocks, asks, warns or advisory."},
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
-    "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one Claude Code plugin from them. Free and open source."},
+    "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
+    "author": {"title": "Author a policy", "description": "Describe a safeguard in plain words; the page fills a chock policy template and writes a setup script you read and run yourself. Nothing is compiled or run in the browser."},
     "clients": {"title": "Other clients", "description": "chock policies also ship as plugins for Cursor, Codex, GitHub Copilot and Devin."},
     "security": {"title": "Security", "description": "What chock is and is not: friction, not a security boundary. How the pieces are verified and how to report a bug."},
     "install": {"title": "Install", "description": "Install chock, build a plugin from a selection code, and update or remove it."},
@@ -167,6 +169,7 @@
     "bar_notes_many": "· {n} notes",
     "client_chosen": "Building for {name}",
     "client_unknown": "This link names an agent this site does not know: {id}.",
-    "download_name": "chock.selection.yaml"
+    "download_name": "chock.selection.yaml",
+    "author_link": "Need a rule the catalog does not have? Author one — your picks come along."
   }
 }

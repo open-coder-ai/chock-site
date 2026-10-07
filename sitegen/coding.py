@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import clientpage, engine
+from . import authordata, clientpage, engine
 from .catalog import first_sentence
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
@@ -581,6 +581,7 @@ def _builder(
                 ),
                 CLIENT_STEPS=Safe(clientpage.steps(clients, templates / track.slug)),
                 HINT=data_fill(texts["builder_outputs_hint"], subs),
+                AUTHOR_LINK=Prose(site.data["builder_texts"]["author_link"]),
             )
         ),
         jsonld_data={
@@ -609,6 +610,94 @@ def _builder(
         if clients["graded"]
         else f"{clients['texts']['grades_pending']}\n",
         AGENT_LINES=clientpage.markdown(clients),
+    )
+    write_md(out_dir, path, twin)
+    return path, twin
+
+
+def _author(
+    site: Site, track: Track, out_dir: Path, templates: Path
+) -> tuple[str, str]:
+    """The author page's static layout; author.js runs the interview and generators (BV-S2)."""
+    author = site.data["author"]
+    texts = author["texts"]
+    kinds = author["kinds"]
+    options = "".join(
+        render_file(
+            templates / PARTIALS / "author-kind.html",
+            ID=kind,
+            CHECKED=Safe(" checked" if i == 0 else ""),
+            TITLE=spec["title"],
+            BLURB=spec["blurb"],
+        )
+        for i, (kind, spec) in enumerate(kinds.items())
+    )
+    page = site.data["pages"]["author"]
+    path = f"/{track.slug}/author/"
+    write_page(
+        site,
+        out_dir,
+        templates,
+        path=path,
+        title=page["title"],
+        description=page["description"],
+        content=Safe(
+            render_file(
+                templates / track.slug / "author.html",
+                SUB=Prose(page["description"]),
+                NOSCRIPT=Prose(texts["noscript"]),
+                CLIENT_PICKER=Safe(
+                    clientpage.picker(
+                        site.data["builder_clients"], templates / track.slug
+                    )
+                ),
+                KIND_LEGEND=texts["kind_legend"],
+                KIND_OPTIONS=Safe(options),
+                NAME_LABEL=texts["name_label"],
+                NAME_HINT=texts["name_hint"],
+                NAME_EXAMPLE=texts["name_example"],
+                INTERVIEW_HINT=texts["interview_hint"],
+                CATALOG_HEADING=texts["catalog_heading"],
+                CATALOG_HINT=texts["catalog_hint"],
+                SAVED_NOTE=texts["saved_note"],
+                CLEAR_LABEL=texts["clear_label"],
+                CLEAR_DONE=texts["clear_done"],
+                ADVANCED_HEADING=texts["advanced_heading"],
+                ADVANCED_HINT=texts["advanced_hint"],
+                ERRORS_TITLE=texts["errors_title"],
+                SELECTION_HEADING=texts["selection_heading"],
+                SELECTION_HINT=texts["selection_hint"],
+                SCRIPT_HEADING=texts["script_heading"],
+                SCRIPT_HINT=texts["script_hint"],
+                SHA_LABEL=texts["sha_label"],
+                DOWNLOAD_LABEL=texts["download_label"],
+                COPY_LABEL=texts["copy_label"],
+                SHARE_LABEL=texts["share_label"],
+                SHARE_HINT=texts["share_hint"],
+            )
+        ),
+        jsonld_data={
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": page["title"],
+            "description": page["description"],
+        },
+        nav=track.id,
+        section=(track, "author"),
+        scripts=("common.js", "author.js"),
+    )
+    twin = render_text_file(
+        templates / MD / track.slug / "author.md",
+        SUB=Prose(page["description"]),
+        NOSCRIPT=texts["noscript"],
+        KIND_LINES="".join(
+            f"- {spec['title']}: {spec['blurb']}\n  "
+            + " ".join(f"Q: {field['label']}" for field in spec["fields"])
+            + "\n"
+            for spec in kinds.values()
+        ),
+        ENGINE_COMMIT_12=author["engine_commit"][:12],
+        SCRIPT_HINT=texts["script_hint"],
     )
     write_md(out_dir, path, twin)
     return path, twin
@@ -805,22 +894,25 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
     pages += policy_paths
 
     builder_path, builder_doc = _builder(site, track, out_dir, templates, counts_)
+    author_path, author_doc = _author(site, track, out_dir, templates)
     clients_path, clients_doc = _clients(site, track, out_dir, templates)
-    pages += [builder_path, clients_path]
+    pages += [builder_path, author_path, clients_path]
 
     # docs stay in the order llms.txt lists them (plan 6.8)
     docs += [
         (f"{list_path}index.md", list_doc),
         (f"{builder_path}index.md", builder_doc),
+        (f"{author_path}index.md", author_doc),
         (f"{install_path}index.md", install_doc),
         (f"{clients_path}index.md", clients_doc),
     ]
     docs += policy_docs
 
     _api(site, track, out_dir)
+    authordata.write_author_json(site.data, out_dir)
 
-    if len(pages) != counts_["total"] + 5:
-        raise PageError(f"{track.slug}: expected {counts_['total'] + 5} pages")
+    if len(pages) != counts_["total"] + 6:
+        raise PageError(f"{track.slug}: expected {counts_['total'] + 6} pages")
 
     llms = f"## {track.title}\n\n"
     llms += f"- [{track.title} home](/{track.slug}/index.md): {track.summary}\n"
@@ -829,6 +921,8 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
         "every policy shown on this site\n"
         f"- [Builder](/{track.slug}/builder/index.md): "
         "pick policies, get the command and file\n"
+        f"- [Author](/{track.slug}/author/index.md): "
+        "describe a safeguard, get a setup script\n"
         f"- [Install](/{track.slug}/install/index.md): "
         "the command and the selection file\n"
         f"- [Other clients](/{track.slug}/clients/index.md): "
