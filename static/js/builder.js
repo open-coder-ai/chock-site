@@ -86,7 +86,10 @@ async function main() {
 
   const labelOf = (id) => C.clients[client].labels[id];
 
+  const gradesAgent = $("#builder-grades-agent");
+
   function renderClient() {
+    gradesAgent.textContent = fill(T.grades_for, { name: C.clients[client].name });
     for (const input of clientInputs) input.checked = input.value === client;
     for (const part of clientParts) part.hidden = part.dataset.client !== client;
     for (const row of rows) {
@@ -113,14 +116,16 @@ async function main() {
 
   function warnings() {
     const out = [];
-    const text = (key, values) => {
-      const template = site.warning_texts[key];
+    // A `<key>:many` text, when there is one, is the plural form for more than one policy.
+    const text = (key, values, count = 1) => {
+      const many = count > 1 && Object.hasOwn(site.warning_texts, `${key}:many`);
+      const template = site.warning_texts[many ? `${key}:many` : key];
       if (template) out.push(fillTokens(template, values));
     };
     for (const rule of site.warning_rules) {
       if (rule.kind === "grade") {
         const ids = [...picked].filter((id) => labelOf(id).keyword === rule.grade).sort();
-        if (ids.length) text(`grade:${rule.grade}`, { PRESENT: ids.join(", ") });
+        if (ids.length) text(`grade:${rule.grade}`, { PRESENT: ids.join(", ") }, ids.length);
         continue;
       }
       if (rule.kind === "client") {
@@ -133,11 +138,11 @@ async function main() {
       const absent = rule.policies.filter((id) => !picked.has(id));
       if (!here.length) continue;
       if (rule.kind === "missing_partner" && absent.length) {
-        text("missing_partner", { PRESENT: here.join(", "), ABSENT: absent.join(", ") });
+        text("missing_partner", { PRESENT: here.join(", "), ABSENT: absent.join(", ") }, here.length);
       } else if (rule.kind === "all_present" && !absent.length) {
         text("all_present", { PRESENT: here.join(" and ") });
       } else if (rule.kind === "file_absent") {
-        text("file_absent", { PRESENT: here.join(", "), FILE: rule.file });
+        text("file_absent", { PRESENT: here.join(", "), FILE: rule.file }, here.length);
       }
     }
     return out;

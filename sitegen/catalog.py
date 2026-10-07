@@ -144,6 +144,20 @@ def _latest_entry(changelog: list[dict], version: str) -> Latest:
     )
 
 
+def _fill_groups(text: str, found: re.Match) -> str:
+    """One-pass fill of __GROUP__ tokens in `text` from the match's named groups."""
+    return re.sub(r"__([A-Z]+)__", lambda m: found[m.group(1)], text)
+
+
+def plain_change(change: str, rewrites: list[dict[str, str]]) -> str:
+    """The changelog line in plain words when a data rewrite matches it, else as written."""
+    for rule in rewrites:
+        found = re.search(rule["match"], change)
+        if found:
+            return _fill_groups(rule["text"], found)
+    return change
+
+
 def registry_ids(catalog: Path) -> list[str]:
     """Every policy id in registry.yaml, shown or not."""
     registry = yaml.safe_load((catalog / REGISTRY).read_text(encoding="utf-8")) or {}

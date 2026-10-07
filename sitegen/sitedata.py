@@ -74,6 +74,9 @@ def build_site(
 
     for policy in policies:
         policy.sha256 = engine.pack_hash(catalog / policy.path)
+        policy.latest.change = catalog_mod.plain_change(
+            policy.latest.change, site_data["texts"]["change_rewrites"]
+        )
     picks = [{"id": p.id, "version": p.version, "sha256": p.sha256} for p in policies]
     selection = engine.build_selection_v2(
         picks,

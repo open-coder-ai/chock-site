@@ -40,6 +40,12 @@
     "by_agent_heading": "Its label on each agent",
     "by_agent_intro": "The catalog grades each policy on each agent. Pick an agent to build with this policy:",
     "status_badges": {"deprecated": "DEPRECATED"},
+    "change_rewrites": [
+      {
+        "match": "^Status (?P<FROM>[a-z-]+) -> (?P<TO>[a-z-]+) by the BV-C3 promotion rule\\b.*\\bBehaviour unchanged\\.$",
+        "text": "Promoted from __FROM__ to __TO__: every test case ran and passed, and no bug report was open. Behaviour unchanged."
+      }
+    ],
     "plugin_repo_note": "Advisory inside the agent. In a repo set up with chock init, it is enforced at commit.",
     "misses_empty": "This policy does not state what it misses.",
     "examples_note": "Both examples are this policy's own test cases.",
@@ -48,7 +54,8 @@
     "available_badge": "AVAILABLE NOW",
     "footer_tagline": "Guardrails for AI agents. Part of open-coder-ai.",
     "policies_search": "Search __COUNT__ policies: secrets, git, curl…",
-    "computed_note": "Counts are computed from the catalog at each build."
+    "computed_note": "Counts are computed from the catalog at each build.",
+    "grades_agent_note": "Labels and counts are the catalog's grades on __AGENT__; each policy's page lists its grade on every agent."
   },
   "links": {
     "engine_repo": "https://github.com/open-coder-ai/chock",
@@ -126,6 +133,10 @@
     "file_absent": "__PRESENT__ refuses everything until your repo has __FILE__. Create it before you install.",
     "grade:warn": "__PRESENT__ only warns: nothing is refused.",
     "grade:advise": "__PRESENT__ is text only: nothing stops a violation.",
+    "missing_partner:many": "__PRESENT__ are picked without __ABSENT__: they cover one rule by different means; pick them all.",
+    "file_absent:many": "__PRESENT__ refuse everything until your repo has __FILE__. Create it before you install.",
+    "grade:warn:many": "__PRESENT__ only warn: nothing is refused.",
+    "grade:advise:many": "__PRESENT__ are text only: nothing stops a violation.",
     "client": "__SAYS__",
     "overlap": "chock install warns when a picked policy is already in another chock plugin for the same agent: both copies would fire."
   },
@@ -194,6 +205,7 @@
     "bar_notes_one": "· 1 note",
     "bar_notes_many": "· {n} notes",
     "client_chosen": "Building for {name}",
+    "grades_for": "Labels and counts are the catalog's grades on {name}.",
     "client_unknown": "This link names an agent this site does not know: {id}.",
     "download_name": "chock.selection.json",
     "author_link": "Need a rule the catalog does not have? Author one — your picks come along."

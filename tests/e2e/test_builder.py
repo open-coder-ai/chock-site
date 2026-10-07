@@ -445,3 +445,27 @@ def test_link_notices_echo_only_short_catalog_shaped_ids(page, site_url) -> None
         for text in ("no-such-5", "Evil", long_id, "x" * 65, "b" * 65):
             assert text not in notes, (fragment, notes)
         assert_clean(other)
+
+
+def test_grade_notes_agree_in_number(page, site_url) -> None:
+    _open(page, site_url, "#client=claude-code&p=agent-discipline")
+    assert "agent-discipline is text only" in page.locator(".notes").inner_text()
+    other = page.context.new_page()
+    collect(other, site_url)
+    _open(other, site_url, "#client=claude-code&p=agent-discipline,code-safety")
+    notes = other.locator(".notes").inner_text()
+    assert "agent-discipline, code-safety are text only" in notes
+    assert_clean(page)
+    assert_clean(other)
+
+
+def test_label_note_names_the_picked_agent(page, site_url) -> None:
+    _open(page, site_url, "#client=claude-code&p=agent-discipline")
+    note = page.locator("#builder-grades-agent")
+    assert (
+        note.inner_text()
+        == "Labels and counts are the catalog's grades on Claude Code."
+    )
+    page.locator("#client-codex").check()
+    assert note.inner_text() == "Labels and counts are the catalog's grades on Codex."
+    assert_clean(page)

@@ -320,3 +320,19 @@ def test_start_screen_fits_a_phone_and_screenshots(browser, site_url) -> None:
             assert_clean(page)
         finally:
             context.close()
+
+
+def test_result_rows_show_policy_names(page, site_url) -> None:
+    site = _site(page, site_url)
+    names = {p["id"]: p["name"] for p in site["policies"]}
+    _start(page, site_url)
+    _answer_secrets_and_skipped(page, "Stops and warnings")
+    rows = page.locator(".quiz-pick")
+    assert rows.count() > 0
+    for i in range(rows.count()):
+        row = rows.nth(i)
+        policy_id = row.get_attribute("data-policy-id")
+        name = row.locator(".quiz-pick-name")
+        assert name.inner_text().startswith(names[policy_id])
+        assert name.locator(".quiz-pick-id").inner_text() == policy_id
+    assert_clean(page)

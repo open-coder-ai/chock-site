@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import authordata, clientpage, engine
+from . import authordata, clientdata, clientpage, engine
 from .catalog import first_sentence
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
@@ -104,7 +104,7 @@ def _home(
                 GLANCE_HEADING=home["glance_heading"],
                 GLANCE_LINK=home["glance_link"],
                 STAT_CARDS=Safe(stats),
-                COMPUTED_NOTE=texts["computed_note"],
+                COMPUTED_NOTE=f"{texts['computed_note']} {grades_note(site)}",
                 PRESETS_HEADING=home["presets_heading"],
                 PRESETS_INTRO=Prose(home["presets_intro"]),
                 PRESET_CARDS=Safe(preset_cards),
@@ -152,6 +152,19 @@ def _home(
     )
     write_md(out_dir, f"/{track.slug}/", twin)
     return f"/{track.slug}/", twin
+
+
+def engine_client_name(site: Site) -> str:
+    """The agent whose grades the build-time labels and counts show."""
+    return site.data["builder_clients"]["clients"][clientdata.ENGINE_CLIENT]["name"]
+
+
+def grades_note(site: Site) -> str:
+    """The sentence naming the agent behind the labels and counts."""
+    return data_fill(
+        site.data["texts"]["grades_agent_note"],
+        {"__AGENT__": engine_client_name(site)},
+    )
 
 
 def _where_text(site: Site, policy: Policy) -> str:
@@ -259,7 +272,7 @@ def _policies_list(
                 INTRO=Prose(intro),
                 DIST_LABEL=dist_label,
                 DIST_SEGS=Safe(dist_segs),
-                COMPUTED_NOTE=texts["computed_note"],
+                COMPUTED_NOTE=f"{texts['computed_note']} {grades_note(site)}",
                 SEARCH_PLACEHOLDER=data_fill(texts["policies_search"], subs),
                 GROUP_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
@@ -289,7 +302,7 @@ def _policies_list(
     )
     twin = render_text_file(
         templates / MD / track.slug / "policies.md",
-        INTRO=Prose(intro),
+        INTRO=Prose(f"{intro} {grades_note(site)}"),
         ROWS="".join(
             f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md) "
             f"({md_code(policy.id)}, v{md(policy.version)}): {policy.word} — "
@@ -652,6 +665,10 @@ def _builder(
                 ),
                 PRESET_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
+                GRADES_AGENT=data_fill(
+                    site.data["builder_texts"]["grades_for"],
+                    {"{name}": engine_client_name(site)},
+                ),
                 GROUP_SECTIONS=Safe(groups),
                 EMPTY=Prose(texts["builder_empty"]),
                 NEED_ONE=Prose(texts["builder_need_one"]),

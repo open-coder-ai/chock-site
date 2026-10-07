@@ -27,6 +27,8 @@ The command it runs, with your selection code in place of the ellipsis. Ask the 
 __COMMAND__
 ```
 
+__APPLY_NOTE__
+
 ## One policy, every surface
 
 __SURFACE_BODY__
