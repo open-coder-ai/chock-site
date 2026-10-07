@@ -9,6 +9,6 @@ report: https://github.com/open-coder-ai/chock/issues/new?title=Witness%20report
 clients:
   claude-code: witnessed
   cursor: untested
-  codex: untested
+  codex: witnessed
   copilot: untested
   devin: untested
