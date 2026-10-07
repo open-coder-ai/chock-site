@@ -130,7 +130,12 @@ def test_section_nav_shows_all_links_at_390(browser, site_url) -> None:
         links = page.locator(".section-nav a")
         assert links.count() == 6
         for label in (
-            "Overview", "Policies", "Builder", "Author", "Install", "Other clients"
+            "Overview",
+            "Policies",
+            "Builder",
+            "Author",
+            "Install",
+            "Other clients",
         ):
             link = page.locator(".section-nav a", has_text=label)
             assert link.is_visible(), label

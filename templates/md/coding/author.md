@@ -21,6 +21,6 @@ __SCRIPT_HINT__ The script:
 1. asks for the agent (one of the five client ids), the folder, and build-only or install, with the interview's answers as defaults;
 2. writes `chock.selection.yaml` (schema 2) and the policy folder into `.agents/policies/<id>/` as quoted heredocs;
 3. runs `chock check --repo <folder> --only validate,evals` and stops on any failure;
-4. runs `chock install --selection <folder>/chock.selection.yaml --client <agent> --trust-local <id>=<sha256>` — the sha256 pins exactly the policy code printed in the script, so reading it is the review; answering `install` also passes `--apply`, the agent's own install step, only where that step has been witnessed.
+4. runs `chock install --selection <folder>/chock.selection.yaml --client <agent> --trust-local <id>=<sha256>` — the sha256 pins exactly the policy code printed in the script, so reading it is the review the CLI asks for; answering `install` also passes `--apply`, the agent's own install step, only where that step has been witnessed.
 
 The page never compiles a policy or runs generated code. The script never pipes anything from the network into a shell; its only network call is chock's own pinned catalog fetch when catalog policies are picked.
