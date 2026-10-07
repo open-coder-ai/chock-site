@@ -58,6 +58,7 @@ class Policy:
     groups: list[str] = field(default_factory=list)
     examples: list[Example] = field(default_factory=list)
     client_labels: dict[str, dict[str, str]] = field(default_factory=dict)
+    status: str | None = None
 
 
 @dataclass

@@ -21,7 +21,7 @@ texts:
   advanced_hint: "Edits here win over the interview above. Restore regenerates a file from your answers."
   advanced_reset: "Restore"
   selection_heading: "The selection file"
-  selection_hint: "Written as <folder>/chock.selection.yaml. The script asks for the agent again when it runs."
+  selection_hint: "Written as <folder>/chock.selection.yaml. The script asks for the agent again when it runs and writes that agent into the file."
   script_heading: "The setup script"
   script_hint: "Download, read, then run: it writes the files, checks them with chock, and builds the plugin; install mode also applies it where witnessed. It never pipes anything from the network into a shell."
   sha_label: "sha256"
@@ -51,7 +51,6 @@ texts:
 
 script:
   file_name: "chock-setup.sh"
-  default_agent: "claude-code"
   default_folder: "./my-guardrails"
   default_mode: "build"
   agent_prompt: "Agent this plugin is for"

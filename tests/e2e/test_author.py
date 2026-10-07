@@ -8,10 +8,17 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 from chock.lock import compute_pack_hash
 from conftest import SCREENSHOTS, assert_clean, collect, screenshot
 
+from sitegen import engine
+
 AUTHOR = "/coding/author/"
+ROOT = Path(__file__).resolve().parents[2]
+WITNESS_ORDER = list(
+    yaml.safe_load((ROOT / "data" / "witness.yaml").read_text("utf-8"))["clients"]
+)
 MOBILE = {"width": 390, "height": 844}
 
 # Answers that satisfy every kind's cross-field validation.
@@ -375,6 +382,22 @@ def test_generated_script_runs_end_to_end(page, site_url, tmp_path, kind) -> Non
     assert (root / ".agents" / "policies" / KIND_IDS[kind] / "manifest.yaml").is_file()
     assert "custom, not reviewed" in result.stdout
     _assert_engine_hash(page, root / ".agents" / "policies" / KIND_IDS[kind])
+    assert_clean(page)
+
+
+@pytest.mark.parametrize("agent", WITNESS_ORDER)
+def test_generated_script_builds_for_every_agent(
+    page, site_url, tmp_path, agent
+) -> None:
+    """The agent typed into the script lands in the selection, and chock install accepts it."""
+    _open(page, site_url)
+    _fill(page, "guard")
+    result = _run_script(_script(page), tmp_path, f"{agent}\n./my-guardrails\nbuild\n")
+    assert result.returncode == 0, result.stdout + result.stderr
+    selection = tmp_path / "my-guardrails" / "chock.selection.yaml"
+    assert yaml.safe_load(selection.read_text(encoding="utf-8"))["client"] == agent
+    assert engine.load_selection(str(selection))["client"] == agent
+    assert "custom, not reviewed" in result.stdout
     assert_clean(page)
 
 

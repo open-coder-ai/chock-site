@@ -133,18 +133,29 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
 
 
 def _worked_example(site: Site, section: dict[str, Any]) -> dict[str, Any]:
-    """The guide section with its preset's selection object, code and command filled in."""
+    """The guide section with its preset's schema-2 selection, code and command filled in."""
+    clients = site.data["builder_clients"]
+    client = clients["default"]
     preset = next(p for p in site.presets if p.id == section["worked_example"])
     by_id = {p.id: p for p in site.policies}
     picks = [
         {"id": pid, "version": by_id[pid].version, "sha256": by_id[pid].sha256}
         for pid in preset.members
     ]
-    selection = engine.build_selection(
-        picks, site.catalog_source, site.catalog_ref, site.release, preset.id
+    selection = engine.build_selection_v2(
+        picks,
+        site.catalog_source,
+        site.catalog_ref,
+        client,
+        clients["bundle_version"],
+        site.release,
+        preset.id,
     )
     code = engine.encode_selection(selection)
-    command = data_fill(site.command, {"__CODE__": code})
+    state = clients["clients"][client]["witness"]
+    command = data_fill(
+        clients["commands"][state], {"__CODE__": code, "__CLIENT__": client}
+    )
     return {
         **section,
         "code_json": json.dumps(selection, indent=2, ensure_ascii=False),
@@ -152,13 +163,40 @@ def _worked_example(site: Site, section: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _guide_subs(site: Site) -> dict[str, str]:
+    """The facts the agent guide's texts name: schema, agents and command forms, all from data."""
+    clients = site.data["builder_clients"]
+    witnessed = [
+        c for c in clients["order"] if clients["clients"][c]["witness"] == "witnessed"
+    ]
+    return {
+        "__SCHEMA__": str(engine.SCHEMA2),
+        "__CLIENTS__": ", ".join(clients["order"]),
+        "__WITNESSED_CLIENTS__": ", ".join(witnessed),
+        "__DEFAULT_CLIENT__": clients["default"],
+        "__BUNDLE_VERSION__": clients["bundle_version"],
+        "__COMMAND_WITNESSED__": data_fill(
+            clients["commands"]["witnessed"],
+            {"__CODE__": "<code>", "__CLIENT__": "<agent>"},
+        ),
+        "__COMMAND_UNTESTED__": data_fill(
+            clients["commands"]["untested"],
+            {"__CODE__": "<code>", "__CLIENT__": "<agent>"},
+        ),
+    }
+
+
 def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
     """The agent guide (plan 6.8), with the git-hygiene worked example."""
     data = site.data
     page = data["pages"]["agents"]
+    subs = _guide_subs(site)
     sections = [
         _worked_example(site, s) if s.get("worked_example") else s
-        for s in data["agents"]["sections"]
+        for s in (
+            {**s, "body": data_fill(s["body"], subs)}
+            for s in data["agents"]["sections"]
+        )
     ]
     write_page(
         site,

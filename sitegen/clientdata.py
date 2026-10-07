@@ -13,6 +13,8 @@ WITNESS_YAML = "witness.yaml"
 WITNESS_STATES = ("witnessed", "untested")
 # The client whose labels the engine computes; the others come from the catalog's label blocks.
 ENGINE_CLIENT = "claude-code"
+# The keyword of a policy the catalog does not grade on the chosen client.
+UNGRADED = "ungraded"
 
 
 def load_witness(data_dir: Path, clients: list[str]) -> dict[str, Any]:
@@ -33,34 +35,80 @@ def load_witness(data_dir: Path, clients: list[str]) -> dict[str, Any]:
     return data
 
 
-def check_quiz_agents(quiz: dict[str, Any], clients: list[str]) -> None:
-    """The quiz's agent question offers exactly the picker's clients, in the same order."""
+def quiz_agent_options(quiz: dict[str, Any], block: dict[str, Any]) -> None:
+    """Fill the quiz's agent question from the picker: same agents, order, names and witness state."""
     question = next(q for q in quiz["questions"] if q["id"] == "agent")
-    ids = [option["id"] for option in question["options"]]
-    if ids != clients:
-        raise PageError(f"quiz.yaml: agent options {ids} != witness.yaml {clients}")
+    if question.get("options"):
+        raise PageError(
+            "quiz.yaml: the agent question takes its options from witness.yaml"
+        )
+    subs = question["subs"]
+    question["options"] = [
+        {
+            "id": client,
+            "label": block["clients"][client]["name"],
+            "sub": subs[block["clients"][client]["witness"]],
+            **({"default": True} if client == block["default"] else {}),
+        }
+        for client in block["order"]
+    ]
 
 
-def has_client_grades(policies: list[Policy], clients: list[str]) -> bool:
-    """True when every policy's registry label block grades every client (chock-catalog#244)."""
-    return all(set(clients) <= set(p.client_labels) for p in policies)
+def drop_engine_untested(
+    rules: list[dict[str, Any]], block: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """The warning rules without the engine's own "untested" note: witness.yaml says that, once."""
+    prefix = block["engine_untested_prefix"]
+    kept = [
+        r for r in rules if not (r["kind"] == "client" and r["says"].startswith(prefix))
+    ]
+    if len(rules) - len(kept) != 1:
+        raise PageError(f"engine warnings: expected one rule starting {prefix!r}")
+    return kept
+
+
+def graded_clients(policies: list[Policy], clients: list[str]) -> list[str]:
+    """The clients the catalog grades on every policy (chock-catalog#244); the engine's always."""
+    return [
+        client
+        for client in clients
+        if client == ENGINE_CLIENT or all(client in p.client_labels for p in policies)
+    ]
 
 
 def client_labels(
-    policies: list[Policy], client: str, graded: bool, words: dict[str, str]
+    policies: list[Policy], client: str, words: dict[str, str], ungraded_says: str
 ) -> dict[str, dict[str, str]]:
-    """Each policy's own label on `client`: the catalog's grade, or the Claude Code label without one."""
+    """Each policy's own label on `client`: the catalog's grade, or "not graded" without one."""
     out = {}
     for policy in policies:
-        if client == ENGINE_CLIENT or not graded:
+        if client == ENGINE_CLIENT:
             keyword, says = policy.keyword, policy.says
-        else:
+        elif client in policy.client_labels:
             label = policy.client_labels[client]
             keyword, says = label["keyword"], label["says"]
-        if keyword not in words:
+        else:
+            keyword, says = UNGRADED, ungraded_says
+        if keyword != UNGRADED and keyword not in words:
             raise PageError(f"{policy.id}: {client} label {keyword!r} has no word")
         out[policy.id] = {"keyword": keyword, "says": says}
     return out
+
+
+def _per_client(config: dict[str, Any], key: str, clients: list[str]) -> dict[str, Any]:
+    """A site.json builder_clients map keyed by agent; it names every agent exactly once."""
+    table = config[key]
+    if sorted(table) != sorted(clients):
+        raise PageError(
+            f"site.json builder_clients.{key}: {sorted(table)} != {clients}"
+        )
+    return table
+
+
+def remove_steps(steps: list[dict[str, str]], client: str) -> list[dict[str, str]]:
+    """The site's remove steps for a client, its engine tokens filled in one pass."""
+    tokens = engine.client_tokens(client)
+    return [{kind: data_fill(text, tokens) for kind, text in s.items()} for s in steps]
 
 
 def builder_clients(
@@ -72,30 +120,45 @@ def builder_clients(
     """The site.json `builder_clients` block: picker order, witness state, labels and steps per client."""
     config = site_data["builder_clients"]
     texts = config["texts"]
+    meanings = site_data["label_meanings_raw"]
     witness = load_witness(data_dir, engine.client_ids())
-    graded = has_client_grades(policies, engine.client_ids())
+    graded = graded_clients(policies, engine.client_ids())
+    repos = _per_client(config, "plugin_repos", engine.client_ids())
+    removes = _per_client(config, "remove", engine.client_ids())
     clients = {}
     for client, state in witness["clients"].items():
         name = engine.client_name(client)
+        named = {"__NAME__": name}
         clients[client] = {
             "name": name,
             "witness": state,
-            "untested_label": data_fill(texts["untested_label"], {"__NAME__": name}),
-            "untested_line": data_fill(texts["untested_line"], {"__NAME__": name}),
-            "steps_heading": data_fill(texts[f"steps_{state}"], {"__NAME__": name}),
+            "graded": client in graded,
+            "untested_label": data_fill(texts["untested_label"], named),
+            "untested_line": data_fill(texts["untested_line"], named),
+            "steps_heading": data_fill(texts[f"steps_{state}"], named),
+            "ungraded_note": data_fill(texts["ungraded_note"], named),
             "report": data_fill(witness["report"], {"__CLIENT__": client}),
             "steps": engine.client_steps(client),
-            "labels": client_labels(policies, client, graded, words),
+            "remove": remove_steps(removes[client], client),
+            "plugin_repo": repos[client],
+            "build_link": data_fill(texts["build_link"], named),
+            "labels": client_labels(
+                policies, client, words, data_fill(texts["ungraded_says"], named)
+            ),
+            "meanings": {
+                key: data_fill(meanings[word], {"__AGENT__": name})
+                for key, word in words.items()
+            }
+            | {UNGRADED: data_fill(texts["ungraded_meaning"], named)},
         }
     return {
         "default": witness["default"],
         "order": list(witness["clients"]),
         "graded": graded,
+        "ungraded": UNGRADED,
+        "engine_untested_prefix": config["engine_untested_prefix"],
         "bundle_version": config["bundle_version"],
         "commands": config["commands"],
         "texts": texts,
-        "meanings": {
-            key: site_data["label_meanings"][word] for key, word in words.items()
-        },
         "clients": clients,
     }

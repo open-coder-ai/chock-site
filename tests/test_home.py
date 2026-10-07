@@ -216,11 +216,14 @@ def test_one_policy_every_surface_uses_the_registry_label_block(
     row = next(p for p in registry["policies"] if p["id"] == "scan-secrets")
     words = _site_json(built)["label_words"]["coding"]
     text = _main_text(_home(built))
-    for client in ("claude-code", "cursor", "codex", "copilot"):
-        label = row["label"][client]
+    for client in ("claude-code", "cursor", "codex", "copilot", "devin"):
+        label = row["label"].get(client)
+        if label is None:  # the pinned catalog does not grade this agent yet
+            assert "not graded yet for Devin" in text
+            continue
         assert words[label["keyword"]] in text
         assert label["says"] in text
-    assert "installs from its plugin repo" in text
+    assert "plugin repo" not in text
     assert f"{row['eval_executed']} of {row['eval_cases']} test cases pass" in text
 
 

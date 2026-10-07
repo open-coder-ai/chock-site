@@ -65,7 +65,6 @@ TEXT_KEYS = {
 }
 SCRIPT_KEYS = {
     "file_name",
-    "default_agent",
     "default_folder",
     "default_mode",
     "agent_prompt",

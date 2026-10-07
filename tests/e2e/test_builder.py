@@ -86,13 +86,15 @@ def test_download_is_a_valid_selection(page, site_url, tmp_path: Path) -> None:
     page.select_option("#builder-start", "secrets")
     page.get_by_role("tab", name="Selection file").click()
     with page.expect_download() as info:
-        page.get_by_role("button", name="Download chock.selection.yaml").click()
+        page.get_by_role("button", name="Download chock.selection.json").click()
     download = info.value
-    assert download.suggested_filename == "chock.selection.yaml"
-    target = tmp_path / "chock.selection.yaml"
+    assert download.suggested_filename == "chock.selection.json"
+    target = tmp_path / "chock.selection.json"
     download.save_as(str(target))
     selection = json.loads(target.read_text(encoding="utf-8"))
     engine.check_selection(selection)
+    # The engine loads the saved file by path, as `chock install --selection <file>` does.
+    assert engine.load_selection(str(target))["policies"] == selection["policies"]
     assert sorted(p["id"] for p in selection["policies"]) == _members("secrets")
     assert selection["preset"] == "secrets"
     assert_clean(page)

@@ -58,7 +58,7 @@ def test_section_nav_marks_current(page, site_url) -> None:
         ("Overview", "/coding/"),
         ("Builder", "/coding/builder/"),
         ("Install", "/coding/install/"),
-        ("Other clients", "/coding/clients/"),
+        ("Agents", "/coding/clients/"),
     ):
         link = nav.locator("a", has_text=label)
         assert link.get_attribute("href") == href
@@ -135,7 +135,7 @@ def test_section_nav_shows_all_links_at_390(browser, site_url) -> None:
             "Builder",
             "Author",
             "Install",
-            "Other clients",
+            "Agents",
         ):
             link = page.locator(".section-nav a", has_text=label)
             assert link.is_visible(), label
