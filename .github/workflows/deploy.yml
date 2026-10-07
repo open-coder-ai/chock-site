@@ -1,0 +1,97 @@
+name: deploy
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  workflows:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install actionlint-py==1.7.12.25 zizmor==1.30.1
+      - run: actionlint
+      - run: zizmor --offline .github/workflows/deploy.yml
+
+  deploy:
+    # Fork PRs cannot read secrets; only this repo's branches build and deploy.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: refs
+        run: |
+          echo "framework=$(cat .framework-ref)" >> "$GITHUB_OUTPUT"
+          echo "catalog=$(cat .catalog-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: open-coder-ai/chock-catalog
+          path: .catalog
+          ref: ${{ steps.refs.outputs.catalog }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+        env:
+          FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: python -m sitegen --catalog .catalog --out dist
+      - run: test -f dist/_headers
+      - id: cf
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "set=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy skipped: Cloudflare secrets not set"
+            echo "deploy skipped: Cloudflare secrets not set" >> "$GITHUB_STEP_SUMMARY"
+            echo "set=false" >> "$GITHUB_OUTPUT"
+          fi
+      # main deploys to the production branch; a PR deploys the preview branch pr-<number>.
+      - id: target
+        if: steps.cf.outputs.set == 'true'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            echo "branch=main" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=pr-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+      - id: deploy
+        if: steps.cf.outputs.set == 'true'
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.148.0"
+          command: pages deploy dist --project-name=chock-site --branch=${{ steps.target.outputs.branch }} --commit-hash=${{ github.sha }}
+      - if: steps.cf.outputs.set == 'true'
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.deployment-url }}
+          ALIAS_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+        run: |
+          {
+            echo "Deployed to $DEPLOY_URL"
+            if [ -n "$ALIAS_URL" ]; then echo "Branch alias: $ALIAS_URL"; fi
+          } >> "$GITHUB_STEP_SUMMARY"

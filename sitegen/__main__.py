@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 TEMPLATES = ROOT / "templates"
 STATIC = ROOT / "static"
+HEADERS = ROOT / "deploy" / "_headers"
 MARKER = ".sitegen-output"
 DEFAULT_SOURCE = "https://github.com/open-coder-ai/chock-catalog"
 
@@ -104,6 +105,7 @@ def build(catalog: Path, out: Path, source: str, release: str | None) -> Site:
                 shutil.copytree(item, dest)
             else:
                 shutil.copy2(item, dest)
+    shutil.copy2(HEADERS, out / "_headers")
     site = sitedata.build_site(
         catalog, ref, _pin(".framework-ref"), source, release, DATA
     )
