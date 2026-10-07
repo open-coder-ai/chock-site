@@ -55,7 +55,9 @@ git --version
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
-[ -f .catalog-ref ] && [ -f .framework-ref ] || die "run this from a chock-site checkout (.catalog-ref and .framework-ref not found in $root)"
+if [ ! -f .catalog-ref ] || [ ! -f .framework-ref ]; then
+    die "run this from a chock-site checkout (.catalog-ref and .framework-ref not found in $root)"
+fi
 catalog_ref="$(tr -d '[:space:]' < .catalog-ref)"
 engine_ref="$(tr -d '[:space:]' < .framework-ref)"
 echo "site      $(git rev-parse --short HEAD)"
