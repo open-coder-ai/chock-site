@@ -181,7 +181,7 @@ export function initQuiz({
   function renderQuestion(question) {
     body.replaceChildren();
     body.appendChild(element("p", "quiz-hint-text", question.hint));
-    const group = element("div", "quiz-options");
+    const group = element("div", "quiz-options card-grid");
     group.setAttribute("role", "group");
     group.setAttribute("aria-labelledby", "quiz-title");
     const multi = question.kind === "multi";
