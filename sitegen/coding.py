@@ -511,6 +511,7 @@ def _policy_pages(
             nav=track.id,
             section=(track, "policies"),
             alt_json=alt,
+            scripts=("common.js", "policy.js"),
         )
         twin = render_text_file(
             templates / MD / track.slug / "policy.md",

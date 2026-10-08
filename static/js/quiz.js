@@ -2,7 +2,7 @@
 // The questions and their answers come from data/quiz.yaml (site.json "quiz"); the command is
 // built by common.js, exactly as the full builder builds it. The Git repositories builder reuses
 // this module with section "repos": same flow, its own questions, tiers and outputs.
-import { announce, buildSelection, copyText, installCommand } from "./common.js";
+import { announce, buildSelection, copyText, installCommand, track } from "./common.js";
 
 const LABEL_ORDER = ["block", "ask", "warn", "advise"];
 
@@ -104,7 +104,10 @@ export function commandOutputs(site, T, ids, client = site.builder_clients.defau
   const actions = element("div", "quiz-actions");
   const copy = element("button", "button button-primary", T.copy);
   copy.type = "button";
-  copy.addEventListener("click", () => copyText(copy, command, codeEl));
+  copy.addEventListener("click", () => {
+    copyText(copy, command, codeEl);
+    track("install-copied", { agent: client });
+  });
   const open = element("a", "button button-secondary", T.open_full);
   open.id = "quiz-open";
   open.href = `#s=${code}`;
@@ -126,6 +129,7 @@ export function initQuiz({
   picks: sharedPicks,
   keywordOf,
   agent,
+  onFinish,
 }) {
   const config = sectionConfig(site, section);
   if (keywordOf) config.keywordOf = keywordOf;
@@ -316,6 +320,7 @@ export function initQuiz({
     } else {
       step += 1;
       removed = new Set();
+      if (step > total && onFinish) onFinish();
     }
     render(true);
   });

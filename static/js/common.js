@@ -1,4 +1,6 @@
-// Shared behaviour for every page: nav toggle, copy buttons, chip factory.
+// Shared behaviour for every page: nav toggle, copy buttons, chip factory, event counts.
+import { EVENTS, VALUE } from "./allowlist.js";
+
 document.documentElement.classList.add("js");
 
 const GLYPHS = { block: "■", ask: "◆", warn: "▲", advise: "○", commit: "■", agent: "◆" };
@@ -142,6 +144,48 @@ export function parseShareFragment(hash) {
     if (id && !ids.includes(id)) ids.push(id);
   }
   return { client: match[1], ids };
+}
+
+// ----- event counts (plan AN-1) -----
+
+const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
+
+// Whether this visit may send counts: never with Global Privacy Control or Do Not Track,
+// and on a local host only with ?track=1.
+export function trackingAllowed(nav = navigator, loc = location, win = window) {
+  if (nav.globalPrivacyControl === true) return false;
+  if (nav.doNotTrack === "1" || win.doNotTrack === "1") return false;
+  if (LOCAL_HOSTS.includes(loc.hostname)) {
+    return new URLSearchParams(loc.search).get("track") === "1";
+  }
+  return true;
+}
+
+// The JSON body for an allowlisted event carrying exactly its keys, each an id-shaped value;
+// null for anything else, so a bad call sends nothing.
+export function eventBody(name, props = {}) {
+  if (typeof name !== "string" || !Object.hasOwn(EVENTS, name)) return null;
+  const allowed = EVENTS[name];
+  if (Object.keys(props).some((key) => !allowed.includes(key))) return null;
+  const clean = {};
+  for (const key of allowed) {
+    const value = Object.hasOwn(props, key) ? props[key] : undefined;
+    if (typeof value !== "string" || !VALUE.test(value)) return null;
+    clean[key] = value;
+  }
+  return JSON.stringify({ name, props: clean });
+}
+
+// Count one site event with a same-origin beacon. It never throws and never waits.
+export function track(name, props = {}) {
+  try {
+    if (!trackingAllowed()) return;
+    const body = eventBody(name, props);
+    if (body === null || typeof navigator.sendBeacon !== "function") return;
+    navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }));
+  } catch {
+    // A count must never break the page.
+  }
 }
 
 function initNavToggle() {

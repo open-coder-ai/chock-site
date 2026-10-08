@@ -13,6 +13,7 @@ import {
   parseShareFragment,
   sameMembers,
   shareFragment,
+  track,
 } from "./common.js";
 import { commandOutputs, initQuiz } from "./quiz.js";
 
@@ -387,6 +388,7 @@ async function main() {
     dropPendingNotices();
     render();
     announce(preset ? fill(T.preset_applied, { title: preset.title }) : T.cleared);
+    if (preset) track("preset-picked", { preset: preset.id });
   });
 
   selList.addEventListener("click", (event) => {
@@ -414,12 +416,15 @@ async function main() {
 
   $("#copy-command").addEventListener("click", (event) => {
     copyText(event.currentTarget, codeEl.textContent, codeEl);
+    track("install-copied", { agent: client });
   });
   $("#copy-share").addEventListener("click", (event) => {
     copyText(event.currentTarget, shareEl.value, shareEl);
+    track("share-copied");
   });
   $("#mb-copy").addEventListener("click", (event) => {
     copyText(event.currentTarget, codeEl.textContent, codeEl);
+    track("install-copied", { agent: client });
   });
   // A real hash jump would fire hashchange; scroll and focus the panel instead.
   $("#mb-jump").addEventListener("click", (event) => {
@@ -439,6 +444,7 @@ async function main() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    track("selection-downloaded");
   });
 
   // ----- the fragment on load -----
@@ -556,6 +562,7 @@ async function main() {
     keywordOf: (id) => labelOf(id).keyword,
     agent: { get: () => client, set: (id) => setClient(id, false) },
     outputs: (ids, context) => commandOutputs(site, context.T, ids, client),
+    onFinish: () => track("quiz-finished"),
     onSkip: () => {
       showQuiz(false);
       start.focus();

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import coding, engine, general, home, report, repos
+from . import analytics, coding, engine, general, home, report, repos
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
@@ -43,7 +43,10 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
             render_file(
                 templates / "security.html",
                 SUB=Prose(page["description"]),
-                SECTIONS=Safe(text_sections(site, templates, data["security"])),
+                SECTIONS=Safe(
+                    text_sections(site, templates, data["security"])
+                    + analytics.security_html(data["analytics"], templates)
+                ),
             )
         ),
         jsonld_data={
@@ -57,7 +60,8 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
     twin = render_text_file(
         templates / MD / "security.md",
         SUB=Prose(page["description"]),
-        SECTIONS=md_sections(data["security"], data["links"]),
+        SECTIONS=md_sections(data["security"], data["links"])
+        + analytics.security_md(data["analytics"]),
     )
     write_md(out_dir, "/security/", twin)
     return "/security/", "/security/index.md", twin
