@@ -288,7 +288,18 @@ export function initQuiz({
       renderQuestion(question);
       next.textContent = step === total ? T.show : T.next;
     }
-    if (moveFocus) titleEl.focus();
+    if (moveFocus) showStepTop();
+  }
+
+  // Focus the title, but scroll so the progress bars and step label sit below
+  // the sticky header instead of under it.
+  function showStepTop() {
+    titleEl.focus({ preventScroll: true });
+    const header = document.querySelector("body > header");
+    const covered = header ? header.getBoundingClientRect().bottom : 0;
+    const top = bars.getBoundingClientRect().top;
+    const offscreen = titleEl.getBoundingClientRect().bottom > window.innerHeight;
+    if (top < covered || offscreen) bars.scrollIntoView({ block: "start" });
   }
 
   back.addEventListener("click", () => {
