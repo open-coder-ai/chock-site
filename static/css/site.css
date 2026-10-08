@@ -190,7 +190,7 @@ header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
 
@@ -1745,8 +1745,7 @@ body { overflow-x: clip; }
   #nav-links { order: 4; flex-basis: 100%; }
   .header-inner .button-small { margin-left: auto; }
 
-  /* One opaque row of section links keeps the sticky header short on a phone. */
-  header { background: var(--bg); }
+  /* One row of section links keeps the sticky header short on a phone. */
   .header-inner { padding: 8px 16px; }
   .section-nav-inner { gap: 0 14px; padding: 0 16px; scrollbar-width: none; }
   .section-nav nav { gap: 14px; }

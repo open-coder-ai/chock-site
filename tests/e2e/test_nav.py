@@ -147,3 +147,42 @@ def test_section_nav_shows_all_links_at_390(browser, site_url) -> None:
         assert inner[0] <= inner[1], inner
     finally:
         context.close()
+
+
+HEADER_PROBE = """() => {
+    const header = document.querySelector("header");
+    const box = header.getBoundingClientRect();
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = getComputedStyle(header).backgroundColor;
+    ctx.fillRect(0, 0, 1, 1);
+    const alpha = ctx.getImageData(0, 0, 1, 1).data[3];
+    const foreign = [];
+    for (let x = 4; x < window.innerWidth; x += 24) {
+        for (let y = 2; y < box.bottom; y += 8) {
+            const hit = document.elementFromPoint(x, y);
+            if (hit && !header.contains(hit)) foreign.push(`${hit.tagName}.${hit.className} at ${x},${y}`);
+        }
+    }
+    return {alpha, foreign};
+}"""
+
+
+def test_nothing_shows_through_the_sticky_header_when_scrolled(
+    browser, site_url
+) -> None:
+    for viewport in ({"width": 1900, "height": 1000}, {"width": 390, "height": 844}):
+        context = browser.new_context(viewport=viewport)
+        try:
+            page = context.new_page()
+            page.goto(site_url + "/coding/builder/")
+            page.wait_for_selector(".quiz-opt-box")
+            for y in (60, 200, 600):
+                page.evaluate("y => window.scrollTo(0, y)", y)
+                probe = page.evaluate(HEADER_PROBE)
+                where = f"{viewport['width']} px, scrolled {y}"
+                assert probe["alpha"] == 255, f"{where}: header is see-through"
+                assert not probe["foreign"], f"{where}: {probe['foreign'][:5]}"
+        finally:
+            context.close()
