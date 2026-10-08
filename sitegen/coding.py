@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import authordata, clientdata, clientpage, engine
+from . import authordata, clientdata, clientpage, engine, report
 from .catalog import first_sentence
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
@@ -359,6 +359,15 @@ def _agent_rows(site: Site, templates: Path, policy: Policy) -> Safe:
     )
 
 
+def _policy_report(policy: Policy, track: Track) -> str:
+    """The /report/ link for one policy: its id and version, and its page."""
+    return report.report_link(
+        policy=policy.id,
+        version=policy.version,
+        page=f"/{track.slug}/policies/{policy.id}/",
+    )
+
+
 def _policy_pages(
     site: Site, track: Track, out_dir: Path, templates: Path
 ) -> tuple[list[str], list[tuple[str, str]]]:
@@ -472,6 +481,8 @@ def _policy_pages(
                 SOURCE_URL=policy.source_url,
                 PATH=policy.path,
                 ALSO_IN=Safe(also_in),
+                REPORT_HREF=_policy_report(policy, track),
+                REPORT_TEXT=report.link_text(site, "policy"),
             )
         )
         path = f"/{track.slug}/policies/{policy.id}/"
@@ -542,6 +553,7 @@ def _policy_pages(
             EVAL_CASES=str(policy.eval_cases),
             CATALOG_COMMIT_URL=site.data["links"]["catalog_commit"] + site.catalog_ref,
             PATH=policy.path,
+            REPORT_URL=site.data["site_url"] + _policy_report(policy, track),
             GROUPS_MD=", ".join(presets[group].title for group in policy.groups)
             or "none",
         )
@@ -678,6 +690,8 @@ def _builder(
                 CLIENT_STEPS=Safe(clientpage.steps(clients, templates / track.slug)),
                 HINT=data_fill(texts["builder_outputs_hint"], subs),
                 AUTHOR_LINK=Prose(site.data["builder_texts"]["author_link"]),
+                REPORT_HREF=report.report_link(page=f"/{track.slug}/builder/"),
+                REPORT_TEXT=report.link_text(site, "builder"),
                 DOWNLOAD_NAME=site.data["builder_texts"]["download_name"],
             )
         ),
@@ -758,6 +772,8 @@ def _author(
                 CLEAR_LABEL=texts["clear_label"],
                 CLEAR_DONE=texts["clear_done"],
                 ADVANCED_HEADING=texts["advanced_heading"],
+                REPORT_HREF=report.report_link(page=path),
+                REPORT_TEXT=report.link_text(site, "author"),
                 ADVANCED_HINT=texts["advanced_hint"],
                 ERRORS_TITLE=texts["errors_title"],
                 SELECTION_HEADING=texts["selection_heading"],
@@ -851,6 +867,10 @@ def _install(
             STEPS=_step_items(templates / track.slug, about["steps"]),
             REMOVE_LABEL=inst["agent_remove"],
             REMOVE=_step_items(templates / track.slug, about["remove"]),
+            REPORT_HREF=report.report_link(
+                agent=client, page=f"/{track.slug}/install/"
+            ),
+            REPORT_TEXT=report.link_text(site, "install", name=about["name"]),
         )
         for client in clients["order"]
         if (about := clients["clients"][client])

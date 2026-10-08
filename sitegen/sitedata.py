@@ -6,20 +6,20 @@ from typing import Any
 
 import yaml
 
-from . import authordata, clientdata, engine, homedata, quiz, repodata
+from . import authordata, clientdata, engine, homedata, quiz, repodata, report
 from . import catalog as catalog_mod
 from . import presets as presets_mod
 from .model import Site, Track
 from .pageparts import data_fill
 
 SITE_JSON = "data/site.json"
-YAML_DATA = ("home", "faq", "agents", "repos")
+YAML_DATA = ("home", "faq", "agents", "repos", "report")
 TRACK_FIELDS = ("id", "slug", "title", "status", "summary")
 TRACK_STATUSES = ("available", "in_design")
 
 
 def load_site_data(data_dir: Path) -> dict[str, Any]:
-    """site.json plus the YAML page copy (home.yaml, faq.yaml, agents.yaml)."""
+    """site.json plus the YAML page copy (home, faq, agents, repos and report)."""
     data = json.loads((data_dir / "site.json").read_text(encoding="utf-8"))
     for name in YAML_DATA:
         data[name] = yaml.safe_load(
@@ -62,6 +62,7 @@ def build_site(
 ) -> Site:
     """Every input the generated site needs, computed from the pinned catalog."""
     site_data = load_site_data(data_dir)
+    report.check_report(site_data["report"])
     tracks = load_tracks(data_dir)
     hidden = catalog_mod.load_hidden(data_dir)
     presets = presets_mod.load_presets(data_dir / "presets.yaml")

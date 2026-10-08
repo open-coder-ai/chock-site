@@ -14,6 +14,7 @@ PAGES_TO_SWEEP = [
     "/faq/",
     "/security/",
     "/for-agents/",
+    "/report/",
 ]
 
 

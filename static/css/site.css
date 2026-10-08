@@ -686,6 +686,30 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .author-link { margin: 20px 0 0; font-size: 14px; }
 .author-link a { color: var(--accent); font-weight: 600; }
 
+.report-link { margin: 12px 0 0; font-size: 14px; }
+.report-link a { color: var(--accent); }
+
+/* report page (IS-1b): the security card comes first and stands out */
+
+.report-security {
+  border: 1px solid color-mix(in srgb, var(--warn-fg) 45%, var(--line));
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  border-radius: 16px;
+  padding: 22px;
+  margin: 0 0 24px;
+}
+.report-security h2 { margin: 0 0 8px; font-size: 24px; color: var(--warn-fg); }
+.report-security p { margin: 0 0 10px; }
+.report-security a { color: var(--warn-fg); text-decoration: underline; }
+.report-security-links { margin: 0; padding-left: 18px; }
+.report-security-links li { margin: 4px 0; }
+.report-card { display: flex; flex-direction: column; }
+.report-card h2 { margin: 0 0 8px; font-size: 20px; }
+.report-card ul { margin: 0 0 16px; padding-left: 18px; }
+.report-card .report-action { margin-top: auto; }
+.report-note { margin-top: 20px; }
+
 .builder-grid.author-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 480px); }
 
 .kind-picker { border: 0; margin: 0 0 24px; padding: 0; min-width: 0; }

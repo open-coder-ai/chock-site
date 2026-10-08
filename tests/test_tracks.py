@@ -26,6 +26,7 @@ SHARED_TOP_LEVEL = {
     "faq",
     "security",
     "for-agents",
+    "report",
     "llms.txt",
     "llms-full.txt",
     "sitemap.xml",
@@ -242,7 +243,7 @@ def test_coding_pages_do_not_move_or_change(built, two_section_build) -> None:
 
 def test_shared_docs_unchanged_apart_from_stub(built, two_section_build) -> None:
     out = two_section_build
-    for name in ("security", "faq", "for-agents"):
+    for name in ("security", "faq", "for-agents", "report"):
         old = (built.out / name / "index.html").read_text(encoding="utf-8")
         new = (out / name / "index.html").read_text(encoding="utf-8")
         assert _strip_shell(old) == _strip_shell(new), name

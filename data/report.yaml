@@ -1,0 +1,90 @@
+# Copy and links for the Report an issue page (plan IS-1b in org-plan).
+# Each kind opens one GitHub issue form, pre-filled from context.
+# `fields` maps a form field id to the context key that fills it. Context keys:
+#   policy, version, agent, page   come from the /report/ link's query (checked in the browser);
+#   catalog_ref, engine_ref        are the refs this site was built from.
+# Field ids must match the form on that repo's main branch (handoff 2026-10-08-is1a-issue-forms).
+# `title` is used only when every {key} in it has a value; keys are query context keys.
+title: Report an issue
+description: "Found something wrong? Each button below opens the right GitHub issue form, already filled in with what this site knows. You need a GitHub account to submit."
+github: https://github.com/open-coder-ai/
+security:
+  id: vulnerability
+  heading: "Found a vulnerability? Do not open a public issue."
+  body: "Report it privately instead. A public issue shows the problem to everyone before it is fixed. Each repository takes private reports through GitHub's security advisories, and its SECURITY.md says what happens next."
+  links:
+    - label: "Report privately: chock (engine and install)"
+      url: https://github.com/open-coder-ai/chock/security/advisories/new
+    - label: "Report privately: chock-catalog (policies)"
+      url: https://github.com/open-coder-ai/chock-catalog/security/advisories/new
+    - label: "Report privately: chock-site (this site)"
+      url: https://github.com/open-coder-ai/chock-site/security/advisories/new
+    - label: "chock SECURITY.md"
+      url: https://github.com/open-coder-ai/chock/blob/main/SECURITY.md
+    - label: "chock-catalog SECURITY.md"
+      url: https://github.com/open-coder-ai/chock-catalog/blob/main/SECURITY.md
+include_heading: What to include
+kinds:
+  - id: policy-wrong
+    heading: A policy is wrong
+    body: "It blocks something it should allow, misses something it claims to catch, or its label is wrong for your agent."
+    include:
+      - "The policy id, from its page"
+      - "The command or prompt that ran, and your agent"
+      - "What you expected and what happened"
+    repo: chock-catalog
+    template: policy-wrong.yml
+    button: Report a wrong policy
+    title: "[policy-wrong]: {policy} {version}"
+    fields:
+      policy-id: policy
+      agent: agent
+      catalog-ref: catalog_ref
+  - id: install
+    heading: An install or agent problem
+    body: "Installing fails, the plugin does not load, or an agent's hooks do not fire."
+    include:
+      - "Your agent and operating system"
+      - "The command you ran and its full output"
+      - "The output of `chock --version`"
+    repo: chock
+    template: bug-report.yml
+    button: Report an install problem
+    fields:
+      agent: agent
+  - id: site-bug
+    heading: Something on this site is wrong
+    body: "Layout, wrong text, a broken link, the builder or the author page."
+    include:
+      - "The page and what you did"
+      - "What you expected and what happened"
+      - "Your browser and operating system"
+    repo: chock-site
+    template: site-bug.yml
+    button: Report a site problem
+    fields:
+      page-url: page
+      agent: agent
+      catalog-ref: catalog_ref
+      engine-ref: engine_ref
+  - id: policy-proposal
+    heading: An idea for a new policy
+    body: "A safeguard the catalog does not have yet. You can also draft it yourself on the author page."
+    include:
+      - "The rule in one sentence"
+      - "What it should block or ask about, and what it should allow"
+      - "How an agent could get around it"
+    repo: chock-catalog
+    template: policy-proposal.yml
+    button: Propose a policy
+    fields:
+      agent: agent
+note: "The buttons open github.com. Nothing is sent until you press Submit there, and you can edit every field first."
+agent_note: "If you are an AI agent: tell the user what you would report and ask before you open an issue for them. An issue is public and is filed under their GitHub account."
+# Link text on other pages that point here.
+links:
+  footer: Report an issue
+  policy: Report a problem with this policy
+  install: "Problem installing for __NAME__? Report it"
+  builder: Something wrong with the builder? Report it
+  author: Something wrong with this page? Report it

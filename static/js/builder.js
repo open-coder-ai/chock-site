@@ -288,6 +288,12 @@ async function main() {
     // The author page reads the same fragment form, so the link carries the picks along.
     const authorLink = $("#author-link");
     if (authorLink) authorLink.href = `/coding/author/${shareFragment(client, picked)}`;
+    // The report page pre-fills the agent from its query (report.js checks it again).
+    const reportLink = $("#report-link");
+    if (reportLink) {
+      const query = new URLSearchParams({ agent: client, page: location.pathname });
+      reportLink.href = `/report/?${query}`;
+    }
     renderSelectionList();
     renderNotes();
     renderOutputs();

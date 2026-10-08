@@ -275,6 +275,7 @@ def _footer_links(site: Site, templates: Path) -> dict[str, Safe]:
         (links["engine_repo"], "GitHub"),
         ("/faq/", "FAQ"),
         ("/security/", "Security"),
+        ("/report/", site.data["report"]["links"]["footer"]),
         ("/for-agents/", "For AI agents"),
         ("/llms.txt", "llms.txt"),
     ]
