@@ -336,3 +336,50 @@ def test_result_rows_show_policy_names(page, site_url) -> None:
         assert name.inner_text().startswith(names[policy_id])
         assert name.locator(".quiz-pick-id").inner_text() == policy_id
     assert_clean(page)
+
+
+WIDE = {"width": 1900, "height": 1000}
+
+
+def _option_boxes(page) -> list[dict]:
+    return page.locator(".quiz-opt-box").evaluate_all(
+        "els => els.map(e => { const r = e.getBoundingClientRect();"
+        " return {top: r.top, height: r.height, label: e.textContent}; })"
+    )
+
+
+def _assert_cards_aligned(boxes: list[dict], where: str) -> None:
+    heights = [box["height"] for box in boxes]
+    assert max(heights) - min(heights) <= 1, f"{where}: card heights {heights}"
+    rows: dict[int, list[float]] = {}
+    for box in boxes:
+        rows.setdefault(round(box["top"] / 4), []).append(box["top"])
+    for tops in rows.values():
+        assert max(tops) - min(tops) <= 1, f"{where}: card tops {tops}"
+
+
+def test_every_quiz_step_has_equal_option_cards(browser, site_url) -> None:
+    for viewport in (DESKTOP, WIDE, MOBILE):
+        context = browser.new_context(viewport=viewport)
+        try:
+            page = context.new_page()
+            collect(page, site_url)
+            _start(page, site_url)
+            for step in range(1, 4):
+                page.wait_for_selector(".quiz-opt-box")
+                where = f"{viewport['width']} px, question {step}"
+                boxes = _option_boxes(page)
+                assert len(boxes) > 1, where
+                _assert_cards_aligned(boxes, where)
+                if step == 2:
+                    page.locator(".quiz-opt input").first.check()
+                if step < 3:
+                    _next(page)
+                    page.wait_for_function(
+                        "n => document.querySelector('#quiz-step').textContent"
+                        ".startsWith('QUESTION ' + n)",
+                        arg=step + 1,
+                    )
+            assert_clean(page)
+        finally:
+            context.close()
