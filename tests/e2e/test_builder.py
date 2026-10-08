@@ -469,3 +469,76 @@ def test_label_note_names_the_picked_agent(page, site_url) -> None:
     page.locator("#client-codex").check()
     assert note.inner_text() == "Labels and counts are the catalog's grades on Codex."
     assert_clean(page)
+
+
+_LAYOUT = """() => {
+    const rgb = c => c.match(/[\\d.]+/g).slice(0, 3).map(Number);
+    const lum = c => {
+        const [r, g, b] = rgb(c).map(v => {
+            v /= 255;
+            return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contrast = (a, b) => {
+        const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+        return (x + 0.05) / (y + 0.05);
+    };
+    const panel = document.querySelector(".selection");
+    const box = panel.getBoundingClientRect();
+    const scrolls = e => ["auto", "scroll"].includes(getComputedStyle(e).overflowX);
+    const outside = [...panel.querySelectorAll("*")].filter(e => {
+        for (let a = e.parentElement; a && a !== panel; a = a.parentElement) {
+            if (scrolls(a)) return false;
+        }
+        return e.getBoundingClientRect().right > box.right + 1;
+    }).map(e => e.tagName + "." + e.className);
+    const groups = [...document.querySelectorAll(".bgroup:not(.hidden)")].map(g => {
+        const cs = getComputedStyle(g);
+        const h = g.querySelector("h3");
+        const hs = getComputedStyle(h);
+        return {
+            border: parseFloat(cs.borderTopWidth),
+            filled: cs.backgroundColor !== "rgba(0, 0, 0, 0)",
+            rule: parseFloat(hs.borderBottomWidth),
+            weight: Number(hs.fontWeight),
+            contrast: contrast(hs.color, cs.backgroundColor),
+        };
+    });
+    const says = new Set([...document.querySelectorAll(".bmember:not(.hidden) .bsays")]
+        .map(e => Math.round(e.getBoundingClientRect().left)));
+    return {
+        right: box.right,
+        width: innerWidth,
+        scrollWidth: document.scrollingElement.scrollWidth,
+        outside,
+        groups,
+        says: [...says],
+    };
+}"""
+
+
+def test_full_builder_layout_from_1024_to_1920(browser, site_url) -> None:
+    for width in (1024, 1280, 1440, 1560, 1920):
+        context = browser.new_context(viewport={"width": width, "height": 900})
+        try:
+            page = context.new_page()
+            page.goto(site_url + "/coding/builder/#preset=git-hygiene")
+            page.wait_for_selector(".sel-item")
+            got = page.evaluate(_LAYOUT)
+            where = f"{width} px"
+            assert got["right"] <= got["width"], f"{where}: panel clipped {got}"
+            assert got["scrollWidth"] <= got["width"], f"{where}: horizontal scroll"
+            assert not got["outside"], (
+                f"{where}: panel content clipped {got['outside']}"
+            )
+            assert len(got["says"]) == 1, f"{where}: says text starts at {got['says']}"
+            assert got["groups"], where
+            for group in got["groups"]:
+                assert group["border"] >= 1 and group["filled"], f"{where}: {group}"
+                assert group["rule"] >= 2 and group["weight"] >= 700, (
+                    f"{where}: {group}"
+                )
+                assert group["contrast"] >= 4.5, f"{where}: {group}"
+        finally:
+            context.close()
