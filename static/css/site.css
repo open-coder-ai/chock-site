@@ -156,6 +156,15 @@ pre code {
   white-space: pre;
 }
 
+/* Code blocks: the same space above and below, whatever the neighbours' own margins
+   (their facing margins are zeroed, so collapsing cannot undo it). Code never wraps;
+   a long command scrolls inside its box. */
+main pre { margin-block: var(--flow); }
+main pre:first-child { margin-top: 0; }
+main pre:last-child { margin-bottom: 0; }
+main :not(pre):has(+ pre) { margin-bottom: 0 !important; }
+main pre + :not(pre) { margin-top: 0 !important; }
+
 button, input, select, textarea { font-weight: inherit; }
 
 :focus-visible {
@@ -471,9 +480,9 @@ button.copy[disabled], button.download[disabled] { opacity: 0.5; cursor: default
 .section-note { color: var(--muted); font-size: 13px; margin: 16px 0 0; }
 
 .cards { display: grid; gap: 14px; }
-.cards-2 { grid-template-columns: repeat(2, 1fr); }
-.cards-3 { grid-template-columns: repeat(3, 1fr); }
-.cards-4 { grid-template-columns: repeat(4, 1fr); }
+.cards-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cards-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cards-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .cards-presets { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
 .cards-clients { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 
@@ -503,7 +512,7 @@ button.copy[disabled], button.download[disabled] { opacity: 0.5; cursor: default
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -971,7 +980,6 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .example-refused .example-word { color: var(--accent); }
 .example-allowed .example-word { color: var(--ok); }
 .example-prompt { font-size: 14px; margin: 0 0 12px; color: var(--body); }
-.example pre { margin-top: 8px; }
 
 .latest-line { color: var(--body); font-size: 14px; }
 .latest-line .mono { color: var(--text); }
@@ -1134,7 +1142,6 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .tabs [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
 
 .output-box { padding: 12px 0; }
-.output-box pre { margin-bottom: 10px; }
 .share-url {
   width: 100%;
   font-family: var(--mono);
@@ -1188,11 +1195,10 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 
 /* Install steps, on the install page and in the builder: one rhythm between the
    command, the lead-in, each step, the notes and the remove block. */
-.install-agent > *, .client-steps > *, .steps-list .client-step { margin: 0; }
-.install-agent > * + *, .client-steps > * + *, .steps-list .client-step + .client-step { margin-top: var(--flow-tight); }
+.install-agent > :not(pre), .client-steps > :not(pre), .steps-list .client-step { margin: 0; }
+.install-agent > * + :not(pre), .client-steps > * + :not(pre), .steps-list .client-step + .client-step { margin-top: var(--flow-tight); }
 .install-agent > * + .steps-heading { margin-top: var(--flow); }
-.steps-list pre { margin: 0; padding: 10px 12px; }
-.steps-list pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.steps-list pre { padding: 10px 12px; }
 .noscript-note {
   background: var(--warn-bg);
   border: 1px solid color-mix(in srgb, var(--warn-fg) 45%, var(--line));
@@ -1441,8 +1447,7 @@ body { overflow-x: clip; }
 /* how it works */
 
 .how-steps { margin-top: 32px; }
-.step-code { margin-top: 14px; font-size: 12px; background: var(--bg); }
-.step-code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.step-code { font-size: 12px; background: var(--bg); }
 .step-note { margin-top: 8px; font-size: 13px; }
 
 /* one policy, every surface */
@@ -1720,7 +1725,6 @@ body { overflow-x: clip; }
   background: var(--panel-2);
 }
 .quiz-command-title { font-size: 13px; color: var(--muted); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.08em; }
-.quiz-command pre { margin: 0 0 12px; }
 .quiz-actions { display: flex; flex-wrap: wrap; gap: 12px; }
 .quiz-actions .button { min-height: 46px; cursor: pointer; font-family: var(--sans); }
 
@@ -1756,7 +1760,7 @@ body { overflow-x: clip; }
   .policy-side { position: static; }
   .selection { position: static; max-height: none; overflow-y: visible; }
   .selection .sel-list { max-height: none; overflow-y: visible; }
-  .cards-4 { grid-template-columns: repeat(2, 1fr); }
+  .cards-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stats { grid-template-columns: repeat(3, 1fr); }
   .footer-inner { grid-template-columns: repeat(2, 1fr); }
 }
