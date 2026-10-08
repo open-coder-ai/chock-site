@@ -1,29 +1,44 @@
-"""UT-1 finding 6: code blocks get equal space above and below, and never break inside a token."""
+"""UT-1 finding 6: boxes in text flow get equal space above and below; code never breaks inside a token."""
 
 import pytest
 from conftest import assert_clean, collect, walk_paths
 
-# Every code block, with its flow siblings: the gap above and the gap below.
-_GAPS = """() => {
+# Code blocks and boxed notes that sit in text flow (the classes site.css spaces alike).
+BOXES = (
+    "pre, .quiz-note, .client-untested, .note-card, .noscript-note,"
+    " .friction-note, .author-errors"
+)
+
+# Every box with a flow neighbour on both sides, and the gaps to them. A side with no
+# visible sibling climbs through unboxed wrappers; a boxed container's edge ends the climb.
+_GAPS = """selector => {
+    const main = document.querySelector("main");
     const shown = e => e && e.getClientRects().length > 0
         && getComputedStyle(e).position !== "absolute";
-    const sibling = (e, step) => {
-        for (let s = e[step]; s; s = s[step]) if (shown(s)) return s;
+    const boxed = e => {
+        const cs = getComputedStyle(e);
+        return parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.paddingTop) > 0
+            || cs.backgroundColor !== "rgba(0, 0, 0, 0)" || cs.display !== "block";
+    };
+    const near = (e, step) => {
+        for (let x = e; x && x !== main; x = x.parentElement) {
+            for (let s = x[step]; s; s = s[step]) if (shown(s)) return s;
+            if (boxed(x.parentElement)) return null;
+        }
         return null;
     };
     const out = [];
-    for (const pre of document.querySelectorAll("main pre")) {
-        if (!shown(pre)) continue;
-        const prev = sibling(pre, "previousElementSibling");
-        const next = sibling(pre, "nextElementSibling");
+    for (const box of document.querySelectorAll(`main :is(${selector})`)) {
+        if (!shown(box)) continue;
+        const prev = near(box, "previousElementSibling");
+        const next = near(box, "nextElementSibling");
         if (!prev || !next) continue;
-        const box = pre.getBoundingClientRect();
-        const above = box.top - prev.getBoundingClientRect().bottom;
-        const below = next.getBoundingClientRect().top - box.bottom;
+        const r = box.getBoundingClientRect();
+        const name = e => `${e.tagName}.${e.className}`;
         out.push({
-            where: `${prev.tagName}.${prev.className} > PRE.${pre.className} > ${next.tagName}.${next.className}`,
-            above: Math.round(above * 10) / 10,
-            below: Math.round(below * 10) / 10,
+            where: `${name(prev)} > ${name(box)} > ${name(next)}`,
+            above: Math.round((r.top - prev.getBoundingClientRect().bottom) * 10) / 10,
+            below: Math.round((next.getBoundingClientRect().top - r.bottom) * 10) / 10,
         });
     }
     return out;
@@ -59,7 +74,16 @@ _TOKEN_BREAKS = """() => {
 }"""
 
 
-def test_code_blocks_have_equal_space_above_and_below(browser, site_url) -> None:
+def _gap_problems(page, where: str) -> list[str]:
+    """Each box on the page whose gap above and gap below differ by more than 2 px."""
+    return [
+        f"{where} {gap['where']}: {gap['above']} above, {gap['below']} below"
+        for gap in page.evaluate(_GAPS, BOXES)
+        if abs(gap["above"] - gap["below"]) > 2
+    ]
+
+
+def test_boxes_have_equal_space_above_and_below(browser, site_url) -> None:
     context = browser.new_context(viewport={"width": 1280, "height": 900})
     problems: list[str] = []
     try:
@@ -68,11 +92,17 @@ def test_code_blocks_have_equal_space_above_and_below(browser, site_url) -> None
         for path in walk_paths(page, site_url):
             page.goto(site_url + path)
             page.wait_for_load_state("networkidle")
-            for gap in page.evaluate(_GAPS):
-                if abs(gap["above"] - gap["below"]) > 2:
-                    problems.append(
-                        f"{path} {gap['where']}: {gap['above']} above, {gap['below']} below"
-                    )
+            problems += _gap_problems(page, path)
+        # Notes that only show in a state: an untested agent, a quiz answer with a note.
+        page.goto(site_url + "/coding/builder/#preset=git-hygiene")
+        page.wait_for_selector(".sel-item")
+        page.locator("label[for='client-cursor']").click()
+        page.wait_for_selector(".client-untested:not([hidden])")
+        problems += _gap_problems(page, "builder, Cursor")
+        page.goto(site_url + "/repos/builder/")
+        page.get_by_role("radio", name="GitLab").check()
+        page.wait_for_selector(".quiz-note:not([hidden])")
+        problems += _gap_problems(page, "repos quiz, GitLab")
         assert_clean(page)
     finally:
         context.close()

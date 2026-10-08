@@ -156,14 +156,15 @@ pre code {
   white-space: pre;
 }
 
-/* Code blocks: the same space above and below, whatever the neighbours' own margins
-   (their facing margins are zeroed, so collapsing cannot undo it). Code never wraps;
-   a long command scrolls inside its box. */
-main pre { margin-block: var(--flow); }
-main pre:first-child { margin-top: 0; }
-main pre:last-child { margin-bottom: 0; }
-main :not(pre):has(+ pre) { margin-bottom: 0 !important; }
-main pre + :not(pre) { margin-top: 0 !important; }
+/* Boxes in text flow (code blocks, notes, callouts): the same space above and below,
+   whatever the neighbours' own margins (their facing margins are zeroed, so collapsing
+   cannot undo it). A box at the edge of a boxed container sits flush with its padding.
+   Code never wraps; a long command scrolls inside its box. */
+main :where(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) { margin-block: var(--flow); }
+main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):first-child { margin-top: 0; }
+main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):last-child { margin-bottom: 0; }
+main :not(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):has(+ :is(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden])) { margin-bottom: 0 !important; }
+main :is(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) + :not(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors) { margin-top: 0 !important; }
 
 button, input, select, textarea { font-weight: inherit; }
 
@@ -774,7 +775,6 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
   background: var(--warn-bg);
   border-radius: 10px;
   padding: 10px 14px;
-  margin: 12px 0;
   font-size: 13px;
   color: var(--warn-fg);
 }
@@ -1115,7 +1115,6 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .sel-count { color: var(--body); font-size: 13px; font-weight: 500; }
 .sel-list .empty { color: var(--muted); }
 
-.link-notice .note-card { margin: 0 0 16px; }
 .notice-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .notes .note-card,
 .link-notice .note-card {
@@ -1123,7 +1122,6 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
   background: var(--warn-bg);
   border-radius: 10px;
   padding: 10px 14px;
-  margin: 12px 0;
   font-size: 13px;
   color: var(--warn-fg);
 }
@@ -1184,7 +1182,6 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
   border: 1px dashed var(--dash);
   border-radius: 10px;
   padding: 10px 14px;
-  margin: 0 0 12px;
   font-size: 13px;
   color: var(--body);
 }
@@ -1206,7 +1203,6 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
   border-radius: 12px;
   padding: 14px 18px;
   color: var(--warn-fg);
-  margin-bottom: 24px;
 }
 
 /* faq / agents / security / clients */
@@ -1535,7 +1531,6 @@ body { overflow-x: clip; }
   align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
-  margin-top: 28px;
   padding: 18px 22px;
   background: var(--warn-bg);
   border: 1px solid color-mix(in srgb, var(--warn-fg) 45%, var(--line));
@@ -1681,7 +1676,10 @@ body { overflow-x: clip; }
 .quiz-opt input:focus-visible + .quiz-opt-box { outline: 2px solid var(--accent); outline-offset: 2px; }
 .quiz-opt-label { font-size: 17px; font-weight: 600; color: var(--text); }
 .quiz-opt-sub { font-size: 13.5px; line-height: 1.45; color: var(--body); }
-.quiz-note, .quiz-need { margin: 16px 0 0; font-size: 15px; color: var(--body); }
+.quiz-note, .quiz-need { font-size: 15px; color: var(--body); }
+.quiz-need { margin: 16px 0 0; }
+/* The note sits between the options and the nav (32px above it), as far from each. */
+.quiz .quiz-note { margin-block: 32px; }
 .quiz-note { padding: 14px 16px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--panel); }
 .quiz-note[hidden], .quiz-need[hidden] { display: none; }
 .quiz-nav { margin-top: 32px; display: flex; justify-content: space-between; gap: 12px; }
