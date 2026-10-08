@@ -799,8 +799,8 @@ def _author(
 
 
 def _step_items(templates: Path, steps: list[dict[str, str]]) -> Safe:
-    """Apply or remove steps as list items, with the builder's step partials."""
-    return Safe("".join(clientpage.step(templates, step) for step in steps))
+    """Apply or remove steps as the builder shows them: numbered commands, unnumbered notes."""
+    return Safe(clientpage.step_blocks(templates, steps))
 
 
 def _client_command(clients: dict[str, Any], client: str) -> str:

@@ -73,6 +73,9 @@
   --ok: #5FD3A0;
   --dash: #67769B;
   --dots: #34405E;
+  /* Vertical rhythm: the gap between blocks, and between items of one block. */
+  --flow: 16px;
+  --flow-tight: 8px;
   --sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* Sticky panels park this far down: common.js overwrites it with the
@@ -1179,9 +1182,15 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 }
 .client-untested strong { color: var(--text); font-weight: 600; }
 .client-steps { margin-top: 12px; }
-.steps-heading { color: var(--text); font-size: 13px; margin: 0 0 8px; }
-.steps-list { margin: 0; padding-left: 20px; font-size: 13px; color: var(--body); }
-.steps-list .client-step { margin: 0 0 8px; }
+.steps-heading { color: var(--text); font-size: 13px; }
+.steps-list { padding-left: 24px; font-size: 13px; color: var(--body); }
+.steps-note { font-size: 13px; color: var(--body); }
+
+/* Install steps, on the install page and in the builder: one rhythm between the
+   command, the lead-in, each step, the notes and the remove block. */
+.install-agent > *, .client-steps > *, .steps-list .client-step { margin: 0; }
+.install-agent > * + *, .client-steps > * + *, .steps-list .client-step + .client-step { margin-top: var(--flow-tight); }
+.install-agent > * + .steps-heading { margin-top: var(--flow); }
 .steps-list pre { margin: 0; padding: 10px 12px; }
 .steps-list pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
 .noscript-note {

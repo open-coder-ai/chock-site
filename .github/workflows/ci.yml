@@ -129,3 +129,6 @@ jobs:
       - name: dist/index.html exists
         shell: bash
         run: test -f dist/index.html
+      - name: dist shows no Windows-style paths
+        shell: bash
+        run: python -m sitegen.distcheck dist
