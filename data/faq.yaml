@@ -46,5 +46,7 @@ questions:
   a: "Yes. The builder makes a share link and a selection file; anyone running the same command gets the same policies, checked against the same pinned commit."
 - id: report
   group: coding
-  q: "How do I report a wrong block?"
-  a: "Open an issue in the chock-catalog repository against the policy, or a security issue there if the policy itself is the problem."
+  q: "How do I report a wrong block, or anything else?"
+  a: "Use the Report an issue page. It opens the right GitHub issue form for a wrong policy, an install problem, a site problem or a new policy idea, already filled in. For a vulnerability, report it privately: the page links each repository's private advisory form."
+  link: /report/
+  link_label: Report an issue

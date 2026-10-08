@@ -43,3 +43,4 @@ __LATEST_VERSION__ · __LATEST_DATE__ — __LATEST_CHANGE__
 - Source: __SOURCE_URL__ (catalog path `__PATH__`)
 - Presets: __GROUPS_MD__
 - JSON: `/api/coding/policies/__ID__.json`
+- Report a problem: __REPORT_URL__

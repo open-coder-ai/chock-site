@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import coding, engine, general, home, repos
+from . import coding, engine, general, home, report, repos
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
@@ -79,6 +79,15 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                         ID=item["id"],
                         Q=item["q"],
                         A=Prose(item["a"]),
+                        LINK=Safe(
+                            render_file(
+                                templates / PARTIALS / "link-line.html",
+                                URL=item["link"],
+                                LABEL=item["link_label"],
+                            )
+                        )
+                        if "link" in item
+                        else Safe(""),
                     )
                     for item in data["faq"]["questions"]
                     if item["group"] == group["id"]
@@ -122,6 +131,11 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             f"## {group['title']}\n\n"
             + "".join(
                 f"### {item['q']}\n\n{item['a']}\n\n"
+                + (
+                    f"[{item['link_label']}]({site.data['site_url']}{item['link']})\n\n"
+                    if "link" in item
+                    else ""
+                )
                 for item in data["faq"]["questions"]
                 if item["group"] == group["id"]
             )
@@ -301,6 +315,11 @@ def _llms(
         ("Security", "/security/index.md", "what chock is and is not"),
         ("FAQ", "/faq/index.md", "common questions"),
         ("For AI agents", "/for-agents/index.md", "how to read this site and its data"),
+        (
+            "Report an issue",
+            "/report/index.md",
+            "where each kind of problem is reported",
+        ),
     ]
     total = sum(len([p for p in site.policies if p.track == t.id]) for t in site.tracks)
     blockquote = (
@@ -391,7 +410,7 @@ def write_pages(site: Site, out_dir: Path, templates_dir: Path) -> None:
         sections.append(result)
         paths += result.pages
     shared_docs: list[tuple[str, str]] = [(home_md, home_twin)]
-    for build in (_security, _faq, _for_agents):
+    for build in (_security, _faq, _for_agents, report.build):
         page_path, md_path, twin = build(site, out_dir, templates_dir)
         paths.append(page_path)
         shared_docs.append((md_path, twin))
