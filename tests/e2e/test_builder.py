@@ -519,14 +519,19 @@ _LAYOUT = """() => {
 
 
 def test_full_builder_layout_from_1024_to_1920(browser, site_url) -> None:
-    for width in (1024, 1280, 1440, 1560, 1920):
-        context = browser.new_context(viewport={"width": width, "height": 900})
+    # Windows display scaling: 1.25 and 1.5 device pixels per CSS pixel.
+    sizes = [(w, 1) for w in (1024, 1280, 1440, 1560, 1920)]
+    sizes += [(w, scale) for w in (1280, 1536) for scale in (1.25, 1.5)]
+    for width, scale in sizes:
+        context = browser.new_context(
+            viewport={"width": width, "height": 900}, device_scale_factor=scale
+        )
         try:
             page = context.new_page()
             page.goto(site_url + "/coding/builder/#preset=git-hygiene")
             page.wait_for_selector(".sel-item")
             got = page.evaluate(_LAYOUT)
-            where = f"{width} px"
+            where = f"{width} px at {scale}x"
             assert got["right"] <= got["width"], f"{where}: panel clipped {got}"
             assert got["scrollWidth"] <= got["width"], f"{where}: horizontal scroll"
             assert not got["outside"], (
