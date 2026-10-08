@@ -135,8 +135,8 @@ def client_tokens(client: str) -> dict[str, str]:
     dest = Path(chock.install.package.client(client)["dest"])
     folder = chock.install.place.plugin_dir(client, dest, BUNDLE_NAME)
     return {
-        "__DEST__": str(dest),
-        "__PLUGIN_DIR__": str(folder),
+        "__DEST__": dest.as_posix(),
+        "__PLUGIN_DIR__": Path(folder).as_posix(),
         "__PLUGIN__": BUNDLE_NAME,
         "__MARKETPLACE__": chock.install.package.settings()["marketplace"],
     }

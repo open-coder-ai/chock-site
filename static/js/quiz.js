@@ -181,7 +181,7 @@ export function initQuiz({
   function renderQuestion(question) {
     body.replaceChildren();
     body.appendChild(element("p", "quiz-hint-text", question.hint));
-    const group = element("div", "quiz-options");
+    const group = element("div", "quiz-options card-grid");
     group.setAttribute("role", "group");
     group.setAttribute("aria-labelledby", "quiz-title");
     const multi = question.kind === "multi";
@@ -288,7 +288,18 @@ export function initQuiz({
       renderQuestion(question);
       next.textContent = step === total ? T.show : T.next;
     }
-    if (moveFocus) titleEl.focus();
+    if (moveFocus) showStepTop();
+  }
+
+  // Focus the title, but scroll so the progress bars and step label sit below
+  // the sticky header instead of under it.
+  function showStepTop() {
+    titleEl.focus({ preventScroll: true });
+    const header = document.querySelector("body > header");
+    const covered = header ? header.getBoundingClientRect().bottom : 0;
+    const top = bars.getBoundingClientRect().top;
+    const offscreen = titleEl.getBoundingClientRect().bottom > window.innerHeight;
+    if (top < covered || offscreen) bars.scrollIntoView({ block: "start" });
   }
 
   back.addEventListener("click", () => {

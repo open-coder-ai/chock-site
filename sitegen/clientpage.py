@@ -71,6 +71,36 @@ def step(templates: Path, step: dict[str, str]) -> str:
     return render_file(templates / f"builder-step-{kind}.html", **{kind.upper(): text})
 
 
+def step_blocks(templates: Path, steps: list[dict[str, str]]) -> str:
+    """Steps in engine order: runs of commands as numbered lists, notes and settings unnumbered."""
+    blocks: list[str] = []
+    run: list[str] = []
+    number = 1
+    for item in steps:
+        (kind, _), *_ = item.items()
+        html = step(templates, item)
+        if kind == "command":
+            run.append(html)
+            continue
+        if run:
+            blocks.append(_step_list(templates, number, run))
+            number += len(run)
+            run = []
+        blocks.append(html)
+    if run:
+        blocks.append(_step_list(templates, number, run))
+    return "".join(blocks)
+
+
+def _step_list(templates: Path, start: int, items: list[str]) -> str:
+    """A numbered list of command steps, counting on from `start`."""
+    return render_file(
+        templates / "builder-step-list.html",
+        START=str(start),
+        ITEMS=Safe("".join(items)),
+    )
+
+
 def steps(block: dict[str, Any], templates: Path) -> str:
     """Each client's apply steps after the command, shown for the picked client only."""
     return "".join(
@@ -79,9 +109,7 @@ def steps(block: dict[str, Any], templates: Path) -> str:
             ID=client,
             HIDDEN=_hidden(client, block["default"]),
             HEADING=block["clients"][client]["steps_heading"],
-            STEPS=Safe(
-                "".join(step(templates, s) for s in block["clients"][client]["steps"])
-            ),
+            STEPS=Safe(step_blocks(templates, block["clients"][client]["steps"])),
         )
         for client in block["order"]
     )
@@ -108,13 +136,17 @@ def markdown(block: dict[str, Any]) -> str:
         lines.append(
             f"{block['texts']['command_md']}\n\n    {command}\n\n{data['steps_heading']}\n\n"
         )
-        for number, step in enumerate(data["steps"], start=1):
-            (kind, text), *_ = step.items()
-            if kind == "note":
-                lines.append(f"{number}. {text}\n")
+        number = 0
+        for item in data["steps"]:
+            (kind, text), *_ = item.items()
+            if kind == "command":
+                number += 1
+                lines.append(f"{number}. (command)\n\n       {text}\n\n")
+            elif kind == "note":
+                lines.append(f"{text}\n\n")
             else:
-                body = "".join(f"       {line}\n" for line in text.splitlines())
-                lines.append(f"{number}. ({kind})\n\n{body}\n")
+                lines.extend(f"    {line}\n" for line in text.splitlines())
+                lines.append("\n")
         lines.append(f"\n{block['texts']['remove_md']}\n\n")
         for step in data["remove"]:
             (kind, text), *_ = step.items()
