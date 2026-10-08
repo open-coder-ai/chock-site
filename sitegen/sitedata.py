@@ -6,7 +6,16 @@ from typing import Any
 
 import yaml
 
-from . import authordata, clientdata, engine, homedata, quiz, repodata, report
+from . import (
+    analytics,
+    authordata,
+    clientdata,
+    engine,
+    homedata,
+    quiz,
+    repodata,
+    report,
+)
 from . import catalog as catalog_mod
 from . import presets as presets_mod
 from .model import Site, Track
@@ -63,6 +72,7 @@ def build_site(
     """Every input the generated site needs, computed from the pinned catalog."""
     site_data = load_site_data(data_dir)
     report.check_report(site_data["report"])
+    site_data["analytics"] = analytics.load(data_dir)
     tracks = load_tracks(data_dir)
     hidden = catalog_mod.load_hidden(data_dir)
     presets = presets_mod.load_presets(data_dir / "presets.yaml")

@@ -1,5 +1,7 @@
 // Report page: add the context in this page's query to each issue-form link (plan IS-1b).
 // Only known keys with id-shaped values pass, so a crafted link cannot plant text in an issue.
+import { track } from "./common.js";
+
 const ID = /^[a-z0-9.-]{1,64}$/;
 const PAGE = /^\/(?:[a-z0-9][a-z0-9.-]{0,63}\/){0,4}$/;
 const KEYS = ["policy", "version", "agent", "page"];
@@ -40,5 +42,8 @@ if (cards) {
   const context = readContext(location.search, agents, cards.dataset.siteUrl);
   for (const link of cards.querySelectorAll("a[data-report-kind]")) {
     link.href = fillLink(link.href, link.dataset.fields, link.dataset.title, context);
+    link.addEventListener("click", () =>
+      track("report-form-opened", { form: link.dataset.reportKind }),
+    );
   }
 }

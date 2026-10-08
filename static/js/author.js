@@ -10,6 +10,7 @@ import {
   labelChip,
   parseShareFragment,
   shareFragment,
+  track,
 } from "./common.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -809,6 +810,8 @@ async function main() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // Kind ids use "_" (content_regex); counted values are [a-z0-9.-], so it is sent as "-".
+    track("author-script-downloaded", { kind: kind.replaceAll("_", "-"), agent: client });
   });
 
   copyBtn.addEventListener("click", (event) => {
