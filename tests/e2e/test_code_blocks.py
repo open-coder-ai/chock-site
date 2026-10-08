@@ -1,9 +1,7 @@
 """UT-1 finding 6: code blocks get equal space above and below, and never break inside a token."""
 
-import re
-
 import pytest
-from conftest import assert_clean, collect
+from conftest import assert_clean, collect, walk_paths
 
 # Every code block, with its flow siblings: the gap above and the gap below.
 _GAPS = """() => {
@@ -61,22 +59,13 @@ _TOKEN_BREAKS = """() => {
 }"""
 
 
-def _paths(page, site_url: str) -> list[str]:
-    """Every sitemap URL, the 404 page and the full builder with a preset."""
-    xml = page.request.get(site_url + "/sitemap.xml").text()
-    paths = [
-        loc[len("https://chock.sh") :] for loc in re.findall(r"<loc>([^<]+)</loc>", xml)
-    ]
-    return paths + ["/404.html", "/coding/builder/#preset=git-hygiene"]
-
-
 def test_code_blocks_have_equal_space_above_and_below(browser, site_url) -> None:
     context = browser.new_context(viewport={"width": 1280, "height": 900})
     problems: list[str] = []
     try:
         page = context.new_page()
         collect(page, site_url)
-        for path in _paths(page, site_url):
+        for path in walk_paths(page, site_url):
             page.goto(site_url + path)
             page.wait_for_load_state("networkidle")
             for gap in page.evaluate(_GAPS):
@@ -97,7 +86,7 @@ def test_code_never_breaks_inside_a_token(browser, site_url, width) -> None:
     try:
         page = context.new_page()
         collect(page, site_url)
-        for path in _paths(page, site_url):
+        for path in walk_paths(page, site_url):
             page.goto(site_url + path)
             page.wait_for_load_state("networkidle")
             problems.extend(f"{path} {p}" for p in page.evaluate(_TOKEN_BREAKS))

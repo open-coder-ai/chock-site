@@ -1,19 +1,18 @@
-"""UT-1 1b: on every page, every card in a grid has one height and a row shares a top edge."""
-
-import re
+"""UT-1 1b: card grids align. Small grids share one height on desktop; long lists and phones align per row."""
 
 import pytest
-from conftest import assert_clean, collect
+from conftest import assert_clean, collect, walk_paths
 
+PHONE = 760
 VIEWPORTS = (
     {"width": 1280, "height": 900},
     {"width": 1900, "height": 1000},
     {"width": 390, "height": 844},
 )
-# Grids marked .card-grid; the walk must find each of them somewhere.
+# Marked grids the walk must find somewhere.
 EXPECTED = {"cards", "rows", "kind-options", "fact-tiles", "steps", "stats"}
 
-# Every .card-grid, plus any unmarked grid that lays out two or more columns of
+# Every .card-grid (one height) and .card-rows (per row), plus any unmarked grid that lays out two or more columns of
 # visible children sharing one class list and drawing a border or background.
 _CARD_GRIDS = """() => {
     const visible = e => e.getClientRects().length > 0;
@@ -27,13 +26,15 @@ _CARD_GRIDS = """() => {
         const kids = [...grid.children].filter(visible);
         if (kids.length < 2) continue;
         const kind = kids[0].tagName + "." + kids[0].className;
-        const marked = grid.classList.contains("card-grid");
+        const whole = grid.classList.contains("card-grid");
+        const marked = whole || grid.classList.contains("card-rows");
         const columns = new Set(kids.map(k => Math.round(k.getBoundingClientRect().left))).size;
         const cards = kids.every(k => k.tagName + "." + k.className === kind && drawn(k));
         if (!marked && !(cards && columns > 1)) continue;
         grids.push({
             grid: [...grid.classList],
             marked,
+            whole,
             kind,
             boxes: kids.map(k => {
                 const r = k.getBoundingClientRect();
@@ -45,15 +46,6 @@ _CARD_GRIDS = """() => {
 }"""
 
 
-def _paths(page, site_url: str) -> list[str]:
-    """Every sitemap URL, the 404 page and the full builder with a preset."""
-    xml = page.request.get(site_url + "/sitemap.xml").text()
-    paths = [
-        loc[len("https://chock.sh") :] for loc in re.findall(r"<loc>([^<]+)</loc>", xml)
-    ]
-    return paths + ["/404.html", "/coding/builder/#preset=git-hygiene"]
-
-
 @pytest.mark.parametrize("viewport", VIEWPORTS, ids=lambda v: f"{v['width']}px")
 def test_every_card_grid_has_one_height(browser, site_url, viewport) -> None:
     context = browser.new_context(viewport=viewport)
@@ -62,7 +54,7 @@ def test_every_card_grid_has_one_height(browser, site_url, viewport) -> None:
     try:
         page = context.new_page()
         collect(page, site_url)
-        for path in _paths(page, site_url):
+        for path in walk_paths(page, site_url):
             page.goto(site_url + path)
             page.wait_for_load_state("networkidle")
             for grid in page.evaluate(_CARD_GRIDS):
@@ -71,14 +63,20 @@ def test_every_card_grid_has_one_height(browser, site_url, viewport) -> None:
                 if not grid["marked"]:
                     problems.append(f"{where}: card grid without .card-grid")
                     continue
-                heights = [box["height"] for box in grid["boxes"]]
-                if max(heights) - min(heights) > 1:
-                    problems.append(f"{where}: heights {sorted(set(heights))}")
-                rows: dict[int, list[float]] = {}
+                rows: dict[int, list[dict]] = {}
                 for box in grid["boxes"]:
-                    rows.setdefault(round(box["top"] / 8), []).append(box["top"])
-                if any(max(tops) - min(tops) > 1 for tops in rows.values()):
-                    problems.append(f"{where}: row tops differ")
+                    rows.setdefault(round(box["top"] / 8), []).append(box)
+                groups = list(rows.values())
+                if grid["whole"] and viewport["width"] > PHONE:
+                    groups = [grid["boxes"]]
+                for group in groups:
+                    heights = [box["height"] for box in group]
+                    if max(heights) - min(heights) > 1:
+                        problems.append(f"{where}: heights {sorted(set(heights))}")
+                for row in rows.values():
+                    tops = [box["top"] for box in row]
+                    if max(tops) - min(tops) > 1:
+                        problems.append(f"{where}: row tops differ")
         assert_clean(page)
     finally:
         context.close()

@@ -348,13 +348,16 @@ def _option_boxes(page) -> list[dict]:
     )
 
 
-def _assert_cards_aligned(boxes: list[dict], where: str) -> None:
-    heights = [box["height"] for box in boxes]
-    assert max(heights) - min(heights) <= 1, f"{where}: card heights {heights}"
-    rows: dict[int, list[float]] = {}
+def _assert_cards_aligned(boxes: list[dict], where: str, whole: bool) -> None:
+    """One height for the whole grid (desktop) or per row (phone), and shared row tops."""
+    rows: dict[int, list[dict]] = {}
     for box in boxes:
-        rows.setdefault(round(box["top"] / 4), []).append(box["top"])
-    for tops in rows.values():
+        rows.setdefault(round(box["top"] / 4), []).append(box)
+    for group in [boxes] if whole else rows.values():
+        heights = [box["height"] for box in group]
+        assert max(heights) - min(heights) <= 1, f"{where}: card heights {heights}"
+    for row in rows.values():
+        tops = [box["top"] for box in row]
         assert max(tops) - min(tops) <= 1, f"{where}: card tops {tops}"
 
 
@@ -370,7 +373,7 @@ def test_every_quiz_step_has_equal_option_cards(browser, site_url) -> None:
                 where = f"{viewport['width']} px, question {step}"
                 boxes = _option_boxes(page)
                 assert len(boxes) > 1, where
-                _assert_cards_aligned(boxes, where)
+                _assert_cards_aligned(boxes, where, viewport["width"] > 760)
                 if step == 2:
                     page.locator(".quiz-opt input").first.check()
                 if step < 3:

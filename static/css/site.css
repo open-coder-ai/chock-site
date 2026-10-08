@@ -486,7 +486,8 @@ button.copy[disabled], button.download[disabled] { opacity: 0.5; cursor: default
 .cards-presets { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
 .cards-clients { grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
 
-/* Card grids: every card is as tall as the tallest one in its grid, across all rows. */
+/* Small card grids: every card is as tall as the tallest one in its grid, across all
+   rows. Long lists (.card-rows) only align per row: grid items stretch to their row. */
 .card-grid { grid-auto-rows: 1fr; }
 
 .card {
@@ -1791,6 +1792,8 @@ body { overflow-x: clip; }
   .footer-line { padding: 12px 16px 32px; }
   .bmember { grid-template-columns: minmax(0, 1fr); }
   .bgroup { padding: 12px 14px 4px; }
+  /* One column on a phone: each card keeps its natural height. */
+  .card-grid { grid-auto-rows: auto; }
   .quiz { padding-bottom: 48px; }
   .quiz-pick { grid-template-columns: minmax(0, 1fr) auto; }
   .quiz-pick .label { grid-column: 1; grid-row: 1; justify-self: start; }
