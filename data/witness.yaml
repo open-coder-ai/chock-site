@@ -10,5 +10,5 @@ clients:
   claude-code: witnessed
   cursor: untested
   codex: witnessed
-  copilot: untested
-  devin: untested
+  copilot: witnessed
+  devin: witnessed

@@ -44,12 +44,14 @@ def _witness_copy(tmp_path: Path, edit) -> Path:
     return tmp_path
 
 
-def test_only_claude_code_and_codex_are_witnessed() -> None:
+def test_only_cursor_is_untested() -> None:
     data = clientdata.load_witness(DATA, engine.client_ids())
     assert data["default"] == "claude-code"
     assert {c for c, s in data["clients"].items() if s == "witnessed"} == {
         "claude-code",
         "codex",
+        "copilot",
+        "devin",
     }
 
 
