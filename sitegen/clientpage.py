@@ -68,7 +68,8 @@ def step(templates: Path, step: dict[str, str]) -> str:
     (kind, text), *_ = step.items()
     if kind not in STEP_KINDS:
         raise ValueError(f"unknown step kind {kind!r}")
-    return render_file(templates / f"builder-step-{kind}.html", **{kind.upper(): text})
+    value = Prose(text) if kind == "note" else text
+    return render_file(templates / f"builder-step-{kind}.html", **{kind.upper(): value})
 
 
 def step_blocks(templates: Path, steps: list[dict[str, str]]) -> str:
