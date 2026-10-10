@@ -194,8 +194,8 @@ def test_home_fits_a_phone(browser, site_url) -> None:
         context.close()
 
 
-VIDEO = "/video/chock-promo-v8.mp4"
-POSTER = "/video/chock-promo-poster.jpg"
+VIDEO = "/video/chock-promo-v9.mp4"
+POSTER = "/video/chock-promo-v9-poster.jpg"
 
 
 def test_promo_video_sits_below_the_hero(browser, site_url) -> None:

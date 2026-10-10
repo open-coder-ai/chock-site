@@ -286,12 +286,15 @@ def test_faq_adds_general_agents_answer(built) -> None:
 
 PROMO = {
     "title": "The chock story",
-    "src": "/video/chock-promo-v8.mp4",
-    "poster": "/video/chock-promo-poster.jpg",
+    "src": "/video/chock-promo-v9.mp4",
+    "poster": "/video/chock-promo-v9-poster.jpg",
     "width": 1280,
     "height": 720,
-    "duration": "2:00",
-    "description": "A two-minute story of a team that stops babysitting its AI agents.",
+    "duration": "1:02",
+    "description": (
+        "A one-minute story: an AI coding agent is refused twice by chock "
+        "and fixes its own work."
+    ),
 }
 
 
@@ -331,22 +334,22 @@ def test_promo_video_ships_below_the_hero(built) -> None:
     tag = re.search(r"<video[^>]*>", html).group(0)
     for attr in ("controls", 'preload="none"', "playsinline"):
         assert attr in tag
-    assert 'poster="/video/chock-promo-poster.jpg"' in tag
+    assert 'poster="/video/chock-promo-v9-poster.jpg"' in tag
     assert 'width="1280"' in tag and 'height="720"' in tag
     assert "autoplay" not in html and " loop" not in tag and "muted" not in tag
-    assert '<source src="/video/chock-promo-v8.mp4" type="video/mp4">' in html
+    assert '<source src="/video/chock-promo-v9.mp4" type="video/mp4">' in html
     assert "<track" not in html
-    size = (ROOT / "static" / "video" / "chock-promo-v8.mp4").stat().st_size
+    size = (ROOT / "static" / "video" / "chock-promo-v9.mp4").stat().st_size
     assert f"Download the video (MP4, {size / 1_000_000:.1f} MB)" in html
     caption = re.search(r"<figcaption>(.*?)</figcaption>", html, re.DOTALL).group(1)
     caption = re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", caption)))
-    assert PROMO["description"] in caption and "(2:00)" in caption
+    assert PROMO["description"] in caption and "(1:02)" in caption
     hero_end = html.index("</section>", html.index('id="top"'))
     after = html[hero_end + len("</section>") :].lstrip()
     assert after.startswith('<section class="section" aria-labelledby="see-it-work">')
     twin = (built.out / "index.md").read_text(encoding="utf-8")
     assert (
-        "- [The chock story](/video/chock-promo-v8.mp4) (2:00, MP4): "
+        "- [The chock story](/video/chock-promo-v9.mp4) (1:02, MP4): "
         + PROMO["description"]
         in twin
     )
@@ -354,8 +357,8 @@ def test_promo_video_ships_below_the_hero(built) -> None:
 
 def test_published_video_files_match_the_plan() -> None:
     sums = {
-        "chock-promo-v8.mp4": "d70fc71cc135a63e05b6d5d493581d5426c250ada3e6d4c90573244ce9550dac",
-        "chock-promo-poster.jpg": "d63c51051e0b25e181eb9112d953b63e97c6187956ed2c093e63227ce7485cf9",
+        "chock-promo-v9.mp4": "94ff8fb1862bf46374efaced43a698c186f597a2de7bcb623135ac425c3f3b26",
+        "chock-promo-v9-poster.jpg": "e840d381e883d9d80ac7a6ef4f88e0e783c63ac870208068ef9853e3551095ef",
     }
     for name, want in sums.items():
         data = (ROOT / "static" / "video" / name).read_bytes()
@@ -369,7 +372,7 @@ def test_published_video_files_match_the_plan() -> None:
         ("src", "//example.com/video/promo.mp4"),
         ("src", "/video/../css/site.css"),
         ("src", "/video/missing.mp4"),
-        ("src", "video/chock-promo-v8.mp4"),
+        ("src", "video/chock-promo-v9.mp4"),
         ("src", "/img/og-card.png"),
         ("poster", "/video/missing.jpg"),
         ("poster", "data:image/png;base64,AAAA"),

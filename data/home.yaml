@@ -3,12 +3,12 @@
 # Each video: files under static/video/, served at /video/. The build checks each path.
 videos:
   - title: "The chock story"
-    src: /video/chock-promo-v8.mp4
-    poster: /video/chock-promo-poster.jpg
+    src: /video/chock-promo-v9.mp4
+    poster: /video/chock-promo-v9-poster.jpg
     width: 1280
     height: 720
-    duration: "2:00"
-    description: "A two-minute story of a team that stops babysitting its AI agents."
+    duration: "1:02"
+    description: "A one-minute story: an AI coding agent is refused twice by chock and fixes its own work."
 primary_cta: "Build your plugin"
 secondary_cta: "Browse the policies"
 steps_heading: "How it works"
