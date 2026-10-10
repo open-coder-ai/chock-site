@@ -549,8 +549,65 @@ def _faq(site: Site, templates: Path, land: dict[str, Any]) -> tuple[Safe, list[
     )
 
 
+VIDEO_PREFIX = "/video/"
+
+
+def _video_file(templates: Path, entry: dict[str, Any], field: str) -> Path:
+    """The static file a video field names; the build fails unless it is under /video/."""
+    value = entry.get(field)
+    where = f"home.yaml videos {entry.get('title')!r} {field}"
+    if not isinstance(value, str) or not value.startswith(VIDEO_PREFIX):
+        raise PageError(f"{where}: {value!r} is not a site path under {VIDEO_PREFIX}")
+    rel = value.removeprefix("/")
+    parts = rel.split("/")
+    if "\\" in rel or any(part in ("", ".", "..") for part in parts):
+        raise PageError(f"{where}: {value!r} is not a plain path under {VIDEO_PREFIX}")
+    static = (templates.parent / "static").resolve()
+    path = (static / rel).resolve()
+    if not path.is_relative_to(static / VIDEO_PREFIX.strip("/")) or not path.is_file():
+        raise PageError(f"{where}: {value!r} has no file in static/")
+    return path
+
+
+def _size(path: Path) -> str:
+    """A file's size in decimal megabytes, read from the file at build time."""
+    return f"{path.stat().st_size / 1_000_000:.1f} MB"
+
+
+def _video_row(
+    templates: Path, land: dict[str, Any], entry: dict[str, Any]
+) -> dict[str, Any]:
+    """The video-item tokens for one home.yaml entry, after checking its paths."""
+    mp4 = _video_file(templates, entry, "src")
+    _video_file(templates, entry, "poster")
+    track = Safe("")
+    if entry.get("captions") is not None:
+        _video_file(templates, entry, "captions")
+        track = Safe(
+            render_file(
+                templates / PARTIALS / "video-track.html", SRC=entry["captions"]
+            )
+        )
+    for field in ("width", "height"):
+        if not isinstance(entry.get(field), int) or isinstance(entry[field], bool):
+            raise PageError(
+                f"home.yaml videos {entry['title']!r}: {field} is not a number"
+            )
+    return {
+        "TITLE": entry["title"],
+        "SRC": entry["src"],
+        "POSTER": entry["poster"],
+        "WIDTH": str(entry["width"]),
+        "HEIGHT": str(entry["height"]),
+        "TRACK": track,
+        "DOWNLOAD": data_fill(land["videos_download"], {"__SIZE__": _size(mp4)}),
+        "DESCRIPTION": entry["description"],
+        "DURATION": entry["duration"],
+    }
+
+
 def _videos(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
-    """The video block renders only when home.yaml lists videos (it ships empty)."""
+    """The video block, directly below the hero, only when home.yaml lists videos."""
     videos = site.data["home"]["videos"]
     if not videos:
         return Safe("")
@@ -561,10 +618,22 @@ def _videos(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
             ITEMS=_each(
                 templates,
                 "video-item",
-                [{"HREF": v["href"], "TITLE": v["title"]} for v in videos],
+                [_video_row(templates, land, v) for v in videos],
             ),
         )
     )
+
+
+def _video_lines(site: Site, land: dict[str, Any]) -> str:
+    """The twin's video section: title, description, duration and the MP4 link."""
+    videos = site.data["home"]["videos"]
+    if not videos:
+        return ""
+    lines = "".join(
+        f"- [{md(v['title'])}]({v['src']}) ({v['duration']}, MP4): {md(v['description'])}\n"
+        for v in videos
+    )
+    return f"## {land['videos_heading']}\n\n{lines}\n"
 
 
 def _twin(
@@ -613,6 +682,7 @@ def _twin(
     return render_text_file(
         templates / MD / "index.md",
         SUB=land["sub"],
+        VIDEOS=_video_lines(site, land),
         TICKS=" · ".join(land["ticks"]),
         STATS=data_fill(land["stats_line"], subs).lower(),
         INSTALL=install_command(site),

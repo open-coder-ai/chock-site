@@ -103,7 +103,8 @@ def test_build_is_byte_identical_and_lf_only(
     for rel in files1:
         content = (built.out / rel).read_bytes()
         assert content == (out2 / rel).read_bytes(), rel
-        # Binary assets (og-card.png, fonts) legally contain 0x0d; the LF
-        # rule is for text files, which Path.write_text(newline="\n") governs.
-        if rel.suffix not in (".png", ".woff2"):
+        # Binary assets (og-card.png, fonts, the promo video and poster) legally
+        # contain 0x0d; the LF rule is for text files, which
+        # Path.write_text(newline="\n") governs.
+        if rel.suffix not in (".png", ".woff2", ".mp4", ".jpg"):
             assert b"\r" not in content, rel

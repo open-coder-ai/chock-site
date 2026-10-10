@@ -1,6 +1,7 @@
 """R-2 checks: the home page's data builds, its claims are computed, nothing banned ships."""
 
 import dataclasses
+import hashlib
 import html as htmllib
 import json
 import re
@@ -10,8 +11,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from sitegen import home as home_mod
 from sitegen import homedata
-from sitegen import pages as pages_mod
 from sitegen.__main__ import TEMPLATES
 from sitegen.pageparts import PageError, install_command
 
@@ -283,24 +284,120 @@ def test_faq_adds_general_agents_answer(built) -> None:
     assert "What are general agents?" in faq
 
 
-def test_videos_block_is_hidden_until_there_are_entries(built, tmp_path: Path) -> None:
-    html = _home(built)
-    assert "See it work" not in html
-    assert "VIDEO" not in html and "[CLIP]" not in html
-    assert built.site.data["home"]["videos"] == []
-    data = {
-        **built.site.data,
-        "home": {
-            **built.site.data["home"],
-            "videos": [{"title": "First run", "href": "/v/first.mp4"}],
-        },
-    }
-    site = dataclasses.replace(built.site, data=data)
-    out = tmp_path / "with-video"
+PROMO = {
+    "title": "The chock story",
+    "src": "/video/chock-promo-v8.mp4",
+    "poster": "/video/chock-promo-poster.jpg",
+    "width": 1280,
+    "height": 720,
+    "duration": "2:00",
+    "description": "A two-minute story of a team that stops babysitting its AI agents.",
+}
+
+
+def _with_videos(built, videos: list) -> object:
+    data = {**built.site.data, "home": {**built.site.data["home"], "videos": videos}}
+    return dataclasses.replace(built.site, data=data)
+
+
+def _write_home(site, out: Path, templates: Path = TEMPLATES) -> str:
     out.mkdir()
-    pages_mod.write_pages(site, out, TEMPLATES)
-    shown = (out / "index.html").read_text(encoding="utf-8")
-    assert "See it work" in shown and "First run" in shown
+    home_mod.build(site, out, templates)
+    return (out / "index.html").read_text(encoding="utf-8")
+
+
+def _media_templates(tmp_path: Path) -> Path:
+    """A templates copy beside a static/video folder holding stand-in media files."""
+    templates = tmp_path / "templates"
+    shutil.copytree(TEMPLATES, templates)
+    video = tmp_path / "static" / "video"
+    video.mkdir(parents=True)
+    for name in ("a.mp4", "a.jpg", "a.vtt"):
+        (video / name).write_bytes(b"x" * 1_300_000)
+    return templates
+
+
+def test_videos_block_is_hidden_until_there_are_entries(built, tmp_path: Path) -> None:
+    site = _with_videos(built, [])
+    html = _write_home(site, tmp_path / "empty")
+    assert "See it work" not in html and "<video" not in html
+    assert "See it work" not in (tmp_path / "empty" / "index.md").read_text("utf-8")
+
+
+def test_promo_video_ships_below_the_hero(built) -> None:
+    assert built.site.data["home"]["videos"] == [PROMO]
+    html = _home(built)
+    assert html.count("<video") == 1
+    tag = re.search(r"<video[^>]*>", html).group(0)
+    for attr in ("controls", 'preload="none"', "playsinline"):
+        assert attr in tag
+    assert 'poster="/video/chock-promo-poster.jpg"' in tag
+    assert 'width="1280"' in tag and 'height="720"' in tag
+    assert "autoplay" not in html and " loop" not in tag and "muted" not in tag
+    assert '<source src="/video/chock-promo-v8.mp4" type="video/mp4">' in html
+    assert "<track" not in html
+    size = (ROOT / "static" / "video" / "chock-promo-v8.mp4").stat().st_size
+    assert f"Download the video (MP4, {size / 1_000_000:.1f} MB)" in html
+    caption = re.search(r"<figcaption>(.*?)</figcaption>", html, re.DOTALL).group(1)
+    caption = re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", caption)))
+    assert PROMO["description"] in caption and "(2:00)" in caption
+    hero_end = html.index("</section>", html.index('id="top"'))
+    after = html[hero_end + len("</section>") :].lstrip()
+    assert after.startswith('<section class="section" aria-labelledby="see-it-work">')
+    twin = (built.out / "index.md").read_text(encoding="utf-8")
+    assert (
+        "- [The chock story](/video/chock-promo-v8.mp4) (2:00, MP4): "
+        + PROMO["description"]
+        in twin
+    )
+
+
+def test_published_video_files_match_the_plan() -> None:
+    sums = {
+        "chock-promo-v8.mp4": "d70fc71cc135a63e05b6d5d493581d5426c250ada3e6d4c90573244ce9550dac",
+        "chock-promo-poster.jpg": "d63c51051e0b25e181eb9112d953b63e97c6187956ed2c093e63227ce7485cf9",
+    }
+    for name, want in sums.items():
+        data = (ROOT / "static" / "video" / name).read_bytes()
+        assert hashlib.sha256(data).hexdigest() == want, name
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("src", "https://example.com/promo.mp4"),
+        ("src", "//example.com/video/promo.mp4"),
+        ("src", "/video/../css/site.css"),
+        ("src", "/video/missing.mp4"),
+        ("src", "video/chock-promo-v8.mp4"),
+        ("src", "/img/og-card.png"),
+        ("poster", "/video/missing.jpg"),
+        ("poster", "data:image/png;base64,AAAA"),
+        ("captions", "/video/missing.vtt"),
+        ("captions", "https://example.com/promo.vtt"),
+    ],
+)
+def test_bad_video_path_fails_the_build(built, tmp_path: Path, field, value) -> None:
+    site = _with_videos(built, [{**PROMO, field: value}])
+    with pytest.raises(PageError, match=field):
+        _write_home(site, tmp_path / "out")
+
+
+def test_captions_track_renders_only_when_set(built, tmp_path: Path) -> None:
+    templates = _media_templates(tmp_path)
+    entry = {**PROMO, "src": "/video/a.mp4", "poster": "/video/a.jpg"}
+    plain = _write_home(_with_videos(built, [entry]), tmp_path / "plain", templates)
+    assert "<track" not in plain
+    assert "Download the video (MP4, 1.3 MB)" in plain
+    with_track = _write_home(
+        _with_videos(built, [{**entry, "captions": "/video/a.vtt"}]),
+        tmp_path / "track",
+        templates,
+    )
+    assert (
+        '<track kind="captions" srclang="en" label="English" src="/video/a.vtt" default>'
+        in with_track
+    )
 
 
 def test_no_star_counts_and_no_third_party_on_home(built) -> None:

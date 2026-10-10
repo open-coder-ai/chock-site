@@ -2,7 +2,7 @@
 
 import re
 
-from conftest import assert_clean
+from conftest import assert_clean, collect
 
 from sitegen import homedata
 
@@ -190,5 +190,56 @@ def test_home_fits_a_phone(browser, site_url) -> None:
             )
         heading = page.locator("h1").inner_text()
         assert re.sub(r"\s+", " ", heading) == "Teach your AI agent what not to do."
+    finally:
+        context.close()
+
+
+VIDEO = "/video/chock-promo-v8.mp4"
+POSTER = "/video/chock-promo-poster.jpg"
+
+
+def test_promo_video_sits_below_the_hero(browser, site_url) -> None:
+    for viewport in (MOBILE, {"width": 1280, "height": 800}):
+        context = browser.new_context(viewport=viewport)
+        try:
+            page = context.new_page()
+            collect(page, site_url)
+            page.goto(site_url + "/")
+            video = page.locator("video.video-player")
+            assert video.count() == 1
+            video.scroll_into_view_if_needed()
+            assert video.is_visible()
+            hero = page.locator("#top").bounding_box()
+            box = video.bounding_box()
+            assert box["y"] >= hero["y"] + hero["height"]
+            assert abs(box["width"] / box["height"] - 16 / 9) < 0.02
+            page.wait_for_load_state("networkidle")
+            assert_clean(page)
+        finally:
+            context.close()
+
+
+def test_promo_media_served_and_mp4_waits_for_play(page, site_url) -> None:
+    requested: list[str] = []
+    page.on("request", lambda req: requested.append(req.url))
+    page.goto(site_url + "/")
+    page.locator("video.video-player").scroll_into_view_if_needed()
+    page.wait_for_load_state("networkidle")
+    assert not [url for url in requested if url.endswith(".mp4")]
+    for path, kind in ((POSTER, "image/jpeg"), (VIDEO, "video/mp4")):
+        response = page.request.head(site_url + path)
+        assert response.status == 200, path
+        assert response.headers["content-type"] == kind
+    assert_clean(page)
+
+
+def test_home_has_no_horizontal_scroll_at_320px(browser, site_url) -> None:
+    context = browser.new_context(viewport={"width": 320, "height": 640})
+    try:
+        page = context.new_page()
+        page.goto(site_url + "/")
+        assert not page.evaluate(
+            "document.scrollingElement.scrollWidth > window.innerWidth"
+        )
     finally:
         context.close()
