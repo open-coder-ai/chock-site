@@ -1,6 +1,14 @@
 # Shared with the Coding agents home page (`steps`) and its own copy (`coding`).
 # The home page's copy is under `landing`.
-videos: []
+# Each video: files under static/video/, served at /video/. The build checks each path.
+videos:
+  - title: "The chock story"
+    src: /video/chock-promo-v9.mp4
+    poster: /video/chock-promo-v9-poster.jpg
+    width: 1280
+    height: 720
+    duration: "1:02"
+    description: "A one-minute story: an AI coding agent is refused twice by chock and fixes its own work."
 primary_cta: "Build your plugin"
 secondary_cta: "Browse the policies"
 steps_heading: "How it works"
@@ -159,6 +167,7 @@ landing:
   faq_link: "All questions"
   faq_ids: ["what-is-chock", "general-agents", "security-boundary", "free", "tracking", "which-agents", "what-command-does"]
   videos_heading: "See it work"
+  videos_download: "Download the video (MP4, __SIZE__)"
   cta_heading: "Ready in a minute."
   cta_sub: "Pick your guardrails and copy one command."
   cta_github: "View on GitHub"
