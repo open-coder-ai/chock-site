@@ -3,8 +3,8 @@
 # Each video: files under static/video/, served at /video/. The build checks each path.
 videos:
   - title: "The chock story"
-    src: /video/chock-promo-v9.mp4
-    poster: /video/chock-promo-v9-poster.jpg
+    src: /video/chock-promo-v9b.mp4
+    poster: /video/chock-promo-v9b-poster.jpg
     width: 1280
     height: 720
     duration: "1:02"
