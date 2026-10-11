@@ -688,6 +688,9 @@ def _builder(
                 UNTESTED=Safe(
                     clientpage.untested_lines(clients, templates / track.slug)
                 ),
+                EVIDENCE=Safe(
+                    clientpage.evidence_lines(clients, templates / track.slug)
+                ),
                 CLIENT_STEPS=Safe(clientpage.steps(clients, templates / track.slug)),
                 HINT=data_fill(texts["builder_outputs_hint"], subs),
                 AUTHOR_LINK=Prose(site.data["builder_texts"]["author_link"]),
@@ -862,6 +865,9 @@ def _install(
             NAME=about["name"],
             STATE=about["witness"],
             STATE_WORD=clients["texts"][about["witness"]],
+            EVIDENCE=Safe(
+                clientpage.evidence_line(clients, templates / track.slug, client)
+            ),
             COMMAND_LABEL=inst["agent_command"],
             COMMAND=_client_command(clients, client),
             STEPS_HEADING=about["steps_heading"],

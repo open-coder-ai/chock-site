@@ -1,0 +1,13 @@
+# Untested agents' open "evidence wanted" issues in open-coder-ai/agentseam (S-EV).
+# A row here shows the evidence notice for that agent in the builder and on the
+# install page. Only an agent witness.yaml marks untested may have a row.
+# When the agent is witnessed and its issue is closed, delete the row: the
+# notice goes with it. An agent added to the picker gets the notice by a row.
+# __NAME__ is the agent's name; __NUMBER__ is its issue number.
+issue_url: https://github.com/open-coder-ai/agentseam/issues/__NUMBER__
+texts:
+  label: "Evidence wanted for __NAME__."
+  line: "chock has not seen __NAME__ run the plugin yet. The command still builds the plugin. If you use __NAME__, you can help: run it and share what happens in"
+  link: "agentseam issue #__NUMBER__"
+issues:
+  cursor: 141

@@ -160,11 +160,11 @@ pre code {
    whatever the neighbours' own margins (their facing margins are zeroed, so collapsing
    cannot undo it). A box at the edge of a boxed container sits flush with its padding.
    Code never wraps; a long command scrolls inside its box. */
-main :where(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) { margin-block: var(--flow); }
-main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):first-child { margin-top: 0; }
-main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):last-child { margin-bottom: 0; }
-main :not(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):has(+ :is(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden])) { margin-bottom: 0 !important; }
-main :is(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) + :not(pre, .quiz-note, .client-untested, .note-card, .noscript-note, .friction-note, .author-errors) { margin-top: 0 !important; }
+main :where(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) { margin-block: var(--flow); }
+main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):first-child { margin-top: 0; }
+main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):last-child { margin-bottom: 0; }
+main :not(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):has(+ :is(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden])) { margin-bottom: 0 !important; }
+main :is(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) + :not(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors) { margin-top: 0 !important; }
 
 button, input, select, textarea { font-weight: inherit; }
 
@@ -1202,14 +1202,14 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .client-state { color: var(--muted); font-size: 12px; }
 .state-witnessed { color: var(--accent); }
 .client-note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
-.client-untested {
+.client-untested, .client-evidence {
   border: 1px dashed var(--dash);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 13px;
   color: var(--body);
 }
-.client-untested strong { color: var(--text); font-weight: 600; }
+.client-untested strong, .client-evidence strong { color: var(--text); font-weight: 600; }
 .client-steps { margin-top: 12px; }
 .steps-heading { color: var(--text); font-size: 13px; }
 .steps-list { padding-left: 24px; font-size: 13px; color: var(--body); }
@@ -1217,8 +1217,8 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 
 /* Install steps, on the install page and in the builder: one rhythm between the
    command, the lead-in, each step, the notes and the remove block. */
-.install-agent > :not(pre), .client-steps > :not(pre), .steps-list .client-step { margin: 0; }
-.install-agent > * + :not(pre), .client-steps > * + :not(pre), .steps-list .client-step + .client-step { margin-top: var(--flow-tight); }
+.install-agent > :not(pre, .client-evidence), .client-steps > :not(pre), .steps-list .client-step { margin: 0; }
+.install-agent > * + :not(pre, .client-evidence), .client-steps > * + :not(pre), .steps-list .client-step + .client-step { margin-top: var(--flow-tight); }
 .install-agent > * + .steps-heading { margin-top: var(--flow); }
 .steps-list pre { padding: 10px 12px; }
 .noscript-note {

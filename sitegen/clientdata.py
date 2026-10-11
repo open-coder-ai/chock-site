@@ -11,6 +11,8 @@ from .pageparts import PageError, data_fill
 
 WITNESS_YAML = "witness.yaml"
 WITNESS_STATES = ("witnessed", "untested")
+EVIDENCE_YAML = "evidence.yaml"
+EVIDENCE_ISSUES = "https://github.com/open-coder-ai/agentseam/issues/"
 # The client whose labels the engine computes; the others come from the catalog's label blocks.
 ENGINE_CLIENT = "claude-code"
 # The keyword of a policy the catalog does not grade on the chosen client.
@@ -33,6 +35,39 @@ def load_witness(data_dir: Path, clients: list[str]) -> dict[str, Any]:
     if data["default"] not in states:
         raise PageError(f"{WITNESS_YAML}: default {data['default']!r} is not a client")
     return data
+
+
+def load_evidence(data_dir: Path, witness: dict[str, Any]) -> dict[str, Any]:
+    """data/evidence.yaml, checked: each row an untested agent with a positive issue number."""
+    data = yaml.safe_load((data_dir / EVIDENCE_YAML).read_text(encoding="utf-8"))
+    if data["issue_url"] != EVIDENCE_ISSUES + "__NUMBER__":
+        raise PageError(
+            f"{EVIDENCE_YAML}: issue_url is not {EVIDENCE_ISSUES}__NUMBER__"
+        )
+    for client, number in (data["issues"] or {}).items():
+        state = witness["clients"].get(client)
+        if state != "untested":
+            raise PageError(
+                f"{EVIDENCE_YAML}: {client} is {state or 'not an agent'}, not untested"
+            )
+        if type(number) is not int or number < 1:
+            raise PageError(
+                f"{EVIDENCE_YAML}: {client} issue {number!r} is not a number"
+            )
+    return data
+
+
+def evidence_notice(
+    evidence: dict[str, Any], client: str, name: str
+) -> dict[str, str] | None:
+    """An untested agent's evidence notice: label, line, issue link; None without a row."""
+    number = (evidence["issues"] or {}).get(client)
+    if number is None:
+        return None
+    subs = {"__NAME__": name, "__NUMBER__": str(number)}
+    return {key: data_fill(text, subs) for key, text in evidence["texts"].items()} | {
+        "url": data_fill(evidence["issue_url"], subs)
+    }
 
 
 def quiz_agent_options(quiz: dict[str, Any], block: dict[str, Any]) -> None:
@@ -122,6 +157,7 @@ def builder_clients(
     texts = config["texts"]
     meanings = site_data["label_meanings_raw"]
     witness = load_witness(data_dir, engine.client_ids())
+    evidence = load_evidence(data_dir, witness)
     graded = graded_clients(policies, engine.client_ids())
     repos = _per_client(config, "plugin_repos", engine.client_ids())
     removes = _per_client(config, "remove", engine.client_ids())
@@ -138,6 +174,7 @@ def builder_clients(
             "steps_heading": data_fill(texts[f"steps_{state}"], named),
             "ungraded_note": data_fill(texts["ungraded_note"], named),
             "report": data_fill(witness["report"], {"__CLIENT__": client}),
+            "evidence": evidence_notice(evidence, client, name),
             "steps": engine.client_steps(client),
             "remove": remove_steps(removes[client], client),
             "plugin_repo": repos[client],
