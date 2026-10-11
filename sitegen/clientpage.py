@@ -28,12 +28,15 @@ def picker(block: dict[str, Any], templates: Path) -> str:
         )
         for client in block["order"]
     )
-    note = (
-        ""
-        if block["graded"]
-        else render_file(
-            templates / "builder-grades-note.html", NOTE=texts["grades_pending"]
+    note = "".join(
+        render_file(
+            templates / "builder-grades-note.html",
+            ID=client,
+            HIDDEN=_hidden(client, block["default"]),
+            NOTE=data["ungraded_note"],
         )
+        for client in block["order"]
+        if not (data := block["clients"][client])["graded"]
     )
     return render_file(
         templates / "builder-clients.html",
@@ -60,12 +63,43 @@ def untested_lines(block: dict[str, Any], templates: Path) -> str:
     )
 
 
-def _step(templates: Path, step: dict[str, str]) -> str:
+def step(templates: Path, step: dict[str, str]) -> str:
     """One apply step: a command to type, a note to read or settings to paste."""
     (kind, text), *_ = step.items()
     if kind not in STEP_KINDS:
         raise ValueError(f"unknown step kind {kind!r}")
-    return render_file(templates / f"builder-step-{kind}.html", **{kind.upper(): text})
+    value = Prose(text) if kind == "note" else text
+    return render_file(templates / f"builder-step-{kind}.html", **{kind.upper(): value})
+
+
+def step_blocks(templates: Path, steps: list[dict[str, str]]) -> str:
+    """Steps in engine order: runs of commands as numbered lists, notes and settings unnumbered."""
+    blocks: list[str] = []
+    run: list[str] = []
+    number = 1
+    for item in steps:
+        (kind, _), *_ = item.items()
+        html = step(templates, item)
+        if kind == "command":
+            run.append(html)
+            continue
+        if run:
+            blocks.append(_step_list(templates, number, run))
+            number += len(run)
+            run = []
+        blocks.append(html)
+    if run:
+        blocks.append(_step_list(templates, number, run))
+    return "".join(blocks)
+
+
+def _step_list(templates: Path, start: int, items: list[str]) -> str:
+    """A numbered list of command steps, counting on from `start`."""
+    return render_file(
+        templates / "builder-step-list.html",
+        START=str(start),
+        ITEMS=Safe("".join(items)),
+    )
 
 
 def steps(block: dict[str, Any], templates: Path) -> str:
@@ -76,9 +110,7 @@ def steps(block: dict[str, Any], templates: Path) -> str:
             ID=client,
             HIDDEN=_hidden(client, block["default"]),
             HEADING=block["clients"][client]["steps_heading"],
-            STEPS=Safe(
-                "".join(_step(templates, s) for s in block["clients"][client]["steps"])
-            ),
+            STEPS=Safe(step_blocks(templates, block["clients"][client]["steps"])),
         )
         for client in block["order"]
     )
@@ -95,6 +127,8 @@ def markdown(block: dict[str, Any]) -> str:
             commands[state], {"__CLIENT__": client, "__CODE__": "<code>"}
         )
         lines.append(f"### {data['name']} (`{client}`, {block['texts'][state]})\n\n")
+        if not data["graded"]:
+            lines.append(f"{data['ungraded_note']}\n\n")
         if state == "untested":
             lines.append(
                 f"{data['untested_label']} {data['untested_line']} "
@@ -103,12 +137,20 @@ def markdown(block: dict[str, Any]) -> str:
         lines.append(
             f"{block['texts']['command_md']}\n\n    {command}\n\n{data['steps_heading']}\n\n"
         )
-        for number, step in enumerate(data["steps"], start=1):
-            (kind, text), *_ = step.items()
-            if kind == "note":
-                lines.append(f"{number}. {text}\n")
+        number = 0
+        for item in data["steps"]:
+            (kind, text), *_ = item.items()
+            if kind == "command":
+                number += 1
+                lines.append(f"{number}. (command)\n\n       {text}\n\n")
+            elif kind == "note":
+                lines.append(f"{text}\n\n")
             else:
-                body = "".join(f"       {line}\n" for line in text.splitlines())
-                lines.append(f"{number}. ({kind})\n\n{body}\n")
-        lines.append("\n")
+                lines.extend(f"    {line}\n" for line in text.splitlines())
+                lines.append("\n")
+        lines.append(f"\n{block['texts']['remove_md']}\n\n")
+        for step in data["remove"]:
+            (kind, text), *_ = step.items()
+            lines.append(f"- {text}\n" if kind == "note" else f"- `{text}`\n")
+        lines.append(f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n\n")
     return "".join(lines)

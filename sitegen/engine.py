@@ -130,21 +130,25 @@ def _shell_line(argv: list[str]) -> str:
     )
 
 
+def client_tokens(client: str) -> dict[str, str]:
+    """The tokens `chock install` fills in a client's steps, for the default folder and bundle."""
+    dest = Path(chock.install.package.client(client)["dest"])
+    folder = chock.install.place.plugin_dir(client, dest, BUNDLE_NAME)
+    return {
+        "__DEST__": dest.as_posix(),
+        "__PLUGIN_DIR__": Path(folder).as_posix(),
+        "__PLUGIN__": BUNDLE_NAME,
+        "__MARKETPLACE__": chock.install.package.settings()["marketplace"],
+    }
+
+
 def client_steps(client: str) -> list[dict[str, str]]:
     """The client's apply steps as `chock install` prints them for the default folder and bundle.
 
     Each step is {"command": a line to type}, {"note": text to read} or {"settings": JSON to paste}.
     """
-    dest = Path(chock.install.package.client(client)["dest"])
-    folder = chock.install.place.plugin_dir(client, dest, BUNDLE_NAME)
-    tokens = {
-        "__DEST__": str(dest),
-        "__PLUGIN_DIR__": str(folder),
-        "__PLUGIN__": BUNDLE_NAME,
-        "__MARKETPLACE__": chock.install.package.settings()["marketplace"],
-    }
     raw = chock.install.package.client(client)["steps"]
-    rendered = chock.install.steps.render(client, tokens)
+    rendered = chock.install.steps.render(client, client_tokens(client))
     return [
         {"command": _shell_line(step.command)}
         if step.command

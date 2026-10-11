@@ -1,5 +1,7 @@
 """Playwright fixtures: build the site once and serve it on a free local port."""
 
+import json
+import re
 import threading
 from pathlib import Path
 from typing import Any
@@ -88,3 +90,29 @@ def screenshot(page: Any, name: str) -> None:
     """A full-page screenshot under test-results/screenshots/<name>.png."""
     SCREENSHOTS.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(SCREENSHOTS / f"{name}.png"), full_page=True)
+
+
+POLICY_PAGE = re.compile(r"^/coding/policies/[^/]+/$")
+
+
+def walk_paths(page: Any, site_url: str) -> list[str]:
+    """Pages a site-wide walk visits: every sitemap page, with policy pages sampled.
+
+    The policy pages share one template, so the walk takes one per label kind
+    plus the one with the longest says text, then adds the 404 page and the
+    full builder with a preset.
+    """
+    xml = page.request.get(site_url + "/sitemap.xml").text()
+    paths = [
+        loc[len("https://chock.sh") :] for loc in re.findall(r"<loc>([^<]+)</loc>", xml)
+    ]
+    policies = json.loads(page.request.get(site_url + "/data/site.json").text())[
+        "policies"
+    ]
+    sample: list[str] = []
+    for keyword in ("block", "ask", "warn", "advise"):
+        sample.append(next(p["id"] for p in policies if p["keyword"] == keyword))
+    sample.append(max(policies, key=lambda p: len(p["says"]))["id"])
+    kept = [path for path in paths if not POLICY_PAGE.match(path)]
+    kept += [f"/coding/policies/{pid}/" for pid in dict.fromkeys(sample)]
+    return kept + ["/404.html", "/coding/builder/#preset=git-hygiene"]

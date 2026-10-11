@@ -108,14 +108,26 @@ def _examples(path: Path) -> list[Example]:
     return examples
 
 
+# Keys of the registry's label block that are not an agent's grade.
+LABEL_EXTRAS = ("misses", "status")
+
+
 def _client_labels(row: dict) -> dict[str, dict[str, str]]:
-    """The registry's per-agent label block (L1), without its `misses` note."""
+    """The registry's per-agent label block (L1), without its `misses` and `status` entries."""
     block = row.get("label") or {}
     return {
         client: {"keyword": str(v["keyword"]), "says": str(v["says"])}
         for client, v in block.items()
-        if isinstance(v, dict) and "keyword" in v
+        if client not in LABEL_EXTRAS and isinstance(v, dict) and "keyword" in v
     }
+
+
+def _label_status(row: dict) -> str | None:
+    """The registry's `label.status` keyword (BV-C3), or None when the key is absent."""
+    status = (row.get("label") or {}).get("status")
+    if isinstance(status, dict) and status.get("keyword"):
+        return str(status["keyword"])
+    return None
 
 
 def _latest_entry(changelog: list[dict], version: str) -> Latest:
@@ -130,6 +142,26 @@ def _latest_entry(changelog: list[dict], version: str) -> Latest:
         date=str(entry.get("date", "")),
         change=_collapse(changes[0]),
     )
+
+
+def _fill_groups(text: str, found: re.Match) -> str:
+    """One-pass fill of __GROUP__ tokens in `text` from the match's named groups."""
+    return re.sub(r"__([A-Z]+)__", lambda m: found[m.group(1)], text)
+
+
+def plain_change(change: str, rewrites: list[dict[str, str]]) -> str:
+    """The changelog line in plain words when a data rewrite matches it, else as written."""
+    for rule in rewrites:
+        found = re.search(rule["match"], change)
+        if found:
+            return _fill_groups(rule["text"], found)
+    return change
+
+
+def registry_ids(catalog: Path) -> list[str]:
+    """Every policy id in registry.yaml, shown or not."""
+    registry = yaml.safe_load((catalog / REGISTRY).read_text(encoding="utf-8")) or {}
+    return [str(row["id"]) for row in registry.get("policies", [])]
 
 
 def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Policy]:
@@ -163,6 +195,7 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
                 enforces=str(row.get("enforces") or ""),
                 examples=_examples(catalog / row["path"]),
                 client_labels=_client_labels(row),
+                status=_label_status(row),
             )
         )
     return sorted(policies, key=lambda p: p.id)

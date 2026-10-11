@@ -74,6 +74,7 @@ def test_screenshots_for_the_pr(browser, site_url) -> None:
         "faq": ("/faq/", None),
         "security": ("/security/", None),
         "for-agents": ("/for-agents/", None),
+        "report": ("/report/", None),
         "not-found": ("/404.html", None),
     }
     for size_name, viewport in (("desktop", DESKTOP), ("mobile", MOBILE)):

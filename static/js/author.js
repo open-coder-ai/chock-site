@@ -6,9 +6,11 @@ import {
   announce,
   copyText,
   decodeSelection,
+  idList,
   labelChip,
   parseShareFragment,
   shareFragment,
+  track,
 } from "./common.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -48,12 +50,10 @@ function dq(text) {
   });
 }
 
-// A plain scalar when the text is safe on a YAML line, else a single-quoted one.
-function yamlStr(text) {
-  if (/[\n\t]/.test(text)) return `"${dq(text)}"`;
-  const plain = /^[^[\]{}'"\s&*!|>%@`][^#\n]*$/.test(text) && !text.includes(": ") && !/ #/.test(text) && !/\s$/.test(text);
-  return plain ? text : sq(text);
-}
+// Always a quoted scalar, so text like true, null, 0x1f, "- x" or "foo:" stays a string; a
+// single-quoted scalar cannot carry a control or format character, so those go double-quoted.
+const yamlStr = (text) =>
+  /[\n\t\r\p{Cc}\p{Cf}\p{Cs}\p{Co}]/u.test(text) ? `"${dq(text)}"` : sq(text);
 
 // A Python "..." literal: backslash escapes, no f-string interpolation.
 const pyStr = (text) => `"${text.replace(/[\\"]/g, "\\$&")}"`;
@@ -304,11 +304,11 @@ const scriptHash = (text) => sha256bytes([new TextEncoder().encode(text)]);
 
 // ----- the selection file -----
 
-// A schema-2 selection: the local policy first, then the catalog picks.
-function selectionYaml(hash, ctx, site, picked, client) {
+// A schema-2 selection: the local policy first, then the catalog picks. It comes in two parts,
+// before and after the `client:` line, so the script can write the agent it asked for between them.
+function selectionParts(hash, ctx, site, picked) {
+  const head = ["schema: 2"];
   const lines = [
-    "schema: 2",
-    `client: ${client}`,
     "bundle:",
     `  name: ${ctx.cfg.bundle_name}`,
     `  version: ${sq(ctx.version)}`,
@@ -336,7 +336,13 @@ function selectionYaml(hash, ctx, site, picked, client) {
       `  sha256: ${policy.sha256}`,
     );
   }
-  return `${lines.join("\n")}\n`;
+  return [`${head.join("\n")}\n`, `${lines.join("\n")}\n`];
+}
+
+// The selection as the page shows it, for the agent picked here.
+function selectionYaml(hash, ctx, site, picked, client) {
+  const [head, tail] = selectionParts(hash, ctx, site, picked);
+  return `${head}client: ${client}\n${tail}`;
 }
 
 // ----- the setup script -----
@@ -351,6 +357,7 @@ function heredocDelim(text, base) {
 // The POSIX script: asks, writes the files, chock check, then chock install
 // (install mode adds --apply where the agent's own install step was witnessed).
 function buildScript(files, selection, hash, ctx, site, client, clients) {
+  const [selHead, selTail] = selection;
   const cfg = ctx.cfg;
   const lines = [
     "#!/bin/sh",
@@ -401,10 +408,15 @@ function buildScript(files, selection, hash, ctx, site, client, clients) {
     ...new Set(files.map((f) => f.path.split("/").slice(0, -1).join("/")).filter(Boolean)),
   ];
   for (const dir of dirs) lines.push(`mkdir -p "$FOLDER/.agents/policies/${ctx.id}/${dir}"`);
-  const selDelim = heredocDelim(selection, "CHOCK_SELECTION_YAML");
+  // The agent line is the one unquoted write: $AGENT matched the fixed list above.
+  const selDelim = heredocDelim(selHead + selTail, "CHOCK_SELECTION_YAML");
   lines.push(
     `cat > "$FOLDER/chock.selection.yaml" <<'${selDelim}'`,
-    selection.replace(/\n$/, ""),
+    selHead.replace(/\n$/, ""),
+    selDelim,
+    `printf 'client: %s\\n' "$AGENT" >> "$FOLDER/chock.selection.yaml"`,
+    `cat >> "$FOLDER/chock.selection.yaml" <<'${selDelim}'`,
+    selTail.replace(/\n$/, ""),
     selDelim,
   );
   files.forEach((file, i) => {
@@ -605,10 +617,14 @@ async function main() {
             schedule(false);
           });
           label.appendChild(box);
-          label.appendChild(labelChip(p.keyword, site.label_words.coding[p.keyword], C.meanings[p.keyword]));
+          // The policy's own label on the picked agent, as the builder shows it.
+          const own = C.clients[client].labels[p.id];
+          const word =
+            own.keyword === C.ungraded ? C.texts.ungraded_word : site.label_words.coding[own.keyword];
+          label.appendChild(labelChip(own.keyword, word, C.clients[client].meanings[own.keyword]));
           const nameEl = document.createElement("span");
           nameEl.className = "amember-name";
-          nameEl.textContent = `${p.name} — ${p.says}`;
+          nameEl.textContent = `${p.name} — ${own.says}`;
           label.appendChild(nameEl);
           return label;
         }),
@@ -720,7 +736,7 @@ async function main() {
     const hash = await packHash(files);
     const selYaml = selectionYaml(hash, c, site, picked, client);
     selEl.textContent = selYaml;
-    script = buildScript(files, selYaml, hash, c, site, client, clients);
+    script = buildScript(files, selectionParts(hash, c, site, picked), hash, c, site, client, clients);
     scriptEl.textContent = script;
     shaEl.textContent = await scriptHash(script);
     saveDraft();
@@ -775,6 +791,7 @@ async function main() {
     input.addEventListener("change", () => {
       if (!input.checked) return;
       client = input.value;
+      renderCatalog();
       writeShare();
       schedule(false);
     });
@@ -793,6 +810,8 @@ async function main() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // Kind ids use "_" (content_regex); counted values are [a-z0-9.-], so it is sent as "-".
+    track("author-script-downloaded", { kind: kind.replaceAll("_", "-"), agent: client });
   });
 
   copyBtn.addEventListener("click", (event) => {
@@ -827,23 +846,30 @@ async function main() {
 
   // ----- first paint -----
 
+  const knownClient = (id) => Object.hasOwn(C.clients, id);
+  const unknownNotice = (ids) =>
+    notice(
+      fill(T.unknown_catalog, {
+        ids: idList(ids, (n) => fill(n === 1 ? T.ids_hidden_one : T.ids_hidden_many, { n })),
+      }),
+    );
   const draft = loadDraft();
   if (draft) {
-    if (draft.kind in kinds) kind = draft.kind;
+    if (Object.hasOwn(kinds, draft.kind)) kind = draft.kind;
     if (typeof draft.name === "string") name = draft.name;
     if (draft.answers && typeof draft.answers === "object") answers = draft.answers;
     if (Array.isArray(draft.picked))
       picked = new Set(draft.picked.filter((id) => policies.has(id)));
     if (draft.overrides && typeof draft.overrides === "object") overrides = draft.overrides;
-    if (C.clients[draft.client]) client = draft.client;
+    if (knownClient(draft.client)) client = draft.client;
   }
   const shared = parseShareFragment(location.hash);
   if (shared) {
-    if (C.clients[shared.client]) client = shared.client;
+    if (knownClient(shared.client)) client = shared.client;
     if (shared.ids) {
       const unknown = shared.ids.filter((id) => !policies.has(id));
       picked = new Set(shared.ids.filter((id) => policies.has(id)));
-      if (unknown.length) notice(fill(T.unknown_catalog, { ids: unknown.join(", ") }));
+      if (unknown.length) unknownNotice(unknown);
     }
   }
   // The builder's own fragment is the schema-2 selection code: #s=<base64url>.
@@ -860,13 +886,13 @@ async function main() {
     if (!entries || !entries.every((entry) => entry && typeof entry.id === "string")) {
       notice(T.link_unreadable);
     } else {
-      if (C.clients[selection.client]) client = selection.client;
+      if (knownClient(selection.client)) client = selection.client;
       const catalogIds = entries
         .filter((entry) => entry.from !== "local")
         .map((entry) => entry.id);
       const unknown = catalogIds.filter((id) => !policies.has(id));
       picked = new Set(catalogIds.filter((id) => policies.has(id)));
-      if (unknown.length) notice(fill(T.unknown_catalog, { ids: unknown.join(", ") }));
+      if (unknown.length) unknownNotice(unknown);
     }
   }
   nameInput.value = name;

@@ -180,15 +180,17 @@ def test_worked_example_decodes_and_validates(built) -> None:
     text = (built.out / "for-agents" / "index.md").read_text(encoding="utf-8")
     object_block = re.search(r"```json\n(.*?)\n```", text, re.DOTALL).group(1)
     code = re.search(r"# Share code\n(\S+)\n", text).group(1)
-    command = re.search(r"\n(chock install --selection '[^']+' --apply)", text).group(1)
-    assert command == f"chock install --selection '{code}' --apply"
+    command = re.search(r"\n(chock install --selection '[^']+' .*)\n", text).group(1)
     selection = json.loads(object_block)
+    # Schema 2, built for the default agent, with that agent's command form.
+    assert selection["schema"] == 2
+    assert selection["client"] == "claude-code"
+    assert command == f"chock install --selection '{code}' --client claude-code --apply"
     raw = base64.urlsafe_b64decode(code + "=" * (-len(code) % 4))
     assert json.loads(raw) == selection
     engine.check_selection(selection)
-    assert engine.load_selection(code)["policies"] == [
-        {"from": "catalog", **p} for p in selection["policies"]
-    ]
+    assert engine.load_selection(code)["policies"] == selection["policies"]
+    assert all(p["from"] == "catalog" for p in selection["policies"])
     members = next(
         p.members
         for p in load_presets(Path(__file__).parents[1] / "data" / "presets.yaml")

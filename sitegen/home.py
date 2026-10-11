@@ -7,6 +7,7 @@ from . import homedata, repodata
 from .catalog import first_sentence
 from .model import Policy, Site
 from .pageparts import (
+    COMMAND_FORM,
     PARTIALS,
     PageError,
     badge,
@@ -19,7 +20,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, render_file, render_text_file
+from .render import Prose, Safe, md, md_code, render_file, render_text_file
 
 HOME = "home"
 MD = "md"
@@ -109,11 +110,14 @@ def _hero(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> Safe
 
 
 def _works(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
+    clients = site.data["builder_clients"]
     items = [
-        {"HREF": "/coding/builder/", "NAME": "Claude Code", "HOW": land["works_claude"]}
-    ] + [
-        {"HREF": c["repo"], "NAME": c["name"], "HOW": land["works_other"]}
-        for c in site.data["clients"]
+        {
+            "HREF": f"/coding/builder/#client={client}",
+            "NAME": clients["clients"][client]["name"],
+            "HOW": clients["texts"][clients["clients"][client]["witness"]],
+        }
+        for client in clients["order"]
     ]
     return Safe(
         render_file(
@@ -126,7 +130,7 @@ def _works(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
 
 def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     """The sections block: one card per track in tracks.yaml, its copy from there."""
-    agents = 1 + len(site.data["clients"])
+    agents = len(site.data["builder_clients"]["order"])
     cards = []
     for track in site.tracks:
         conf = land["track_cards"].get(track.id, {})
@@ -203,13 +207,22 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     )
 
 
+def how_command(site: Site) -> str:
+    """The home page's command form: the untested one, since --apply is only for tested agents."""
+    return data_fill(site.data["builder_clients"]["commands"]["untested"], COMMAND_FORM)
+
+
 def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
-    command = data_fill(site.command, {"__CODE__": "…"})
+    command = how_command(site)
     steps = []
     for i, step in enumerate(land["how"], start=1):
         extra = ""
         if i == 2:
-            extra = render_file(templates / PARTIALS / "how-code.html", CODE=command)
+            extra = render_file(
+                templates / PARTIALS / "how-code.html", CODE=command
+            ) + render_file(
+                templates / PARTIALS / "how-note.html", NOTE=land["how_apply_note"]
+            )
         steps.append(
             {
                 "NUM": str(i),
@@ -228,21 +241,43 @@ def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     )
 
 
+def _surface_rows(site: Site, policy: Policy) -> list[dict[str, Any]]:
+    """The policy's catalog label on each agent, with the agent's witness state; None when ungraded."""
+    clients = site.data["builder_clients"]
+    rows = []
+    for client in clients["order"]:
+        about = clients["clients"][client]
+        label = policy.client_labels.get(client)
+        rows.append(
+            {
+                "name": about["name"],
+                "state": about["witness"],
+                "state_word": clients["texts"][about["witness"]],
+                "keyword": label and label["keyword"],
+                "says": label["says"]
+                if label
+                else data_fill(
+                    clients["texts"]["ungraded_says"], {"__NAME__": about["name"]}
+                ),
+            }
+        )
+    return rows
+
+
 def _surface(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> Safe:
     policy = _policy(site, land["surface_policy"])
-    rows = []
-    for client in land["surface_clients"]:
-        if client["key"] is None:
-            chip_html, says = Safe(""), land["surface_devin"]
-        else:
-            data = policy.client_labels.get(client["key"])
-            if data is None:
-                raise PageError(
-                    f"{policy.id}: registry has no label for {client['key']}"
-                )
-            chip_html = keyword_chip(site, templates, data["keyword"], COUNTED)
-            says = data["says"]
-        rows.append({"NAME": client["name"], "CHIP": chip_html, "SAYS": says})
+    rows = [
+        {
+            "NAME": row["name"],
+            "STATE": row["state"],
+            "STATE_WORD": row["state_word"],
+            "CHIP": Safe("")
+            if row["keyword"] is None
+            else keyword_chip(site, templates, row["keyword"], COUNTED),
+            "SAYS": row["says"],
+        }
+        for row in _surface_rows(site, policy)
+    ]
     tests = data_fill(
         land["surface_tests"],
         {
@@ -514,8 +549,65 @@ def _faq(site: Site, templates: Path, land: dict[str, Any]) -> tuple[Safe, list[
     )
 
 
+VIDEO_PREFIX = "/video/"
+
+
+def _video_file(templates: Path, entry: dict[str, Any], field: str) -> Path:
+    """The static file a video field names; the build fails unless it is under /video/."""
+    value = entry.get(field)
+    where = f"home.yaml videos {entry.get('title')!r} {field}"
+    if not isinstance(value, str) or not value.startswith(VIDEO_PREFIX):
+        raise PageError(f"{where}: {value!r} is not a site path under {VIDEO_PREFIX}")
+    rel = value.removeprefix("/")
+    parts = rel.split("/")
+    if "\\" in rel or any(part in ("", ".", "..") for part in parts):
+        raise PageError(f"{where}: {value!r} is not a plain path under {VIDEO_PREFIX}")
+    static = (templates.parent / "static").resolve()
+    path = (static / rel).resolve()
+    if not path.is_relative_to(static / VIDEO_PREFIX.strip("/")) or not path.is_file():
+        raise PageError(f"{where}: {value!r} has no file in static/")
+    return path
+
+
+def _size(path: Path) -> str:
+    """A file's size in decimal megabytes, read from the file at build time."""
+    return f"{path.stat().st_size / 1_000_000:.1f} MB"
+
+
+def _video_row(
+    templates: Path, land: dict[str, Any], entry: dict[str, Any]
+) -> dict[str, Any]:
+    """The video-item tokens for one home.yaml entry, after checking its paths."""
+    mp4 = _video_file(templates, entry, "src")
+    _video_file(templates, entry, "poster")
+    track = Safe("")
+    if entry.get("captions") is not None:
+        _video_file(templates, entry, "captions")
+        track = Safe(
+            render_file(
+                templates / PARTIALS / "video-track.html", SRC=entry["captions"]
+            )
+        )
+    for field in ("width", "height"):
+        if not isinstance(entry.get(field), int) or isinstance(entry[field], bool):
+            raise PageError(
+                f"home.yaml videos {entry['title']!r}: {field} is not a number"
+            )
+    return {
+        "TITLE": entry["title"],
+        "SRC": entry["src"],
+        "POSTER": entry["poster"],
+        "WIDTH": str(entry["width"]),
+        "HEIGHT": str(entry["height"]),
+        "TRACK": track,
+        "DOWNLOAD": data_fill(land["videos_download"], {"__SIZE__": _size(mp4)}),
+        "DESCRIPTION": entry["description"],
+        "DURATION": entry["duration"],
+    }
+
+
 def _videos(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
-    """The video block renders only when home.yaml lists videos (it ships empty)."""
+    """The video block, directly below the hero, only when home.yaml lists videos."""
     videos = site.data["home"]["videos"]
     if not videos:
         return Safe("")
@@ -526,10 +618,22 @@ def _videos(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
             ITEMS=_each(
                 templates,
                 "video-item",
-                [{"HREF": v["href"], "TITLE": v["title"]} for v in videos],
+                [_video_row(templates, land, v) for v in videos],
             ),
         )
     )
+
+
+def _video_lines(site: Site, land: dict[str, Any]) -> str:
+    """The twin's video section: title, description, duration and the MP4 link."""
+    videos = site.data["home"]["videos"]
+    if not videos:
+        return ""
+    lines = "".join(
+        f"- [{md(v['title'])}]({v['src']}) ({v['duration']}, MP4): {md(v['description'])}\n"
+        for v in videos
+    )
+    return f"## {land['videos_heading']}\n\n{lines}\n"
 
 
 def _twin(
@@ -547,8 +651,8 @@ def _twin(
     )
     incidents = site.data["incidents"]
     demo = "".join(
-        f"- {c.policy}: `{_demo_input(land, c)}` → "
-        f"{land['demo_refused']} {c.policy}: {_policy(site, c.policy).says}\n"
+        f"- {c.policy}: {md_code(_demo_input(land, c))} → "
+        f"{land['demo_refused']} {c.policy}: {md(_policy(site, c.policy).says)}\n"
         for c in site.demo
     )
     tracks = "".join(
@@ -556,16 +660,14 @@ def _twin(
         for t in site.tracks
     )
     surfaces = "".join(
-        "- {}: {}\n".format(
-            c["name"],
-            land["surface_devin"]
-            if c["key"] is None
-            else "{} — {}".format(
-                site.label_words[COUNTED][policy.client_labels[c["key"]]["keyword"]],
-                policy.client_labels[c["key"]]["says"],
-            ),
+        f"- {row['name']} ({row['state_word']}): "
+        + (
+            md(row["says"])
+            if row["keyword"] is None
+            else f"{site.label_words[COUNTED][row['keyword']]} — {md(row['says'])}"
         )
-        for c in land["surface_clients"]
+        + "\n"
+        for row in _surface_rows(site, policy)
     )
     cases = "".join(
         f"- {c['tab']} (preset {c['preset']}): {c['headline']} "
@@ -580,6 +682,7 @@ def _twin(
     return render_text_file(
         templates / MD / "index.md",
         SUB=land["sub"],
+        VIDEOS=_video_lines(site, land),
         TICKS=" · ".join(land["ticks"]),
         STATS=data_fill(land["stats_line"], subs).lower(),
         INSTALL=install_command(site),
@@ -590,7 +693,8 @@ def _twin(
         HOW_LINES="".join(
             f"{i}. {s['title']} — {s['body']}\n" for i, s in enumerate(land["how"], 1)
         ),
-        COMMAND=data_fill(site.command, {"__CODE__": "…"}),
+        COMMAND=how_command(site),
+        APPLY_NOTE=land["how_apply_note"],
         SURFACE_BODY=data_fill(land["surface_body"], {"__POLICY__": policy.id}),
         SURFACE_LINES=surfaces,
         USECASE_LINES=cases,

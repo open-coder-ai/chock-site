@@ -1,4 +1,4 @@
-"""CLI: `python -m sitegen --catalog .catalog --out dist` and `serve`."""
+"""CLI: `python -m sitegen --catalog .catalog --out dist`, `serve` and `allowlist`."""
 
 import argparse
 import shutil
@@ -8,8 +8,9 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import ClassVar
 
+from . import analytics, sitedata
 from . import pages as pages_mod
-from . import sitedata
+from .analytics import AnalyticsError
 from .catalog import CatalogError, catalog_head
 from .model import Site
 from .pages import PageError
@@ -97,6 +98,8 @@ def build(catalog: Path, out: Path, source: str, release: str | None) -> Site:
             f"{catalog}: HEAD is {head}, expected {ref} (.catalog-ref). "
             "Checkout the pinned commit or update the pin."
         )
+    events = analytics.load(DATA)
+    analytics.check_module(events, ROOT)
     _check_out(out)
     _empty(out)
     if STATIC.is_dir():
@@ -112,6 +115,7 @@ def build(catalog: Path, out: Path, source: str, release: str | None) -> Site:
     site = sitedata.build_site(catalog, ref, engine_ref, source, release, DATA)
     site.data["version"] = version
     write_version_json(out, version, engine_ref, ref)
+    analytics.write_module(events, out / analytics.DIST_ALLOWLIST)
     sitedata.write_site_json(site, out)
     pages_mod.write_css(site, out, STATIC)
     pages_mod.write_pages(site, out, TEMPLATES)
@@ -137,14 +141,18 @@ def _build_parser(prog: str, out_required: bool) -> argparse.ArgumentParser:
 def _run(args: argparse.Namespace) -> Site:
     try:
         return build(args.catalog, args.out, args.catalog_source, args.release)
-    except (CatalogError, PresetError, PageError, VersionError) as exc:
+    except (AnalyticsError, CatalogError, PresetError, PageError, VersionError) as exc:
         print(exc, file=sys.stderr)
         raise SystemExit(2) from exc
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Build the site, or `serve` to build then serve dist/ on 127.0.0.1."""
+    """Build the site, `serve` to build then serve dist/ on 127.0.0.1, or `allowlist` to regenerate it."""
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["allowlist"]:
+        analytics.write_module(analytics.load(DATA), ROOT / analytics.ALLOWLIST)
+        print(f"wrote {analytics.ALLOWLIST}")
+        return 0
     if argv[:1] == ["serve"]:
         parser = _build_parser("python -m sitegen serve", out_required=False)
         parser.add_argument("--port", type=int, default=8000)

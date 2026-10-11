@@ -62,10 +62,11 @@ TEXT_KEYS = {
     "untested_note",
     "file_edited",
     "link_unreadable",
+    "ids_hidden_one",
+    "ids_hidden_many",
 }
 SCRIPT_KEYS = {
     "file_name",
-    "default_agent",
     "default_folder",
     "default_mode",
     "agent_prompt",

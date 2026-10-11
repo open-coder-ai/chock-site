@@ -14,7 +14,7 @@ catalog_ref: __CATALOG_REF__
 
 __ID__ · version __VERSION__
 
-__WORD__ — __SAYS__. __LABEL_NOTE__
+__WORD__ — __SAYS__ __LABEL_NOTE__ __STATUS_MD__
 
 In a git repo: __TIER_WORD__ (__TIER_MEANING__)
 
@@ -24,6 +24,9 @@ __PLUGIN_NOTE__
 
 __DESCRIPTION__
 
+## __BY_AGENT_HEADING__
+
+__AGENT_LINES__
 ## What it misses
 
 __MISSES__
@@ -40,3 +43,4 @@ __LATEST_VERSION__ · __LATEST_DATE__ — __LATEST_CHANGE__
 - Source: __SOURCE_URL__ (catalog path `__PATH__`)
 - Presets: __GROUPS_MD__
 - JSON: `/api/coding/policies/__ID__.json`
+- Report a problem: __REPORT_URL__

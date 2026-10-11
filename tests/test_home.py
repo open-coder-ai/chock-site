@@ -1,6 +1,7 @@
 """R-2 checks: the home page's data builds, its claims are computed, nothing banned ships."""
 
 import dataclasses
+import hashlib
 import html as htmllib
 import json
 import re
@@ -10,8 +11,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from sitegen import home as home_mod
 from sitegen import homedata
-from sitegen import pages as pages_mod
 from sitegen.__main__ import TEMPLATES
 from sitegen.pageparts import PageError, install_command
 
@@ -216,11 +217,14 @@ def test_one_policy_every_surface_uses_the_registry_label_block(
     row = next(p for p in registry["policies"] if p["id"] == "scan-secrets")
     words = _site_json(built)["label_words"]["coding"]
     text = _main_text(_home(built))
-    for client in ("claude-code", "cursor", "codex", "copilot"):
-        label = row["label"][client]
+    for client in ("claude-code", "cursor", "codex", "copilot", "devin"):
+        label = row["label"].get(client)
+        if label is None:  # the pinned catalog does not grade this agent yet
+            assert "not graded yet for Devin" in text
+            continue
         assert words[label["keyword"]] in text
         assert label["says"] in text
-    assert "installs from its plugin repo" in text
+    assert "plugin repo" not in text
     assert f"{row['eval_executed']} of {row['eval_cases']} test cases pass" in text
 
 
@@ -280,24 +284,146 @@ def test_faq_adds_general_agents_answer(built) -> None:
     assert "What are general agents?" in faq
 
 
-def test_videos_block_is_hidden_until_there_are_entries(built, tmp_path: Path) -> None:
-    html = _home(built)
-    assert "See it work" not in html
-    assert "VIDEO" not in html and "[CLIP]" not in html
-    assert built.site.data["home"]["videos"] == []
-    data = {
-        **built.site.data,
-        "home": {
-            **built.site.data["home"],
-            "videos": [{"title": "First run", "href": "/v/first.mp4"}],
-        },
-    }
-    site = dataclasses.replace(built.site, data=data)
-    out = tmp_path / "with-video"
+PROMO = {
+    "title": "The chock story",
+    "src": "/video/chock-promo-v9b.mp4",
+    "poster": "/video/chock-promo-v9b-poster.jpg",
+    "width": 1280,
+    "height": 720,
+    "duration": "1:02",
+    "description": (
+        "A one-minute story: an AI coding agent is refused twice by chock "
+        "and fixes its own work."
+    ),
+}
+
+EXPLAINER = {
+    "title": "The full story",
+    "src": "/video/chock-promo-v8-explainer.mp4",
+    "poster": "/video/chock-promo-v8-explainer-poster.jpg",
+    "width": 1280,
+    "height": 720,
+    "duration": "1:57",
+    "description": (
+        "A two-minute look at how chock stops an agent's risky moves, "
+        "and the incidents behind each policy."
+    ),
+}
+
+
+def _with_videos(built, videos: list) -> object:
+    data = {**built.site.data, "home": {**built.site.data["home"], "videos": videos}}
+    return dataclasses.replace(built.site, data=data)
+
+
+def _write_home(site, out: Path, templates: Path = TEMPLATES) -> str:
     out.mkdir()
-    pages_mod.write_pages(site, out, TEMPLATES)
-    shown = (out / "index.html").read_text(encoding="utf-8")
-    assert "See it work" in shown and "First run" in shown
+    home_mod.build(site, out, templates)
+    return (out / "index.html").read_text(encoding="utf-8")
+
+
+def _media_templates(tmp_path: Path) -> Path:
+    """A templates copy beside a static/video folder holding stand-in media files."""
+    templates = tmp_path / "templates"
+    shutil.copytree(TEMPLATES, templates)
+    video = tmp_path / "static" / "video"
+    video.mkdir(parents=True)
+    for name in ("a.mp4", "a.jpg", "a.vtt"):
+        (video / name).write_bytes(b"x" * 1_300_000)
+    return templates
+
+
+def test_videos_block_is_hidden_until_there_are_entries(built, tmp_path: Path) -> None:
+    site = _with_videos(built, [])
+    html = _write_home(site, tmp_path / "empty")
+    assert "See it work" not in html and "<video" not in html
+    assert "See it work" not in (tmp_path / "empty" / "index.md").read_text("utf-8")
+
+
+def test_promo_videos_ship_below_the_hero(built) -> None:
+    assert built.site.data["home"]["videos"] == [PROMO, EXPLAINER]
+    html = _home(built)
+    assert html.count("<video") == 2
+    assert "autoplay" not in html and "<track" not in html
+    tags = re.findall(r"<video[^>]*>", html)
+    captions = re.findall(r"<figcaption>(.*?)</figcaption>", html, re.DOTALL)
+    for video, tag, caption in zip((PROMO, EXPLAINER), tags, captions, strict=True):
+        for attr in ("controls", 'preload="none"', "playsinline"):
+            assert attr in tag
+        assert f'poster="{video["poster"]}"' in tag
+        assert 'width="1280"' in tag and 'height="720"' in tag
+        assert " loop" not in tag and "muted" not in tag
+        assert f'<source src="{video["src"]}" type="video/mp4">' in html
+        size = (ROOT / "static" / video["src"].lstrip("/")).stat().st_size
+        assert f"Download the video (MP4, {size / 1_000_000:.1f} MB)" in html
+        text = htmllib.unescape(re.sub(r"<[^>]+>", " ", caption))
+        caption = re.sub(r"\s+", " ", text)
+        assert video["description"] in caption
+        assert f"({video['duration']})" in caption
+    hero_end = html.index("</section>", html.index('id="top"'))
+    after = html[hero_end + len("</section>") :].lstrip()
+    assert after.startswith('<section class="section" aria-labelledby="see-it-work">')
+    twin = (built.out / "index.md").read_text(encoding="utf-8")
+    assert (
+        "- [The chock story](/video/chock-promo-v9b.mp4) (1:02, MP4): "
+        + PROMO["description"]
+        in twin
+    )
+    assert (
+        "- [The full story](/video/chock-promo-v8-explainer.mp4) (1:57, MP4): "
+        + EXPLAINER["description"]
+        in twin
+    )
+
+
+def test_published_video_files_match_the_plan() -> None:
+    sums = {
+        "chock-promo-v9b.mp4": "609a571be81a9279be64c5fd96dafcfb93aa6ffaff96d2be95851a002491e438",
+        "chock-promo-v9b-poster.jpg": "3fd94f0b0d60ded83d22b96f133e54615466acb7630487d38a77aea7fa71e71b",
+        "chock-promo-v8-explainer.mp4": "34d45ea2328bef74dc3eb0d18992f501787c9301fdf716c1ba635852613b9672",
+        "chock-promo-v8-explainer-poster.jpg": "9ab277aadf408faa8626cc103aafd0a149a91018cb237cf7c389eca1a79c23cf",
+    }
+    for name, want in sums.items():
+        data = (ROOT / "static" / "video" / name).read_bytes()
+        assert hashlib.sha256(data).hexdigest() == want, name
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("src", "https://example.com/promo.mp4"),
+        ("src", "//example.com/video/promo.mp4"),
+        ("src", "/video/../css/site.css"),
+        ("src", "/video/missing.mp4"),
+        ("src", "video/chock-promo-v9b.mp4"),
+        ("src", "/img/og-card.png"),
+        ("poster", "/video/missing.jpg"),
+        ("poster", "data:image/png;base64,AAAA"),
+        ("captions", "/video/missing.vtt"),
+        ("captions", "https://example.com/promo.vtt"),
+    ],
+)
+def test_bad_video_path_fails_the_build(built, tmp_path: Path, field, value) -> None:
+    site = _with_videos(built, [{**PROMO, field: value}])
+    with pytest.raises(PageError, match=field):
+        _write_home(site, tmp_path / "out")
+
+
+def test_captions_track_renders_only_when_set(built, tmp_path: Path) -> None:
+    templates = _media_templates(tmp_path)
+    entry = {**PROMO, "src": "/video/a.mp4", "poster": "/video/a.jpg"}
+    plain = _write_home(_with_videos(built, [entry]), tmp_path / "plain", templates)
+    assert "<track" not in plain
+    assert "Download the video (MP4, 1.3 MB)" in plain
+    with_track = _write_home(
+        _with_videos(built, [{**entry, "captions": "/video/a.vtt"}]),
+        tmp_path / "track",
+        templates,
+    )
+    assert (
+        '<track kind="captions" srclang="en" label="English" src="/video/a.vtt" default>'
+        in with_track
+    )
 
 
 def test_no_star_counts_and_no_third_party_on_home(built) -> None:

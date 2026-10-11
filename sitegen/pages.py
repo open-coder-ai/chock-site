@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import coding, engine, general, home, repos
+from . import analytics, coding, engine, general, home, report, repos
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
@@ -43,7 +43,10 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
             render_file(
                 templates / "security.html",
                 SUB=Prose(page["description"]),
-                SECTIONS=Safe(text_sections(site, templates, data["security"])),
+                SECTIONS=Safe(
+                    text_sections(site, templates, data["security"])
+                    + analytics.security_html(data["analytics"], templates)
+                ),
             )
         ),
         jsonld_data={
@@ -57,7 +60,8 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
     twin = render_text_file(
         templates / MD / "security.md",
         SUB=Prose(page["description"]),
-        SECTIONS=md_sections(data["security"], data["links"]),
+        SECTIONS=md_sections(data["security"], data["links"])
+        + analytics.security_md(data["analytics"]),
     )
     write_md(out_dir, "/security/", twin)
     return "/security/", "/security/index.md", twin
@@ -79,6 +83,15 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                         ID=item["id"],
                         Q=item["q"],
                         A=Prose(item["a"]),
+                        LINK=Safe(
+                            render_file(
+                                templates / PARTIALS / "link-line.html",
+                                URL=item["link"],
+                                LABEL=item["link_label"],
+                            )
+                        )
+                        if "link" in item
+                        else Safe(""),
                     )
                     for item in data["faq"]["questions"]
                     if item["group"] == group["id"]
@@ -122,6 +135,11 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             f"## {group['title']}\n\n"
             + "".join(
                 f"### {item['q']}\n\n{item['a']}\n\n"
+                + (
+                    f"[{item['link_label']}]({site.data['site_url']}{item['link']})\n\n"
+                    if "link" in item
+                    else ""
+                )
                 for item in data["faq"]["questions"]
                 if item["group"] == group["id"]
             )
@@ -133,18 +151,29 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
 
 
 def _worked_example(site: Site, section: dict[str, Any]) -> dict[str, Any]:
-    """The guide section with its preset's selection object, code and command filled in."""
+    """The guide section with its preset's schema-2 selection, code and command filled in."""
+    clients = site.data["builder_clients"]
+    client = clients["default"]
     preset = next(p for p in site.presets if p.id == section["worked_example"])
     by_id = {p.id: p for p in site.policies}
     picks = [
         {"id": pid, "version": by_id[pid].version, "sha256": by_id[pid].sha256}
         for pid in preset.members
     ]
-    selection = engine.build_selection(
-        picks, site.catalog_source, site.catalog_ref, site.release, preset.id
+    selection = engine.build_selection_v2(
+        picks,
+        site.catalog_source,
+        site.catalog_ref,
+        client,
+        clients["bundle_version"],
+        site.release,
+        preset.id,
     )
     code = engine.encode_selection(selection)
-    command = data_fill(site.command, {"__CODE__": code})
+    state = clients["clients"][client]["witness"]
+    command = data_fill(
+        clients["commands"][state], {"__CODE__": code, "__CLIENT__": client}
+    )
     return {
         **section,
         "code_json": json.dumps(selection, indent=2, ensure_ascii=False),
@@ -152,13 +181,40 @@ def _worked_example(site: Site, section: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _guide_subs(site: Site) -> dict[str, str]:
+    """The facts the agent guide's texts name: schema, agents and command forms, all from data."""
+    clients = site.data["builder_clients"]
+    witnessed = [
+        c for c in clients["order"] if clients["clients"][c]["witness"] == "witnessed"
+    ]
+    return {
+        "__SCHEMA__": str(engine.SCHEMA2),
+        "__CLIENTS__": ", ".join(clients["order"]),
+        "__WITNESSED_CLIENTS__": ", ".join(witnessed),
+        "__DEFAULT_CLIENT__": clients["default"],
+        "__BUNDLE_VERSION__": clients["bundle_version"],
+        "__COMMAND_WITNESSED__": data_fill(
+            clients["commands"]["witnessed"],
+            {"__CODE__": "<code>", "__CLIENT__": "<agent>"},
+        ),
+        "__COMMAND_UNTESTED__": data_fill(
+            clients["commands"]["untested"],
+            {"__CODE__": "<code>", "__CLIENT__": "<agent>"},
+        ),
+    }
+
+
 def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
     """The agent guide (plan 6.8), with the git-hygiene worked example."""
     data = site.data
     page = data["pages"]["agents"]
+    subs = _guide_subs(site)
     sections = [
         _worked_example(site, s) if s.get("worked_example") else s
-        for s in data["agents"]["sections"]
+        for s in (
+            {**s, "body": data_fill(s["body"], subs)}
+            for s in data["agents"]["sections"]
+        )
     ]
     write_page(
         site,
@@ -263,6 +319,11 @@ def _llms(
         ("Security", "/security/index.md", "what chock is and is not"),
         ("FAQ", "/faq/index.md", "common questions"),
         ("For AI agents", "/for-agents/index.md", "how to read this site and its data"),
+        (
+            "Report an issue",
+            "/report/index.md",
+            "where each kind of problem is reported",
+        ),
     ]
     total = sum(len([p for p in site.policies if p.track == t.id]) for t in site.tracks)
     blockquote = (
@@ -353,7 +414,7 @@ def write_pages(site: Site, out_dir: Path, templates_dir: Path) -> None:
         sections.append(result)
         paths += result.pages
     shared_docs: list[tuple[str, str]] = [(home_md, home_twin)]
-    for build in (_security, _faq, _for_agents):
+    for build in (_security, _faq, _for_agents, report.build):
         page_path, md_path, twin = build(site, out_dir, templates_dir)
         paths.append(page_path)
         shared_docs.append((md_path, twin))

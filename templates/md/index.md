@@ -10,7 +10,7 @@ Install chock (ask the user before running anything):
 __INSTALL__
 ```
 
-## Refused moves, from each policy's own tests
+__VIDEOS__## Refused moves, from each policy's own tests
 
 __DEMO_NOTE__
 
@@ -26,6 +26,8 @@ The command it runs, with your selection code in place of the ellipsis. Ask the 
 ```bash
 __COMMAND__
 ```
+
+__APPLY_NOTE__
 
 ## One policy, every surface
 

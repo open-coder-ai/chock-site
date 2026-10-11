@@ -1,0 +1,41 @@
+# Site events (plan AN-1 in org-plan plan/site-analytics.md): the one source for what the site counts.
+# The browser helper (static/js/common.js track()) and the Pages Function (functions/api/event.js)
+# both read this list through the generated module functions/api/_allowlist.js; the build fails when
+# that file is stale. Regenerate it with: python -m sitegen allowlist
+#
+# keys:   every prop key an event may carry, in the order they are written as Analytics Engine blobs
+#         (blob 1 is the event name, then one blob per key, empty when the event has no such prop).
+# value:  the pattern every prop value must match.
+# events: name -> props (a subset of keys) and `what`, the line the Security page shows.
+keys: [agent, kind, preset, policy, form]
+value: "^[a-z0-9.-]{1,64}$"
+max_body: 1024
+events:
+  install-copied:
+    props: [agent]
+    what: "The install command was copied in the builder, and for which agent."
+  share-copied:
+    props: []
+    what: "A builder share link was copied."
+  selection-downloaded:
+    props: []
+    what: "A selection file was downloaded from the builder."
+  quiz-finished:
+    props: []
+    what: "The builder's questions were answered to the end."
+  preset-picked:
+    props: [preset]
+    what: "A preset was picked in the builder, and which one."
+  author-script-downloaded:
+    props: [kind, agent]
+    what: "A setup script for a new policy was downloaded, with its kind and agent."
+  report-form-opened:
+    props: [form]
+    what: "An issue form was opened from the Report an issue page, and which one."
+  policy-build-clicked:
+    props: [policy, agent]
+    what: "\"Build for\" an agent was clicked on a policy page, with the policy id and the agent."
+security:
+  heading: What this site counts
+  body: "The site counts page views and the few actions below, to learn which pages and tools people use. Each count carries only the action's name and the ids listed with it: never the address of the page, your selection, a share code, a policy you wrote or anything you typed. No cookie and no stored id are used, and no IP address, browser or account is stored with a count. If your browser sends Global Privacy Control or Do Not Track, the site counts nothing. The chock command line tool sends nothing at all."
+  list_label: "The actions counted:"

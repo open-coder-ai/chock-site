@@ -102,12 +102,12 @@ def test_the_agent_answer_and_the_agent_picker_are_one_choice(page, site_url) ->
         assert page.locator(f"#client-{client}").is_checked()
         assert page.locator(".quiz-note").is_hidden()
         assert page.locator("#quiz-next").is_visible()
-    page.locator("input[name='quiz-agent'][value='copilot']").check()
+    page.locator("input[name='quiz-agent'][value='cursor']").check()
     _answer_secrets_and_skipped(page, "Only hard stops")
     command = page.locator("[data-quiz-command]").inner_text()
-    assert command.endswith(" --client copilot")
-    assert engine.load_selection(command.split("'")[1])["client"] == "copilot"
-    assert "Untested in GitHub Copilot." in page.locator(".quiz-command").inner_text()
+    assert command.endswith(" --client cursor")
+    assert engine.load_selection(command.split("'")[1])["client"] == "cursor"
+    assert "Untested in Cursor." in page.locator(".quiz-command").inner_text()
     assert_clean(page)
 
 
@@ -317,6 +317,72 @@ def test_start_screen_fits_a_phone_and_screenshots(browser, site_url) -> None:
                 "document.scrollingElement.scrollWidth > window.innerWidth"
             )
             assert not overflow, f"horizontal scroll on question 2 at {size}"
+            assert_clean(page)
+        finally:
+            context.close()
+
+
+def test_result_rows_show_policy_names(page, site_url) -> None:
+    site = _site(page, site_url)
+    names = {p["id"]: p["name"] for p in site["policies"]}
+    _start(page, site_url)
+    _answer_secrets_and_skipped(page, "Stops and warnings")
+    rows = page.locator(".quiz-pick")
+    assert rows.count() > 0
+    for i in range(rows.count()):
+        row = rows.nth(i)
+        policy_id = row.get_attribute("data-policy-id")
+        name = row.locator(".quiz-pick-name")
+        assert name.inner_text().startswith(names[policy_id])
+        assert name.locator(".quiz-pick-id").inner_text() == policy_id
+    assert_clean(page)
+
+
+WIDE = {"width": 1900, "height": 1000}
+
+
+def _option_boxes(page) -> list[dict]:
+    return page.locator(".quiz-opt-box").evaluate_all(
+        "els => els.map(e => { const r = e.getBoundingClientRect();"
+        " return {top: r.top, height: r.height, label: e.textContent}; })"
+    )
+
+
+def _assert_cards_aligned(boxes: list[dict], where: str, whole: bool) -> None:
+    """One height for the whole grid (desktop) or per row (phone), and shared row tops."""
+    rows: dict[int, list[dict]] = {}
+    for box in boxes:
+        rows.setdefault(round(box["top"] / 4), []).append(box)
+    for group in [boxes] if whole else rows.values():
+        heights = [box["height"] for box in group]
+        assert max(heights) - min(heights) <= 1, f"{where}: card heights {heights}"
+    for row in rows.values():
+        tops = [box["top"] for box in row]
+        assert max(tops) - min(tops) <= 1, f"{where}: card tops {tops}"
+
+
+def test_every_quiz_step_has_equal_option_cards(browser, site_url) -> None:
+    for viewport in (DESKTOP, WIDE, MOBILE):
+        context = browser.new_context(viewport=viewport)
+        try:
+            page = context.new_page()
+            collect(page, site_url)
+            _start(page, site_url)
+            for step in range(1, 4):
+                page.wait_for_selector(".quiz-opt-box")
+                where = f"{viewport['width']} px, question {step}"
+                boxes = _option_boxes(page)
+                assert len(boxes) > 1, where
+                _assert_cards_aligned(boxes, where, viewport["width"] > 760)
+                if step == 2:
+                    page.locator(".quiz-opt input").first.check()
+                if step < 3:
+                    _next(page)
+                    page.wait_for_function(
+                        "n => document.querySelector('#quiz-step').textContent"
+                        ".startsWith('QUESTION ' + n)",
+                        arg=step + 1,
+                    )
             assert_clean(page)
         finally:
             context.close()

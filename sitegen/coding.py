@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import authordata, clientpage, engine
+from . import authordata, clientdata, clientpage, engine, report
 from .catalog import first_sentence
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
@@ -15,13 +15,15 @@ from .pageparts import (
     counts,
     data_fill,
     install_command,
+    keyword_chip,
     label_chips,
     policies_sorted,
     render_steps,
+    status_badge,
     write_md,
     write_page,
 )
-from .render import Prose, Safe, render_file, render_text_file
+from .render import Prose, Safe, md, md_code, render_file, render_text_file
 from .sitedata import site_dict
 
 MD = "md"
@@ -71,21 +73,17 @@ def _home(
         )
         for preset in site.presets
     )
-    client_cards = render_file(
-        templates / PARTIALS / "agent-card.html",
-        URL="/coding/builder/",
-        NAME="Claude Code",
-        REPO=home["claude_repo"],
-        HOW=home["claude_how"],
-    ) + "".join(
+    clients = site.data["builder_clients"]
+    client_cards = "".join(
         render_file(
             templates / PARTIALS / "agent-card.html",
-            URL=client["repo"],
-            NAME=client["name"],
-            REPO=client["repo"].rsplit("/", 1)[-1],
-            HOW=home["repo_how"],
+            URL=f"/coding/builder/#client={client}",
+            NAME=about["name"],
+            REPO=clients["texts"][about["witness"]],
+            HOW=about["build_link"],
         )
-        for client in site.data["clients"]
+        for client in clients["order"]
+        if (about := clients["clients"][client])
     )
     page = site.data["pages"]["coding"]
     write_page(
@@ -106,7 +104,7 @@ def _home(
                 GLANCE_HEADING=home["glance_heading"],
                 GLANCE_LINK=home["glance_link"],
                 STAT_CARDS=Safe(stats),
-                COMPUTED_NOTE=texts["computed_note"],
+                COMPUTED_NOTE=f"{texts['computed_note']} {grades_note(site)}",
                 PRESETS_HEADING=home["presets_heading"],
                 PRESETS_INTRO=Prose(home["presets_intro"]),
                 PRESET_CARDS=Safe(preset_cards),
@@ -154,6 +152,19 @@ def _home(
     )
     write_md(out_dir, f"/{track.slug}/", twin)
     return f"/{track.slug}/", twin
+
+
+def engine_client_name(site: Site) -> str:
+    """The agent whose grades the build-time labels and counts show."""
+    return site.data["builder_clients"]["clients"][clientdata.ENGINE_CLIENT]["name"]
+
+
+def grades_note(site: Site) -> str:
+    """The sentence naming the agent behind the labels and counts."""
+    return data_fill(
+        site.data["texts"]["grades_agent_note"],
+        {"__AGENT__": engine_client_name(site)},
+    )
 
 
 def _where_text(site: Site, policy: Policy) -> str:
@@ -205,6 +216,7 @@ def _policies_list(
                 GROUPS=" ".join(policy.groups),
                 NAME=policy.name,
                 CHIP=chip(site, templates, policy, track.id),
+                STATUS=status_badge(site, templates, policy),
                 DESC=Prose(first_sentence(policy.description)),
                 WHERE_TEXT=_where_text(site, policy),
                 VERSION=policy.version,
@@ -232,6 +244,17 @@ def _policies_list(
         for preset in site.presets
     )
     intro = data_fill(texts["policies_intro"], subs)
+    hidden = site.data["not_shown"]
+    if hidden:
+        intro += " " + data_fill(
+            texts["not_shown"],
+            {
+                "__TOTAL__": str(counts_["total"] + len(hidden)),
+                "__HIDDEN_COUNT__": str(len(hidden)),
+                "__HIDDEN_VERB__": "is" if len(hidden) == 1 else "are",
+                "__HIDDEN_IDS__": ", ".join(hidden),
+            },
+        )
     dist_label, dist_segs = _dist_bar(site, track, templates, counts_)
     page = site.data["pages"]["policies"]
     path = f"/{track.slug}/policies/"
@@ -249,7 +272,7 @@ def _policies_list(
                 INTRO=Prose(intro),
                 DIST_LABEL=dist_label,
                 DIST_SEGS=Safe(dist_segs),
-                COMPUTED_NOTE=texts["computed_note"],
+                COMPUTED_NOTE=f"{texts['computed_note']} {grades_note(site)}",
                 SEARCH_PLACEHOLDER=data_fill(texts["policies_search"], subs),
                 GROUP_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
@@ -279,16 +302,70 @@ def _policies_list(
     )
     twin = render_text_file(
         templates / MD / track.slug / "policies.md",
-        INTRO=Prose(intro),
+        INTRO=Prose(f"{intro} {grades_note(site)}"),
         ROWS="".join(
-            f"- [{policy.name}](/{track.slug}/policies/{policy.id}/index.md) "
-            f"(`{policy.id}`, v{policy.version}): {policy.word} — {policy.says}. "
-            f"{first_sentence(policy.description)}\n"
+            f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md) "
+            f"({md_code(policy.id)}, v{md(policy.version)}): {policy.word} — "
+            f"{md(policy.says)}. {md(first_sentence(policy.description))}\n"
             for policy in policies_sorted(site)
         ),
     )
     write_md(out_dir, path, twin)
     return path, twin
+
+
+def _agent_labels(site: Site, policy: Policy) -> list[dict[str, Any]]:
+    """The policy's label on each agent in picker order; `word` is empty where it is not graded."""
+    clients = site.data["builder_clients"]
+    rows = []
+    for client in clients["order"]:
+        about = clients["clients"][client]
+        label = about["labels"][policy.id]
+        graded = label["keyword"] != clients["ungraded"]
+        rows.append(
+            {
+                "client": client,
+                "name": about["name"],
+                "state": about["witness"],
+                "state_word": clients["texts"][about["witness"]],
+                "build": about["build_link"],
+                "keyword": label["keyword"] if graded else None,
+                "word": site.label_words["coding"][label["keyword"]] if graded else "",
+                "says": label["says"].rstrip("."),
+            }
+        )
+    return rows
+
+
+def _agent_rows(site: Site, templates: Path, policy: Policy) -> Safe:
+    """The policy page's "on each agent" list: grade, witness state and a builder link per agent."""
+    return Safe(
+        "".join(
+            render_file(
+                templates / PARTIALS / "agent-label-row.html",
+                NAME=row["name"],
+                STATE=row["state"],
+                STATE_WORD=row["state_word"],
+                CHIP=Safe("")
+                if row["keyword"] is None
+                else keyword_chip(site, templates, row["keyword"], "coding"),
+                SAYS=row["says"],
+                CLIENT=row["client"],
+                ID=policy.id,
+                BUILD=row["build"],
+            )
+            for row in _agent_labels(site, policy)
+        )
+    )
+
+
+def _policy_report(policy: Policy, track: Track) -> str:
+    """The /report/ link for one policy: its id and version, and its page."""
+    return report.report_link(
+        policy=policy.id,
+        version=policy.version,
+        page=f"/{track.slug}/policies/{policy.id}/",
+    )
 
 
 def _policy_pages(
@@ -363,8 +440,8 @@ def _policy_pages(
                 EXAMPLES_NOTE=Prose(texts["examples_note"]),
             )
             examples_md = "\n## Examples\n\n" + "".join(
-                f"- {e.word}: {e.prompt}"
-                + (f" — `{e.command}`" if e.command else "")
+                f"- {e.word}: {md(e.prompt)}"
+                + (f" — {md_code(e.command)}" if e.command else "")
                 + "\n"
                 for e in policy.examples
             )
@@ -377,6 +454,7 @@ def _policy_pages(
                 NAME=policy.name,
                 VERSION=policy.version,
                 CHIP=chip(site, templates, policy, track.id),
+                STATUS=status_badge(site, templates, policy),
                 PRESET_CHIP=Safe(preset_chip),
                 SAYS=Prose(policy.says.rstrip(".") + "."),
                 TIER=policy.tier,
@@ -385,6 +463,9 @@ def _policy_pages(
                 WHEN=_when_text(site, policy),
                 LABEL_NOTE=Prose(texts["label_box_note"]),
                 PLUGIN_NOTE=Safe(plugin_note),
+                BY_AGENT_HEADING=texts["by_agent_heading"],
+                BY_AGENT_INTRO=texts["by_agent_intro"],
+                AGENT_ROWS=_agent_rows(site, templates, policy),
                 DESCRIPTION=Prose(policy.description),
                 MISSES=Prose(policy.misses or texts["misses_empty"]),
                 EXAMPLES_SECTION=Safe(examples),
@@ -400,6 +481,8 @@ def _policy_pages(
                 SOURCE_URL=policy.source_url,
                 PATH=policy.path,
                 ALSO_IN=Safe(also_in),
+                REPORT_HREF=_policy_report(policy, track),
+                REPORT_TEXT=report.link_text(site, "policy"),
             )
         )
         path = f"/{track.slug}/policies/{policy.id}/"
@@ -428,13 +511,14 @@ def _policy_pages(
             nav=track.id,
             section=(track, "policies"),
             alt_json=alt,
+            scripts=("common.js", "policy.js"),
         )
         twin = render_text_file(
             templates / MD / track.slug / "policy.md",
             ID=policy.id,
             TRACK=policy.track,
-            NAME=policy.name,
-            VERSION=policy.version,
+            NAME=md(policy.name),
+            VERSION=md(policy.version),
             WORD=policy.word,
             TIER_WORD=site.label_words["repos"][policy.tier],
             TIER_MEANING=site.data["label_meanings"][
@@ -445,19 +529,32 @@ def _policy_pages(
             SHA256=policy.sha256,
             SOURCE_URL=policy.source_url,
             CATALOG_REF=site.catalog_ref,
-            SAYS=policy.says.rstrip(".") + ".",
+            SAYS=md(policy.says.rstrip(".") + "."),
             LABEL_NOTE=texts["label_box_note"],
+            STATUS_MD=(
+                f"Status: {policy.status}."
+                if policy.status in texts["status_badges"]
+                else ""
+            ),
+            BY_AGENT_HEADING=texts["by_agent_heading"],
+            AGENT_LINES="".join(
+                f"- {row['name']} ({row['state_word']}): "
+                + (f"{row['word']} — " if row["word"] else "")
+                + f"{md(row['says'])}. Builder: /coding/builder/#client={row['client']}&p={policy.id}\n"
+                for row in _agent_labels(site, policy)
+            ),
             PLUGIN_NOTE=(" " + texts["plugin_repo_note"] if plugin_note else ""),
-            DESCRIPTION=policy.description,
-            MISSES=policy.misses or texts["misses_empty"],
+            DESCRIPTION=md(policy.description),
+            MISSES=md(policy.misses) if policy.misses else texts["misses_empty"],
             EXAMPLES_MD=examples_md,
-            LATEST_VERSION=policy.latest.version,
-            LATEST_DATE=policy.latest.date,
-            LATEST_CHANGE=policy.latest.change,
+            LATEST_VERSION=md(policy.latest.version),
+            LATEST_DATE=md(policy.latest.date),
+            LATEST_CHANGE=md(policy.latest.change),
             EVAL_EXECUTED=str(policy.eval_executed),
             EVAL_CASES=str(policy.eval_cases),
             CATALOG_COMMIT_URL=site.data["links"]["catalog_commit"] + site.catalog_ref,
             PATH=policy.path,
+            REPORT_URL=site.data["site_url"] + _policy_report(policy, track),
             GROUPS_MD=", ".join(presets[group].title for group in policy.groups)
             or "none",
         )
@@ -480,6 +577,7 @@ def _member_rows(
             WHERE=" ".join(p.where),
             NAME=p.name,
             CHIP=chip(site, templates, p, track.id),
+            STATUS=status_badge(site, templates, p),
             SAYS=Prose(p.says),
         )
         for p in members
@@ -523,6 +621,7 @@ def _builder(
             ID=preset.id,
             TITLE=preset.title,
             COUNT=str(len(preset.members)),
+            NOTE=Safe(""),
             MEMBERS=Safe(
                 _member_rows(
                     site,
@@ -542,6 +641,12 @@ def _builder(
             ID="none",
             TITLE="In no group",
             COUNT=str(len(ungrouped)),
+            NOTE=Safe(
+                render_file(
+                    templates / PARTIALS / "builder-group-note.html",
+                    NOTE=texts["builder_no_group"],
+                )
+            ),
             MEMBERS=Safe(_member_rows(site, track, templates, ungrouped, "none")),
         )
     clients = site.data["builder_clients"]
@@ -573,6 +678,10 @@ def _builder(
                 ),
                 PRESET_OPTIONS=Safe(options),
                 LABEL_CHIPS=Safe(label_chips(site, templates, counts_, track.id)),
+                GRADES_AGENT=data_fill(
+                    site.data["builder_texts"]["grades_for"],
+                    {"{name}": engine_client_name(site)},
+                ),
                 GROUP_SECTIONS=Safe(groups),
                 EMPTY=Prose(texts["builder_empty"]),
                 NEED_ONE=Prose(texts["builder_need_one"]),
@@ -582,6 +691,9 @@ def _builder(
                 CLIENT_STEPS=Safe(clientpage.steps(clients, templates / track.slug)),
                 HINT=data_fill(texts["builder_outputs_hint"], subs),
                 AUTHOR_LINK=Prose(site.data["builder_texts"]["author_link"]),
+                REPORT_HREF=report.report_link(page=f"/{track.slug}/builder/"),
+                REPORT_TEXT=report.link_text(site, "builder"),
+                DOWNLOAD_NAME=site.data["builder_texts"]["download_name"],
             )
         ),
         jsonld_data={
@@ -606,9 +718,7 @@ def _builder(
         ),
         NEED_ONE=texts["builder_need_one"],
         HINT=data_fill(texts["builder_outputs_hint"], subs),
-        GRADES_NOTE=""
-        if clients["graded"]
-        else f"{clients['texts']['grades_pending']}\n",
+        DEFAULT_NAME=clients["clients"][clients["default"]]["name"],
         AGENT_LINES=clientpage.markdown(clients),
     )
     write_md(out_dir, path, twin)
@@ -663,6 +773,8 @@ def _author(
                 CLEAR_LABEL=texts["clear_label"],
                 CLEAR_DONE=texts["clear_done"],
                 ADVANCED_HEADING=texts["advanced_heading"],
+                REPORT_HREF=report.report_link(page=path),
+                REPORT_TEXT=report.link_text(site, "author"),
                 ADVANCED_HINT=texts["advanced_hint"],
                 ERRORS_TITLE=texts["errors_title"],
                 SELECTION_HEADING=texts["selection_heading"],
@@ -703,13 +815,36 @@ def _author(
     return path, twin
 
 
+def _step_items(templates: Path, steps: list[dict[str, str]]) -> Safe:
+    """Apply or remove steps as the builder shows them: numbered commands, unnumbered notes."""
+    return Safe(clientpage.step_blocks(templates, steps))
+
+
+def _client_command(clients: dict[str, Any], client: str) -> str:
+    """The install command form for one agent, with "…" for the selection code."""
+    state = clients["clients"][client]["witness"]
+    return data_fill(
+        clients["commands"][state], {"__CODE__": "…", "__CLIENT__": client}
+    )
+
+
 def _install(
     site: Site, track: Track, out_dir: Path, templates: Path
 ) -> tuple[str, str]:
-    """Install page: engine install, the command, update, remove, file format."""
+    """Install page: engine install, the command per agent with its steps, update, remove, file format."""
     data = site.data
     inst = data["install"]
+    clients = data["builder_clients"]
     install_cmd = install_command(site)
+    field_subs = {
+        "__SCHEMA__": str(engine.SCHEMA2),
+        "__CLIENTS__": ", ".join(clients["order"]),
+        "__BUNDLE_VERSION__": clients["bundle_version"],
+    }
+    fields = [
+        {"field": row["field"], "meaning": data_fill(row["meaning"], field_subs)}
+        for row in inst["file_fields"]
+    ]
     field_rows = Safe(
         "".join(
             render_file(
@@ -717,8 +852,29 @@ def _install(
                 FIELD=row["field"],
                 MEANING=row["meaning"],
             )
-            for row in inst["file_fields"]
+            for row in fields
         )
+    )
+    agents = "".join(
+        render_file(
+            templates / track.slug / "install-agent.html",
+            ID=client,
+            NAME=about["name"],
+            STATE=about["witness"],
+            STATE_WORD=clients["texts"][about["witness"]],
+            COMMAND_LABEL=inst["agent_command"],
+            COMMAND=_client_command(clients, client),
+            STEPS_HEADING=about["steps_heading"],
+            STEPS=_step_items(templates / track.slug, about["steps"]),
+            REMOVE_LABEL=inst["agent_remove"],
+            REMOVE=_step_items(templates / track.slug, about["remove"]),
+            REPORT_HREF=report.report_link(
+                agent=client, page=f"/{track.slug}/install/"
+            ),
+            REPORT_TEXT=report.link_text(site, "install", name=about["name"]),
+        )
+        for client in clients["order"]
+        if (about := clients["clients"][client])
     )
     page = data["pages"]["install"]
     path = f"/{track.slug}/install/"
@@ -738,11 +894,12 @@ def _install(
                 INSTALL_NOTE=Prose(inst["install_note"]),
                 RUN_HEADING=inst["run_heading"],
                 RUN_BODY=Prose(inst["run_body"]),
-                RUN_CMD=inst["run_command"],
+                AGENTS_HEADING=inst["agents_heading"],
+                AGENTS=Safe(agents),
                 UPDATE_HEADING=inst["update_heading"],
                 UPDATE_BODY=Prose(inst["update_body"]),
                 REMOVE_HEADING=inst["remove_heading"],
-                REMOVE_CMD=inst["remove_command"],
+                REMOVE_BODY=Prose(inst["remove_body"]),
                 FILE_HEADING=inst["file_heading"],
                 FILE_BODY=Prose(inst["file_body"]),
                 FIELD_ROWS=field_rows,
@@ -765,37 +922,65 @@ def _install(
         INSTALL_NOTE=inst["install_note"],
         RUN_HEADING=inst["run_heading"],
         RUN_BODY=inst["run_body"],
-        RUN_CMD=inst["run_command"],
+        AGENTS_HEADING=inst["agents_heading"],
+        AGENT_LINES=clientpage.markdown(clients),
         UPDATE_HEADING=inst["update_heading"],
         UPDATE_BODY=inst["update_body"],
         REMOVE_HEADING=inst["remove_heading"],
-        REMOVE_CMD=inst["remove_command"],
+        REMOVE_BODY=inst["remove_body"],
         FILE_HEADING=inst["file_heading"],
         FILE_BODY=inst["file_body"],
         FIELD_LINES="".join(
-            f"- `{row['field']}`: {row['meaning']}\n" for row in inst["file_fields"]
+            f"- `{row['field']}`: {row['meaning']}\n" for row in fields
         ),
     )
     write_md(out_dir, path, twin)
     return path, twin
 
 
+def _client_notes(site: Site, clients: dict[str, Any], client: str) -> str:
+    """One agent's card text: its witness state, then the engine's warnings for that agent."""
+    about = clients["clients"][client]
+    lead = data_fill(
+        clients["texts"][f"card_{about['witness']}"], {"__NAME__": about["name"]}
+    )
+    notes = [
+        rule["says"]
+        for rule in site.warning_rules
+        if rule["kind"] == "client" and client in rule["clients"]
+    ]
+    return " ".join([lead, *notes])
+
+
 def _clients(
     site: Site, track: Track, out_dir: Path, templates: Path
 ) -> tuple[str, str]:
-    """Other coding clients: the marketplace repo cards."""
+    """The agents page: every agent the builder builds for, its state, and its plugin repo."""
     data = site.data
+    clients = data["builder_clients"]
     page = data["pages"]["clients"]
+    names = [clients["clients"][c]["name"] for c in clients["order"]]
+    description = data_fill(
+        page["description"], {"__NAMES__": ", ".join(names[:-1]) + " and " + names[-1]}
+    )
+    texts = clients["texts"]
     cards = "".join(
         render_file(
             templates / PARTIALS / "client-card.html",
-            NAME=client["name"],
-            NOTE=Prose(client["note"]),
-            REPO=client["repo"],
-            REPO_LABEL=client["repo"].rsplit("/", 1)[-1],
+            ID=client,
+            NAME=about["name"],
+            STATE=about["witness"],
+            STATE_WORD=texts[about["witness"]],
+            NOTE=Prose(_client_notes(site, clients, client)),
+            BUILD=about["build_link"],
+            REPO_LINE=texts["repo_line"],
+            REPO=about["plugin_repo"],
+            REPO_LABEL=about["plugin_repo"].rsplit("/", 1)[-1],
         )
-        for client in data["clients"]
+        for client in clients["order"]
+        if (about := clients["clients"][client])
     )
+    intro = f"{description} {texts['page_intro']}"
     path = f"/{track.slug}/clients/"
     write_page(
         site,
@@ -803,32 +988,34 @@ def _clients(
         templates,
         path=path,
         title=page["title"],
-        description=page["description"],
+        description=description,
         content=Safe(
             render_file(
                 templates / track.slug / "clients.html",
-                INTRO=Prose(data["clients_intro"]),
+                INTRO=Prose(intro),
                 CLIENT_CARDS=Safe(cards),
-                MARKETPLACE=data["links"]["claude_marketplace"],
             )
         ),
         jsonld_data={
             "@context": "https://schema.org",
             "@type": "WebPage",
             "name": page["title"],
-            "description": page["description"],
+            "description": description,
         },
         nav=track.id,
         section=(track, "clients"),
     )
     twin = render_text_file(
         templates / MD / track.slug / "clients.md",
-        INTRO=data["clients_intro"],
+        INTRO=intro,
         CLIENT_LINES="".join(
-            f"- [{client['name']}]({client['repo']}): {client['note']}\n"
-            for client in data["clients"]
+            f"- {about['name']} (`{client}`, {texts[about['witness']]}): "
+            f"{_client_notes(site, clients, client)} "
+            f"Builder: /coding/builder/#client={client}. "
+            f"{texts['repo_line']} {about['plugin_repo']}.\n"
+            for client in clients["order"]
+            if (about := clients["clients"][client])
         ),
-        MARKETPLACE=data["links"]["claude_marketplace"],
     )
     write_md(out_dir, path, twin)
     return path, twin
@@ -925,14 +1112,14 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
         "describe a safeguard, get a setup script\n"
         f"- [Install](/{track.slug}/install/index.md): "
         "the command and the selection file\n"
-        f"- [Other clients](/{track.slug}/clients/index.md): "
-        "the same policies for other coding agents\n"
+        f"- [Agents](/{track.slug}/clients/index.md): "
+        "every agent the builder builds for, and its plugin repository\n"
     )
     llms += f"\n## {track.title}: policies\n\n"
     for policy in policies_sorted(site):
         llms += (
-            f"- [{policy.name}](/{track.slug}/policies/{policy.id}/index.md): "
-            f"{policy.word}, {policy.says}\n"
+            f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md): "
+            f"{policy.word}, {md(policy.says)}\n"
         )
     llms += f"\n## {track.title}: presets\n\n"
     for preset in site.presets:

@@ -1,13 +1,28 @@
 # Shared with the Coding agents home page (`steps`) and its own copy (`coding`).
 # The home page's copy is under `landing`.
-videos: []
+# Each video: files under static/video/, served at /video/. The build checks each path.
+videos:
+  - title: "The chock story"
+    src: /video/chock-promo-v9b.mp4
+    poster: /video/chock-promo-v9b-poster.jpg
+    width: 1280
+    height: 720
+    duration: "1:02"
+    description: "A one-minute story: an AI coding agent is refused twice by chock and fixes its own work."
+  - title: "The full story"
+    src: /video/chock-promo-v8-explainer.mp4
+    poster: /video/chock-promo-v8-explainer-poster.jpg
+    width: 1280
+    height: 720
+    duration: "1:57"
+    description: "A two-minute look at how chock stops an agent's risky moves, and the incidents behind each policy."
 primary_cta: "Build your plugin"
 secondary_cta: "Browse the policies"
 steps_heading: "How it works"
 steps:
   - {title: "Pick policies", body: "Tick the ones you want, or start from a preset such as Git hygiene or Secrets."}
   - {title: "Run one command", body: "Ask before running `chock install --selection '…'`: it builds one plugin on your machine and checks every policy against its hash."}
-  - {title: "Keep working", body: "Claude Code now checks each risky action. Change your picks any time and run the command again."}
+  - {title: "Keep working", body: "Your agent now checks each risky action. Change your picks any time and run the command again."}
 landing:
   eyebrow: "OPEN SOURCE · GUARDRAILS FOR AI AGENTS"
   stats_line: "__COUNT__ POLICIES · __TESTED__ TESTS"
@@ -27,8 +42,6 @@ landing:
   demo_staged: "staged file"
   demo_policy_link: "Read the policy"
   works_label: "WORKS WITH"
-  works_claude: "builder on this site"
-  works_other: "plugin repository"
   sections_eyebrow: "THREE PLACES TO USE CHOCK"
   sections_heading: "One idea: name the wrong action, then stop it."
   sections_intro: "Agents that write code get guardrails today, and so can your own git repository. Guardrails for general agents are being designed."
@@ -49,6 +62,7 @@ landing:
   stat_labels: {policies: "policies", presets: "presets", agents: "agents"}
   how_eyebrow: "HOW IT WORKS FOR CODING AGENTS"
   how_heading: "Ready in a minute. Three steps, one command."
+  how_apply_note: "For an agent marked tested, the command adds --apply and installs the plugin too; for the others you apply it yourself."
   how:
     - {title: "Pick your guardrails", body: "Tick policies one by one, or start from a preset such as Git hygiene or Secrets."}
     - {title: "Run one command", body: "Read it first. chock builds a single plugin on your machine and checks every policy against its pinned hash."}
@@ -57,13 +71,6 @@ landing:
   surface_heading: "Write the rule once. chock puts it where each agent can enforce it."
   surface_body: "Every agent has its own hook system. chock compiles each policy for the agent it runs in, and the label on each surface says how far it goes there. This is __POLICY__, with the label the catalog gives it on each agent."
   surface_policy: "scan-secrets"
-  surface_clients:
-    - {name: "Claude Code", key: "claude-code"}
-    - {name: "Cursor", key: "cursor"}
-    - {name: "Codex", key: "codex"}
-    - {name: "GitHub Copilot", key: "copilot"}
-    - {name: "Devin", key: null}
-  surface_devin: "installs from its plugin repo"
   surface_tests: "__TESTED__ of __TOTAL__ test cases pass"
   usecases_eyebrow: "USE CASES"
   usecases_heading: "Built for how you actually work with agents."
@@ -167,19 +174,17 @@ landing:
   faq_link: "All questions"
   faq_ids: ["what-is-chock", "general-agents", "security-boundary", "free", "tracking", "which-agents", "what-command-does"]
   videos_heading: "See it work"
+  videos_download: "Download the video (MP4, __SIZE__)"
   cta_heading: "Ready in a minute."
   cta_sub: "Pick your guardrails and copy one command."
   cta_github: "View on GitHub"
 coding:
   h1: "Guardrails for AI coding agents"
-  intro: "Pick the rules you want. chock turns them into one Claude Code plugin that blocks, asks or warns before a risky move happens."
+  intro: "Pick the rules you want and your agent. chock turns them into one plugin that blocks, asks or warns before a risky move happens."
   glance_heading: "The catalog at a glance"
   glance_link: "See every policy"
   presets_heading: "Start from a preset"
   presets_intro: "A preset fills the builder with a group of policies. You can remove any of them before you install."
-  clients_heading: "Other coding agents"
-  clients_line: "Cursor, Codex, Copilot and Devin install the same policies from their own plugin repositories."
-  clients_link: "See other clients"
-  claude_repo: "built here"
-  claude_how: "Use the builder"
-  repo_how: "Install from repo"
+  clients_heading: "Every agent builds here"
+  clients_line: "The builder makes one plugin for each of these agents. A tested agent installs with one command; for an untested one, the command builds the plugin and you apply it."
+  clients_link: "See every agent"

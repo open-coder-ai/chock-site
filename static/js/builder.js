@@ -7,11 +7,13 @@ import {
   copyText,
   decodeSelection,
   encodeSelection,
+  idList,
   installCommand,
   labelChip,
   parseShareFragment,
   sameMembers,
   shareFragment,
+  track,
 } from "./common.js";
 import { commandOutputs, initQuiz } from "./quiz.js";
 
@@ -85,14 +87,19 @@ async function main() {
 
   const labelOf = (id) => C.clients[client].labels[id];
 
+  const gradesAgent = $("#builder-grades-agent");
+
   function renderClient() {
+    gradesAgent.textContent = fill(T.grades_for, { name: C.clients[client].name });
     for (const input of clientInputs) input.checked = input.value === client;
     for (const part of clientParts) part.hidden = part.dataset.client !== client;
     for (const row of rows) {
       const label = labelOf(row.dataset.policyId);
       row.dataset.label = label.keyword;
-      const word = site.label_words.coding[label.keyword];
-      $(".label", row).replaceWith(labelChip(label.keyword, word, C.meanings[label.keyword]));
+      const word =
+        label.keyword === C.ungraded ? C.texts.ungraded_word : site.label_words.coding[label.keyword];
+      const meaning = C.clients[client].meanings[label.keyword];
+      $(".label", row).replaceWith(labelChip(label.keyword, word, meaning));
       $(".bsays", row).textContent = label.says;
     }
   }
@@ -110,14 +117,16 @@ async function main() {
 
   function warnings() {
     const out = [];
-    const text = (key, values) => {
-      const template = site.warning_texts[key];
+    // A `<key>:many` text, when there is one, is the plural form for more than one policy.
+    const text = (key, values, count = 1) => {
+      const many = count > 1 && Object.hasOwn(site.warning_texts, `${key}:many`);
+      const template = site.warning_texts[many ? `${key}:many` : key];
       if (template) out.push(fillTokens(template, values));
     };
     for (const rule of site.warning_rules) {
       if (rule.kind === "grade") {
         const ids = [...picked].filter((id) => labelOf(id).keyword === rule.grade).sort();
-        if (ids.length) text(`grade:${rule.grade}`, { PRESENT: ids.join(", ") });
+        if (ids.length) text(`grade:${rule.grade}`, { PRESENT: ids.join(", ") }, ids.length);
         continue;
       }
       if (rule.kind === "client") {
@@ -130,11 +139,11 @@ async function main() {
       const absent = rule.policies.filter((id) => !picked.has(id));
       if (!here.length) continue;
       if (rule.kind === "missing_partner" && absent.length) {
-        text("missing_partner", { PRESENT: here.join(", "), ABSENT: absent.join(", ") });
+        text("missing_partner", { PRESENT: here.join(", "), ABSENT: absent.join(", ") }, here.length);
       } else if (rule.kind === "all_present" && !absent.length) {
         text("all_present", { PRESENT: here.join(" and ") });
       } else if (rule.kind === "file_absent") {
-        text("file_absent", { PRESENT: here.join(", "), FILE: rule.file });
+        text("file_absent", { PRESENT: here.join(", "), FILE: rule.file }, here.length);
       }
     }
     return out;
@@ -280,6 +289,12 @@ async function main() {
     // The author page reads the same fragment form, so the link carries the picks along.
     const authorLink = $("#author-link");
     if (authorLink) authorLink.href = `/coding/author/${shareFragment(client, picked)}`;
+    // The report page pre-fills the agent from its query (report.js checks it again).
+    const reportLink = $("#report-link");
+    if (reportLink) {
+      const query = new URLSearchParams({ agent: client, page: location.pathname });
+      reportLink.href = `/report/?${query}`;
+    }
     renderSelectionList();
     renderNotes();
     renderOutputs();
@@ -373,6 +388,7 @@ async function main() {
     dropPendingNotices();
     render();
     announce(preset ? fill(T.preset_applied, { title: preset.title }) : T.cleared);
+    if (preset) track("preset-picked", { preset: preset.id });
   });
 
   selList.addEventListener("click", (event) => {
@@ -400,12 +416,15 @@ async function main() {
 
   $("#copy-command").addEventListener("click", (event) => {
     copyText(event.currentTarget, codeEl.textContent, codeEl);
+    track("install-copied", { agent: client });
   });
   $("#copy-share").addEventListener("click", (event) => {
     copyText(event.currentTarget, shareEl.value, shareEl);
+    track("share-copied");
   });
   $("#mb-copy").addEventListener("click", (event) => {
     copyText(event.currentTarget, codeEl.textContent, codeEl);
+    track("install-copied", { agent: client });
   });
   // A real hash jump would fire hashchange; scroll and focus the panel instead.
   $("#mb-jump").addEventListener("click", (event) => {
@@ -417,7 +436,7 @@ async function main() {
   });
   $("#download-file").addEventListener("click", () => {
     const body = `${JSON.stringify(buildSelection(), null, 2)}\n`;
-    const url = URL.createObjectURL(new Blob([body], { type: "application/x-yaml" }));
+    const url = URL.createObjectURL(new Blob([body], { type: "application/json" }));
     const link = document.createElement("a");
     link.href = url;
     link.download = T.download_name;
@@ -425,12 +444,16 @@ async function main() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    track("selection-downloaded");
   });
 
   // ----- the fragment on load -----
 
+  const shownIds = (ids) =>
+    idList(ids, (n) => fill(n === 1 ? T.ids_hidden_one : T.ids_hidden_many, { n }));
+
   function notAvailable(ids) {
-    return { text: fill(T.not_available, { ids: ids.join(", ") }) };
+    return { text: fill(T.not_available, { ids: shownIds(ids) }) };
   }
 
   function restore(ids) {
@@ -447,7 +470,7 @@ async function main() {
     const shared = parseShareFragment(location.hash);
     if (shared) {
       if (!knownClient(shared.client)) {
-        notices.push({ text: fill(T.client_unknown, { id: shared.client }) });
+        notices.push({ text: fill(T.client_unknown, { id: shownIds([shared.client]) }) });
         return false;
       }
       client = shared.client;
@@ -460,7 +483,7 @@ async function main() {
     if (key === "preset") {
       const preset = presets.find((p) => p.id === value);
       if (preset) picked = new Set(preset.members);
-      else notices.push({ text: fill(T.preset_unknown, { id: value }) });
+      else notices.push({ text: fill(T.preset_unknown, { id: shownIds([value]) }) });
       return true;
     }
     if (key === "add") {
@@ -539,6 +562,7 @@ async function main() {
     keywordOf: (id) => labelOf(id).keyword,
     agent: { get: () => client, set: (id) => setClient(id, false) },
     outputs: (ids, context) => commandOutputs(site, context.T, ids, client),
+    onFinish: () => track("quiz-finished"),
     onSkip: () => {
       showQuiz(false);
       start.focus();

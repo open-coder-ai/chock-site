@@ -86,13 +86,15 @@ def test_download_is_a_valid_selection(page, site_url, tmp_path: Path) -> None:
     page.select_option("#builder-start", "secrets")
     page.get_by_role("tab", name="Selection file").click()
     with page.expect_download() as info:
-        page.get_by_role("button", name="Download chock.selection.yaml").click()
+        page.get_by_role("button", name="Download chock.selection.json").click()
     download = info.value
-    assert download.suggested_filename == "chock.selection.yaml"
-    target = tmp_path / "chock.selection.yaml"
+    assert download.suggested_filename == "chock.selection.json"
+    target = tmp_path / "chock.selection.json"
     download.save_as(str(target))
     selection = json.loads(target.read_text(encoding="utf-8"))
     engine.check_selection(selection)
+    # The engine loads the saved file by path, as `chock install --selection <file>` does.
+    assert engine.load_selection(str(target))["policies"] == selection["policies"]
     assert sorted(p["id"] for p in selection["policies"]) == _members("secrets")
     assert selection["preset"] == "secrets"
     assert_clean(page)
@@ -382,13 +384,18 @@ def test_phone_bar_is_hidden_on_desktop(page, site_url) -> None:
 
 def test_phone_bar_does_not_cover_the_footer(browser, site_url) -> None:
     """390x844, git-hygiene picked, scrolled to the end: the last footer link
-    sits wholly above the bar (plan 9, PR 4 item 2)."""
-    context = browser.new_context(viewport=MOBILE)
+    sits wholly above the bar (plan 9, PR 4 item 2). Reduced motion turns off
+    smooth scrolling, so the jump to the end lands before the boxes are read."""
+    context = browser.new_context(viewport=MOBILE, reduced_motion="reduce")
     try:
         page = context.new_page()
         collect(page, site_url)
         _open(page, site_url, "#preset=git-hygiene")
         page.evaluate("window.scrollTo(0, document.scrollingElement.scrollHeight)")
+        page.wait_for_function(
+            "Math.ceil(window.scrollY + window.innerHeight)"
+            " >= document.scrollingElement.scrollHeight"
+        )
         bar = page.locator("#mobile-bar").bounding_box()
         link = page.locator(".footer-links a").last.bounding_box()
         assert bar and link, (bar, link)
@@ -399,3 +406,144 @@ def test_phone_bar_does_not_cover_the_footer(browser, site_url) -> None:
         assert_clean(page)
     finally:
         context.close()
+
+
+def test_smooth_scroll_respects_reduced_motion(browser, site_url) -> None:
+    for motion, expected in (("reduce", "auto"), ("no-preference", "smooth")):
+        context = browser.new_context(reduced_motion=motion)
+        try:
+            page = context.new_page()
+            page.goto(site_url + BUILDER)
+            behavior = page.evaluate(
+                "getComputedStyle(document.documentElement).scrollBehavior"
+            )
+            assert behavior == expected, motion
+        finally:
+            context.close()
+
+
+def test_link_notices_echo_only_short_catalog_shaped_ids(page, site_url) -> None:
+    long_id = "a" * 65
+    ids = [f"no-such-{i}" for i in range(6)] + ["Evil<b>Text", long_id]
+    cases = (
+        (
+            "#client=codex&p=" + ",".join(ids),
+            ["no-such-0", "no-such-4", "3 ids not shown"],
+        ),
+        ("#preset=" + "x" * 200, ["1 id not shown"]),
+        ("#client=" + "b" * 80, ["1 id not shown"]),
+    )
+    for fragment, expected in cases:
+        # A hash-only goto does not reload: open each fragment on a fresh page.
+        other = page.context.new_page()
+        collect(other, site_url)
+        other.goto(site_url + BUILDER + fragment)
+        other.wait_for_selector("#link-notice:not(:empty)")
+        notes = other.locator("#link-notice").inner_text()
+        for text in expected:
+            assert text in notes, (fragment, notes)
+        for text in ("no-such-5", "Evil", long_id, "x" * 65, "b" * 65):
+            assert text not in notes, (fragment, notes)
+        assert_clean(other)
+
+
+def test_grade_notes_agree_in_number(page, site_url) -> None:
+    _open(page, site_url, "#client=claude-code&p=agent-discipline")
+    assert "agent-discipline is text only" in page.locator(".notes").inner_text()
+    other = page.context.new_page()
+    collect(other, site_url)
+    _open(other, site_url, "#client=claude-code&p=agent-discipline,code-safety")
+    notes = other.locator(".notes").inner_text()
+    assert "agent-discipline, code-safety are text only" in notes
+    assert_clean(page)
+    assert_clean(other)
+
+
+def test_label_note_names_the_picked_agent(page, site_url) -> None:
+    _open(page, site_url, "#client=claude-code&p=agent-discipline")
+    note = page.locator("#builder-grades-agent")
+    assert (
+        note.inner_text()
+        == "Labels and counts are the catalog's grades on Claude Code."
+    )
+    page.locator("#client-codex").check()
+    assert note.inner_text() == "Labels and counts are the catalog's grades on Codex."
+    assert_clean(page)
+
+
+_LAYOUT = """() => {
+    const rgb = c => c.match(/[\\d.]+/g).slice(0, 3).map(Number);
+    const lum = c => {
+        const [r, g, b] = rgb(c).map(v => {
+            v /= 255;
+            return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const contrast = (a, b) => {
+        const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+        return (x + 0.05) / (y + 0.05);
+    };
+    const panel = document.querySelector(".selection");
+    const box = panel.getBoundingClientRect();
+    const scrolls = e => ["auto", "scroll"].includes(getComputedStyle(e).overflowX);
+    const outside = [...panel.querySelectorAll("*")].filter(e => {
+        for (let a = e.parentElement; a && a !== panel; a = a.parentElement) {
+            if (scrolls(a)) return false;
+        }
+        return e.getBoundingClientRect().right > box.right + 1;
+    }).map(e => e.tagName + "." + e.className);
+    const groups = [...document.querySelectorAll(".bgroup:not(.hidden)")].map(g => {
+        const cs = getComputedStyle(g);
+        const h = g.querySelector("h3");
+        const hs = getComputedStyle(h);
+        return {
+            border: parseFloat(cs.borderTopWidth),
+            filled: cs.backgroundColor !== "rgba(0, 0, 0, 0)",
+            rule: parseFloat(hs.borderBottomWidth),
+            weight: Number(hs.fontWeight),
+            contrast: contrast(hs.color, cs.backgroundColor),
+        };
+    });
+    const says = new Set([...document.querySelectorAll(".bmember:not(.hidden) .bsays")]
+        .map(e => Math.round(e.getBoundingClientRect().left)));
+    return {
+        right: box.right,
+        width: innerWidth,
+        scrollWidth: document.scrollingElement.scrollWidth,
+        outside,
+        groups,
+        says: [...says],
+    };
+}"""
+
+
+def test_full_builder_layout_from_1024_to_1920(browser, site_url) -> None:
+    # Windows display scaling: 1.25 and 1.5 device pixels per CSS pixel.
+    sizes = [(w, 1) for w in (1024, 1280, 1440, 1560, 1920)]
+    sizes += [(w, scale) for w in (1280, 1536) for scale in (1.25, 1.5)]
+    for width, scale in sizes:
+        context = browser.new_context(
+            viewport={"width": width, "height": 900}, device_scale_factor=scale
+        )
+        try:
+            page = context.new_page()
+            page.goto(site_url + "/coding/builder/#preset=git-hygiene")
+            page.wait_for_selector(".sel-item")
+            got = page.evaluate(_LAYOUT)
+            where = f"{width} px at {scale}x"
+            assert got["right"] <= got["width"], f"{where}: panel clipped {got}"
+            assert got["scrollWidth"] <= got["width"], f"{where}: horizontal scroll"
+            assert not got["outside"], (
+                f"{where}: panel content clipped {got['outside']}"
+            )
+            assert len(got["says"]) == 1, f"{where}: says text starts at {got['says']}"
+            assert got["groups"], where
+            for group in got["groups"]:
+                assert group["border"] >= 1 and group["filled"], f"{where}: {group}"
+                assert group["rule"] >= 2 and group["weight"] >= 700, (
+                    f"{where}: {group}"
+                )
+                assert group["contrast"] >= 4.5, f"{where}: {group}"
+        finally:
+            context.close()

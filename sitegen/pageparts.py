@@ -30,6 +30,10 @@ CODE_KEYS = (
 )
 
 
+# The install command as prose shows it: the code elided, the agent named by its placeholder.
+COMMAND_FORM = {"__CODE__": "…", "__CLIENT__": "<agent>"}
+
+
 def data_fill(text: str, subs: dict[str, str]) -> str:
     """Substitute placeholders inside a data string (not an HTML template)."""
     if not subs:
@@ -55,6 +59,18 @@ def keyword_chip(site: Site, templates: Path, keyword: str, section: str) -> Saf
 def chip(site: Site, templates: Path, policy: Policy, section: str) -> Safe:
     """The label chip for one policy (plan 6.4); the section picks the words."""
     return keyword_chip(site, templates, policy.keyword, section)
+
+
+def status_badge(site: Site, templates: Path, policy: Policy) -> Safe:
+    """The policy's status badge, only for a status texts.status_badges names (BV-C3: deprecated)."""
+    word = site.data["texts"]["status_badges"].get(policy.status or "")
+    if word is None:
+        return Safe("")
+    return Safe(
+        render_file(
+            templates / PARTIALS / "status-badge.html", STATUS=policy.status, WORD=word
+        )
+    )
 
 
 def install_command(site: Site) -> str:
@@ -253,12 +269,14 @@ def _footer_links(site: Site, templates: Path) -> dict[str, Safe]:
         ("/coding/policies/", "Policies"),
         ("/coding/builder/", "Builder"),
     ]
-    repos = [links["claude_marketplace"]] + [c["repo"] for c in site.data["clients"]]
+    clients = site.data["builder_clients"]
+    repos = [clients["clients"][c]["plugin_repo"] for c in clients["order"]]
     agents = [(url, url.rstrip("/").rsplit("/", 1)[-1]) for url in repos]
     project = [
         (links["engine_repo"], "GitHub"),
         ("/faq/", "FAQ"),
         ("/security/", "Security"),
+        ("/report/", site.data["report"]["links"]["footer"]),
         ("/for-agents/", "For AI agents"),
         ("/llms.txt", "llms.txt"),
     ]

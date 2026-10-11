@@ -2,17 +2,18 @@
 <div class="policy-grid">
 <article class="policy-main" data-policy-id="__ID__" data-label="__KEYWORD__" data-where="__WHERE__">
 <header class="policy-head">
-<div class="chip-row"><span id="label" class="label-anchor">__CHIP__</span><span class="chip-static mono">v__VERSION__</span>__PRESET_CHIP__</div>
+<div class="chip-row"><span id="label" class="label-anchor">__CHIP__</span><span class="chip-static mono">v__VERSION__</span>__STATUS__ __PRESET_CHIP__</div>
 <h1 id="policy-name">__NAME__</h1>
 <p class="policy-lede">__SAYS__</p>
 </header>
-<div class="fact-tiles">
+<div class="fact-tiles card-grid">
 <div class="fact"><p class="fact-label">Acts on</p><p class="fact-value">__ACTS_ON__</p></div>
 <div class="fact"><p class="fact-label">When</p><p class="fact-value">__WHEN__</p></div>
 <div class="fact"><p class="fact-label">Tested</p><p class="fact-value fact-ok">__EVAL_EXECUTED__ of __EVAL_CASES__ pass</p></div>
 <div class="fact" id="repo-tier" data-tier="__TIER__"><p class="fact-label">In a git repo</p><p class="fact-value">__TIER_WORD__</p></div>
 </div>
 <section><h2 id="what-it-does">What it does</h2><p>__DESCRIPTION__</p><p class="label-note">__LABEL_NOTE__</p>__PLUGIN_NOTE__</section>
+<section class="by-agent"><h2 id="on-each-agent">__BY_AGENT_HEADING__</h2><p>__BY_AGENT_INTRO__</p><ul class="agent-labels">__AGENT_ROWS__</ul></section>
 __EXAMPLES_SECTION__
 <section class="misses"><h2 id="misses">What it misses</h2><p>__MISSES__</p></section>
 <section class="latest"><h2 id="latest-change">Latest change</h2><p class="latest-line"><span class="mono">__LATEST_VERSION__</span> · <time class="mono">__LATEST_DATE__</time> · __LATEST_CHANGE__</p></section>
@@ -20,7 +21,7 @@ __EXAMPLES_SECTION__
 <aside class="policy-side">
 <div class="side-card side-buttons">
 <a class="button button-primary" href="/coding/builder/#add=__ID__">Add to my plugin</a>
-<a class="button" href="/coding/clients/">Use with Cursor, Codex, Copilot or Devin</a>
+<a class="button" href="__REPORT_HREF__">__REPORT_TEXT__</a>
 </div>
 <section class="provenance side-card"><h2 id="provenance" class="side-eyebrow">Provenance</h2>
 <dl>

@@ -2,7 +2,7 @@
 // The questions and their answers come from data/quiz.yaml (site.json "quiz"); the command is
 // built by common.js, exactly as the full builder builds it. The Git repositories builder reuses
 // this module with section "repos": same flow, its own questions, tiers and outputs.
-import { announce, buildSelection, copyText, installCommand } from "./common.js";
+import { announce, buildSelection, copyText, installCommand, track } from "./common.js";
 
 const LABEL_ORDER = ["block", "ask", "warn", "advise"];
 
@@ -17,10 +17,12 @@ export function sectionConfig(site, section = "coding") {
     };
   }
   const byId = new Map(site.policies.map((p) => [p.id, p]));
+  const clients = site.builder_clients;
   return {
     quiz: site.quiz,
-    words: site.label_words.coding,
+    words: { ...site.label_words.coding, [clients.ungraded]: clients.texts.ungraded_word },
     order: LABEL_ORDER,
+    ungraded: clients.ungraded,
     keywordOf: (id) => byId.get(id).keyword,
   };
 }
@@ -46,8 +48,9 @@ export function defaultAnswers(quiz) {
 }
 
 // The picks for a set of answers: each policy once, with every worry that reached it.
-// Presets are read in the order the worries and their presets are listed in the data.
-export function quizPicks(quiz, site, answers, keywordOf) {
+// Presets are read in the order the worries and their presets are listed in the data. A policy the
+// catalog does not grade on the chosen agent has no strictness to filter on, so it stays in.
+export function quizPicks(quiz, site, answers, keywordOf, ungraded = null) {
   const presets = new Map(site.presets.map((p) => [p.id, p]));
   const worries = quiz.questions.find((q) => q.id === "worries");
   const strictness = quiz.questions.find((q) => q.id === "strictness");
@@ -57,7 +60,8 @@ export function quizPicks(quiz, site, answers, keywordOf) {
     if (!answers.worries.includes(worry.id)) continue;
     for (const presetId of worry.presets) {
       for (const id of presets.get(presetId).members) {
-        if (!allowed.has(keywordOf(id))) continue;
+        const keyword = keywordOf(id);
+        if (keyword !== ungraded && !allowed.has(keyword)) continue;
         if (!picks.has(id)) picks.set(id, []);
         if (!picks.get(id).includes(worry.label)) picks.get(id).push(worry.label);
       }
@@ -66,13 +70,15 @@ export function quizPicks(quiz, site, answers, keywordOf) {
   return [...picks].map(([id, why]) => ({ id, why }));
 }
 
-// The label mix of some policy ids as one line: "3 blocks · 1 asks · ...".
-export function mixLine(quiz, ids, { words, order, keywordOf }) {
-  const counts = Object.fromEntries(order.map((key) => [key, 0]));
+// The label mix of some policy ids as one line: "3 blocks · 1 asks · ...", plus "2 not graded" if any.
+export function mixLine(quiz, ids, { words, order, keywordOf, ungraded }) {
+  const keys = ungraded ? [...order, ungraded] : order;
+  const counts = Object.fromEntries(keys.map((key) => [key, 0]));
   for (const id of ids) counts[keywordOf(id)] += 1;
-  return order.map((key) => fill(quiz.texts.mix, { n: counts[key], word: words[key] })).join(
-    quiz.texts.mix_separator,
-  );
+  return keys
+    .filter((key) => key !== ungraded || counts[key])
+    .map((key) => fill(quiz.texts.mix, { n: counts[key], word: words[key] }))
+    .join(quiz.texts.mix_separator);
 }
 
 // The coding result's output: the install command for the client, Copy, and the way into the full builder.
@@ -98,7 +104,10 @@ export function commandOutputs(site, T, ids, client = site.builder_clients.defau
   const actions = element("div", "quiz-actions");
   const copy = element("button", "button button-primary", T.copy);
   copy.type = "button";
-  copy.addEventListener("click", () => copyText(copy, command, codeEl));
+  copy.addEventListener("click", () => {
+    copyText(copy, command, codeEl);
+    track("install-copied", { agent: client });
+  });
   const open = element("a", "button button-secondary", T.open_full);
   open.id = "quiz-open";
   open.href = `#s=${code}`;
@@ -120,12 +129,14 @@ export function initQuiz({
   picks: sharedPicks,
   keywordOf,
   agent,
+  onFinish,
 }) {
   const config = sectionConfig(site, section);
   if (keywordOf) config.keywordOf = keywordOf;
   const quiz = config.quiz;
   const T = quiz.texts;
   const makeOutputs = outputs || ((ids) => commandOutputs(site, T, ids));
+  const names = new Map(site.policies.map((p) => [p.id, p.name]));
   const total = quiz.questions.length;
   const bars = document.getElementById("quiz-bars");
   const stepEl = document.getElementById("quiz-step");
@@ -141,7 +152,7 @@ export function initQuiz({
   function currentPicks() {
     const all = shared
       ? shared.map((id) => ({ id, why: [] }))
-      : quizPicks(quiz, site, answers, config.keywordOf);
+      : quizPicks(quiz, site, answers, config.keywordOf, config.ungraded);
     return all.filter((pick) => !removed.has(pick.id));
   }
 
@@ -163,28 +174,18 @@ export function initQuiz({
   function refreshQuestion(question, note, hint) {
     note.replaceChildren();
     const option = question.kind === "single" ? selectedOption(question) : null;
-    const ends = Boolean(option && option.other);
-    if (ends) {
-      note.appendChild(element("span", "", fill(T.clients_note, { agent: option.label })));
-      note.appendChild(document.createTextNode(" "));
-      const link = element("a", "", T.clients_link);
-      link.href = "/coding/clients/";
-      note.appendChild(link);
-    } else if (option && option.note) {
-      note.appendChild(element("span", "", option.note));
-    }
-    note.hidden = !ends && !(option && option.note);
+    if (option && option.note) note.appendChild(element("span", "", option.note));
+    note.hidden = !(option && option.note);
     const missing = question.kind === "multi" && answers[question.id].length === 0;
     hint.textContent = missing ? T.need_worry : "";
     hint.hidden = !missing;
-    next.hidden = ends;
     next.disabled = missing;
   }
 
   function renderQuestion(question) {
     body.replaceChildren();
     body.appendChild(element("p", "quiz-hint-text", question.hint));
-    const group = element("div", "quiz-options");
+    const group = element("div", "quiz-options card-grid");
     group.setAttribute("role", "group");
     group.setAttribute("aria-labelledby", "quiz-title");
     const multi = question.kind === "multi";
@@ -244,7 +245,9 @@ export function initQuiz({
       item.dataset.policyId = pick.id;
       const chip = chipFor(pick.id);
       if (chip) item.appendChild(chip.cloneNode(true));
-      item.appendChild(element("code", "quiz-pick-id", pick.id));
+      const name = element("span", "quiz-pick-name", names.get(pick.id) || pick.id);
+      name.append(" ", element("code", "quiz-pick-id", pick.id));
+      item.appendChild(name);
       if (pick.why.length) {
         item.appendChild(element("span", "quiz-pick-why", fill(T.because, { why: pick.why.join(", ").toLowerCase() })));
       }
@@ -289,7 +292,18 @@ export function initQuiz({
       renderQuestion(question);
       next.textContent = step === total ? T.show : T.next;
     }
-    if (moveFocus) titleEl.focus();
+    if (moveFocus) showStepTop();
+  }
+
+  // Focus the title, but scroll so the progress bars and step label sit below
+  // the sticky header instead of under it.
+  function showStepTop() {
+    titleEl.focus({ preventScroll: true });
+    const header = document.querySelector("body > header");
+    const covered = header ? header.getBoundingClientRect().bottom : 0;
+    const top = bars.getBoundingClientRect().top;
+    const offscreen = titleEl.getBoundingClientRect().bottom > window.innerHeight;
+    if (top < covered || offscreen) bars.scrollIntoView({ block: "start" });
   }
 
   back.addEventListener("click", () => {
@@ -306,6 +320,7 @@ export function initQuiz({
     } else {
       step += 1;
       removed = new Set();
+      if (step > total && onFinish) onFinish();
     }
     render(true);
   });
