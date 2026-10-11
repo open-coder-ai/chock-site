@@ -63,6 +63,32 @@ def untested_lines(block: dict[str, Any], templates: Path) -> str:
     )
 
 
+def evidence_line(
+    block: dict[str, Any], templates: Path, client: str, hidden: str = ""
+) -> str:
+    """The "evidence wanted" notice for one client, or "" without an evidence row (S-EV)."""
+    notice = block["clients"][client]["evidence"]
+    if notice is None:
+        return ""
+    return render_file(
+        templates / "builder-evidence.html",
+        ID=client,
+        HIDDEN=Safe(hidden),
+        LABEL=notice["label"],
+        LINE=Prose(notice["line"]),
+        URL=notice["url"],
+        LINK=notice["link"],
+    )
+
+
+def evidence_lines(block: dict[str, Any], templates: Path) -> str:
+    """The builder's evidence notices, one per client with an evidence row, shown when picked."""
+    return "".join(
+        evidence_line(block, templates, client, _hidden(client, block["default"]))
+        for client in block["order"]
+    )
+
+
 def step(templates: Path, step: dict[str, str]) -> str:
     """One apply step: a command to type, a note to read or settings to paste."""
     (kind, text), *_ = step.items()
@@ -133,6 +159,11 @@ def markdown(block: dict[str, Any]) -> str:
             lines.append(
                 f"{data['untested_label']} {data['untested_line']} "
                 f"[{block['texts']['report']}]({data['report']}).\n\n"
+            )
+        if notice := data["evidence"]:
+            lines.append(
+                f"{notice['label']} {notice['line']} "
+                f"[{notice['link']}]({notice['url']}).\n\n"
             )
         lines.append(
             f"{block['texts']['command_md']}\n\n    {command}\n\n{data['steps_heading']}\n\n"

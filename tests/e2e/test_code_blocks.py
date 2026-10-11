@@ -5,8 +5,8 @@ from conftest import assert_clean, collect, walk_paths
 
 # Code blocks and boxed notes that sit in text flow (the classes site.css spaces alike).
 BOXES = (
-    "pre, .quiz-note, .client-untested, .note-card, .noscript-note,"
-    " .friction-note, .author-errors"
+    "pre, .quiz-note, .client-untested, .client-evidence, .note-card,"
+    " .noscript-note, .friction-note, .author-errors"
 )
 
 # Every box with a flow neighbour on both sides, and the gaps to them. A side with no

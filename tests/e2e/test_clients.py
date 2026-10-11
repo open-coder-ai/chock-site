@@ -141,6 +141,40 @@ def test_grades_note_shows_only_without_per_client_grades(page, site_url) -> Non
     assert_clean(page)
 
 
+def test_notice_shown_for_an_untested_agent(page, site_url) -> None:
+    """S-EV: picking an untested agent with an evidence row shows its agentseam issue."""
+    notice = _site(page, site_url)["builder_clients"]["clients"]["cursor"]["evidence"]
+    _pick(page, site_url, "cursor")
+    assert _visible_clients(page, ".client-evidence") == ["cursor"]
+    box = page.locator(".client-evidence[data-client='cursor']")
+    assert box.is_visible()
+    assert "chock has not seen Cursor run the plugin yet" in box.inner_text()
+    assert "The command still builds the plugin" in box.inner_text()
+    link = box.locator("a")
+    assert link.get_attribute("href") == notice["url"]
+    assert link.get_attribute("href").startswith(
+        "https://github.com/open-coder-ai/agentseam/issues/"
+    )
+    page.goto(site_url + "/coding/install/")
+    section = page.locator("section[aria-labelledby='agent-cursor']")
+    assert section.locator(".client-evidence").is_visible()
+    assert section.locator(".client-evidence a").get_attribute("href") == notice["url"]
+    assert_clean(page)
+
+
+def test_no_notice_for_a_witnessed_agent(page, site_url) -> None:
+    """S-EV: a witnessed agent shows no evidence notice in the builder or on install."""
+    _pick(page, site_url, "claude-code")
+    assert _visible_clients(page, ".client-evidence") == []
+    page.locator("#client-cursor").check()
+    page.locator("#client-claude-code").check()
+    assert _visible_clients(page, ".client-evidence") == []
+    page.goto(site_url + "/coding/install/")
+    section = page.locator("section[aria-labelledby='agent-claude-code']")
+    assert section.locator(".client-evidence").count() == 0
+    assert_clean(page)
+
+
 @pytest.mark.parametrize("size", SIZES)
 def test_panel_screenshots(browser, site_url, size) -> None:
     context = browser.new_context(viewport=SIZES[size])
