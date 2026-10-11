@@ -19,8 +19,8 @@ below); the local server binds `127.0.0.1` only.
 
 ```bash
 python3.12 -m venv .venv && . .venv/bin/activate
-pip install -r requirements-dev.txt
-pip install "chock @ git+https://github.com/open-coder-ai/chock@$(cat .framework-ref)"
+pip install --require-hashes -r requirements-dev.txt
+pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@$(cat .framework-ref)"
 git clone https://github.com/open-coder-ai/chock-catalog .catalog
 git -C .catalog checkout "$(cat .catalog-ref)"
 python -m sitegen --catalog .catalog --out dist
@@ -60,14 +60,22 @@ It:
    40-hex commit;
 2. fetches chock-catalog at `.catalog-ref` and refuses if `HEAD` is not exactly that
    commit;
-3. installs, in a fresh venv, `requirements-build.txt` (pinned, from PyPI) and the
-   engine at `.framework-ref`;
+3. installs, in a fresh venv, `requirements-build.txt` with `--require-hashes` (every
+   PyPI package pinned by version and sha256), then the engine at `.framework-ref` with
+   `--no-deps --no-build-isolation` (so it pulls nothing outside the lock), then runs
+   `pip check`;
 4. runs `python -m sitegen --catalog <catalog> --out dist`;
 5. checks that `dist/_headers` and `dist/version.json` exist.
 
 It reads no secrets. Its only network sources are the two GitHub repos above and PyPI.
 It needs Python 3.12 and stops otherwise. Both GitHub repos must be readable without
 credentials.
+
+**Lock files.** `requirements-build.txt`, `requirements-dev.txt` and
+`requirements-workflows.txt` are generated from the `.in` file of the same name, which
+says how to regenerate it (`uv pip compile --universal --generate-hashes`). Change the
+`.in`, never the `.txt`. When `.framework-ref` moves to an engine with new runtime
+dependencies, add them to `requirements-build.in`; `pip check` fails until you do.
 
 **Version marker.** `data/release.yaml` holds the site version (`X.Y.Z`). The build
 writes `dist/version.json` as `{"version", "engine", "catalog"}` (the version and the
@@ -113,8 +121,8 @@ earlier production deployment and choose **Rollback to this deployment**; or mov
 
 ```powershell
 py -3.12 -m venv .venv; .\.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
-pip install "chock @ git+https://github.com/open-coder-ai/chock@$(Get-Content .framework-ref)"
+pip install --require-hashes -r requirements-dev.txt
+pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@$(Get-Content .framework-ref)"
 git clone https://github.com/open-coder-ai/chock-catalog .catalog
 git -C .catalog checkout (Get-Content .catalog-ref)
 python -m sitegen serve --catalog .catalog

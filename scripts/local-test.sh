@@ -100,8 +100,10 @@ if [ "$installed_ref" != "$engine_ref" ] \
     # The pin changed (or first run): drop the old engine so pip installs the pinned one.
     "$py" -m pip uninstall --quiet --yes chock
 fi
-"$py" -m pip install --quiet --upgrade pip
-"$py" -m pip install --quiet -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${engine_ref}"
+# PyPI packages are checked by hash; the engine is pinned by commit and pulls nothing else.
+"$py" -m pip install --quiet --require-hashes -r requirements-dev.txt
+"$py" -m pip install --quiet --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@${engine_ref}"
+"$py" -m pip check
 printf '%s\n' "$engine_ref" > "$marker"
 "$py" -m chock --version
 

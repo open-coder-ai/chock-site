@@ -1,0 +1,10 @@
+# Site build: sitegen's own needs, the chock engine's runtime dependencies at
+# .framework-ref, and its build backend (the engine installs with --no-deps
+# --no-build-isolation, so every package comes from a lock file checked by hash).
+# Regenerate the .txt with:
+#   uv pip compile --universal --generate-hashes --python-version 3.12 requirements-build.in -o requirements-build.txt
+PyYAML==6.0.3
+agentseam==0.3.5
+jsonschema==4.26.0
+referencing==0.37.0
+setuptools==80.9.0

@@ -45,8 +45,12 @@ head=$(git -C "$work/catalog" rev-parse HEAD)
 
 echo "build.sh: engine $FRAMEWORK_REF from $ENGINE_URL"
 "$PYTHON" -m venv "$work/venv"
-"$work/venv/bin/python" -m pip install -q --disable-pip-version-check \
-  -r requirements-build.txt "chock @ git+$ENGINE_URL@$FRAMEWORK_REF"
+# Every PyPI package is checked by hash; the engine is pinned by commit and pulls
+# nothing else (its dependencies and build backend are in the lock file).
+venv_pip() { "$work/venv/bin/python" -m pip --disable-pip-version-check "$@"; }
+venv_pip install -q --require-hashes -r requirements-build.txt
+venv_pip install -q --no-deps --no-build-isolation "chock @ git+$ENGINE_URL@$FRAMEWORK_REF"
+venv_pip check
 
 "$work/venv/bin/python" -m sitegen --catalog "$work/catalog" --out dist
 

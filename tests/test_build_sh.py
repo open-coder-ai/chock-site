@@ -91,19 +91,78 @@ def test_build_sh_reads_both_pins_and_build_requirements() -> None:
     text = BUILD_SH.read_text(encoding="utf-8")
     assert "read_pin .framework-ref" in text
     assert "read_pin .catalog-ref" in text
-    assert "-r requirements-build.txt" in text
+    assert "--require-hashes -r requirements-build.txt" in text
+    assert "--no-deps --no-build-isolation" in text
+    assert "pip check" in text or "venv_pip check" in text
     assert "--out dist" in text
     for name in (".framework-ref", ".catalog-ref"):
         assert HEX40.fullmatch((ROOT / name).read_text(encoding="utf-8").strip())
 
 
-def test_build_requirements_are_pinned() -> None:
-    rows = (ROOT / "requirements-build.txt").read_text(encoding="utf-8").split()
-    assert rows
-    for row in rows:
-        assert re.fullmatch(r"[\w.-]+==[\w.]+", row), row
-    dev = (ROOT / "requirements-dev.txt").read_text(encoding="utf-8").splitlines()
-    assert "-r requirements-build.txt" in dev
+LOCKS = ("build", "dev", "workflows")
+PIN = re.compile(r"^([A-Za-z0-9][\w.-]*)==([\w.]+)")
+
+
+def _locked(name: str) -> dict[str, list[str]]:
+    """Return {package: [hash, ...]} from requirements-<name>.txt."""
+    text = (ROOT / f"requirements-{name}.txt").read_text(encoding="utf-8")
+    pins: dict[str, list[str]] = {}
+    current = ""
+    for line in text.replace("\\\n", " ").splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        match = PIN.match(line)
+        assert match, f"requirements-{name}.txt: not a == pin: {line}"
+        current = f"{match[1].lower().replace('_', '-')}=={match[2]}"
+        pins[current] = re.findall(r"--hash=sha256:([0-9a-f]{64})", line)
+    return pins
+
+
+@pytest.mark.parametrize("name", LOCKS)
+def test_lock_pins_every_package_by_hash(name: str) -> None:
+    pins = _locked(name)
+    assert pins
+    for pin, hashes in pins.items():
+        assert hashes, f"requirements-{name}.txt: {pin} has no sha256 hash"
+
+
+@pytest.mark.parametrize("name", LOCKS)
+def test_lock_matches_its_input(name: str) -> None:
+    pins = set(_locked(name))
+    for line in (ROOT / f"requirements-{name}.in").read_text("utf-8").splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line or line.startswith("-r "):
+            continue
+        match = PIN.match(line)
+        assert match, f"requirements-{name}.in: not a == pin: {line}"
+        assert f"{match[1].lower().replace('_', '-')}=={match[2]}" in pins, line
+
+
+def test_dev_lock_includes_the_build_lock() -> None:
+    assert set(_locked("build")) <= set(_locked("dev"))
+
+
+INSTALLERS = (
+    "build.sh",
+    ".github/workflows/ci.yml",
+    "scripts/local-test.sh",
+    "scripts/local-test.ps1",
+    "README.md",
+)
+
+
+@pytest.mark.parametrize("path", INSTALLERS)
+def test_every_pip_install_is_hash_checked_or_engine_only(path: str) -> None:
+    text = (ROOT / path).read_text(encoding="utf-8")
+    calls = re.findall(r'pip"?,? +"?install\b"?(.*)', text)
+    assert calls, path
+    for call in calls:
+        if "--require-hashes" in call:
+            continue
+        # The engine at its pinned commit, with nothing pulled from PyPI.
+        assert "--no-deps" in call and "--no-build-isolation" in call, call
+        assert "chock @ git+" in call or call.rstrip().endswith(","), call
 
 
 def test_ci_runs_build_sh() -> None:
