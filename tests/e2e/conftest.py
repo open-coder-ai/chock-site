@@ -9,7 +9,8 @@ from urllib.parse import urlparse
 
 import pytest
 
-from sitegen.__main__ import build, make_server
+from sitegen.__main__ import DATA, build, make_server
+from tests.fixtures.untested import untested_data
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / ".catalog"
@@ -17,12 +18,11 @@ SCREENSHOTS = ROOT / "test-results" / "screenshots"
 NON_REQUEST_SCHEMES = ("data", "about", "blob")
 
 
-@pytest.fixture(scope="session")
-def site_url(tmp_path_factory: pytest.TempPathFactory):
-    """The URL of the once-built site, served on 127.0.0.1 for the session."""
+def _serve(tmp_path_factory: pytest.TempPathFactory, data: Path = DATA):
+    """Build the site from a data folder and serve it on 127.0.0.1 until the session ends."""
     assert CATALOG.is_dir(), "clone chock-catalog into .catalog (see README)"
     out = tmp_path_factory.mktemp("site")
-    build(CATALOG, out, str(CATALOG.resolve()), None)
+    build(CATALOG, out, str(CATALOG.resolve()), None, data)
     server = make_server(out, 0)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -30,6 +30,19 @@ def site_url(tmp_path_factory: pytest.TempPathFactory):
     server.shutdown()
     server.server_close()
     thread.join(timeout=10)
+
+
+@pytest.fixture(scope="session")
+def site_url(tmp_path_factory: pytest.TempPathFactory):
+    """The URL of the once-built site, served on 127.0.0.1 for the session."""
+    yield from _serve(tmp_path_factory)
+
+
+@pytest.fixture(scope="session")
+def untested_site_url(tmp_path_factory: pytest.TempPathFactory):
+    """The site built from test-only data with one agent untested (tests/fixtures)."""
+    data = untested_data(tmp_path_factory.mktemp("untested") / "data")
+    yield from _serve(tmp_path_factory, data)
 
 
 _PROBLEMS: dict[int, list[str]] = {}
@@ -116,3 +129,10 @@ def walk_paths(page: Any, site_url: str) -> list[str]:
     kept = [path for path in paths if not POLICY_PAGE.match(path)]
     kept += [f"/coding/policies/{pid}/" for pid in dict.fromkeys(sample)]
     return kept + ["/404.html", "/coding/builder/#preset=git-hygiene"]
+
+
+@pytest.fixture
+def untested_url(page, untested_site_url) -> str:
+    """untested_site_url, with this page's request checks allowing that site."""
+    collect(page, untested_site_url)
+    return untested_site_url

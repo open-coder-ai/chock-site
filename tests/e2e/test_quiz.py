@@ -7,6 +7,7 @@ from conftest import assert_clean, collect, screenshot
 
 from sitegen import engine
 from sitegen.presets import load_presets
+from tests.fixtures.untested import CLIENT
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESETS = {p.id: p for p in load_presets(ROOT / "data" / "presets.yaml")}
@@ -105,9 +106,23 @@ def test_the_agent_answer_and_the_agent_picker_are_one_choice(page, site_url) ->
     page.locator("input[name='quiz-agent'][value='cursor']").check()
     _answer_secrets_and_skipped(page, "Only hard stops")
     command = page.locator("[data-quiz-command]").inner_text()
-    assert command.endswith(" --client cursor")
+    assert command.endswith(" --client cursor --apply")
     assert engine.load_selection(command.split("'")[1])["client"] == "cursor"
-    assert "Untested in Cursor." in page.locator(".quiz-command").inner_text()
+    assert "Untested" not in page.locator(".quiz-command").inner_text()
+    assert page.locator(".quiz-command .client-untested").count() == 0
+    assert_clean(page)
+
+
+def test_an_untested_agent_answer_says_so_and_skips_apply(page, untested_url) -> None:
+    """On the test-only site where CLIENT is untested (tests/fixtures)."""
+    _start(page, untested_url)
+    page.locator(f"input[name='quiz-agent'][value='{CLIENT}']").check()
+    _answer_secrets_and_skipped(page, "Only hard stops")
+    command = page.locator("[data-quiz-command]").inner_text()
+    assert command.endswith(f" --client {CLIENT}")
+    assert engine.load_selection(command.split("'")[1])["client"] == CLIENT
+    name = engine.client_name(CLIENT)
+    assert f"Untested in {name}." in page.locator(".quiz-command").inner_text()
     assert_clean(page)
 
 
