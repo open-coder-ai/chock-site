@@ -194,25 +194,42 @@ def test_home_fits_a_phone(browser, site_url) -> None:
         context.close()
 
 
-VIDEO = "/video/chock-promo-v9.mp4"
-POSTER = "/video/chock-promo-v9-poster.jpg"
+MEDIA = (
+    ("/video/chock-promo-v9.mp4", "/video/chock-promo-v9-poster.jpg"),
+    (
+        "/video/chock-promo-v8-explainer.mp4",
+        "/video/chock-promo-v8-explainer-poster.jpg",
+    ),
+)
 
 
-def test_promo_video_sits_below_the_hero(browser, site_url) -> None:
+def test_promo_videos_sit_below_the_hero(browser, site_url) -> None:
     for viewport in (MOBILE, {"width": 1280, "height": 800}):
         context = browser.new_context(viewport=viewport)
         try:
             page = context.new_page()
             collect(page, site_url)
             page.goto(site_url + "/")
-            video = page.locator("video.video-player")
-            assert video.count() == 1
-            video.scroll_into_view_if_needed()
-            assert video.is_visible()
-            hero = page.locator("#top").bounding_box()
-            box = video.bounding_box()
-            assert box["y"] >= hero["y"] + hero["height"]
-            assert abs(box["width"] / box["height"] - 16 / 9) < 0.02
+            videos = page.locator("video.video-player")
+            assert videos.count() == 2
+            for i in range(2):
+                video = videos.nth(i)
+                video.scroll_into_view_if_needed()
+                assert video.is_visible()
+                hero = page.locator("#top").bounding_box()
+                box = video.bounding_box()
+                assert box["y"] >= hero["y"] + hero["height"]
+                assert abs(box["width"] / box["height"] - 16 / 9) < 0.02
+            first, second = videos.evaluate_all(
+                "els => els.map(el => { const r = el.getBoundingClientRect();"
+                " return {top: r.top + scrollY, bottom: r.bottom + scrollY,"
+                " left: r.left, right: r.right}; })"
+            )
+            if viewport["width"] >= 1280:
+                assert first["top"] == second["top"]
+                assert first["right"] <= second["left"]
+            else:
+                assert second["top"] >= first["bottom"]
             page.wait_for_load_state("networkidle")
             assert_clean(page)
         finally:
@@ -223,13 +240,16 @@ def test_promo_media_served_and_mp4_waits_for_play(page, site_url) -> None:
     requested: list[str] = []
     page.on("request", lambda req: requested.append(req.url))
     page.goto(site_url + "/")
-    page.locator("video.video-player").scroll_into_view_if_needed()
+    videos = page.locator("video.video-player")
+    for i in range(videos.count()):
+        videos.nth(i).scroll_into_view_if_needed()
     page.wait_for_load_state("networkidle")
     assert not [url for url in requested if url.endswith(".mp4")]
-    for path, kind in ((POSTER, "image/jpeg"), (VIDEO, "video/mp4")):
-        response = page.request.head(site_url + path)
-        assert response.status == 200, path
-        assert response.headers["content-type"] == kind
+    for video, poster in MEDIA:
+        for path, kind in ((poster, "image/jpeg"), (video, "video/mp4")):
+            response = page.request.head(site_url + path)
+            assert response.status == 200, path
+            assert response.headers["content-type"] == kind
     assert_clean(page)
 
 
