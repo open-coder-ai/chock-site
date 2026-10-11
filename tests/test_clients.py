@@ -10,6 +10,7 @@ import yaml
 from sitegen import catalog, clientdata, clientpage, engine
 from sitegen.model import Latest, Policy
 from sitegen.pageparts import PageError
+from tests.fixtures.untested import CLIENT, ISSUE, untested_data
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 WORDS = {"block": "blocks", "ask": "asks", "warn": "warns", "advise": "advisory"}
@@ -44,11 +45,13 @@ def _witness_copy(tmp_path: Path, edit) -> Path:
     return tmp_path
 
 
-def test_only_cursor_is_untested() -> None:
+def test_every_agent_is_witnessed() -> None:
+    """Cursor joined the others on 2026-10-11 (org-plan witness-cursor-2026-10-11.md)."""
     data = clientdata.load_witness(DATA, engine.client_ids())
     assert data["default"] == "claude-code"
     assert {c for c, s in data["clients"].items() if s == "witnessed"} == {
         "claude-code",
+        "cursor",
         "codex",
         "copilot",
         "devin",
@@ -152,21 +155,26 @@ def test_builder_page_has_the_picker_and_one_panel_per_client(built) -> None:
         assert f'<div class="client-steps" data-client="{client}"' in html
     twin = (built.out / "coding" / "builder" / "index.md").read_text(encoding="utf-8")
     assert "## Agents" in twin
-    assert "--client cursor\n" in twin
+    assert "--client cursor --apply\n" in twin
 
 
 # ----- S-EV: the "evidence wanted" notice for untested agents -----
+# Every real agent is witnessed, so these use the test-only fixture data
+# (tests/fixtures/untested-agent.yaml): CLIENT untested with an ISSUE row.
 
 TEMPLATES = Path(__file__).resolve().parents[1] / "templates" / "coding"
-ISSUE = "https://github.com/open-coder-ai/agentseam/issues/141"
+URL = f"https://github.com/open-coder-ai/agentseam/issues/{ISSUE}"
+LINK = f"agentseam issue #{ISSUE}"
+NAME = engine.client_name(CLIENT)
 
 
 def _evidence_copy(tmp_path: Path, edit) -> dict:
-    data = yaml.safe_load((DATA / "evidence.yaml").read_text(encoding="utf-8"))
+    folder = untested_data(tmp_path / "data")
+    data = yaml.safe_load((folder / "evidence.yaml").read_text(encoding="utf-8"))
     edit(data)
-    (tmp_path / "evidence.yaml").write_text(yaml.safe_dump(data), encoding="utf-8")
+    (folder / "evidence.yaml").write_text(yaml.safe_dump(data), encoding="utf-8")
     return clientdata.load_evidence(
-        tmp_path, clientdata.load_witness(DATA, engine.client_ids())
+        folder, clientdata.load_witness(folder, engine.client_ids())
     )
 
 
@@ -175,16 +183,29 @@ def _install_section(html: str, client: str) -> str:
     return html[start : html.index("</section>", start)]
 
 
+def test_site_data_has_no_evidence_rows(tmp_path: Path) -> None:
+    """Every agent is witnessed, so no row; a row for a witnessed agent fails the build."""
+    witness = clientdata.load_witness(DATA, engine.client_ids())
+    assert clientdata.load_evidence(DATA, witness)["issues"] == {}
+    rows = yaml.safe_load((DATA / "evidence.yaml").read_text(encoding="utf-8"))
+    rows["issues"] = {"cursor": 141}
+    (tmp_path / "evidence.yaml").write_text(yaml.safe_dump(rows), encoding="utf-8")
+    with pytest.raises(PageError, match="cursor is witnessed"):
+        clientdata.load_evidence(tmp_path, witness)
+
+
 def test_evidence_rows_name_untested_agents_only(tmp_path: Path) -> None:
     for client in ("claude-code", "nobody"):
         with pytest.raises(PageError, match=client):
-            _evidence_copy(tmp_path, lambda d, c=client: d["issues"].update({c: 7}))
+            _evidence_copy(
+                tmp_path / client, lambda d, c=client: d["issues"].update({c: 7})
+            )
 
 
 @pytest.mark.parametrize("number", ("141", 0, -3, None, True))
 def test_evidence_issue_is_a_positive_number(tmp_path: Path, number) -> None:
-    with pytest.raises(PageError, match="cursor"):
-        _evidence_copy(tmp_path, lambda d: d["issues"].update({"cursor": number}))
+    with pytest.raises(PageError, match=CLIENT):
+        _evidence_copy(tmp_path, lambda d: d["issues"].update({CLIENT: number}))
 
 
 def test_evidence_links_only_to_agentseam_issues(tmp_path: Path) -> None:
@@ -194,29 +215,32 @@ def test_evidence_links_only_to_agentseam_issues(tmp_path: Path) -> None:
         )
 
 
-def test_notice_shown_for_an_untested_agent(built) -> None:
-    notice = _site(built)["builder_clients"]["clients"]["cursor"]["evidence"]
-    assert notice["url"] == ISSUE
-    assert notice["link"] == "agentseam issue #141"
-    assert "chock has not seen Cursor run the plugin yet" in notice["line"]
+def test_notice_shown_for_an_untested_agent(built_untested) -> None:
+    built = built_untested
+    notice = _site(built)["builder_clients"]["clients"][CLIENT]["evidence"]
+    assert notice["url"] == URL
+    assert notice["link"] == LINK
+    assert f"chock has not seen {NAME} run the plugin yet" in notice["line"]
     assert "The command still builds the plugin" in notice["line"]
     builder = (built.out / "coding" / "builder" / "index.html").read_text(
         encoding="utf-8"
     )
-    assert '<p class="client-evidence" data-client="cursor" hidden>' in builder
-    assert f'<a href="{ISSUE}">agentseam issue #141</a>' in builder
+    assert f'<p class="client-evidence" data-client="{CLIENT}" hidden>' in builder
+    assert f'<a href="{URL}">{LINK}</a>' in builder
     install = (built.out / "coding" / "install" / "index.html").read_text(
         encoding="utf-8"
     )
-    section = _install_section(install, "cursor")
-    assert '<p class="client-evidence" data-client="cursor">' in section
-    assert f'href="{ISSUE}"' in section
+    section = _install_section(install, CLIENT)
+    assert f'<p class="client-evidence" data-client="{CLIENT}">' in section
+    assert f'href="{URL}"' in section
     for page in ("builder", "install"):
         twin = (built.out / "coding" / page / "index.md").read_text(encoding="utf-8")
-        assert f"[agentseam issue #141]({ISSUE})." in twin, page
+        assert f"[{LINK}]({URL})." in twin, page
 
 
-def test_no_notice_for_a_witnessed_agent(built) -> None:
+@pytest.mark.parametrize("which", ("site", "fixture"))
+def test_no_notice_for_a_witnessed_agent(request, which) -> None:
+    built = request.getfixturevalue("built" if which == "site" else "built_untested")
     block = _site(built)["builder_clients"]
     witnessed = [c for c, d in block["clients"].items() if d["witness"] == "witnessed"]
     assert "claude-code" in witnessed
@@ -230,24 +254,39 @@ def test_no_notice_for_a_witnessed_agent(built) -> None:
         assert block["clients"][client]["evidence"] is None, client
         assert f'class="client-evidence" data-client="{client}"' not in builder
         assert "client-evidence" not in _install_section(install, client), client
-    assert builder.count('class="client-evidence"') == 1
-    assert install.count('class="client-evidence"') == 1
+    notices = len(block["clients"]) - len(witnessed)
+    assert builder.count('class="client-evidence"') == notices
+    assert install.count('class="client-evidence"') == notices
+
+
+def test_cursor_shows_no_evidence_or_untested_notice(built) -> None:
+    """W-CUR: Cursor is witnessed, so the site says nothing about it being untested."""
+    about = _site(built)["builder_clients"]["clients"]["cursor"]
+    assert about["witness"] == "witnessed"
+    assert about["evidence"] is None
+    for page in ("builder", "install"):
+        for name in ("index.html", "index.md"):
+            text = (built.out / "coding" / page / name).read_text(encoding="utf-8")
+            assert "client-evidence" not in text, (page, name)
+            assert "client-untested" not in text, (page, name)
+            assert about["untested_label"] not in text, (page, name)
+            assert "agentseam issue #" not in text, (page, name)
 
 
 def test_the_notice_follows_the_data_row(tmp_path: Path) -> None:
     """Adding a row adds the notice; deleting it (agent witnessed, issue closed) removes it."""
 
     def block(evidence: dict) -> dict:
-        notice = clientdata.evidence_notice(evidence, "cursor", "Cursor")
+        notice = clientdata.evidence_notice(evidence, CLIENT, NAME)
         return {
             "default": "claude-code",
-            "order": ["cursor"],
-            "clients": {"cursor": {"evidence": notice}},
+            "order": [CLIENT],
+            "clients": {CLIENT: {"evidence": notice}},
         }
 
-    kept = _evidence_copy(tmp_path, lambda d: None)
+    kept = _evidence_copy(tmp_path / "kept", lambda d: None)
     html = clientpage.evidence_lines(block(kept), TEMPLATES)
-    assert f'<a href="{ISSUE}">' in html
-    dropped = _evidence_copy(tmp_path, lambda d: d["issues"].pop("cursor"))
-    assert clientdata.evidence_notice(dropped, "cursor", "Cursor") is None
+    assert f'<a href="{URL}">' in html
+    dropped = _evidence_copy(tmp_path / "dropped", lambda d: d["issues"].pop(CLIENT))
+    assert clientdata.evidence_notice(dropped, CLIENT, NAME) is None
     assert clientpage.evidence_lines(block(dropped), TEMPLATES) == ""

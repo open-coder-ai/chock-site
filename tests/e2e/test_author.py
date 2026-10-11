@@ -13,6 +13,7 @@ from chock.lock import compute_pack_hash
 from conftest import SCREENSHOTS, assert_clean, collect, screenshot
 
 from sitegen import engine
+from tests.fixtures.untested import CLIENT
 
 AUTHOR = "/coding/author/"
 ROOT = Path(__file__).resolve().parents[2]
@@ -455,12 +456,16 @@ def test_pack_hash_matches_engine_on_nested_executable_utf8_pack(
     assert_clean(page)
 
 
-def test_install_mode_says_untested_and_skips_apply(page, site_url, tmp_path) -> None:
-    _open(page, site_url)
+def test_install_mode_says_untested_and_skips_apply(
+    page, untested_url, tmp_path
+) -> None:
+    """On the test-only site where CLIENT is untested (tests/fixtures)."""
+    _open(page, untested_url)
     _fill(page, "rule")
-    result = _run_script(_script(page), tmp_path, "cursor\n./my-guardrails\ninstall\n")
+    answers = f"{CLIENT}\n./my-guardrails\ninstall\n"
+    result = _run_script(_script(page), tmp_path, answers)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "not been witnessed applying to cursor" in result.stdout
+    assert f"not been witnessed applying to {CLIENT}" in result.stdout
     assert "custom, not reviewed" in result.stdout
     assert_clean(page)
 

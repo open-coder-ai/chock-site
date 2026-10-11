@@ -10,6 +10,7 @@ from conftest import CATALOG, SCREENSHOTS, assert_clean, collect
 
 from sitegen import engine
 from sitegen.presets import load_presets
+from tests.fixtures.untested import CLIENT, ISSUE
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESETS = {p.id: p for p in load_presets(ROOT / "data" / "presets.yaml")}
@@ -141,22 +142,57 @@ def test_grades_note_shows_only_without_per_client_grades(page, site_url) -> Non
     assert_clean(page)
 
 
-def test_notice_shown_for_an_untested_agent(page, site_url) -> None:
-    """S-EV: picking an untested agent with an evidence row shows its agentseam issue."""
-    notice = _site(page, site_url)["builder_clients"]["clients"]["cursor"]["evidence"]
+def test_every_agent_is_witnessed_and_shows_no_untested_notes(page, site_url) -> None:
+    """W-CUR: with Cursor witnessed, no agent gets the untested line or evidence notice."""
+    clients = _site(page, site_url)["builder_clients"]["clients"]
+    assert {c: d["witness"] for c, d in clients.items()} == dict.fromkeys(
+        CLIENTS, "witnessed"
+    )
     _pick(page, site_url, "cursor")
-    assert _visible_clients(page, ".client-evidence") == ["cursor"]
-    box = page.locator(".client-evidence[data-client='cursor']")
+    command = page.locator("[data-selection-code]").inner_text()
+    assert command.endswith(" --client cursor --apply")
+    assert page.locator(".client-untested, .client-evidence").count() == 0
+    page.goto(site_url + "/coding/install/")
+    section = page.locator("section[aria-labelledby='agent-cursor']")
+    assert section.locator(".client-untested, .client-evidence").count() == 0
+    assert_clean(page)
+
+
+def test_an_untested_agent_gets_its_line_and_no_apply(page, untested_url) -> None:
+    """On the test-only site where CLIENT is untested (tests/fixtures)."""
+    about = _site(page, untested_url)["builder_clients"]["clients"][CLIENT]
+    assert about["witness"] == "untested"
+    _pick(page, untested_url, CLIENT)
+    command = page.locator("[data-selection-code]").inner_text()
+    assert command.endswith(f" --client {CLIENT}")
+    assert _visible_clients(page, ".client-untested") == [CLIENT]
+    link = page.locator(f".client-untested[data-client='{CLIENT}'] a")
+    assert link.get_attribute("href") == about["report"]
+    assert link.get_attribute("href").startswith(
+        "https://github.com/open-coder-ai/chock/issues/new?"
+    )
+    assert link.get_attribute("href").endswith(f"%20{CLIENT}")
+    assert about["untested_label"] in page.locator("#panel-command").inner_text()
+    assert_clean(page)
+
+
+def test_notice_shown_for_an_untested_agent(page, untested_url) -> None:
+    """S-EV: picking an untested agent with an evidence row shows its agentseam issue."""
+    notice = _site(page, untested_url)["builder_clients"]["clients"][CLIENT]["evidence"]
+    _pick(page, untested_url, CLIENT)
+    assert _visible_clients(page, ".client-evidence") == [CLIENT]
+    box = page.locator(f".client-evidence[data-client='{CLIENT}']")
     assert box.is_visible()
-    assert "chock has not seen Cursor run the plugin yet" in box.inner_text()
+    name = engine.client_name(CLIENT)
+    assert f"chock has not seen {name} run the plugin yet" in box.inner_text()
     assert "The command still builds the plugin" in box.inner_text()
     link = box.locator("a")
     assert link.get_attribute("href") == notice["url"]
-    assert link.get_attribute("href").startswith(
-        "https://github.com/open-coder-ai/agentseam/issues/"
+    assert link.get_attribute("href") == (
+        f"https://github.com/open-coder-ai/agentseam/issues/{ISSUE}"
     )
-    page.goto(site_url + "/coding/install/")
-    section = page.locator("section[aria-labelledby='agent-cursor']")
+    page.goto(untested_url + "/coding/install/")
+    section = page.locator(f"section[aria-labelledby='agent-{CLIENT}']")
     assert section.locator(".client-evidence").is_visible()
     assert section.locator(".client-evidence a").get_attribute("href") == notice["url"]
     assert_clean(page)

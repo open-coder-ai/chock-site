@@ -87,8 +87,10 @@ def _empty(path: Path) -> None:
     path.mkdir(parents=True)
 
 
-def build(catalog: Path, out: Path, source: str, release: str | None) -> Site:
-    """Refuse a catalog at the wrong commit, then write out/ from it."""
+def build(
+    catalog: Path, out: Path, source: str, release: str | None, data: Path = DATA
+) -> Site:
+    """Refuse a catalog at the wrong commit, then write out/ from it and data/."""
     ref = _pin(".catalog-ref")
     head = catalog_head(catalog)
     if head != ref:
@@ -96,7 +98,7 @@ def build(catalog: Path, out: Path, source: str, release: str | None) -> Site:
             f"{catalog}: HEAD is {head}, expected {ref} (.catalog-ref). "
             "Checkout the pinned commit or update the pin."
         )
-    events = analytics.load(DATA)
+    events = analytics.load(data)
     analytics.check_module(events, ROOT)
     _check_out(out)
     _empty(out)
@@ -108,7 +110,7 @@ def build(catalog: Path, out: Path, source: str, release: str | None) -> Site:
             else:
                 shutil.copy2(item, dest)
     site = sitedata.build_site(
-        catalog, ref, _pin(".framework-ref"), source, release, DATA
+        catalog, ref, _pin(".framework-ref"), source, release, data
     )
     analytics.write_module(events, out / analytics.DIST_ALLOWLIST)
     sitedata.write_site_json(site, out)

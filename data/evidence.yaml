@@ -9,5 +9,4 @@ texts:
   label: "Evidence wanted for __NAME__."
   line: "chock has not seen __NAME__ run the plugin yet. The command still builds the plugin. If you use __NAME__, you can help: run it and share what happens in"
   link: "agentseam issue #__NUMBER__"
-issues:
-  cursor: 141
+issues: {}

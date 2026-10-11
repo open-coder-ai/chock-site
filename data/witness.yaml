@@ -8,7 +8,7 @@ default: claude-code
 report: https://github.com/open-coder-ai/chock/issues/new?title=Witness%20report:%20__CLIENT__
 clients:
   claude-code: witnessed
-  cursor: untested
+  cursor: witnessed
   codex: witnessed
   copilot: witnessed
   devin: witnessed

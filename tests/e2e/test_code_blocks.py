@@ -3,6 +3,8 @@
 import pytest
 from conftest import assert_clean, collect, walk_paths
 
+from tests.fixtures.untested import CLIENT
+
 # Code blocks and boxed notes that sit in text flow (the classes site.css spaces alike).
 BOXES = (
     "pre, .quiz-note, .client-untested, .client-evidence, .note-card,"
@@ -83,7 +85,9 @@ def _gap_problems(page, where: str) -> list[str]:
     ]
 
 
-def test_boxes_have_equal_space_above_and_below(browser, site_url) -> None:
+def test_boxes_have_equal_space_above_and_below(
+    browser, site_url, untested_site_url
+) -> None:
     context = browser.new_context(viewport={"width": 1280, "height": 900})
     problems: list[str] = []
     try:
@@ -93,17 +97,25 @@ def test_boxes_have_equal_space_above_and_below(browser, site_url) -> None:
             page.goto(site_url + path)
             page.wait_for_load_state("networkidle")
             problems += _gap_problems(page, path)
-        # Notes that only show in a state: an untested agent, a quiz answer with a note.
-        page.goto(site_url + "/coding/builder/#preset=git-hygiene")
-        page.wait_for_selector(".sel-item")
-        page.locator("label[for='client-cursor']").click()
-        page.wait_for_selector(".client-untested:not([hidden])")
-        problems += _gap_problems(page, "builder, Cursor")
+        # Notes that only show in a state: a quiz answer with a note.
         page.goto(site_url + "/repos/builder/")
         page.get_by_role("radio", name="GitLab").check()
         page.wait_for_selector(".quiz-note:not([hidden])")
         problems += _gap_problems(page, "repos quiz, GitLab")
         assert_clean(page)
+        # An untested agent's notes, on the test-only site where CLIENT is untested.
+        other = context.new_page()
+        collect(other, untested_site_url)
+        other.goto(untested_site_url + "/coding/builder/#preset=git-hygiene")
+        other.wait_for_selector(".sel-item")
+        other.locator(f"label[for='client-{CLIENT}']").click()
+        other.wait_for_selector(".client-untested:not([hidden])")
+        other.wait_for_selector(".client-evidence:not([hidden])")
+        problems += _gap_problems(other, f"builder, untested {CLIENT}")
+        other.goto(untested_site_url + "/coding/install/")
+        other.wait_for_load_state("networkidle")
+        problems += _gap_problems(other, f"install, untested {CLIENT}")
+        assert_clean(other)
     finally:
         context.close()
     assert not problems, "\n".join(problems)

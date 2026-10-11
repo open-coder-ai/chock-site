@@ -1,0 +1,5 @@
+# Test-only data, never site data: the site's data/ with one agent made
+# untested and given an evidence row, so the untested and evidence-wanted
+# paths stay covered while every real agent is witnessed.
+client: cursor
+issue: 141
