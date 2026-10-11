@@ -297,6 +297,19 @@ PROMO = {
     ),
 }
 
+EXPLAINER = {
+    "title": "The full story",
+    "src": "/video/chock-promo-v8-explainer.mp4",
+    "poster": "/video/chock-promo-v8-explainer-poster.jpg",
+    "width": 1280,
+    "height": 720,
+    "duration": "1:57",
+    "description": (
+        "A two-minute look at how chock stops an agent's risky moves, "
+        "and the incidents behind each policy."
+    ),
+}
+
 
 def _with_videos(built, videos: list) -> object:
     data = {**built.site.data, "home": {**built.site.data["home"], "videos": videos}}
@@ -327,23 +340,26 @@ def test_videos_block_is_hidden_until_there_are_entries(built, tmp_path: Path) -
     assert "See it work" not in (tmp_path / "empty" / "index.md").read_text("utf-8")
 
 
-def test_promo_video_ships_below_the_hero(built) -> None:
-    assert built.site.data["home"]["videos"] == [PROMO]
+def test_promo_videos_ship_below_the_hero(built) -> None:
+    assert built.site.data["home"]["videos"] == [PROMO, EXPLAINER]
     html = _home(built)
-    assert html.count("<video") == 1
-    tag = re.search(r"<video[^>]*>", html).group(0)
-    for attr in ("controls", 'preload="none"', "playsinline"):
-        assert attr in tag
-    assert 'poster="/video/chock-promo-v9-poster.jpg"' in tag
-    assert 'width="1280"' in tag and 'height="720"' in tag
-    assert "autoplay" not in html and " loop" not in tag and "muted" not in tag
-    assert '<source src="/video/chock-promo-v9.mp4" type="video/mp4">' in html
-    assert "<track" not in html
-    size = (ROOT / "static" / "video" / "chock-promo-v9.mp4").stat().st_size
-    assert f"Download the video (MP4, {size / 1_000_000:.1f} MB)" in html
-    caption = re.search(r"<figcaption>(.*?)</figcaption>", html, re.DOTALL).group(1)
-    caption = re.sub(r"\s+", " ", htmllib.unescape(re.sub(r"<[^>]+>", " ", caption)))
-    assert PROMO["description"] in caption and "(1:02)" in caption
+    assert html.count("<video") == 2
+    assert "autoplay" not in html and "<track" not in html
+    tags = re.findall(r"<video[^>]*>", html)
+    captions = re.findall(r"<figcaption>(.*?)</figcaption>", html, re.DOTALL)
+    for video, tag, caption in zip((PROMO, EXPLAINER), tags, captions, strict=True):
+        for attr in ("controls", 'preload="none"', "playsinline"):
+            assert attr in tag
+        assert f'poster="{video["poster"]}"' in tag
+        assert 'width="1280"' in tag and 'height="720"' in tag
+        assert " loop" not in tag and "muted" not in tag
+        assert f'<source src="{video["src"]}" type="video/mp4">' in html
+        size = (ROOT / "static" / video["src"].lstrip("/")).stat().st_size
+        assert f"Download the video (MP4, {size / 1_000_000:.1f} MB)" in html
+        text = htmllib.unescape(re.sub(r"<[^>]+>", " ", caption))
+        caption = re.sub(r"\s+", " ", text)
+        assert video["description"] in caption
+        assert f"({video['duration']})" in caption
     hero_end = html.index("</section>", html.index('id="top"'))
     after = html[hero_end + len("</section>") :].lstrip()
     assert after.startswith('<section class="section" aria-labelledby="see-it-work">')
@@ -353,12 +369,19 @@ def test_promo_video_ships_below_the_hero(built) -> None:
         + PROMO["description"]
         in twin
     )
+    assert (
+        "- [The full story](/video/chock-promo-v8-explainer.mp4) (1:57, MP4): "
+        + EXPLAINER["description"]
+        in twin
+    )
 
 
 def test_published_video_files_match_the_plan() -> None:
     sums = {
         "chock-promo-v9.mp4": "94ff8fb1862bf46374efaced43a698c186f597a2de7bcb623135ac425c3f3b26",
         "chock-promo-v9-poster.jpg": "e840d381e883d9d80ac7a6ef4f88e0e783c63ac870208068ef9853e3551095ef",
+        "chock-promo-v8-explainer.mp4": "34d45ea2328bef74dc3eb0d18992f501787c9301fdf716c1ba635852613b9672",
+        "chock-promo-v8-explainer-poster.jpg": "9ab277aadf408faa8626cc103aafd0a149a91018cb237cf7c389eca1a79c23cf",
     }
     for name, want in sums.items():
         data = (ROOT / "static" / "video" / name).read_bytes()

@@ -9,6 +9,13 @@ videos:
     height: 720
     duration: "1:02"
     description: "A one-minute story: an AI coding agent is refused twice by chock and fixes its own work."
+  - title: "The full story"
+    src: /video/chock-promo-v8-explainer.mp4
+    poster: /video/chock-promo-v8-explainer-poster.jpg
+    width: 1280
+    height: 720
+    duration: "1:57"
+    description: "A two-minute look at how chock stops an agent's risky moves, and the incidents behind each policy."
 primary_cta: "Build your plugin"
 secondary_cta: "Browse the policies"
 steps_heading: "How it works"

@@ -1636,7 +1636,7 @@ body { overflow-x: clip; }
 .button-outline-dark { border-color: var(--on-accent); color: var(--on-accent); }
 .button-outline-dark:hover { color: var(--on-accent); border-color: var(--on-accent); background: color-mix(in srgb, var(--on-accent) 12%, transparent); }
 
-.videos { display: grid; gap: 24px; }
+.videos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 24px; }
 .video { margin: 0; min-width: 0; }
 .video-player { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
 .video figcaption { margin-top: 12px; color: var(--muted); }
