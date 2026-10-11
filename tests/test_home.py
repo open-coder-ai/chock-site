@@ -286,8 +286,8 @@ def test_faq_adds_general_agents_answer(built) -> None:
 
 PROMO = {
     "title": "The chock story",
-    "src": "/video/chock-promo-v9.mp4",
-    "poster": "/video/chock-promo-v9-poster.jpg",
+    "src": "/video/chock-promo-v9b.mp4",
+    "poster": "/video/chock-promo-v9b-poster.jpg",
     "width": 1280,
     "height": 720,
     "duration": "1:02",
@@ -365,7 +365,7 @@ def test_promo_videos_ship_below_the_hero(built) -> None:
     assert after.startswith('<section class="section" aria-labelledby="see-it-work">')
     twin = (built.out / "index.md").read_text(encoding="utf-8")
     assert (
-        "- [The chock story](/video/chock-promo-v9.mp4) (1:02, MP4): "
+        "- [The chock story](/video/chock-promo-v9b.mp4) (1:02, MP4): "
         + PROMO["description"]
         in twin
     )
@@ -378,8 +378,8 @@ def test_promo_videos_ship_below_the_hero(built) -> None:
 
 def test_published_video_files_match_the_plan() -> None:
     sums = {
-        "chock-promo-v9.mp4": "94ff8fb1862bf46374efaced43a698c186f597a2de7bcb623135ac425c3f3b26",
-        "chock-promo-v9-poster.jpg": "e840d381e883d9d80ac7a6ef4f88e0e783c63ac870208068ef9853e3551095ef",
+        "chock-promo-v9b.mp4": "609a571be81a9279be64c5fd96dafcfb93aa6ffaff96d2be95851a002491e438",
+        "chock-promo-v9b-poster.jpg": "3fd94f0b0d60ded83d22b96f133e54615466acb7630487d38a77aea7fa71e71b",
         "chock-promo-v8-explainer.mp4": "34d45ea2328bef74dc3eb0d18992f501787c9301fdf716c1ba635852613b9672",
         "chock-promo-v8-explainer-poster.jpg": "9ab277aadf408faa8626cc103aafd0a149a91018cb237cf7c389eca1a79c23cf",
     }
@@ -395,7 +395,7 @@ def test_published_video_files_match_the_plan() -> None:
         ("src", "//example.com/video/promo.mp4"),
         ("src", "/video/../css/site.css"),
         ("src", "/video/missing.mp4"),
-        ("src", "video/chock-promo-v9.mp4"),
+        ("src", "video/chock-promo-v9b.mp4"),
         ("src", "/img/og-card.png"),
         ("poster", "/video/missing.jpg"),
         ("poster", "data:image/png;base64,AAAA"),

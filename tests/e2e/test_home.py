@@ -195,7 +195,7 @@ def test_home_fits_a_phone(browser, site_url) -> None:
 
 
 MEDIA = (
-    ("/video/chock-promo-v9.mp4", "/video/chock-promo-v9-poster.jpg"),
+    ("/video/chock-promo-v9b.mp4", "/video/chock-promo-v9b-poster.jpg"),
     (
         "/video/chock-promo-v8-explainer.mp4",
         "/video/chock-promo-v8-explainer-poster.jpg",
