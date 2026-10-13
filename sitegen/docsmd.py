@@ -21,6 +21,8 @@ INLINE_RE = re.compile(
     r"|(?<![\w*])\*(?P<em>[^*\s](?:[^*]*?[^*\s])?)\*(?![\w*])"
     r"|(?<![\w_])_(?P<em2>[^_\s](?:[^_]*?[^_\s])?)_(?![\w_])"
 )
+# Markdown emphasis and code marks, dropped from a table's accessible name.
+MARK_RE = re.compile(r"[`*]")
 Resolve = Callable[[str], str]
 
 
@@ -227,6 +229,7 @@ class Renderer:
         out.append(
             self._t(
                 "table",
+                COLUMNS=", ".join(MARK_RE.sub("", cell) for cell in head),
                 HEAD=Safe(row(head, "th")),
                 BODY=Safe("".join(row(r, "td") for r in rows)),
             )
