@@ -212,53 +212,68 @@ def witness_ledger() -> list[dict[str, Any]]:
     return _data("witnesses.json")
 
 
-def gate_logs() -> list[str]:
-    """The repo-relative paths of the gate log the engine writes, current then rotated."""
-    import chock.gatelog
+def gate_logs() -> dict[str, list[str]]:
+    """The decision log files the engine writes per route, current then rotated.
 
-    folder = f".chock/{chock.gatelog.LOG_DIR}"
-    return [
-        f"{folder}/{chock.gatelog.LOG_NAME}",
-        f"{folder}/{chock.gatelog.ROTATED_NAME}",
-    ]
+    Sync paths are relative to the repository; plugin paths sit under the user's home.
+    """
+    import chock.gatelog_read as log
+
+    sync = f".chock/{log.LOG_DIR}"
+    plugin = f"~/.chock/{log.LOG_DIR}/<agent>"
+    return {
+        "sync": [f"{sync}/{log.LOG_NAME}", f"{sync}/{log.ROTATED_NAME}"],
+        "plugin": [
+            f"{plugin}/{log.PLUGIN_LOG_NAME}",
+            f"{plugin}/{log.PLUGIN_ROTATED_NAME}",
+        ],
+    }
 
 
-def cli_commands() -> list[dict[str, str]]:
-    """Every `chock` command in the engine's groups, with its one-line help and its --help text."""
+def _help_text(name: str, args: list[str]) -> str:
+    """What `chock <name> <args>` prints, at a fixed width of 100 columns."""
     import contextlib
     import io
     import os
 
     import chock.cli
 
-    groups = json.loads(
-        importlib.resources.files("chock")
-        .joinpath("data", "commands.json")
-        .read_text(encoding="utf-8")
-    )
     saved = os.environ.get("COLUMNS")
     os.environ["COLUMNS"] = "100"
-    rows = []
+    buf = io.StringIO()
     try:
-        for group, commands in groups.items():
-            for name, spec in commands.items():
-                buf = io.StringIO()
-                with contextlib.redirect_stdout(buf), contextlib.suppress(SystemExit):
-                    chock.cli.COMMANDS[name][0](["--help"])
-                rows.append(
-                    {
-                        "group": group,
-                        "name": name,
-                        "summary": spec["help"],
-                        "help": buf.getvalue().rstrip(),
-                    }
-                )
+        with contextlib.redirect_stdout(buf), contextlib.suppress(SystemExit):
+            chock.cli.COMMANDS[name][0](args)
     finally:
         if saved is None:
             del os.environ["COLUMNS"]
         else:
             os.environ["COLUMNS"] = saved
-    return rows
+    return buf.getvalue().rstrip()
+
+
+def subcommand_help(name: str, sub: str) -> str:
+    """The --help text of one subcommand, e.g. `chock witness export --help`."""
+    return _help_text(name, [sub, "--help"])
+
+
+def cli_commands() -> list[dict[str, str]]:
+    """Every `chock` command in the engine's groups, with its one-line help and its --help text."""
+    groups = json.loads(
+        importlib.resources.files("chock")
+        .joinpath("data", "commands.json")
+        .read_text(encoding="utf-8")
+    )
+    return [
+        {
+            "group": group,
+            "name": name,
+            "summary": spec["help"],
+            "help": _help_text(name, ["--help"]),
+        }
+        for group, commands in groups.items()
+        for name, spec in commands.items()
+    ]
 
 
 def matrix_agents() -> dict[str, str]:

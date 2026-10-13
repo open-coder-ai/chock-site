@@ -1,0 +1,20 @@
+# Page actions on every docs page: "Copy page" and a menu (WAI-ARIA menu button).
+# Without JS only `labels.view` shows, as a plain link to the page's Markdown twin.
+# `open` entries are plain links (no script, no request until a person clicks one).
+# __PROMPT__ in an href is replaced, URL-encoded, by `prompt`, whose __TWIN__ is the
+# absolute URL of this page's Markdown twin.
+labels:
+  copy: "Copy page"
+  menu: "More page actions"
+  copy_markdown: "Copy page as Markdown"
+  view: "View as Markdown"
+  copied: "Copied"
+  failed: "Copy failed: open View as Markdown and copy the text there."
+prompt: "Read __TWIN__ so I can ask questions about it."
+open:
+  - label: "Open in ChatGPT"
+    href: "https://chatgpt.com/?q=__PROMPT__"
+  - label: "Open in Claude"
+    href: "https://claude.ai/new?q=__PROMPT__"
+  - label: "Open in Perplexity"
+    href: "https://www.perplexity.ai/search?q=__PROMPT__"

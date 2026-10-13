@@ -82,17 +82,20 @@ pages:
     path: /docs/monitor/
     title: Monitor
     nav_label: Monitor
-    description: "Where the engine records gate outcomes, and how chock status reads them."
-    intro: "Gates in a repo record what they decided in a local log. chock status reads it."
-    blocks: [log]
-    prose: []
+    description: "Where chock hooks log their decisions on each route, how to read and sum up the log, and how to export it as evidence."
+    intro: "Every chock hook writes one line per decision to a local log. Nothing leaves the machine. chock status reads the log and sums it up; chock witness export writes one client's records to a file you attach yourself."
+    blocks: [log, summary, export, person_only]
+    prose:
+      # The Summary section joins once the engine writes heartbeats (OBS-1).
+      - file: docs/decision-log.md
+        sections: [Levels, "Settings (a person's, only)", Reading it]
   troubleshooting:
     path: /docs/troubleshooting/
     title: Troubleshooting
     nav_label: Troubleshooting
-    description: "Known install notes per agent, what happens when a guard cannot decide, and arming a fresh clone."
-    intro: "Each agent's install notes, as the engine prints them, then the engine docs on the cases that most often surprise people."
-    blocks: [measured, client_notes]
+    description: "Measured problems and fixes, reading the decision log, install notes per agent, what happens when a guard cannot decide, and arming a fresh clone."
+    intro: "Problems a person measured, how to read what the hooks decided, each agent's install notes as the engine prints them, then the engine docs on the cases that most often surprise people."
+    blocks: [measured, diagnose, client_notes]
     prose:
       - {file: docs/troubleshooting.md, first: 20, optional: true}
       - {file: docs/enforcement-surfaces.md, sections: [What happens when the guard cannot decide]}
@@ -224,15 +227,42 @@ texts:
   toggles_heading: Switch members on and off
   toggles_intro: "These commands come from the engine; their help is printed as the engine prints it."
   toggle_commands: [bundle, enable, disable]
-  log_heading: The gate log
-  log_body: "Gates run in a repository append each outcome to a local log, one JSON record per line. The engine keeps the current file and one rotated file:"
+  log_heading: The decision log
+  log_body: "Every chock hook writes one line per decision to a local JSONL file: no network, no telemetry, and a file's contents are never logged. Each route has its own file, and the engine keeps one rotated file beside it:"
+  # One line per route the engine names; the files come from the engine.
+  log_routes:
+    sync: "Sync route, in the repository"
+    plugin: "Plugin route, in your home folder, one folder per agent"
   log_status: "Read it with chock status. Its options, as the engine prints them:"
   log_commands: [status, gate-log]
+  summary_heading: "Sum it up: chock status --summary"
+  summary_body: "`chock status --summary` reads the same log and reports:"
+  summary_command: "chock status --summary [--since DAYS] [--route sync|plugin] [--json]"
+  summary_items:
+    - "Fires per policy and per client, with block, ask, warn and fault counts and rates. A fault is a hook that could not judge the call: reason `guard-errored`, `guard-missing` or `fault`."
+    - "p50 and p95 `duration_ms` per hook (client and surface). At `info` only the calls a policy fired on are logged, so the latencies cover those; set `debug` to time every call."
+    - "A WARN when a hook's p95 is within 25% of its client's hook timeout. A client timeout fails open, so a call slower than that goes through unchecked. An undocumented timeout is shown as `unknown`, never warned on."
+    - "The top 5 guard faults, by policy and reason code."
+  export_heading: "Export evidence: chock witness export"
+  export_body: "`chock witness export --client <client>` writes one client's records from both routes, redacted, to a new local JSON file, and prints the agentseam issue to attach it to. An existing file is refused, never overwritten. Nothing is uploaded: you attach the file yourself, after reading it."
+  export_commands: [witness export]
+  person_only_heading: "The settings are a person's"
+  person_only_policy: protect-agent-config
+  person_only_body: "Files under `.chock/` are a person's to change, the log settings `.chock/chock-log.json` and `~/.chock/chock-log.json` included. Every chock bundle refuses an agent's write to either settings file, through a shell command (best effort) or an Edit/Write. When a repository installs __ID__ (__VERSION__ in the pinned catalog), it refuses an agent's write to the whole `.chock/` folder, as a shell write and as an Edit/Write; its gate leaves only the engine's own `.chock/state` and `.chock/log` to the engine. Reading stays allowed. A client with no chock bundle, in a repository without that policy, has no such refusal. Edit the files yourself, in your own editor or shell."
+  person_only_link: "The policy's page"
   measured_heading: Measured problems and fixes
-  # Only problems a person measured, with the date. DOC-2 adds logging and doctor.
+  # Only problems a person measured, with the date.
   measured:
     - heading: "Windows: a Claude Code marketplace update fails with an SSL certificate error"
       body: "Measured on 2026-10-12, on Windows with antivirus that intercepts HTTPS: Claude Code's marketplace update failed with `SSL certificate problem: unable to get local issuer certificate`, while a plain `git fetch` in the same shell succeeded. What fixed it: `git config --global http.sslBackend schannel`, then cloning the stale marketplace copy again. The chock plugin for Claude Code was not affected: it installs from a local folder marketplace, with no git fetch."
+  diagnose_heading: Read what the hooks decided
+  diagnose_intro: "The decision log (see Monitor) is where to look when a policy did not fire, or fired when you did not expect it. What the engine docs say about reading it:"
+  diagnose_items:
+    - "`chock status --only log` lists the decisions on both routes. At the default level, `info`, only blocks, asks, warns, guard faults and overrides are written, not allows."
+    - "To see every call, allows included, with a redacted trace (wire event, tool, matched rule, the guard's exit code, per-stage timings), a person sets the level to `debug`: `CHOCK_LOG_LEVEL=debug` in the shell the agent client was started from, or `{\"level\": \"debug\"}` in `.chock/chock-log.json`. An agent cannot change the level."
+    - "`chock status --summary` lists the top guard faults and warns when a hook's p95 is within 25% of its client's hook timeout, because a client timeout fails open."
+    - "Logging never changes a verdict, never raises and never blocks: a line that cannot be written is dropped silently."
+    - "`chock witness export --client <client>` writes that client's records, redacted, to a new local file and prints the agentseam issue to attach it to. Nothing is uploaded."
   client_notes_heading: Install notes per agent
   cli_groups: {everyday: Everyday, authoring: Authoring, aliases: Pre-launch aliases}
   prose_heading: From the engine docs

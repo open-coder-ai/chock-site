@@ -6,7 +6,9 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
+
+import yaml
 
 from . import clientdata, clientpage, docsfacts, docsource, engine
 from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
@@ -24,6 +26,7 @@ from .render import md as md_escape
 
 DOCS = "docs"
 MD = "md"
+ACTIONS_YAML = "page_actions.yaml"
 COMMIT_URL = "__REPO__/commit/__REF__"
 BLOB_URL = "__REPO__/blob/__REF__/__PATH__"
 CATALOG_COMMIT = "https://github.com/open-coder-ai/chock-catalog/commit/"
@@ -50,6 +53,7 @@ class Ctx:
     agents: list[dict[str, Any]]
     cli: list[dict[str, str]]
     page: dict[str, Any] = field(default_factory=dict)
+    actions: dict[str, Any] = field(default_factory=dict)
 
     def t(self, name: str, **tokens: object) -> str:
         """A docs template, filled."""
@@ -523,11 +527,14 @@ def _help_blocks(ctx: Ctx, body: Body, names: list[str]) -> tuple[str, str]:
     by_name = {c["name"]: c for c in ctx.cli}
     html, md = [], []
     for name in names:
-        command = by_name.get(name)
+        parent, _, sub = name.partition(" ")
+        command = by_name.get(parent)
         if command is None:
             raise PageError(
                 f"docs.yaml names chock {name!r}, which the engine does not have"
             )
+        if sub:
+            command = command | {"help": engine.subcommand_help(parent, sub)}
         heading = f"chock {name}"
         html += [
             _h3(ctx, body, heading),
@@ -560,19 +567,83 @@ def _toggles(ctx: Ctx, body: Body) -> None:
 
 
 def _log(ctx: Ctx, body: Body) -> None:
-    paths = engine.gate_logs()
+    files = engine.gate_logs()
+    routes = ctx.texts["log_routes"]
+    if set(files) != set(routes):
+        raise PageError(f"docs.yaml log_routes must name the routes {sorted(files)}")
     help_html, help_md = _help_blocks(ctx, body, ctx.texts["log_commands"])
+    items: list[str | Safe] = [
+        Safe(
+            ctx.t(
+                "route-files",
+                ROUTE=Prose(routes[route]),
+                FILES=Safe(", ".join(ctx.t("code", TEXT=p) for p in paths)),
+            )
+        )
+        for route, paths in files.items()
+    ]
     _section(
         ctx,
         body,
         ctx.texts["log_heading"],
         _para(ctx, ctx.texts["log_body"])
-        + _list(ctx, [Safe(ctx.t("code", TEXT=p)) for p in paths])
+        + _list(ctx, items)
         + _para(ctx, ctx.texts["log_status"])
         + help_html,
         f"{ctx.texts['log_body']}\n\n"
-        + "".join(f"- `{p}`\n" for p in paths)
+        + "".join(
+            f"- {routes[route]}: " + ", ".join(f"`{p}`" for p in paths) + "\n"
+            for route, paths in files.items()
+        )
         + f"\n{ctx.texts['log_status']}\n\n{help_md}",
+    )
+
+
+def _summary(ctx: Ctx, body: Body) -> None:
+    command = ctx.texts["summary_command"]
+    _section(
+        ctx,
+        body,
+        ctx.texts["summary_heading"],
+        _para(ctx, ctx.texts["summary_body"])
+        + _command(ctx, command)
+        + _list(ctx, ctx.texts["summary_items"]),
+        f"{ctx.texts['summary_body']}\n\n{ctx.texts['ask_code']}\n\n"
+        f"    {command}\n\n"
+        + "".join(f"- {item}\n" for item in ctx.texts["summary_items"]),
+    )
+
+
+def _export(ctx: Ctx, body: Body) -> None:
+    html, md = _help_blocks(ctx, body, ctx.texts["export_commands"])
+    _section(
+        ctx,
+        body,
+        ctx.texts["export_heading"],
+        _para(ctx, ctx.texts["export_body"]) + html,
+        f"{ctx.texts['export_body']}\n\n{md}",
+    )
+
+
+def _person_only(ctx: Ctx, body: Body) -> None:
+    want = ctx.texts["person_only_policy"]
+    policy = next((p for p in ctx.site.policies if p.id == want), None)
+    if policy is None:
+        raise PageError(f"docs.yaml person_only_policy {want!r} is not in the catalog")
+    text = data_fill(
+        ctx.texts["person_only_body"],
+        {"__ID__": policy.id, "__VERSION__": policy.version},
+    )
+    link = ctx.t(
+        "link", HREF=f"/docs/policies/{policy.id}/", TEXT=ctx.texts["person_only_link"]
+    )
+    _section(
+        ctx,
+        body,
+        ctx.texts["person_only_heading"],
+        _para(ctx, text) + ctx.t("para", TEXT=Safe(link)),
+        f"{text}\n\n[{ctx.texts['person_only_link']}]"
+        f"({ctx.site.data['site_url']}/docs/policies/{policy.id}/index.md)\n",
     )
 
 
@@ -605,6 +676,18 @@ def _client_notes(ctx: Ctx, body: Body) -> None:
     _section(ctx, body, ctx.texts["client_notes_heading"], "".join(html), "".join(md))
 
 
+def _diagnose(ctx: Ctx, body: Body) -> None:
+    items = ctx.texts["diagnose_items"]
+    _section(
+        ctx,
+        body,
+        ctx.texts["diagnose_heading"],
+        _para(ctx, ctx.texts["diagnose_intro"]) + _list(ctx, items),
+        f"{ctx.texts['diagnose_intro']}\n\n"
+        + "".join(f"- {_md_note(ctx, item)}\n" for item in items),
+    )
+
+
 def _cli(ctx: Ctx, body: Body) -> None:
     for group, title in ctx.texts["cli_groups"].items():
         names = [c["name"] for c in ctx.cli if c["group"] == group]
@@ -631,6 +714,10 @@ BLOCKS = {
     "selection": _selection,
     "toggles": _toggles,
     "log": _log,
+    "summary": _summary,
+    "export": _export,
+    "person_only": _person_only,
+    "diagnose": _diagnose,
     "measured": _measured,
     "client_notes": _client_notes,
     "cli": _cli,
@@ -1001,6 +1088,50 @@ def _search(ctx: Ctx) -> Safe:
     )
 
 
+def load_actions(data_dir: Path) -> dict[str, Any]:
+    """data/page_actions.yaml, refused unless every open link is https with one prompt."""
+    actions = yaml.safe_load((data_dir / ACTIONS_YAML).read_text(encoding="utf-8"))
+    if actions["prompt"].count("__TWIN__") != 1:
+        raise PageError(f"{ACTIONS_YAML}: prompt must name __TWIN__ once")
+    for item in actions["open"]:
+        href = item["href"]
+        if not href.startswith("https://") or href.count("__PROMPT__") != 1:
+            raise PageError(
+                f"{ACTIONS_YAML}: {item['label']!r} needs https and one __PROMPT__"
+            )
+    return actions
+
+
+def _page_actions(ctx: Ctx, path: str) -> Safe:
+    """Copy page and its menu; the open links ask an assistant to read this page's twin."""
+    twin = f"{path}index.md"
+    labels = ctx.actions["labels"]
+    prompt = data_fill(
+        ctx.actions["prompt"], {"__TWIN__": ctx.site.data["site_url"] + twin}
+    )
+    items = "".join(
+        ctx.t(
+            "page-action-open",
+            HREF=data_fill(item["href"], {"__PROMPT__": quote(prompt, safe="")}),
+            LABEL=item["label"],
+        )
+        for item in ctx.actions["open"]
+    )
+    return Safe(
+        ctx.t(
+            "page-actions",
+            MD_HREF=twin,
+            VIEW=labels["view"],
+            COPIED=labels["copied"],
+            FAILED=labels["failed"],
+            COPY=labels["copy"],
+            MENU=labels["menu"],
+            COPY_MARKDOWN=labels["copy_markdown"],
+            OPEN=Safe(items),
+        )
+    )
+
+
 def _excerpt(ctx: Ctx, summary: str) -> str:
     """A page's summary as one line of plain text, cut at a word boundary."""
     text = " ".join(summary.replace("`", "").split())
@@ -1048,6 +1179,7 @@ def _write(
         CRUMB=crumb,
         TITLE=title,
         SUB=Prose(description),
+        ACTIONS=_page_actions(ctx, path),
         INTRO=Prose(intro),
         BODY=Safe(html),
         PAGER=_pager(ctx, key) if path == _page_href(ctx, key) else Safe(""),
@@ -1108,8 +1240,9 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         prose=docsource.load(data_dir, site.framework_ref),
         agents=docsfacts.agents(docs, site.data["agent_routes"]),
         cli=engine.cli_commands(),
+        actions=load_actions(data_dir),
     )
-    written: list[tuple[str, str, str]] = []
+    written: list[tuple[str, str, str, str]] = []
     rows: list[dict[str, Any]] = []
 
     def emit(
@@ -1134,7 +1267,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             body=body,
             summary=summary or intro,
         )
-        written.append((page_path, title, twin))
+        written.append((page_path, title, description, twin))
         rows.append(row)
 
     for key, page in docs["pages"].items():
@@ -1211,14 +1344,14 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         for p in docs["pages"].values()
     )
     llms += "".join(
-        f"- [Docs: {md_escape(title)}]({path}index.md)\n"
-        for path, title, _ in written
+        f"- [Docs: {md_escape(title)}]({path}index.md): {md_escape(description)}\n"
+        for path, title, description, _ in written
         if path not in {p["path"] for p in docs["pages"].values()}
     )
     return SectionResult(
-        pages=[p for p, _, _ in written],
+        pages=[p for p, _, _, _ in written],
         llms=llms,
-        docs=[(f"{p}index.md", twin) for p, _, twin in written],
+        docs=[(f"{p}index.md", twin) for p, _, _, twin in written],
         data_lines=(
             "- [/api/docs/index.json](/api/docs/index.json): every docs page, "
             "and each agent's routes, grade and witness rows\n"
@@ -1228,7 +1361,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
     )
 
 
-def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str]]) -> None:
+def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str, str]]) -> None:
     """/api/docs/index.json: the docs pages and the per-agent facts they show."""
     api = out_dir / "api" / DOCS
     api.mkdir(parents=True, exist_ok=True)
@@ -1236,7 +1369,9 @@ def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str]]) -> None:
         "schema_version": 1,
         "engine": ctx.site.framework_ref,
         "catalog": ctx.site.catalog_ref,
-        "pages": [{"path": p, "md": f"{p}index.md", "title": t} for p, t, _ in written],
+        "pages": [
+            {"path": p, "md": f"{p}index.md", "title": t} for p, t, _, _ in written
+        ],
         "agents": [{k: v for k, v in a.items() if k != "notes"} for a in ctx.agents],
     }
     (api / "index.json").write_text(
