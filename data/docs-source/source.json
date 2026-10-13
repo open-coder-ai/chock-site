@@ -1,0 +1,33 @@
+{
+  "engine_ref": "c111603ca56534eb59083b6048456120be23616b",
+  "files": {
+    "CHANGELOG.md": {
+      "snapshot": "CHANGELOG.md"
+    },
+    "docs/adopting.md": {
+      "snapshot": "docs__adopting.md"
+    },
+    "docs/baseline-policies.md": {
+      "snapshot": "docs__baseline-policies.md"
+    },
+    "docs/cli-reference.md": {
+      "snapshot": "docs__cli-reference.md"
+    },
+    "docs/concepts.md": {
+      "snapshot": "docs__concepts.md"
+    },
+    "docs/coverage-levels.md": {
+      "snapshot": "docs__coverage-levels.md"
+    },
+    "docs/custom-policies.md": {
+      "snapshot": "docs__custom-policies.md"
+    },
+    "docs/enforcement-surfaces.md": {
+      "snapshot": "docs__enforcement-surfaces.md"
+    },
+    "docs/getting-started.md": {
+      "snapshot": "docs__getting-started.md"
+    },
+    "docs/troubleshooting.md": null
+  }
+}

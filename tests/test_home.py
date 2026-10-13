@@ -193,7 +193,7 @@ def test_counts_labels_and_stats_are_computed(built) -> None:
     cards = re.search(r'id="track-coding".*?</article>', html, re.DOTALL).group(0)
     assert f"<dd>{len(policies)}</dd>" in cards
     assert f"<dd>{len(data['presets'])}</dd>" in cards
-    assert "<dd>5</dd>" in cards
+    assert f"<dd>{len(data['builder_clients']['order'])}</dd>" in cards
     assert "AVAILABLE NOW" in cards
 
 
@@ -254,12 +254,13 @@ def test_use_cases_are_coding_only_and_drawn_from_presets(built) -> None:
     )
 
 
-def test_works_with_lists_five_agents(built) -> None:
+def test_works_with_lists_every_install_client(built) -> None:
     html = _home(built)
     block = re.search(r'<section class="works".*?</section>', html, re.DOTALL).group(0)
-    assert block.count('class="works-item"') == 5
-    for name in ("Claude Code", "Cursor", "Codex", "GitHub Copilot", "Devin"):
-        assert name in block
+    clients = _site_json(built)["builder_clients"]
+    assert block.count('class="works-item"') == len(clients["order"]) == 12
+    for client in clients["order"]:
+        assert clients["clients"][client]["name"] in block
 
 
 def test_install_line_follows_released(built) -> None:

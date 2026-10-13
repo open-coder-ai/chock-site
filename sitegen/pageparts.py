@@ -239,6 +239,7 @@ def write_page(
         VERSION=site.data["version"],
         SCRIPTS=script_tags,
         BODY_END=Safe(body_end),
+        ARIA_DOCS=Safe(' aria-current="page"') if nav == "docs" else "",
         ARIA_FAQ=Safe(' aria-current="page"') if nav == "faq" else "",
         ARIA_SECURITY=Safe(' aria-current="page"') if nav == "security" else "",
     )
@@ -270,7 +271,11 @@ def _footer_links(site: Site, templates: Path) -> dict[str, Safe]:
         ("/coding/builder/", "Builder"),
     ]
     clients = site.data["builder_clients"]
-    repos = [clients["clients"][c]["plugin_repo"] for c in clients["order"]]
+    repos = [
+        repo
+        for c in clients["order"]
+        if (repo := clients["clients"][c]["plugin_repo"]) is not None
+    ]
     agents = [(url, url.rstrip("/").rsplit("/", 1)[-1]) for url in repos]
     project = [
         (links["engine_repo"], "GitHub"),

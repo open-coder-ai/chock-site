@@ -5,6 +5,10 @@ import re
 from html.parser import HTMLParser
 from pathlib import Path
 
+import yaml
+
+from tests.conftest import DATA
+
 CSP = (
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' "
     "data:; connect-src 'self'; font-src 'self'; object-src 'none'; "
@@ -65,6 +69,13 @@ def _policy_ids(built) -> list[str]:
     return [p["id"] for p in data["policies"]]
 
 
+def _docs_pages(built) -> int:
+    """Docs pages: one per docs.yaml page, per agentseam agent and per visible policy."""
+    docs = yaml.safe_load((DATA / "docs.yaml").read_text(encoding="utf-8"))
+    api = json.loads((built.out / "api" / "docs" / "index.json").read_text("utf-8"))
+    return len(docs["pages"]) + len(api["agents"]) + len(_policy_ids(built))
+
+
 def test_every_visible_policy_has_a_page(built) -> None:
     for pid in _policy_ids(built):
         page = built.out / "coding" / "policies" / pid / "index.html"
@@ -73,7 +84,8 @@ def test_every_visible_policy_has_a_page(built) -> None:
 
 def test_every_page_has_one_h1_lang_csp_title(built) -> None:
     pages = _pages(built)
-    assert len(pages) == len(_policy_ids(built)) + 15  # shared + sections + 404
+    # shared + sections + 404, plus the docs section (DOC-1)
+    assert len(pages) == len(_policy_ids(built)) + 15 + _docs_pages(built)
     for page in pages:
         parser = PageParser()
         parser.feed(page.read_text(encoding="utf-8"))

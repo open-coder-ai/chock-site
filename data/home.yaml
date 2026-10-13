@@ -24,11 +24,11 @@ steps:
   - {title: "Run one command", body: "Ask before running `chock install --selection '…'`: it builds one plugin on your machine and checks every policy against its hash."}
   - {title: "Keep working", body: "Your agent now checks each risky action. Change your picks any time and run the command again."}
 landing:
-  eyebrow: "OPEN SOURCE · GUARDRAILS FOR AI AGENTS"
+  eyebrow: "OPEN SOURCE · KILL SWITCH FOR CODING AGENTS"
   stats_line: "__COUNT__ POLICIES · __TESTED__ TESTS"
-  headline_lead: "Teach your AI agent"
-  headline_accent: "what not to do."
-  sub: "chock stops an agent before it takes a risky step. It works with coding agents today. Guardrails for agents that act for people and businesses are in design."
+  headline_lead: "A kill switch for your coding agent's"
+  headline_accent: "wrong moves."
+  sub: "You decide what it must never do. chock kills that action — nothing else. No suggestions, no rewrites; the agent keeps working."
   primary_cta: "Build your plugin"
   secondary_cta: "See how it works"
   copy_label: "Copy"

@@ -1,5 +1,6 @@
 """The builder's agent picker and per-client install panels, as HTML and Markdown (BV-S1)."""
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -7,6 +8,22 @@ from .pageparts import data_fill
 from .render import Prose, Safe, render_file
 
 STEP_KINDS = ("command", "note", "settings")
+# A sentence and its closing punctuation, for the agent-facing ask in Markdown notes.
+SENTENCE_RE = re.compile(r".+?(?:[.!?]+(?=\s|$)|$)", re.DOTALL)
+INSTALL_WORDS = "chock install"
+
+
+def agent_note(text: str, ask: str) -> str:
+    """An engine note for agents: each sentence naming `chock install` gets the site's ask before its stop."""
+
+    def _ask(match: re.Match) -> str:
+        sentence = match.group(0)
+        if INSTALL_WORDS not in sentence or "ask" in sentence.lower():
+            return sentence
+        body = sentence.rstrip(".!?")
+        return f"{body}{ask}{sentence[len(body) :]}"
+
+    return SENTENCE_RE.sub(_ask, text)
 
 
 def _hidden(client: str, shown: str) -> Safe:
@@ -60,6 +77,32 @@ def untested_lines(block: dict[str, Any], templates: Path) -> str:
         )
         for client in block["order"]
         if (data := block["clients"][client])["witness"] == "untested"
+    )
+
+
+def evidence_line(
+    block: dict[str, Any], templates: Path, client: str, hidden: str = ""
+) -> str:
+    """The "evidence wanted" notice for one client, or "" without an evidence row (S-EV)."""
+    notice = block["clients"][client]["evidence"]
+    if notice is None:
+        return ""
+    return render_file(
+        templates / "builder-evidence.html",
+        ID=client,
+        HIDDEN=Safe(hidden),
+        LABEL=notice["label"],
+        LINE=Prose(notice["line"]),
+        URL=notice["url"],
+        LINK=notice["link"],
+    )
+
+
+def evidence_lines(block: dict[str, Any], templates: Path) -> str:
+    """The builder's evidence notices, one per client with an evidence row, shown when picked."""
+    return "".join(
+        evidence_line(block, templates, client, _hidden(client, block["default"]))
+        for client in block["order"]
     )
 
 
@@ -134,6 +177,11 @@ def markdown(block: dict[str, Any]) -> str:
                 f"{data['untested_label']} {data['untested_line']} "
                 f"[{block['texts']['report']}]({data['report']}).\n\n"
             )
+        if notice := data["evidence"]:
+            lines.append(
+                f"{notice['label']} {notice['line']} "
+                f"[{notice['link']}]({notice['url']}).\n\n"
+            )
         lines.append(
             f"{block['texts']['command_md']}\n\n    {command}\n\n{data['steps_heading']}\n\n"
         )
@@ -144,7 +192,7 @@ def markdown(block: dict[str, Any]) -> str:
                 number += 1
                 lines.append(f"{number}. (command)\n\n       {text}\n\n")
             elif kind == "note":
-                lines.append(f"{text}\n\n")
+                lines.append(f"{agent_note(text, block['texts']['ask_inline'])}\n\n")
             else:
                 lines.extend(f"    {line}\n" for line in text.splitlines())
                 lines.append("\n")
@@ -152,5 +200,11 @@ def markdown(block: dict[str, Any]) -> str:
         for step in data["remove"]:
             (kind, text), *_ = step.items()
             lines.append(f"- {text}\n" if kind == "note" else f"- `{text}`\n")
-        lines.append(f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n\n")
+        if unverified := data["remove_unverified"]:
+            lines.append(
+                f"- {unverified['text']} [{unverified['link']}]({unverified['url']}).\n"
+            )
+        if data["plugin_repo"]:
+            lines.append(f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n")
+        lines.append("\n")
     return "".join(lines)

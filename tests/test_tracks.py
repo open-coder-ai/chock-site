@@ -27,6 +27,7 @@ SHARED_TOP_LEVEL = {
     "security",
     "for-agents",
     "report",
+    "docs",
     "llms.txt",
     "llms-full.txt",
     "sitemap.xml",

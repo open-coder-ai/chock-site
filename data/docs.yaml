@@ -1,0 +1,226 @@
+# The docs section at /docs/ (DOC-1, org-plan plan/one-oh-gaps.md).
+# This file holds wording and structure only. Every fact on a docs page comes from
+# the pinned engine (.framework-ref), the agentseam release the engine pins, or the
+# pinned catalog (.catalog-ref): install steps, grades, witnesses, CLI help.
+# Prose quoted from chock's own docs lives in data/docs-source/, a snapshot that
+# `python -m sitegen.docsource --chock <checkout>` regenerates; CI fails when it drifts.
+
+engine_repo: https://github.com/open-coder-ai/chock
+source_dir: docs-source
+
+# Which route each witness-ledger surface proves. A plugin witness never clears a sync claim.
+surface_routes:
+  plugin-hook: plugin
+  agent-hooks: sync
+  git-hook-env: git
+
+nav:
+  - group: Get started
+    pages: [overview, quickstart-plugin, quickstart-repo]
+  - group: Guides
+    pages: [agents, policies, configure, monitor, troubleshooting]
+  - group: Reference
+    pages: [cli, release-notes]
+
+pages:
+  overview:
+    path: /docs/
+    title: Docs
+    nav_label: Overview
+    description: "How chock works and how to use it: plugins for your agent, or hooks in your repo."
+    intro: "chock turns guardrail policies into hooks your AI coding agent runs. There are two ways in. The plugin path builds one plugin for one agent from the policies you pick. The repo path wires a repository's own hooks, git hooks and CI, so every clone carries the policies."
+    blocks: [paths, labels, grades, witness]
+    prose:
+      - {file: docs/concepts.md, sections: [Policy, Gate, Enforcement surface]}
+      - {file: docs/coverage-levels.md, sections: [The levels]}
+  quickstart-plugin:
+    path: /docs/quickstart/plugin/
+    title: "Quickstart: plugin path"
+    nav_label: "Quickstart: plugin"
+    description: "Install the engine, pick policies, and build one plugin for your agent."
+    intro: "One command builds a plugin from your picks for one agent. The steps after it are the agent's own, exactly as the engine prints them."
+    blocks: [install, pick, clients]
+    prose: []
+  quickstart-repo:
+    path: /docs/quickstart/repo/
+    title: "Quickstart: repo path"
+    nav_label: "Quickstart: repo"
+    description: "Onboard a git repository with chock init and chock sync: agent hooks, git hooks and CI."
+    intro: "The repo path puts policies in the repository itself, so they travel with every clone. chock sync wires each agent's hook file, the git hooks, and optionally a CI gate."
+    blocks: [install, sync]
+    prose:
+      - file: docs/getting-started.md
+        sections: [Prerequisites, 2. Onboard a repository, 3. Install a policy, 4. See enforcement in action, 6. Keep it reproducible]
+  agents:
+    path: /docs/agents/
+    title: Agents
+    nav_label: Agents
+    description: "Every agent agentseam records: its route, what it can enforce, and what that rests on."
+    intro: "One page per agent. Each fact comes from the agentseam matrix the engine pins and from the engine's own data; nothing here is typed by hand."
+    blocks: [agent_table]
+    prose: []
+  policies:
+    path: /docs/policies/
+    title: Policies
+    nav_label: Policies
+    description: "Every catalog policy: what it does, its grade on each agent, what it misses, and an example."
+    intro: "One page per policy in the pinned catalog. A grade is the catalog's own label for that agent."
+    blocks: [policy_table]
+    prose: []
+  configure:
+    path: /docs/configure/
+    title: Configure
+    nav_label: Configure
+    description: "Selection files, switching plugin members on and off, local policies, and where to customise."
+    intro: "What you can change after an install, and the files it lives in."
+    blocks: [selection, toggles]
+    prose:
+      - {file: docs/custom-policies.md, sections: [2. Add it to a selection]}
+      - {file: docs/baseline-policies.md, sections: [Customising a policy]}
+      - {file: docs/adopting.md, sections: ["Golden rule: customize in these places only"]}
+  monitor:
+    path: /docs/monitor/
+    title: Monitor
+    nav_label: Monitor
+    description: "Where the engine records gate outcomes, and how chock status reads them."
+    intro: "Gates in a repo record what they decided in a local log. chock status reads it."
+    blocks: [log]
+    prose: []
+  troubleshooting:
+    path: /docs/troubleshooting/
+    title: Troubleshooting
+    nav_label: Troubleshooting
+    description: "Known install notes per agent, what happens when a guard cannot decide, and arming a fresh clone."
+    intro: "Each agent's install notes, as the engine prints them, then the engine docs on the cases that most often surprise people."
+    blocks: [measured, client_notes]
+    prose:
+      - {file: docs/troubleshooting.md, first: 20, optional: true}
+      - {file: docs/enforcement-surfaces.md, sections: [What happens when the guard cannot decide]}
+      - {file: docs/adopting.md, sections: [How to verify a fresh clone enforces]}
+  cli:
+    path: /docs/cli/
+    title: CLI reference
+    nav_label: CLI reference
+    description: "Every chock command and its options, generated from the engine's own --help."
+    intro: "Generated from the engine's argument parsers at the pinned commit."
+    blocks: [cli]
+    prose:
+      - {file: docs/cli-reference.md, sections: [Typical workflows]}
+  release-notes:
+    path: /docs/release-notes/
+    title: Release notes
+    nav_label: Release notes
+    description: "The newest entries of the engine's changelog at the pinned commit."
+    intro: "The newest sections of chock's CHANGELOG.md at the pinned engine commit."
+    blocks: []
+    prose:
+      - {file: CHANGELOG.md, first: 5}
+
+texts:
+  ask_first: "Ask the user before running any command on this page: each one changes how their agent or repository behaves."
+  built_engine: "Built from engine"
+  built_catalog: "and catalog"
+  agent_description: "__NAME__ and chock: routes, install steps, what it can enforce, and the evidence behind it."
+  agent_intro: "Routes: __ROUTES__. agentseam tier __TIER__, grade __GRADE__ before a tool runs."
+  policy_description: "__NAME__: what it does, its label on each agent, what it misses, and examples."
+  policy_intro: "Catalog policy __ID__, version __VERSION__, labelled __WORD__ on __AGENT__."
+  on_this_page: "On this page"
+  copy: "Copy"
+  # Callout labels for `> [!NOTE]`, `> [!TIP]` and `> [!WARNING]` in engine docs.
+  callouts: {note: Note, tip: Tip, warning: Warning}
+  next: "Next"
+  previous: "Previous"
+  paths_heading: Two paths
+  # Each path is a card and a tab. A tab lists, in order: `install` (the engine install
+  # command), `pick` (the builder's command forms), or {file, sections}: the first code
+  # block of each named section of that engine doc.
+  paths:
+    - title: "Plugin path"
+      body: "The install command builds one plugin for one agent from a selection. No repository changes."
+      page: quickstart-plugin
+      tab: [install, pick]
+    - title: "Repo path"
+      body: "chock init and chock sync wire a repository's agent hooks, git hooks and CI."
+      page: quickstart-repo
+      tab:
+        - install
+        - {file: docs/getting-started.md, sections: [2. Onboard a repository, 3. Install a policy]}
+  labels_heading: What a label means
+  labels_intro: "Every policy carries one label per agent. These are the engine's label words:"
+  grades_heading: Grades and what they rest on
+  grades_intro: "agentseam grades what each agent can enforce before a tool runs, capped by the evidence behind it: a row resting on vendor docs cannot read enforceable. Counts at the pinned agentseam release:"
+  grade_row: "__GRADE__: __COUNT__ agents"
+  basis_heading: "Basis of each row"
+  basis_row: "__BASIS__: __COUNT__ agents"
+  witness_heading: Witnessed and documented
+  witness_body: "Witnessed means a person saw a chock refusal fire in that agent, on that route, and the engine's ledger records the date and method. Documented means the claim rests on the vendor's docs or source. The engine's ledger at this commit has __COUNT__ rows."
+  install_heading: "1. Install the engine"
+  pick_heading: "2. Pick your policies"
+  pick_body: "Pick policies on the builder. It gives you a share code and the command for your agent. The command takes this form (ask the user before running it):"
+  pick_link: Open the builder
+  clients_heading: "3. Run it for your agent"
+  clients_intro: "Each agent below shows its install steps exactly as the engine prints them. Tested means a person has seen chock's refusals fire in that agent through the plugin."
+  agent_page_link: "Agent page"
+  sync_heading: Agents chock sync wires
+  sync_intro: "chock sync writes these agents' hook files in the repository. Name them with --agents, or leave it out for all of them."
+  sync_turn_end: "also gates the end of a turn"
+  sync_columns: [Agent, Name for --agents, Hook file, Turn end, State]
+  agent_columns: [Agent, Routes, Tier, Grade, Basis, Fail mode]
+  route_words: {plugin: plugin, sync: sync, none: none}
+  routes_heading: Routes
+  plugin_route: "Plugin route: `chock install --client __CLIENT__` (ask the user before running it)"
+  sync_route: "Repo hooks: `__COMMAND__` writes `__CONFIG__` (ask the user before running it)"
+  enforcement_heading: What it can enforce
+  enforcement_fields: {tier: Tier, grade: Grade before a tool runs, fail_mode: Fail mode before a tool runs, basis: Basis, recorded: Recorded}
+  events_heading: Events
+  events_columns: [Event, Can block, Can rewrite, Fail mode]
+  word_yes: "yes"
+  word_no: "no"
+  ask_heading: Ask support
+  ask_row: "Answers an ask with: __VERDICT__. Honours ask: __HONOURS__. Evidence: __EVIDENCE__ (__TEST__)."
+  ask_none: "The engine records no ask claim for this agent."
+  timeout_heading: Hook timeout
+  timeout_row: "Default __SECONDS__ seconds, set by the __FIELD__ field in __UNIT__."
+  timeout_unknown: "The vendor documents no default timeout."
+  timeout_none: "The engine records no timeout for this agent."
+  timeout_source: Vendor source
+  witness_route_heading: Witness status
+  plugin_state: "Plugin route (__CLIENT__): __STATE__."
+  sync_state: "Repo hooks: __STATE__. A plugin witness never clears this route."
+  note_heading: Note
+  note_source: Source
+  evidence_line: "chock has not seen this agent run its hooks yet. If you use it, you can help:"
+  ledger_row: "__ROUTE__ route, __SURFACE__: __CLIENT__, __DATE__. __METHOD__"
+  ledger_none: "No row in the engine's witness ledger for this agent."
+  evidence_heading: Evidence wanted
+  limits_heading: Known limits
+  limits_none: "agentseam records no notes for this agent."
+  install_steps_heading: Install steps
+  policy_columns: [Policy, Label, Status]
+  policy_agents_heading: On each agent
+  policy_agent_columns: [Agent, Label, What it does there]
+  policy_what_heading: What it does
+  policy_misses_heading: What it misses
+  policy_examples_heading: Examples from its eval suite
+  policy_links_heading: More
+  policy_catalog_link: The policy on the catalog pages
+  policy_source_link: Source at the pinned catalog commit
+  selection_heading: The selection file
+  toggles_heading: Switch members on and off
+  toggles_intro: "These commands come from the engine; their help is printed as the engine prints it."
+  toggle_commands: [bundle, enable, disable]
+  log_heading: The gate log
+  log_body: "Gates run in a repository append each outcome to a local log, one JSON record per line. The engine keeps the current file and one rotated file:"
+  log_status: "Read it with chock status. Its options, as the engine prints them:"
+  log_commands: [status, gate-log]
+  measured_heading: Measured problems and fixes
+  # Only problems a person measured, with the date. DOC-2 adds logging and doctor.
+  measured:
+    - heading: "Windows: a Claude Code marketplace update fails with an SSL certificate error"
+      body: "Measured on 2026-10-12, on Windows with antivirus that intercepts HTTPS: Claude Code's marketplace update failed with `SSL certificate problem: unable to get local issuer certificate`, while a plain `git fetch` in the same shell succeeded. What fixed it: `git config --global http.sslBackend schannel`, then cloning the stale marketplace copy again. The chock plugin for Claude Code was not affected: it installs from a local folder marketplace, with no git fetch."
+  client_notes_heading: Install notes per agent
+  cli_groups: {everyday: Everyday, authoring: Authoring, aliases: Pre-launch aliases}
+  prose_heading: From the engine docs
+  ask_code: "Ask the user before running the commands below:"
+  ask_note: "Ask the user before running a command this note names:"
+  help_more: "The full options are on this page's HTML version, as the engine prints them."

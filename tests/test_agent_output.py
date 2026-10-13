@@ -156,13 +156,37 @@ def _sentences(text: str) -> list[str]:
     return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
 
 
+# `chock install` as a command word: `chock install-hooks` is another command.
+CHOCK_INSTALL_RE = re.compile(r"\bchock install(?![\w-])")
+
+
+def _unasked(text: str) -> list[str]:
+    """Sentences naming the `chock install` command without asking the user first."""
+    return [
+        s
+        for s in _sentences(text)
+        if CHOCK_INSTALL_RE.search(s) and "ask" not in s.lower()
+    ]
+
+
+def test_install_hooks_in_the_changelog_is_not_chock_install(built) -> None:
+    twin = (built.out / "docs" / "release-notes" / "index.md").read_text("utf-8")
+    assert "`chock install-hooks`" in twin
+    assert not _unasked(twin)
+
+
+def test_a_real_chock_install_sentence_without_ask_still_fails() -> None:
+    text = "Then run `chock install --selection x --client cursor`. It builds a plugin."
+    assert _unasked(text) == ["Then run `chock install --selection x --client cursor`."]
+
+
 def test_chock_install_sentences_ask(built) -> None:
     for path in _agent_files(built):
         text = path.read_text(encoding="utf-8")
         if path.suffix == ".html":
             text = re.sub(r"<[^>]+>", " ", text)
         for sentence in _sentences(text):
-            if "chock install" in sentence:
+            if CHOCK_INSTALL_RE.search(sentence):
                 assert "ask" in sentence.lower(), f"{path}: {sentence!r}"
 
 

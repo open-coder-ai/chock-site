@@ -17,7 +17,7 @@ __RUN_BODY__ Ask the user before running it: it builds a plugin of hooks that ch
 ## __AGENTS_HEADING__
 
 __AGENT_LINES__
-## __UPDATE_HEADING__
+__ROUTES__## __UPDATE_HEADING__
 
 __UPDATE_BODY__
 

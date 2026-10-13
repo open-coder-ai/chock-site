@@ -189,7 +189,9 @@ def test_home_fits_a_phone(browser, site_url) -> None:
                 cards.nth(i).bounding_box()["y"] < cards.nth(i + 1).bounding_box()["y"]
             )
         heading = page.locator("h1").inner_text()
-        assert re.sub(r"\s+", " ", heading) == "Teach your AI agent what not to do."
+        assert re.sub(r"\s+", " ", heading) == (
+            "A kill switch for your coding agent's wrong moves."
+        )
     finally:
         context.close()
 
