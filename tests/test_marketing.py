@@ -53,6 +53,11 @@ def test_home_hero_demo_and_stats(built) -> None:
     html = (built.out / "index.html").read_text(encoding="utf-8")
     assert "A kill switch for your coding agent&#x27;s" in html
     assert "wrong moves." in html
+    assert "OPEN SOURCE · KILL SWITCH FOR CODING AGENTS" in html
+    assert (
+        "<title>A kill switch for your coding agent&#x27;s wrong moves. · chock.sh</title>"
+        in html
+    )
     data = json.loads((built.out / "data" / "site.json").read_text(encoding="utf-8"))
     ids = {p["id"] for p in data["policies"]}
     for pid in ("block-no-verify", "protect-main-branch", "scan-secrets"):
