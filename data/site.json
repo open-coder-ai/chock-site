@@ -52,7 +52,7 @@
     "notfound_sub": "That page is not part of chock.sh.",
     "design_badge": "DESIGN IN PROGRESS",
     "available_badge": "AVAILABLE NOW",
-    "footer_tagline": "Guardrails for AI agents. Part of open-coder-ai.",
+    "footer_tagline": "A kill switch for your coding agent's wrong moves. Part of open-coder-ai.",
     "policies_search": "Search __COUNT__ policies: secrets, git, curl…",
     "computed_note": "Counts are computed from the catalog at each build.",
     "grades_agent_note": "Labels and counts are the catalog's grades on __AGENT__; each policy's page lists its grade on every agent."

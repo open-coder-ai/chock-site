@@ -55,6 +55,10 @@ def test_home_hero_demo_and_stats(built) -> None:
     assert "wrong moves." in html
     assert "OPEN SOURCE · KILL SWITCH FOR CODING AGENTS" in html
     assert (
+        "A kill switch for your coding agent&#x27;s wrong moves. Part of open-coder-ai."
+        in html
+    )
+    assert (
         "<title>A kill switch for your coding agent&#x27;s wrong moves. · chock.sh</title>"
         in html
     )
