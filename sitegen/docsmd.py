@@ -13,6 +13,7 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*#*\s*$")
 LIST_RE = re.compile(r"^(\s*)([-*+]|\d+[.)])\s+(.*)$")
 TABLE_SEP_RE = re.compile(r"^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$")
 HR_RE = re.compile(r"^\s*(-{3,}|\*{3,}|_{3,})\s*$")
+CALLOUT_RE = re.compile(r"^\[!([A-Za-z]+)\]\s*$")
 INLINE_RE = re.compile(
     r"(?P<tick>`+)(?P<code>.+?)(?P=tick)"
     r"|!?\[(?P<text>[^\]]+)\]\((?P<href>[^)\s]+)(?:\s+\"[^\"]*\")?\)"
@@ -26,11 +27,20 @@ Resolve = Callable[[str], str]
 class Renderer:
     """Renders one page's Markdown: heading ids stay unique across every call."""
 
-    def __init__(self, templates: Path, resolve: Resolve, shift: int = 0) -> None:
+    def __init__(
+        self,
+        templates: Path,
+        resolve: Resolve,
+        shift: int = 0,
+        callouts: dict[str, str] | None = None,
+    ) -> None:
         self.dir = templates / "docs" / "md"
         self.resolve = resolve
         self.shift = shift
+        self.callouts = callouts or {}
         self.ids: set[str] = set()
+        # (level, id, text) of each h2 and h3, for the page's "On this page" list.
+        self.toc: list[tuple[int, str, str]] = []
 
     def _t(self, name: str, **tokens: object) -> str:
         return render_file(self.dir / f"{name}.html", **tokens)
@@ -42,6 +52,13 @@ class Renderer:
         while found in self.ids:
             found, n = f"{base}-{n}", n + 1
         self.ids.add(found)
+        return found
+
+    def toc_heading(self, level: int, text: str) -> str:
+        """A new heading id, listed in the page's table of contents when it is an h2 or h3."""
+        found = self.heading_id(text)
+        if level in (2, 3):
+            self.toc.append((level, found, text))
         return found
 
     def inline(self, text: str) -> Safe:
@@ -90,7 +107,7 @@ class Renderer:
                     self._t(
                         "h",
                         LEVEL=str(level),
-                        ID=self.heading_id(_plain(text)),
+                        ID=self.toc_heading(level, _plain(text)),
                         TEXT=self.inline(text),
                     )
                 )
@@ -127,6 +144,19 @@ class Renderer:
         while i < len(lines) and lines[i].lstrip().startswith(">"):
             body.append(re.sub(r"^\s*> ?", "", lines[i]))
             i += 1
+        if callout := CALLOUT_RE.match(body[0]):
+            kind = callout.group(1).lower()
+            if kind not in self.callouts:
+                raise PageError(f"docs source: unknown callout [!{callout.group(1)}]")
+            out.append(
+                self._t(
+                    "callout",
+                    KIND=kind,
+                    LABEL=self.callouts[kind],
+                    BODY=Safe("".join(self._blocks(body[1:]))),
+                )
+            )
+            return i
         out.append(self._t("blockquote", BODY=Safe("".join(self._blocks(body)))))
         return i
 
@@ -329,6 +359,20 @@ def first_sections(text: str, count: int, level: int = 2) -> str:
     """The first `count` level-`level` sections of `text`."""
     titles = [t for lv, t, _ in headings(text) if lv == level][:count]
     return sections(text, titles, level)
+
+
+def first_code(text: str) -> tuple[str, str]:
+    """The language and body of the first fenced code block in `text`."""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if fence := FENCE_RE.match(line):
+            indent, marker = len(fence.group(1)), fence.group(2)
+            body = []
+            for nxt in lines[i + 1 :]:
+                if nxt.strip().startswith(marker):
+                    return fence.group(3) or "text", "\n".join(body)
+                body.append(nxt[indent:] if nxt[:indent].isspace() else nxt)
+    raise PageError("docs source: no code block where one was expected")
 
 
 def rewrite_links(text: str, resolve: Resolve, before_fence: str = "") -> str:
