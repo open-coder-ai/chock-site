@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import analytics, coding, engine, general, home, report, repos
+from . import analytics, coding, docs, engine, general, home, report, repos
 from .model import SectionResult, Site
 from .pageparts import (
     PARTIALS,
@@ -19,6 +19,7 @@ from .pageparts import (
 from .render import Prose, Safe, render_file, render_text_file
 
 MD = "md"
+DATA = Path(__file__).resolve().parent.parent / "data"
 
 # Plan 0.1 rule 2: a section id maps to the function that builds its pages.
 SECTION_BUILDERS = {
@@ -401,7 +402,9 @@ def write_css(site: Site, out_dir: Path, static_dir: Path) -> None:
     (out_dir / "css" / "site.css").write_text(css, encoding="utf-8", newline="\n")
 
 
-def write_pages(site: Site, out_dir: Path, templates_dir: Path) -> None:
+def write_pages(
+    site: Site, out_dir: Path, templates_dir: Path, data_dir: Path = DATA
+) -> None:
     """Every page, twin, index and API file described in plan 6.3 and 6.8."""
     home_path, home_md, home_twin = home.build(site, out_dir, templates_dir)
     paths = [home_path]
@@ -413,6 +416,9 @@ def write_pages(site: Site, out_dir: Path, templates_dir: Path) -> None:
         result = builder(site, track, out_dir, templates_dir)
         sections.append(result)
         paths += result.pages
+    # The docs section's llms.txt lines join the frozen "## Docs" list, so it goes first.
+    sections.insert(0, docs.build(site, out_dir, templates_dir, data_dir))
+    paths += sections[0].pages
     shared_docs: list[tuple[str, str]] = [(home_md, home_twin)]
     for build in (_security, _faq, _for_agents, report.build):
         page_path, md_path, twin = build(site, out_dir, templates_dir)

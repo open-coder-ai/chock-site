@@ -238,6 +238,7 @@ def write_page(
         CATALOG_REF_12=site.catalog_ref[:12],
         SCRIPTS=script_tags,
         BODY_END=Safe(body_end),
+        ARIA_DOCS=Safe(' aria-current="page"') if nav == "docs" else "",
         ARIA_FAQ=Safe(' aria-current="page"') if nav == "faq" else "",
         ARIA_SECURITY=Safe(' aria-current="page"') if nav == "security" else "",
     )
