@@ -116,6 +116,7 @@ def _table(ctx: Ctx, head: list[str], rows: list[list[str | Safe]]) -> str:
     """A table whose first cell in each row is the row header."""
     return ctx.t(
         "table",
+        COLUMNS=", ".join(head),
         HEAD=Safe("".join(ctx.t("th", TEXT=h) for h in head)),
         ROWS=Safe(
             "".join(

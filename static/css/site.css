@@ -1974,7 +1974,9 @@ body { overflow-x: clip; }
 .docs-prose blockquote { margin: var(--flow) 0; padding: 4px 18px; border-left: 3px solid var(--line-2); background: var(--panel); border-radius: 0 12px 12px 0; }
 .docs-prose li { margin-bottom: var(--flow-tight); }
 .docs-table { width: 100%; border-collapse: collapse; font-size: 15px; }
-.docs-table th, .docs-table td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+/* Table words never break mid-word: a table too wide for the column scrolls inside its .table-wrap. */
+.docs-table th, .docs-table td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; overflow-wrap: normal; }
+.docs-table code { white-space: nowrap; }
 .docs-table thead th { border-top: 0; background: var(--panel-2); color: var(--text); font-weight: 600; }
 .docs-table tbody th { color: var(--text); font-weight: 500; }
 .docs-table .align-right { text-align: right; }
@@ -2032,11 +2034,6 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
 .callout > * { margin: 0; }
 .callout > * + * { margin-top: var(--flow-tight); }
 .callout-title { color: var(--text); font-weight: 600; }
-
-/* Beside the list, table words stay whole; on a phone they may still break to fit. */
-@media (min-width: 961px) {
-  .docs-table th, .docs-table td { overflow-wrap: break-word; }
-}
 
 @media (max-width: 1180px) {
   .docs-layout:has(> .docs-toc) { grid-template-columns: 220px minmax(0, 1fr); gap: 0 48px; }
