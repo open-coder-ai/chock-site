@@ -2,6 +2,7 @@
 
 import json
 import posixpath
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -265,6 +266,14 @@ def _pick(ctx: Ctx, body: Body) -> None:
     _section(ctx, body, ctx.texts["pick_heading"], html, md)
 
 
+def _md_note(ctx: Ctx, text: str) -> str:
+    """An engine note for a twin: each sentence naming a chock command opens with the ask."""
+    return " ".join(
+        f"{ctx.texts['ask_note']} {part}" if "`chock " in part else part
+        for part in re.split(r"(?<=[.!?])\s+", text)
+    )
+
+
 def _client_block(
     ctx: Ctx, body: Body, client: str, on_agent_page: bool = False
 ) -> tuple[str, str]:
@@ -276,7 +285,9 @@ def _client_block(
         clients["commands"][state], {"__CODE__": "<code>", "__CLIENT__": client}
     )
     word = clients["texts"][state]
-    agent = ctx.docs["plugin_agents"][client]
+    agent = next(
+        a["id"] for a in ctx.agents if a["plugin"] and a["plugin"]["client"] == client
+    )
     heading = f"{about['name']} ({client})"
     link = (
         ""
@@ -320,7 +331,7 @@ def _client_block(
         if kind == "command":
             md.append(f"    {text}\n\n")
         elif kind == "note":
-            md.append(f"{text}\n\n")
+            md.append(f"{_md_note(ctx, text)}\n\n")
         else:
             md.extend(f"    {line}\n" for line in text.splitlines())
             md.append("\n")
@@ -339,25 +350,26 @@ def _clients(ctx: Ctx, body: Body) -> None:
 
 
 def _sync(ctx: Ctx, body: Body) -> None:
+    wired = [a for a in ctx.agents if a["sync"]]
     rows = [
         [
             a["name"],
-            a["sync_name"],
+            a["sync"]["agents"],
             a["config"] or "",
             ctx.texts["sync_turn_end"] if a["turn_end"] else "",
+            a["sync"]["word"],
         ]
-        for a in ctx.agents
-        if a["sync_name"]
+        for a in wired
     ]
     html_rows = [
         [
             Safe(ctx.t("link", HREF=f"/docs/agents/{a['slug']}/", TEXT=a["name"])),
-            Safe(ctx.t("code", TEXT=a["sync_name"])),
+            Safe(ctx.t("code", TEXT=a["sync"]["agents"])),
             Safe(ctx.t("code", TEXT=a["config"] or "")),
             ctx.texts["sync_turn_end"] if a["turn_end"] else "",
+            Safe(ctx.t("state", STATE=a["sync"]["witness"], WORD=a["sync"]["word"])),
         ]
-        for a in ctx.agents
-        if a["sync_name"]
+        for a in wired
     ]
     cols = ctx.texts["sync_columns"]
     _section(
@@ -534,7 +546,9 @@ def _client_notes(ctx: Ctx, body: Body) -> None:
             continue
         heading = f"{about['name']} ({client})"
         html += [_h3(ctx, body, heading), *(_para(ctx, n) for n in notes)]
-        md.append(f"### {heading}\n\n" + "".join(f"{n}\n\n" for n in notes))
+        md.append(
+            f"### {heading}\n\n" + "".join(f"{_md_note(ctx, n)}\n\n" for n in notes)
+        )
     _section(ctx, body, ctx.texts["client_notes_heading"], "".join(html), "".join(md))
 
 
@@ -608,38 +622,50 @@ def _yes(ctx: Ctx, value: bool) -> str:
 
 def _agent_body(ctx: Ctx, body: Body, agent: dict[str, Any]) -> None:
     texts = ctx.texts
-    clients = ctx.site.data["builder_clients"]
+    plugin, sync = agent["plugin"], agent["sync"]
     routes = []
-    for client in agent["plugin_clients"]:
-        routes.append(data_fill(texts["plugin_route"], {"__CLIENT__": client}))
-    if agent["sync_name"]:
+    if plugin:
+        routes.append(
+            data_fill(texts["plugin_route"], {"__CLIENT__": plugin["client"]})
+        )
+    if sync:
         routes.append(
             data_fill(
                 texts["sync_route"],
-                {"__NAME__": agent["sync_name"], "__CONFIG__": agent["config"] or ""},
+                {"__COMMAND__": sync["command"], "__CONFIG__": agent["config"] or ""},
             )
         )
-    if routes:
+    if agent["reason"]:
+        routes.append(agent["reason"])
+    _section(
+        ctx,
+        body,
+        texts["routes_heading"],
+        _list(ctx, routes),
+        "".join(f"- {r}\n" for r in routes),
+    )
+    if note := agent["note"]:
+        line = f"{note['text']} ({texts['note_source']}: {note['source']})"
+        _section(ctx, body, texts["note_heading"], _para(ctx, line), line)
+    # A plugin agent's evidence notice is in its install steps below.
+    if (issue := agent["evidence"]) and not plugin:
+        html = ctx.t(
+            "line-link",
+            LINE=texts["evidence_line"],
+            URL=issue["url"],
+            LINK=issue["link"],
+        )
         _section(
             ctx,
             body,
-            texts["routes_heading"],
-            _list(ctx, routes),
-            "".join(f"- {r}\n" for r in routes),
+            texts["evidence_heading"],
+            html,
+            f"{texts['evidence_line']} [{issue['link']}]({issue['url']})",
         )
-    else:
-        reason = data_fill(
-            texts["no_route"][agent["no_route"]], {"__CONFIG__": agent["config"] or ""}
-        )
-        _section(ctx, body, texts["no_route_heading"], _para(ctx, reason), reason)
 
-    if agent["plugin_clients"]:
-        html, md = [], []
-        for client in agent["plugin_clients"]:
-            h, m = _client_block(ctx, body, client, on_agent_page=True)
-            html.append(h)
-            md.append(m)
-        _section(ctx, body, texts["install_steps_heading"], "".join(html), "".join(md))
+    if plugin:
+        h, m = _client_block(ctx, body, plugin["client"], on_agent_page=True)
+        _section(ctx, body, texts["install_steps_heading"], h, m)
 
     fields = texts["enforcement_fields"]
     rows = [(fields[k], str(agent[k])) for k in fields]
@@ -717,16 +743,16 @@ def _agent_body(ctx: Ctx, body: Body, agent: dict[str, Any]) -> None:
         f"{line}\n\n{md_extra}",
     )
 
-    lines = [
-        data_fill(
-            texts["plugin_state"],
-            {
-                "__CLIENT__": c,
-                "__STATE__": clients["texts"][clients["clients"][c]["witness"]],
-            },
+    lines = []
+    if plugin:
+        lines.append(
+            data_fill(
+                texts["plugin_state"],
+                {"__CLIENT__": plugin["client"], "__STATE__": plugin["word"]},
+            )
         )
-        for c in agent["plugin_clients"]
-    ]
+    if sync:
+        lines.append(data_fill(texts["sync_state"], {"__STATE__": sync["word"]}))
     lines += [
         data_fill(
             texts["ledger_row"],
@@ -964,7 +990,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         docs=docs,
         texts=docs["texts"],
         prose=docsource.load(data_dir, site.framework_ref),
-        agents=docsfacts.agents(docs, site.data["builder_clients"]),
+        agents=docsfacts.agents(docs, site.data["agent_routes"]),
         cli=engine.cli_commands(),
     )
     written: list[tuple[str, str, str]] = []

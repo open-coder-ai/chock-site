@@ -34,10 +34,10 @@ def test_every_agent_page_shows_its_routes(page, site_url) -> None:
     for agent in api["agents"]:
         page.goto(site_url + f"/docs/agents/{agent['slug']}/")
         text = page.locator("main").inner_text()
-        for client in agent["plugin_clients"]:
-            assert f"--client {client}" in text, agent["id"]
-        if agent["sync_name"]:
-            assert f"--agents {agent['sync_name']}" in text, agent["id"]
+        if agent["plugin"]:
+            assert f"--client {agent['plugin']['client']}" in text, agent["id"]
+        if agent["sync"]:
+            assert agent["sync"]["command"] in text, agent["id"]
         assert agent["grade"] in text, agent["id"]
     assert_clean(page)
 

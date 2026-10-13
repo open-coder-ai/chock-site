@@ -32,6 +32,8 @@ UNWIRED_HOOK_DIR = "hook_dir"
 UNWIRED_HOME_CONFIG = "home_config"
 UNWIRED_NO_HOOKS = "no_hooks"
 UNWIRED_UNADAPTED = "unadapted"
+# What agentseam prints where an agent has no hook surface at all.
+NOT_APPLICABLE = agentseam_tiers.NOT_APPLICABLE
 # An argument shown as is: shell-safe characters, with a leading ~ kept for the shell to expand.
 PLAIN_ARG = re.compile(r"~?[\w@%+=:,./-]+")
 
@@ -182,28 +184,9 @@ def selection_schema() -> dict[str, Any]:
     return load_schema(chock.install.selection.SCHEMA)
 
 
-def sync_agents() -> tuple[str, ...]:
-    """The agents `chock sync` wires a repo's own hooks for (the in-agent surface)."""
-    import chock.vendors
-
-    return chock.vendors.in_agent_vendors()
-
-
 def stop_agents() -> tuple[str, ...]:
     """The agents whose end of turn `chock sync` also gates."""
-    import chock.vendors
-
     return chock.vendors.stop_vendors()
-
-
-def sync_names() -> dict[str, str]:
-    """Each agent's first `chock sync --agents` name, keyed by agentseam agent."""
-    import chock.vendors
-
-    names: dict[str, str] = {}
-    for name, agent in chock.vendors.CHOCK_AGENT.items():
-        names.setdefault(agent, name)
-    return names
 
 
 def _data(name: str) -> Any:
@@ -284,6 +267,11 @@ def matrix_agents() -> dict[str, str]:
         agent: str(agentseam_matrix.MATRIX[agent]["display"])
         for agent in agentseam_matrix.agents()
     }
+
+
+def matrix_row(agent: str) -> dict[str, Any]:
+    """The agent's agentseam matrix row: display, tier, config, events and notes."""
+    return agentseam_matrix.MATRIX[agent]
 
 
 def matrix_text(agent: str) -> str:

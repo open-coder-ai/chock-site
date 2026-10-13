@@ -8,15 +8,6 @@
 engine_repo: https://github.com/open-coder-ai/chock
 source_dir: docs-source
 
-# Engine client (chock install --client) -> the agentseam agent whose hooks it reaches.
-# Every engine client exactly once; every target an agentseam matrix row.
-plugin_agents:
-  claude-code: claude_code
-  copilot: vscode_copilot
-  codex: codex_cli
-  cursor: cursor
-  devin: devin
-
 # Which route each witness-ledger surface proves. A plugin witness never clears a sync claim.
 surface_routes:
   plugin-hook: plugin
@@ -159,18 +150,12 @@ texts:
   sync_heading: Agents chock sync wires
   sync_intro: "chock sync writes these agents' hook files in the repository. Name them with --agents, or leave it out for all of them."
   sync_turn_end: "also gates the end of a turn"
-  sync_columns: [Agent, Name for --agents, Hook file, Turn end]
+  sync_columns: [Agent, Name for --agents, Hook file, Turn end, State]
   agent_columns: [Agent, Routes, Tier, Grade, Basis, Fail mode]
   route_words: {plugin: plugin, sync: sync, none: none}
   routes_heading: Routes
   plugin_route: "Plugin route: `chock install --client __CLIENT__` (ask the user before running it)"
-  sync_route: "Sync route: `chock sync --agents __NAME__` writes `__CONFIG__` (ask the user before running it)"
-  no_route_heading: No route yet
-  no_route:
-    none: "This agent has no user hook surface, so chock has nothing to wire."
-    unadapted: "agentseam records this agent but has no adapter for it, so chock does not wire it."
-    home_config: "Its hook config lives at __CONFIG__, outside the repository, and chock sync only writes files inside the repository."
-    no_block: "agentseam records no way for this agent's hooks to refuse a tool call before it runs, so chock sync does not wire it."
+  sync_route: "Repo hooks: `__COMMAND__` writes `__CONFIG__` (ask the user before running it)"
   enforcement_heading: What it can enforce
   enforcement_fields: {tier: Tier, grade: Grade before a tool runs, fail_mode: Fail mode before a tool runs, basis: Basis, recorded: Recorded}
   events_heading: Events
@@ -186,7 +171,11 @@ texts:
   timeout_none: "The engine records no timeout for this agent."
   timeout_source: Vendor source
   witness_route_heading: Witness status
-  plugin_state: "Plugin route (__CLIENT__): __STATE__ on chock.sh."
+  plugin_state: "Plugin route (__CLIENT__): __STATE__."
+  sync_state: "Repo hooks: __STATE__. A plugin witness never clears this route."
+  note_heading: Note
+  note_source: Source
+  evidence_line: "chock has not seen this agent run its hooks yet. If you use it, you can help:"
   ledger_row: "__ROUTE__ route, __SURFACE__: __CLIENT__, __DATE__. __METHOD__"
   ledger_none: "No row in the engine's witness ledger for this agent."
   evidence_heading: Evidence wanted
@@ -219,4 +208,5 @@ texts:
   cli_groups: {everyday: Everyday, authoring: Authoring, aliases: Pre-launch aliases}
   prose_heading: From the engine docs
   ask_code: "Ask the user before running the commands below:"
+  ask_note: "Ask the user before running a command this note names:"
   help_more: "The full options are on this page's HTML version, as the engine prints them."

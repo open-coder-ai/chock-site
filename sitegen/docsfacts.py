@@ -1,9 +1,6 @@
-"""Per-agent facts for the docs: agentseam's matrix joined with the engine's routes, claims and ledger."""
+"""Per-agent facts for the docs: S-ALL's agent routes, plus agentseam's events and the engine's claims and ledger."""
 
 from typing import Any
-
-import agentseam.matrix
-import agentseam.tier_table
 
 from . import engine
 from .pageparts import PageError
@@ -16,30 +13,17 @@ def agent_slug(agent: str) -> str:
     return agent.replace("_", "-")
 
 
-def _check_joins(docs: dict[str, Any], clients: list[str]) -> None:
-    """plugin_agents names every engine client once, each mapped to a matrix row."""
-    joins = docs["plugin_agents"]
-    if sorted(joins) != sorted(clients):
-        raise PageError(
-            f"docs.yaml plugin_agents: {sorted(joins)} != engine {sorted(clients)}"
-        )
-    for client, agent in joins.items():
-        if agent not in agentseam.matrix.MATRIX:
-            raise PageError(
-                f"docs.yaml plugin_agents: {client} -> {agent} is no agentseam agent"
-            )
-
-
-def _ledger(docs: dict[str, Any]) -> list[dict[str, Any]]:
+def ledger(docs: dict[str, Any]) -> list[dict[str, Any]]:
     """The engine's witness ledger, each row with the route its surface proves."""
     routes = docs["surface_routes"]
+    agents = engine.matrix_agents()
     rows = []
     for row in engine.witness_ledger():
         if row["surface"] not in routes:
             raise PageError(
                 f"witness ledger surface {row['surface']!r} has no route in docs.yaml"
             )
-        if row["agent"] not in agentseam.matrix.MATRIX:
+        if row["agent"] not in agents:
             raise PageError(
                 f"witness ledger agent {row['agent']!r} is no agentseam agent"
             )
@@ -47,61 +31,51 @@ def _ledger(docs: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def _no_route(row: dict[str, Any]) -> str:
-    """Why an agent with neither route has none: a docs.yaml no_route key."""
-    if row["tier"] == agentseam.matrix.TIER_NONE:
-        return "none"
-    if row["tier"] == agentseam.matrix.TIER_UNADAPTED:
-        return "unadapted"
-    if str(row.get("config") or "").startswith("~"):
-        return "home_config"
-    return "no_block"
-
-
-def agents(docs: dict[str, Any], clients: dict[str, Any]) -> list[dict[str, Any]]:
+def agents(docs: dict[str, Any], agent_routes: dict[str, Any]) -> list[dict[str, Any]]:
     """One record per agentseam matrix row, in agentseam's order, with everything a docs page shows."""
-    _check_joins(docs, clients["order"])
-    tiers = {row["agent"]: row for row in agentseam.tier_table.rows()}
-    syncs = set(engine.sync_agents())
     stops = set(engine.stop_agents())
-    names = engine.sync_names()
     claims = {row["agent"]: row for row in engine.ask_claims()}
     timeouts = engine.hook_timeouts()
-    ledger = _ledger(docs)
+    rows = ledger(docs)
     out = []
-    for agent, row in agentseam.matrix.MATRIX.items():
-        plugin = [c for c in clients["order"] if docs["plugin_agents"][c] == agent]
-        routes = ([PLUGIN] if plugin else []) + ([SYNC] if agent in syncs else [])
+    for route in agent_routes["agents"]:
+        agent = route["agent"]
+        matrix = engine.matrix_row(agent)
+        tier = engine.tier_row(agent)
+        routes = ([PLUGIN] if route["plugin"] else []) + (
+            [SYNC] if route["sync"] else []
+        )
         out.append(
             {
                 "id": agent,
                 "slug": agent_slug(agent),
-                "name": row["display"],
+                "name": route["name"],
                 "routes": routes or [NONE],
-                "no_route": None if routes else _no_route(row),
-                "plugin_clients": plugin,
-                "sync_name": names.get(agent, agent) if agent in syncs else None,
+                "plugin": route["plugin"],
+                "sync": route["sync"],
+                "reason": route["reason"],
+                "note": route["note"],
+                "evidence": route["evidence"],
                 "turn_end": agent in stops,
-                "config": row.get("config"),
-                "tier": tiers[agent]["tier"],
-                "grade": tiers[agent]["grade"],
-                "fail_mode": tiers[agent]["fail_mode"],
-                "basis": tiers[agent]["basis"],
-                "recorded": tiers[agent]["recorded"],
+                "config": matrix.get("config"),
+                "tier": tier["tier"],
+                "grade": tier["grade"],
+                "fail_mode": tier["fail_mode"],
+                "basis": tier["basis"],
+                "recorded": tier["recorded"],
                 "events": [
                     {
                         "event": event,
                         "block": bool(cap.get("block")),
                         "rewrite": bool(cap.get("rewrite")),
-                        "fail_mode": cap.get("fail_mode")
-                        or agentseam.tier_table.NOT_APPLICABLE,
+                        "fail_mode": cap.get("fail_mode") or engine.NOT_APPLICABLE,
                     }
-                    for event, cap in row["events"].items()
+                    for event, cap in matrix["events"].items()
                 ],
-                "notes": row.get("notes") or "",
+                "notes": matrix.get("notes") or "",
                 "ask": claims.get(agent),
                 "timeout": timeouts.get(agent),
-                "ledger": [r for r in ledger if r["agent"] == agent],
+                "ledger": [r for r in rows if r["agent"] == agent],
             }
         )
     return out

@@ -37,7 +37,8 @@ def test_every_docs_yaml_page_has_a_page_and_twin(built) -> None:
 
 def test_one_page_per_agentseam_agent(built) -> None:
     api = _api(built)
-    assert [a["id"] for a in api["agents"]] == list(agentseam.matrix.MATRIX)
+    assert [a["id"] for a in api["agents"]] == list(engine.matrix_agents())
+    assert set(engine.matrix_agents()) == set(agentseam.matrix.MATRIX)
     for agent in api["agents"]:
         text = _page(built, f"/docs/agents/{agent['slug']}/")
         assert agent["tier"] in text and agent["grade"] in text, agent["id"]
@@ -73,9 +74,8 @@ def test_plugin_quickstart_shows_every_client_and_its_engine_steps(built) -> Non
 
 def test_repo_quickstart_lists_every_agent_sync_wires(built) -> None:
     text = _page(built, DOCS["pages"]["quickstart-repo"]["path"])
-    names = engine.sync_names()
-    for agent in engine.sync_agents():
-        assert f"<code>{names.get(agent, agent)}</code>" in text, agent
+    for agent in engine.sync_vendors():
+        assert f"<code>{engine.sync_agent_name(agent)}</code>" in text, agent
 
 
 def test_cli_reference_has_every_engine_command(built) -> None:
@@ -114,21 +114,27 @@ def test_plugin_witness_never_clears_a_sync_claim() -> None:
     original = engine.witness_ledger
     engine.witness_ledger = lambda: rows
     try:
-        assert [r["route"] for r in docsfacts._ledger(docs)] == ["plugin"]
+        assert [r["route"] for r in docsfacts.ledger(docs)] == ["plugin"]
         rows[0]["surface"] = "unknown-surface"
         with pytest.raises(PageError, match="has no route"):
-            docsfacts._ledger(docs)
+            docsfacts.ledger(docs)
     finally:
         engine.witness_ledger = original
 
 
-def test_plugin_agents_must_name_every_engine_client() -> None:
-    clients = {"order": [*engine.client_ids(), "new-client"]}
-    with pytest.raises(PageError, match="plugin_agents"):
-        docsfacts.agents(DOCS, clients)
-    bad = {**DOCS, "plugin_agents": {**DOCS["plugin_agents"], "cursor": "nobody"}}
-    with pytest.raises(PageError, match="no agentseam agent"):
-        docsfacts.agents(bad, {"order": engine.client_ids()})
+def test_agent_pages_follow_the_install_pages_routes(built) -> None:
+    """One source: docs agents take plugin, repo-hooks and reason from S-ALL's agent_routes."""
+    routes = built.site.data["agent_routes"]["agents"]
+    api = {a["id"]: a for a in _api(built)["agents"]}
+    assert list(api) == [r["agent"] for r in routes]
+    for row in routes:
+        text = _page(built, f"/docs/agents/{api[row['agent']]['slug']}/")
+        if row["plugin"]:
+            assert f"--client {row['plugin']['client']}" in text, row["agent"]
+        if row["sync"]:
+            assert row["sync"]["command"] in text, row["agent"]
+        if row["reason"]:
+            assert row["reason"] in text.replace("&#x27;", "'"), row["agent"]
 
 
 def test_snapshot_taken_at_another_engine_commit_is_refused(tmp_path: Path) -> None:
