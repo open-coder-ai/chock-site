@@ -1997,10 +1997,11 @@ body { overflow-x: clip; }
 .docs-tabs-on .docs-tab-panel { padding-top: var(--flow); }
 .docs-tab-panel:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
 
-/* Code blocks get a Copy button from docs.js; the code keeps clear of it. */
-.code-block { position: relative; }
-main .code-block > pre { margin: 0; padding-right: 76px; }
-.code-copy { position: absolute; top: 9px; right: 9px; background: var(--bg-2); box-shadow: -14px 0 10px var(--bg-2); }
+/* Code blocks get a Copy button from docs.js. The wrapper draws the box and keeps a
+   gutter for the button, so the code scrolls inside its own area and never under it. */
+.code-block { position: relative; padding-right: 72px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; }
+main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 0; }
+.code-copy { position: absolute; top: 9px; right: 9px; }
 
 /* Callouts: `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]` in engine docs, and evidence notices. */
 .callout { --callout: var(--info); padding: 12px 16px; background: color-mix(in srgb, var(--callout) 10%, var(--panel)); border: 1px solid var(--line); border-left: 4px solid var(--callout); border-radius: 12px; color: var(--body); }
