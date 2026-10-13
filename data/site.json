@@ -13,7 +13,7 @@
     {"key": "clients", "label": "Agents"}
   ],
   "pages": {
-    "home": {"title": "Guardrails for AI agents", "description": "chock stops an AI agent before it takes a risky step. Coding-agent guardrails are available now; guardrails for general agents are in design."},
+    "home": {"title": "Guardrails for AI agents", "description": "A kill switch for your coding agent's wrong moves."},
     "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ of them, each labelled blocks, asks, warns or advisory."},
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
