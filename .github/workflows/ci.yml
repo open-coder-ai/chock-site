@@ -49,8 +49,29 @@ jobs:
           FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
       - run: pytest -q --ignore=tests/e2e
 
+  docs-drift:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: refs
+        run: echo "framework=$(cat .framework-ref)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: open-coder-ai/chock
+          path: .chock-src
+          ref: ${{ steps.refs.outputs.framework }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: python -m sitegen.docsource --chock .chock-src --check
+
   e2e:
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

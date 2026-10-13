@@ -32,6 +32,8 @@ UNWIRED_HOOK_DIR = "hook_dir"
 UNWIRED_HOME_CONFIG = "home_config"
 UNWIRED_NO_HOOKS = "no_hooks"
 UNWIRED_UNADAPTED = "unadapted"
+# What agentseam prints where an agent has no hook surface at all.
+NOT_APPLICABLE = agentseam_tiers.NOT_APPLICABLE
 # An argument shown as is: shell-safe characters, with a leading ~ kept for the shell to expand.
 PLAIN_ARG = re.compile(r"~?[\w@%+=:,./-]+")
 
@@ -182,12 +184,94 @@ def selection_schema() -> dict[str, Any]:
     return load_schema(chock.install.selection.SCHEMA)
 
 
+def stop_agents() -> tuple[str, ...]:
+    """The agents whose end of turn `chock sync` also gates."""
+    return chock.vendors.stop_vendors()
+
+
+def _data(name: str) -> Any:
+    return json.loads(
+        importlib.resources.files("chock")
+        .joinpath("data", name)
+        .read_text(encoding="utf-8")
+    )
+
+
+def ask_claims() -> list[dict[str, Any]]:
+    """The engine's tested claims about which agents honour an `ask` verdict."""
+    return [row for row in _data("claims.json") if row["claim"] == "honours_ask"]
+
+
+def hook_timeouts() -> dict[str, dict[str, Any]]:
+    """The engine's recorded hook timeout per agent, with the vendor page it comes from."""
+    return _data("hook_timeouts.json")
+
+
+def witness_ledger() -> list[dict[str, Any]]:
+    """The engine's witness ledger: one row per agent and surface a person saw fire."""
+    return _data("witnesses.json")
+
+
+def gate_logs() -> list[str]:
+    """The repo-relative paths of the gate log the engine writes, current then rotated."""
+    import chock.gatelog
+
+    folder = f".chock/{chock.gatelog.LOG_DIR}"
+    return [
+        f"{folder}/{chock.gatelog.LOG_NAME}",
+        f"{folder}/{chock.gatelog.ROTATED_NAME}",
+    ]
+
+
+def cli_commands() -> list[dict[str, str]]:
+    """Every `chock` command in the engine's groups, with its one-line help and its --help text."""
+    import contextlib
+    import io
+    import os
+
+    import chock.cli
+
+    groups = json.loads(
+        importlib.resources.files("chock")
+        .joinpath("data", "commands.json")
+        .read_text(encoding="utf-8")
+    )
+    saved = os.environ.get("COLUMNS")
+    os.environ["COLUMNS"] = "100"
+    rows = []
+    try:
+        for group, commands in groups.items():
+            for name, spec in commands.items():
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf), contextlib.suppress(SystemExit):
+                    chock.cli.COMMANDS[name][0](["--help"])
+                rows.append(
+                    {
+                        "group": group,
+                        "name": name,
+                        "summary": spec["help"],
+                        "help": buf.getvalue().rstrip(),
+                    }
+                )
+    finally:
+        if saved is None:
+            del os.environ["COLUMNS"]
+        else:
+            os.environ["COLUMNS"] = saved
+    return rows
+
+
 def matrix_agents() -> dict[str, str]:
     """Every agent agentseam's matrix records, mapped to its display name, in the matrix's order."""
     return {
         agent: str(agentseam_matrix.MATRIX[agent]["display"])
         for agent in agentseam_matrix.agents()
     }
+
+
+def matrix_row(agent: str) -> dict[str, Any]:
+    """The agent's agentseam matrix row: display, tier, config, events and notes."""
+    return agentseam_matrix.MATRIX[agent]
 
 
 def matrix_text(agent: str) -> str:
