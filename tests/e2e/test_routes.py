@@ -54,6 +54,9 @@ def test_a_plugin_link_opens_that_agents_section(page, site_url) -> None:
     assert section.locator(".client-evidence a").get_attribute("href") == (
         f"{ISSUES}177"
     )
+    removal = section.locator(".remove-unverified")
+    assert "Removal steps not verified for goose yet." in removal.inner_text()
+    assert removal.locator("a").get_attribute("href") == f"{ISSUES}177"
     assert_clean(page)
 
 

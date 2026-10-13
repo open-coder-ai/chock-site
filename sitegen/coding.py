@@ -837,6 +837,21 @@ def _step_items(templates: Path, steps: list[dict[str, str]]) -> Safe:
     return Safe(clientpage.step_blocks(templates, steps))
 
 
+def _remove_items(templates: Path, about: dict[str, Any]) -> Safe:
+    """An agent's remove steps, or the "not verified" line with its evidence link."""
+    unverified = about["remove_unverified"]
+    if unverified is None:
+        return _step_items(templates, about["remove"])
+    return Safe(
+        render_file(
+            templates / "remove-unverified.html",
+            TEXT=unverified["text"],
+            URL=unverified["url"],
+            LINK=unverified["link"],
+        )
+    )
+
+
 def _client_command(clients: dict[str, Any], client: str) -> str:
     """The install command form for one agent, with "…" for the selection code."""
     state = clients["clients"][client]["witness"]
@@ -887,7 +902,7 @@ def _install(
             STEPS_HEADING=about["steps_heading"],
             STEPS=_step_items(templates / track.slug, about["steps"]),
             REMOVE_LABEL=inst["agent_remove"],
-            REMOVE=_step_items(templates / track.slug, about["remove"]),
+            REMOVE=_remove_items(templates / track.slug, about),
             REPORT_HREF=report.report_link(
                 agent=client, page=f"/{track.slug}/install/"
             ),

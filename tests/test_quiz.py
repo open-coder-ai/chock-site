@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from sitegen import engine
+from sitegen import clientdata, engine
 from sitegen.pageparts import PageError
 from sitegen.presets import load_presets
 from sitegen.quiz import load_quiz
@@ -20,8 +20,8 @@ def _presets():
 
 
 def _clients() -> dict:
-    """The parts of the builder_clients block the quiz reads, from witness.yaml and the engine."""
-    witness = yaml.safe_load((DATA / "witness.yaml").read_text(encoding="utf-8"))
+    """The parts of the builder_clients block the quiz reads: witness states as the site shows them."""
+    witness = clientdata.load_witness(DATA, engine.client_ids())
     return {
         "default": witness["default"],
         "order": list(witness["clients"]),

@@ -164,13 +164,13 @@
       "codex": [{"note": "Uninstall __PLUGIN__ in /plugins, then delete the folder __PLUGIN_DIR__."}],
       "copilot": [{"note": "Uninstall __PLUGIN__ from the __MARKETPLACE__ marketplace in Copilot, then delete the folder __PLUGIN_DIR__."}],
       "devin": [{"note": "Remove __PLUGIN__ from Devin's plugins, then delete the folder __PLUGIN_DIR__."}],
-      "goose": [{"note": "Add __PLUGIN__ to disabledPlugins in ~/.config/goose/settings.json, or delete the folder __PLUGIN_DIR__, then start a new goose session."}],
-      "grok": [{"note": "Take the plugin out of `enabled` under [plugins] in ~/.grok/config.toml (or press Space on it in grok's Plugins tab), then delete the folder __PLUGIN_DIR__."}],
-      "antigravity": [{"note": "Remove __PLUGIN__ from Antigravity's plugins (and its copy in ~/.gemini/config/plugins/, if you made one), then delete the folder __PLUGIN_DIR__."}],
-      "gemini-cli": [{"note": "Uninstall the __PLUGIN__ extension in Gemini CLI, then delete the folder __PLUGIN_DIR__."}],
-      "openhands": [{"note": "Stop passing --plugin __PLUGIN_DIR__ (or take it out of sources under [plugins] in ~/.openhands/config.toml), then delete the folder __PLUGIN_DIR__."}],
-      "kimi-code": [{"note": "In Kimi Code run `/plugins disable __PLUGIN__`, then delete the folder __PLUGIN_DIR__."}],
-      "factory-droid": [{"note": "Uninstall __PLUGIN__ from the project's Droid plugins, then delete the folder __PLUGIN_DIR__."}]
+      "goose": null,
+      "grok": null,
+      "antigravity": null,
+      "gemini-cli": null,
+      "openhands": null,
+      "kimi-code": null,
+      "factory-droid": null
     },
     "commands": {
       "witnessed": "chock install --selection '__CODE__' --client __CLIENT__ --apply",
@@ -188,6 +188,7 @@
       "card_untested": "Untested: the command builds the plugin, and you apply the steps in __NAME__ yourself.",
       "repo_line": "A second route: single-policy plugins in",
       "remove_md": "To remove it:",
+      "remove_unverified": "Removal steps not verified for __NAME__ yet. What you see when you remove it is wanted in",
       "report": "help test it",
       "command_md": "The command (ask the user before running it: it builds a plugin of hooks that change how their agent behaves):",
       "ask_inline": " (ask the user before running it)",

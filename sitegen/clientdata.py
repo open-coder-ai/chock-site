@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 
-from . import engine
+from . import engine, routes
 from .model import Policy
 from .pageparts import PageError, data_fill
 
@@ -19,22 +19,43 @@ ENGINE_CLIENT = "claude-code"
 UNGRADED = "ungraded"
 
 
-def load_witness(data_dir: Path, clients: list[str]) -> dict[str, Any]:
-    """data/witness.yaml, checked: every engine client exactly once, each witnessed or untested."""
+def ledger_clients(data_dir: Path) -> set[str]:
+    """The install clients whose agent has a plugin-hook row in chock's witness ledger."""
+    plugins = routes.load_routes(data_dir)["plugins"]
+    return {
+        client for client, agent in plugins.items() if engine.plugin_witnessed(agent)
+    }
+
+
+def load_witness(
+    data_dir: Path, clients: list[str], ledger: set[str] | None = None
+) -> dict[str, Any]:
+    """data/witness.yaml, checked, as each engine client's shown state (S-ALL).
+
+    A client with no row is untested, after the rows in picker order. A "witnessed" row
+    shows only where chock's ledger backs it (`ledger`); otherwise the client is untested
+    and is listed under `unbacked`.
+    """
     data = yaml.safe_load((data_dir / WITNESS_YAML).read_text(encoding="utf-8"))
-    states = data["clients"]
-    if sorted(states) != sorted(clients):
-        raise PageError(
-            f"{WITNESS_YAML}: clients {sorted(states)} != engine {sorted(clients)}"
-        )
-    for client, state in states.items():
+    rows = data["clients"]
+    unknown = sorted(set(rows) - set(clients))
+    if unknown:
+        raise PageError(f"{WITNESS_YAML}: clients {unknown} are not engine clients")
+    for client, state in rows.items():
         if state not in WITNESS_STATES:
             raise PageError(
                 f"{WITNESS_YAML}: {client} is {state!r}, not one of {WITNESS_STATES}"
             )
-    if data["default"] not in states:
+    if data["default"] not in rows:
         raise PageError(f"{WITNESS_YAML}: default {data['default']!r} is not a client")
-    return data
+    backed = ledger_clients(data_dir) if ledger is None else ledger
+    claimed = [c for c, state in rows.items() if state == "witnessed"]
+    states = {c: "witnessed" if c in backed else "untested" for c in claimed}
+    states |= {c: "untested" for c in [*rows, *clients] if c not in states}
+    return data | {
+        "clients": states,
+        "unbacked": [c for c in claimed if c not in backed],
+    }
 
 
 def load_evidence(data_dir: Path, witness: dict[str, Any]) -> dict[str, Any]:
@@ -171,6 +192,26 @@ def remove_steps(steps: list[dict[str, str]], client: str) -> list[dict[str, str
     return [{kind: data_fill(text, tokens) for kind, text in s.items()} for s in steps]
 
 
+def _remove_unverified(
+    steps: list[dict[str, str]] | None,
+    text: str,
+    client: str,
+    name: str,
+    evidence: dict[str, Any],
+) -> dict[str, str] | None:
+    """For a client with no verified remove steps: the "not verified" line and its evidence link."""
+    if steps is not None:
+        return None
+    notice = evidence_notice(evidence, client, name)
+    if notice is None:
+        raise PageError(f"site.json remove: {client} has no steps and no evidence row")
+    return {
+        "text": data_fill(text, {"__NAME__": name}),
+        "url": notice["url"],
+        "link": notice["link"],
+    }
+
+
 def builder_clients(
     data_dir: Path,
     site_data: dict[str, Any],
@@ -191,6 +232,7 @@ def builder_clients(
         ):
             raise PageError(f"site.json plugin_repos: {client} is {repo!r}")
     removes = _per_client(config, "remove", engine.client_ids())
+    unverified = texts["remove_unverified"]
     clients = {}
     for client, state in witness["clients"].items():
         name = engine.client_name(client)
@@ -206,7 +248,10 @@ def builder_clients(
             "report": data_fill(witness["report"], {"__CLIENT__": client}),
             "evidence": evidence_notice(evidence, client, name),
             "steps": engine.client_steps(client),
-            "remove": remove_steps(removes[client], client),
+            "remove": remove_steps(removes[client] or [], client),
+            "remove_unverified": _remove_unverified(
+                removes[client], unverified, client, name, evidence
+            ),
             "plugin_repo": repos[client],
             "build_link": data_fill(texts["build_link"], named),
             "labels": client_labels(

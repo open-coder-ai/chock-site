@@ -6,20 +6,20 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 from conftest import CATALOG, SCREENSHOTS, assert_clean, collect
 
-from sitegen import engine
+from sitegen import clientdata, engine
 from sitegen.presets import load_presets
 from tests.fixtures.untested import CLIENT, ISSUE
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESETS = {p.id: p for p in load_presets(ROOT / "data" / "presets.yaml")}
 BUILDER = "/coding/builder/"
-WITNESS = yaml.safe_load((ROOT / "data" / "witness.yaml").read_text(encoding="utf-8"))
+WITNESS = clientdata.load_witness(ROOT / "data", engine.client_ids())
 # Every `chock install --client` target, in the picker's order (S-ALL).
 CLIENTS = tuple(WITNESS["clients"])
-WITNESSED = ("claude-code", "cursor", "codex", "copilot", "devin")
+# witness.yaml's "witnessed", where chock's ledger has a plugin-hook row.
+WITNESSED = ("claude-code", "cursor", "codex")
 PRESET = "git-hygiene"
 SIZES = {
     "desktop": {"width": 1280, "height": 900},

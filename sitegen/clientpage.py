@@ -200,6 +200,10 @@ def markdown(block: dict[str, Any]) -> str:
         for step in data["remove"]:
             (kind, text), *_ = step.items()
             lines.append(f"- {text}\n" if kind == "note" else f"- `{text}`\n")
+        if unverified := data["remove_unverified"]:
+            lines.append(
+                f"- {unverified['text']} [{unverified['link']}]({unverified['url']}).\n"
+            )
         if data["plugin_repo"]:
             lines.append(f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n")
         lines.append("\n")

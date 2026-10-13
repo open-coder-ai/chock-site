@@ -88,23 +88,24 @@ def test_a_plugin_witness_never_clears_repo_hooks(built) -> None:
         assert rows[agent]["sync"]["witness"] == "untested", agent
 
 
-def test_plugin_witness_follows_witness_yaml(built) -> None:
+def test_plugin_witness_follows_witness_yaml_and_the_ledger(built) -> None:
     rows = _rows(built)
-    witness = yaml.safe_load((DATA / "witness.yaml").read_text("utf-8"))["clients"]
+    witness = clientdata.load_witness(DATA, engine.client_ids())["clients"]
     for row in rows.values():
         if row["plugin"]:
             assert row["plugin"]["witness"] == witness[row["plugin"]["client"]]
 
 
 def test_the_engine_untested_plugins_are_untested_here(built) -> None:
-    """witness.yaml's untested plugins are exactly the clients the engine's install calls Untested."""
+    """The engine install's Untested clients, plus witness.yaml claims the ledger does not back."""
     block = _site(built)["builder_clients"]
     prefix = block["engine_untested_prefix"]
     (rule,) = [r for r in engine.warning_rules() if r["says"].startswith(prefix)]
     untested = [
         c for c in block["order"] if block["clients"][c]["witness"] == "untested"
     ]
-    assert sorted(untested) == sorted(rule["clients"])
+    unbacked = clientdata.load_witness(DATA, engine.client_ids())["unbacked"]
+    assert sorted(untested) == sorted([*rule["clients"], *unbacked])
 
 
 def test_records_come_from_agentseam(built) -> None:

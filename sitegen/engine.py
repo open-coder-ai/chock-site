@@ -8,6 +8,7 @@ import shlex
 from pathlib import Path
 from typing import Any
 
+import chock.evidence
 import chock.hooks.sync_notes
 import chock.install.package
 import chock.install.place
@@ -237,3 +238,8 @@ def unwired_reason(agent: str) -> str:
     if not chock.vendors.repo_wirable(agent):
         return UNWIRED_HOME_CONFIG
     raise ValueError(f"{agent}: adapter wirable but not wired")
+
+
+def plugin_witnessed(agent: str) -> bool:
+    """Whether chock's witness ledger holds a plugin-hook row for the agent."""
+    return chock.evidence.witness(agent, chock.evidence.PLUGIN_HOOK) is not None
