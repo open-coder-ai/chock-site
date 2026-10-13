@@ -1,0 +1,52 @@
+name: Site feature request
+description: Ask for something new on the chock site — a page, a section, a builder or author page option, or a change to the agent-readable twins
+title: "[site feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a new policy, use the [chock-catalog forms](https://github.com/open-coder-ai/chock-catalog/issues/new/choose). For a new `chock install` target or engine feature, use the [chock forms](https://github.com/open-coder-ai/chock/issues/new/choose).
+        For a vulnerability, do not open a public issue: use the private security advisory link in the issue chooser.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - home page
+        - docs
+        - builder page
+        - author page
+        - report page
+        - agent-readable twins (.md, llms.txt, structured data)
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you are trying to do, and what stops you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What the site should do instead.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways to get the same result, if any.
+    validations:
+      required: false
+  - type: input
+    id: page-url
+    attributes:
+      label: Page URL
+      description: The page this is about, if any.
+    validations:
+      required: false
