@@ -1,0 +1,58 @@
+# Every agent agentseam's matrix records, and the routes chock.sh offers it (S-ALL).
+# The routes are read from the pinned engine, never typed here:
+#   plugin: the agent is a `chock install --client` target (`plugins` maps client -> agentseam agent);
+#   repo hooks: `chock sync --repo` wires the agent's pre-tool hook;
+#   neither: the agent is named, with the engine's reason in `reasons`.
+# Witness states come from data/witness.yaml (plugin) and chock's ledger (repo hooks); a plugin
+# witness never clears a repo-hooks claim. Evidence issues come from data/evidence.yaml.
+# A `notes` row carries a fact from a cited source; `source` is shown with it.
+plugins:
+  claude-code: claude_code
+  copilot: copilot
+  codex: codex_cli
+  cursor: cursor
+  devin: devin
+  goose: goose
+  grok: grok
+  antigravity: antigravity
+  gemini-cli: gemini_cli
+  openhands: openhands
+  kimi-code: kimi_code
+  factory-droid: factory_droid
+reasons:
+  hook_dir: "Not wired by chock sync: this agent runs one executable per hook event from a hooks folder, and chock sync writes JSON or TOML hook files, so it needs a dispatcher chock does not ship yet."
+  home_config: "Not wired by chock sync: this agent reads its hooks from a config in your home folder, and chock sync writes only inside the repository."
+  no_hooks: "Not wired: agentseam records no hook in this agent that can stop an action, so chock has nothing to wire."
+  unadapted: "Not wired: agentseam records this agent but has no adapter for its hooks, so chock has nothing to wire."
+notes:
+  gemini_cli:
+    text: "Google is sunsetting Gemini CLI for consumer tiers in favor of Antigravity CLI: there, use the Antigravity plugin."
+    source: "chock's install data (src/chock/install/data/install.json, gemini-cli steps)"
+  openhands:
+    text: "chock's Claude Code plugin does not protect OpenHands, even though OpenHands reads .claude-plugin/: its matchers never match OpenHands' terminal or file_editor tools. Use the OpenHands plugin."
+    source: "chock docs/enforcement-surfaces.md"
+  copilot:
+    text: "This is the Copilot plugin. Copilot's repo hooks are the GitHub Copilot (VS Code agent mode / CLI) row."
+    source: "agentseam matrix notes for copilot"
+texts:
+  heading: "Every agent"
+  intro: "Every agent agentseam records, and how chock reaches it: a plugin, repo hooks, or neither, with the reason. Tested means a person has seen chock's refusals fire on that route; a plugin test says nothing about repo hooks."
+  routes:
+    both: "Routes: plugin and repo hooks."
+    plugin: "Route: plugin."
+    sync: "Route: repo hooks."
+    none: "No route yet."
+  col_agent: "Agent"
+  col_plugin: "Plugin (chock install)"
+  col_sync: "Repo hooks (chock sync)"
+  col_record: "agentseam's record"
+  no_plugin: "No plugin format."
+  plugin_link: "--client __CLIENT__"
+  sync_command: "chock sync --repo . --agents __AGENT__"
+  record: "pre-tool: __TIER__, __GRADE__, fail mode __FAIL__ (__BASIS__, __DATE__)"
+  builder_line: "Your agent is not in this list? The Install page lists every agent agentseam records, and how chock reaches it."
+  builder_link: "Every agent"
+  md_plugin: "Plugin (ask the user before running a command):"
+  md_sync: "Repo hooks (ask the user before running a command):"
+  md_record: "agentseam:"
+  md_source: "Source:"

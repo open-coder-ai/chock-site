@@ -45,23 +45,44 @@ def _witness_copy(tmp_path: Path, edit) -> Path:
     return tmp_path
 
 
-def test_every_agent_is_witnessed() -> None:
-    """Cursor joined the others on 2026-10-11 (org-plan witness-cursor-2026-10-11.md)."""
+def test_witnessed_needs_a_plugin_hook_row_in_chocks_ledger() -> None:
+    """S-ALL: witness.yaml's "witnessed" shows only where chock's ledger has a plugin-hook row."""
+    assert clientdata.ledger_clients(DATA) == {"claude-code", "cursor", "codex"}
     data = clientdata.load_witness(DATA, engine.client_ids())
     assert data["default"] == "claude-code"
-    assert {c for c, s in data["clients"].items() if s == "witnessed"} == {
-        "claude-code",
-        "cursor",
-        "codex",
-        "copilot",
-        "devin",
-    }
+    shown = {c for c, s in data["clients"].items() if s == "witnessed"}
+    assert shown == {"claude-code", "cursor", "codex"}
+    assert data["unbacked"] == ["copilot", "devin"]
+    backed = clientdata.load_witness(
+        DATA,
+        engine.client_ids(),
+        {"claude-code", "cursor", "codex", "copilot", "devin"},
+    )
+    assert backed["unbacked"] == []
+    assert backed["clients"]["devin"] == "witnessed"
 
 
-def test_witness_file_must_name_every_engine_client(tmp_path: Path) -> None:
+def test_a_client_without_a_row_is_untested(tmp_path: Path) -> None:
+    """The 7 P-ALL clients have no witness.yaml row; they show untested, after the rows."""
+    data = clientdata.load_witness(DATA, engine.client_ids())
+    rows = yaml.safe_load((DATA / "witness.yaml").read_text(encoding="utf-8"))[
+        "clients"
+    ]
+    missing = [c for c in engine.client_ids() if c not in rows]
+    assert len(missing) == 7
+    assert list(data["clients"]) == [*rows, *missing]
+    assert all(data["clients"][c] == "untested" for c in missing)
     folder = _witness_copy(tmp_path, lambda d: d["clients"].pop("devin"))
-    with pytest.raises(PageError, match="clients"):
-        clientdata.load_witness(folder, engine.client_ids())
+    every = set(engine.client_ids())
+    assert clientdata.load_witness(folder, engine.client_ids(), every)["clients"][
+        "devin"
+    ] == ("untested")
+
+
+def test_witness_file_names_engine_clients_only(tmp_path: Path) -> None:
+    folder = _witness_copy(tmp_path, lambda d: d["clients"].update(vim="untested"))
+    with pytest.raises(PageError, match="vim"):
+        clientdata.load_witness(folder, engine.client_ids(), set())
 
 
 def test_witness_state_is_witnessed_or_untested(tmp_path: Path) -> None:
@@ -124,18 +145,30 @@ def test_engine_untested_note_is_dropped_once(built) -> None:
 def test_remove_steps_and_repos_name_every_agent(built) -> None:
     block = _site(built)["builder_clients"]
     for client, data in block["clients"].items():
-        assert data["remove"], client
-        assert data["plugin_repo"].startswith("https://github.com/open-coder-ai/")
+        assert bool(data["remove"]) != bool(data["remove_unverified"]), client
+        if data["remove_unverified"]:
+            assert data["remove_unverified"]["url"] == data["evidence"]["url"], client
+            assert data["remove_unverified"]["text"].startswith(
+                f"Removal steps not verified for {data['name']} yet."
+            )
+        repo = data["plugin_repo"]
+        assert repo is None or repo.startswith("https://github.com/open-coder-ai/")
         assert "__" not in json.dumps(data["remove"]), client
+    with_repo = {c for c, d in block["clients"].items() if d["plugin_repo"]}
+    assert with_repo == {"claude-code", "cursor", "codex", "copilot", "devin"}
 
 
 def test_site_json_carries_each_client(built) -> None:
     block = _site(built)["builder_clients"]
-    assert block["order"] == ["claude-code", "cursor", "codex", "copilot", "devin"]
+    assert block["order"][:5] == ["claude-code", "cursor", "codex", "copilot", "devin"]
+    assert sorted(block["order"]) == sorted(engine.client_ids())
     assert sorted(block["clients"]) == sorted(engine.client_ids())
-    ids = {p["id"] for p in _site(built)["policies"]}
+    policies = _site(built)["policies"]
     for client, data in block["clients"].items():
-        assert set(data["labels"]) == ids, client
+        # Each label lives once, in policies[].agent_labels (the site.json budget).
+        assert "labels" not in data, client
+        for policy in policies:
+            assert policy["agent_labels"][client]["keyword"], (client, policy["id"])
         assert data["steps"], client
         assert data["witness"] in ("witnessed", "untested")
     assert "--apply" in block["commands"]["witnessed"]
@@ -183,10 +216,28 @@ def _install_section(html: str, client: str) -> str:
     return html[start : html.index("</section>", start)]
 
 
-def test_site_data_has_no_evidence_rows(tmp_path: Path) -> None:
-    """Every agent is witnessed, so no row; a row for a witnessed agent fails the build."""
+def test_site_evidence_rows_are_the_untested_agents(tmp_path: Path) -> None:
+    """Each untested agent has a row, matching the engine's own evidence note; a witnessed one fails."""
     witness = clientdata.load_witness(DATA, engine.client_ids())
-    assert clientdata.load_evidence(DATA, witness)["issues"] == {}
+    issues = clientdata.load_evidence(DATA, witness)["issues"]
+    untested = {c for c, s in witness["clients"].items() if s == "untested"}
+    # copilot and devin: witness.yaml says witnessed, chock's ledger has no row; no issue.
+    assert set(issues) == untested - set(witness["unbacked"])
+    assert issues == {
+        "antigravity": 129,
+        "gemini-cli": 132,
+        "goose": 177,
+        "grok": 188,
+        "kimi-code": 135,
+        "factory-droid": 184,
+        "openhands": 181,
+    }
+    for client, number in issues.items():
+        url = f"https://github.com/open-coder-ai/agentseam/issues/{number}"
+        assert any(
+            r["kind"] == "client" and client in r["clients"] and r["says"].endswith(url)
+            for r in engine.warning_rules()
+        ), client
     rows = yaml.safe_load((DATA / "evidence.yaml").read_text(encoding="utf-8"))
     rows["issues"] = {"cursor": 141}
     (tmp_path / "evidence.yaml").write_text(yaml.safe_dump(rows), encoding="utf-8")
@@ -254,7 +305,8 @@ def test_no_notice_for_a_witnessed_agent(request, which) -> None:
         assert block["clients"][client]["evidence"] is None, client
         assert f'class="client-evidence" data-client="{client}"' not in builder
         assert "client-evidence" not in _install_section(install, client), client
-    notices = len(block["clients"]) - len(witnessed)
+    notices = len([c for c, d in block["clients"].items() if d["evidence"]])
+    assert notices >= 7
     assert builder.count('class="client-evidence"') == notices
     assert install.count('class="client-evidence"') == notices
 
@@ -264,13 +316,16 @@ def test_cursor_shows_no_evidence_or_untested_notice(built) -> None:
     about = _site(built)["builder_clients"]["clients"]["cursor"]
     assert about["witness"] == "witnessed"
     assert about["evidence"] is None
+    evidence_label = "Evidence wanted for Cursor."
     for page in ("builder", "install"):
         for name in ("index.html", "index.md"):
             text = (built.out / "coding" / page / name).read_text(encoding="utf-8")
-            assert "client-evidence" not in text, (page, name)
-            assert "client-untested" not in text, (page, name)
+            assert 'class="client-evidence" data-client="cursor"' not in text
+            assert 'class="client-untested" data-client="cursor"' not in text
             assert about["untested_label"] not in text, (page, name)
-            assert "agentseam issue #" not in text, (page, name)
+            assert evidence_label not in text, (page, name)
+    install = (built.out / "coding" / "install" / "index.html").read_text("utf-8")
+    assert "agentseam issue #" not in _install_section(install, "cursor")
 
 
 def test_the_notice_follows_the_data_row(tmp_path: Path) -> None:

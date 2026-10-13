@@ -1,4 +1,4 @@
-"""The only module that imports chock: hashes, labels, selection schema and warnings."""
+"""The only module that imports chock (and agentseam): hashes, labels, schema, warnings, routes."""
 
 import base64
 import importlib.resources
@@ -8,12 +8,17 @@ import shlex
 from pathlib import Path
 from typing import Any
 
+import chock.evidence
+import chock.hooks.sync_notes
 import chock.install.package
 import chock.install.place
 import chock.install.resolve
 import chock.install.selection
 import chock.install.steps
 import chock.lock
+import chock.vendors
+from agentseam import matrix as agentseam_matrix
+from agentseam import tier_table as agentseam_tiers
 from chock.validation.loading import load_schema
 
 INSTALL_JSON = "data/install.json"
@@ -22,6 +27,11 @@ SelectionError = chock.install.selection.SelectionError
 SCHEMA2 = chock.install.selection.SCHEMA2
 CATALOG_ENTRY = chock.install.selection.CATALOG
 BUNDLE_NAME = chock.install.selection.DEFAULT_BUNDLE
+# Why `chock sync` does not wire an agent, keyed as data/routes.yaml words it (S-ALL).
+UNWIRED_HOOK_DIR = "hook_dir"
+UNWIRED_HOME_CONFIG = "home_config"
+UNWIRED_NO_HOOKS = "no_hooks"
+UNWIRED_UNADAPTED = "unadapted"
 # An argument shown as is: shell-safe characters, with a leading ~ kept for the shell to expand.
 PLAIN_ARG = re.compile(r"~?[\w@%+=:,./-]+")
 
@@ -170,3 +180,66 @@ def load_selection(arg: str) -> dict[str, Any]:
 def selection_schema() -> dict[str, Any]:
     """The engine's selection schema, served at /api/selection.schema.json."""
     return load_schema(chock.install.selection.SCHEMA)
+
+
+def matrix_agents() -> dict[str, str]:
+    """Every agent agentseam's matrix records, mapped to its display name, in the matrix's order."""
+    return {
+        agent: str(agentseam_matrix.MATRIX[agent]["display"])
+        for agent in agentseam_matrix.agents()
+    }
+
+
+def matrix_text(agent: str) -> str:
+    """The agent's whole matrix row as JSON text, for checks that cite it."""
+    return json.dumps(agentseam_matrix.MATRIX[agent])
+
+
+def tier_row(agent: str) -> dict[str, str]:
+    """agentseam's pre-tool tier row for the agent: tier, grade, fail mode, basis, date."""
+    return next(r for r in agentseam_tiers.rows() if r["agent"] == agent)
+
+
+def sync_vendors() -> tuple[str, ...]:
+    """The agents `chock sync --repo` wires a pre-tool hook for."""
+    return chock.vendors.in_agent_vendors()
+
+
+def sync_agent_name(vendor: str) -> str:
+    """The first name `chock sync --agents` accepts for the vendor."""
+    return next(k for k, v in chock.vendors.CHOCK_AGENT.items() if v == vendor)
+
+
+def sync_witnessed(vendor: str) -> bool:
+    """Whether chock's ledger holds a live run of its repo hooks in the vendor's client."""
+    return chock.hooks.sync_notes.witnessed(vendor)
+
+
+def sync_tier_line(vendor: str) -> str | None:
+    """The agentseam row `chock sync` prints for the vendor, or None without one."""
+    return chock.hooks.sync_notes.tier_line(vendor)
+
+
+def unwired_reason(agent: str) -> str:
+    """Why `chock sync` does not wire the agent: a hooks folder, a home config, no hooks, no adapter."""
+    if agent in sync_vendors():
+        raise ValueError(f"{agent} is wired by chock sync")
+    try:
+        config = chock.vendors.entry(agent)
+    except KeyError:
+        tier = tier_row(agent)["tier"]
+        if tier == agentseam_matrix.TIER_NONE:
+            return UNWIRED_NO_HOOKS
+        if tier == agentseam_matrix.TIER_UNADAPTED:
+            return UNWIRED_UNADAPTED
+        raise ValueError(f"{agent}: no adapter, tier {tier!r}") from None
+    if config["config_format"] not in chock.vendors.SYNC_FORMATS:
+        return UNWIRED_HOOK_DIR
+    if not chock.vendors.repo_wirable(agent):
+        return UNWIRED_HOME_CONFIG
+    raise ValueError(f"{agent}: adapter wirable but not wired")
+
+
+def plugin_witnessed(agent: str) -> bool:
+    """Whether chock's witness ledger holds a plugin-hook row for the agent."""
+    return chock.evidence.witness(agent, chock.evidence.PLUGIN_HOOK) is not None

@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import authordata, clientdata, clientpage, engine, report
-from .catalog import first_sentence
+from . import authordata, clientdata, clientpage, engine, report, routes
+from .catalog import first_sentence, lead_sentences
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
     PARTIALS,
@@ -27,6 +27,8 @@ from .render import Prose, Safe, md, md_code, render_file, render_text_file
 from .sitedata import site_dict
 
 MD = "md"
+# A policy page's meta description runs on past a short first sentence to this length.
+META_MIN = 50
 
 
 def _home(
@@ -496,14 +498,14 @@ def _policy_pages(
             templates,
             path=path,
             title=f"{policy.name}: {policy.word} {policy.says}",
-            description=first_sentence(policy.description),
+            description=lead_sentences(policy.description, META_MIN),
             content=content,
             jsonld_data={
                 "@context": "https://schema.org",
                 "@type": "SoftwareSourceCode",
                 "name": policy.name,
                 "version": policy.version,
-                "description": first_sentence(policy.description),
+                "description": lead_sentences(policy.description, META_MIN),
                 "codeRepository": policy.source_url,
                 "license": "Apache-2.0",
                 "programmingLanguage": "Python",
@@ -665,6 +667,11 @@ def _builder(
                 SUB=Prose(page["description"]),
                 NOSCRIPT=Prose(texts["builder_noscript"]),
                 CLIENT_PICKER=Safe(clientpage.picker(clients, templates / track.slug)),
+                ROUTES_LINE=Safe(
+                    routes.builder_line(
+                        site.data["agent_routes"], templates / track.slug
+                    )
+                ),
                 QUIZ=Safe(
                     render_file(
                         templates / PARTIALS / "quiz.html",
@@ -723,9 +730,16 @@ def _builder(
         HINT=data_fill(texts["builder_outputs_hint"], subs),
         DEFAULT_NAME=clients["clients"][clients["default"]]["name"],
         AGENT_LINES=clientpage.markdown(clients),
+        ROUTES_LINE=_routes_line_md(site.data["agent_routes"]),
     )
     write_md(out_dir, path, twin)
     return path, twin
+
+
+def _routes_line_md(block: dict[str, Any]) -> str:
+    """The builder twin's pointer to the install page's "Every agent" section."""
+    texts = block["texts"]
+    return f"{texts['builder_line']} [{texts['builder_link']}](/coding/install/#every-agent).\n\n"
 
 
 def _author(
@@ -823,6 +837,21 @@ def _step_items(templates: Path, steps: list[dict[str, str]]) -> Safe:
     return Safe(clientpage.step_blocks(templates, steps))
 
 
+def _remove_items(templates: Path, about: dict[str, Any]) -> Safe:
+    """An agent's remove steps, or the "not verified" line with its evidence link."""
+    unverified = about["remove_unverified"]
+    if unverified is None:
+        return _step_items(templates, about["remove"])
+    return Safe(
+        render_file(
+            templates / "remove-unverified.html",
+            TEXT=unverified["text"],
+            URL=unverified["url"],
+            LINK=unverified["link"],
+        )
+    )
+
+
 def _client_command(clients: dict[str, Any], client: str) -> str:
     """The install command form for one agent, with "…" for the selection code."""
     state = clients["clients"][client]["witness"]
@@ -873,7 +902,7 @@ def _install(
             STEPS_HEADING=about["steps_heading"],
             STEPS=_step_items(templates / track.slug, about["steps"]),
             REMOVE_LABEL=inst["agent_remove"],
-            REMOVE=_step_items(templates / track.slug, about["remove"]),
+            REMOVE=_remove_items(templates / track.slug, about),
             REPORT_HREF=report.report_link(
                 agent=client, page=f"/{track.slug}/install/"
             ),
@@ -902,6 +931,9 @@ def _install(
                 RUN_BODY=Prose(inst["run_body"]),
                 AGENTS_HEADING=inst["agents_heading"],
                 AGENTS=Safe(agents),
+                ROUTES=Safe(
+                    routes.section(data["agent_routes"], templates / track.slug)
+                ),
                 UPDATE_HEADING=inst["update_heading"],
                 UPDATE_BODY=Prose(inst["update_body"]),
                 REMOVE_HEADING=inst["remove_heading"],
@@ -930,6 +962,7 @@ def _install(
         RUN_BODY=inst["run_body"],
         AGENTS_HEADING=inst["agents_heading"],
         AGENT_LINES=clientpage.markdown(clients),
+        ROUTES=routes.markdown(data["agent_routes"]),
         UPDATE_HEADING=inst["update_heading"],
         UPDATE_BODY=inst["update_body"],
         REMOVE_HEADING=inst["remove_heading"],
@@ -958,6 +991,18 @@ def _client_notes(site: Site, clients: dict[str, Any], client: str) -> str:
     return " ".join([lead, *notes])
 
 
+def _repo_line(templates: Path, texts: dict[str, str], repo: str | None) -> str:
+    """An agent card's plugin-repository line, or "" for an agent without one."""
+    if repo is None:
+        return ""
+    return render_file(
+        templates / PARTIALS / "client-repo.html",
+        REPO_LINE=texts["repo_line"],
+        REPO=repo,
+        REPO_LABEL=repo.rsplit("/", 1)[-1],
+    )
+
+
 def _clients(
     site: Site, track: Track, out_dir: Path, templates: Path
 ) -> tuple[str, str]:
@@ -979,9 +1024,7 @@ def _clients(
             STATE_WORD=texts[about["witness"]],
             NOTE=Prose(_client_notes(site, clients, client)),
             BUILD=about["build_link"],
-            REPO_LINE=texts["repo_line"],
-            REPO=about["plugin_repo"],
-            REPO_LABEL=about["plugin_repo"].rsplit("/", 1)[-1],
+            REPO=Safe(_repo_line(templates, texts, about["plugin_repo"])),
         )
         for client in clients["order"]
         if (about := clients["clients"][client])
@@ -1017,8 +1060,13 @@ def _clients(
         CLIENT_LINES="".join(
             f"- {about['name']} (`{client}`, {texts[about['witness']]}): "
             f"{_client_notes(site, clients, client)} "
-            f"Builder: /coding/builder/#client={client}. "
-            f"{texts['repo_line']} {about['plugin_repo']}.\n"
+            f"Builder: /coding/builder/#client={client}."
+            + (
+                f" {texts['repo_line']} {about['plugin_repo']}."
+                if about["plugin_repo"]
+                else ""
+            )
+            + "\n"
             for client in clients["order"]
             if (about := clients["clients"][client])
         ),

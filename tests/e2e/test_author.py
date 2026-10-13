@@ -12,13 +12,14 @@ import yaml
 from chock.lock import compute_pack_hash
 from conftest import SCREENSHOTS, assert_clean, collect, screenshot
 
-from sitegen import engine
+from sitegen import clientdata, engine
 from tests.fixtures.untested import CLIENT
 
 AUTHOR = "/coding/author/"
 ROOT = Path(__file__).resolve().parents[2]
+# The picker's order: witness.yaml's rows, then the engine clients without one (S-ALL).
 WITNESS_ORDER = list(
-    yaml.safe_load((ROOT / "data" / "witness.yaml").read_text("utf-8"))["clients"]
+    clientdata.load_witness(ROOT / "data", engine.client_ids())["clients"]
 )
 MOBILE = {"width": 390, "height": 844}
 

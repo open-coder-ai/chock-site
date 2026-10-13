@@ -85,7 +85,9 @@ async function main() {
 
   // ----- the agent (BV-S1): each policy's own label on it, its command and its steps -----
 
-  const labelOf = (id) => C.clients[client].labels[id];
+  // Each policy's label on every agent lives once, in site.policies[].agent_labels.
+  const agentLabels = new Map(site.policies.map((p) => [p.id, p.agent_labels]));
+  const labelOf = (id) => agentLabels.get(id)[client];
 
   const gradesAgent = $("#builder-grades-agent");
 
