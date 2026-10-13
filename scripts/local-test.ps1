@@ -107,6 +107,7 @@ if ($installedRef -ne $engineRef) {
 Invoke-Native $py @("-m", "pip", "install", "--quiet", "--require-hashes", "-r", "requirements-dev.txt")
 Invoke-Native $py @("-m", "pip", "install", "--quiet", "--no-deps", "--no-build-isolation",
     "chock @ git+https://github.com/open-coder-ai/chock@$engineRef")
+Invoke-Native $py @("scripts/install_engine_deps.py")
 Invoke-Native $py @("-m", "pip", "check")
 [System.IO.File]::WriteAllText($marker, "$engineRef`n")
 Invoke-Native $py @("-m", "chock", "--version")

@@ -1,10 +1,11 @@
-# Site build: sitegen's own needs, the chock engine's runtime dependencies at
+# Site build: sitegen's own needs, the chock engine's PyPI runtime dependencies at
 # .framework-ref, and its build backend (the engine installs with --no-deps
 # --no-build-isolation, so every package comes from a lock file checked by hash).
+# Its git-pinned dependencies (agentseam at a commit) are not here: pip cannot hash a
+# git source, so scripts/install_engine_deps.py installs them --no-deps after the engine.
 # Regenerate the .txt with:
 #   uv pip compile --universal --generate-hashes --python-version 3.12 requirements-build.in -o requirements-build.txt
 PyYAML==6.0.3
-agentseam==0.3.5
 jsonschema==4.26.0
 referencing==0.37.0
 setuptools==80.9.0

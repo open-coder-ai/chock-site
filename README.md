@@ -21,6 +21,7 @@ below); the local server binds `127.0.0.1` only.
 python3.12 -m venv .venv && . .venv/bin/activate
 pip install --require-hashes -r requirements-dev.txt
 pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@$(cat .framework-ref)"
+python scripts/install_engine_deps.py
 git clone https://github.com/open-coder-ai/chock-catalog .catalog
 git -C .catalog checkout "$(cat .catalog-ref)"
 python -m sitegen --catalog .catalog --out dist
@@ -62,12 +63,15 @@ It:
    commit;
 3. installs, in a fresh venv, `requirements-build.txt` with `--require-hashes` (every
    PyPI package pinned by version and sha256), then the engine at `.framework-ref` with
-   `--no-deps --no-build-isolation` (so it pulls nothing outside the lock), then runs
-   `pip check`;
+   `--no-deps --no-build-isolation` (so it pulls nothing outside the lock), then the
+   engine's own commit-pinned git dependencies (agentseam) the same way through
+   `scripts/install_engine_deps.py`, which refuses any git source that is not an
+   open-coder-ai repo at a full commit; then runs `pip check`;
 4. runs `python -m sitegen --catalog <catalog> --out dist`;
 5. checks that `dist/_headers` and `dist/version.json` exist.
 
-It reads no secrets. Its only network sources are the two GitHub repos above and PyPI.
+It reads no secrets. Its only network sources are GitHub (the engine, the catalog and the engine's
+git pins) and PyPI.
 It needs Python 3.12 and stops otherwise. Both GitHub repos must be readable without
 credentials.
 
@@ -77,7 +81,8 @@ says how to regenerate it (`uv pip compile --universal --generate-hashes`). Chan
 `.in`, never the `.txt`. When `.framework-ref` moves to an engine with new runtime
 dependencies, add them to `requirements-build.in`; `pip check` fails until you do.
 
-**Version marker.** `data/release.yaml` holds the site version (`X.Y.Z`). The build
+**Version marker.** `data/version.json` holds the site version, `{"version": "X.Y.Z"}`;
+chock-release's `check.py` reads this file and refuses a release whose version differs. The build
 writes `dist/version.json` as `{"version", "engine", "catalog"}` (the version and the
 two pins) and shows `v<version>` in every page footer. The release job reads
 `/version.json` to check that the live site is the release it moved `release` to.
@@ -123,6 +128,7 @@ earlier production deployment and choose **Rollback to this deployment**; or mov
 py -3.12 -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install --require-hashes -r requirements-dev.txt
 pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@$(Get-Content .framework-ref)"
+python scripts/install_engine_deps.py
 git clone https://github.com/open-coder-ai/chock-catalog .catalog
 git -C .catalog checkout (Get-Content .catalog-ref)
 python -m sitegen serve --catalog .catalog

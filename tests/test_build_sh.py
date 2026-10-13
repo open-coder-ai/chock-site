@@ -1,5 +1,6 @@
 """build.sh, the Cloudflare Pages build: pins are verified and it fails closed."""
 
+import importlib.util
 import os
 import re
 import shutil
@@ -199,3 +200,58 @@ def test_catalog_head_mismatch_fails_closed(tmp_path: Path, source) -> None:
         f"catalog HEAD is {source['commit']}, expected {source['tag']}" in result.stderr
     )
     assert not (tmp_path / "dist").exists()
+
+
+def _engine_deps():
+    """Load scripts/install_engine_deps.py as a module."""
+    spec = importlib.util.spec_from_file_location(
+        "install_engine_deps", ROOT / "scripts" / "install_engine_deps.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_engine_git_pins_are_installed_without_deps() -> None:
+    for path in ("build.sh", "scripts/local-test.sh", "scripts/local-test.ps1"):
+        assert "scripts/install_engine_deps.py" in (ROOT / path).read_text("utf-8"), (
+            path
+        )
+    flow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    )
+    for job in ("unit", "e2e"):
+        runs = [step.get("run", "") for step in flow["jobs"][job]["steps"]]
+        engine = next(i for i, r in enumerate(runs) if "chock @ git+" in r)
+        assert runs[engine + 1] == "python scripts/install_engine_deps.py", job
+    text = (ROOT / "scripts" / "install_engine_deps.py").read_text(encoding="utf-8")
+    assert '"--no-deps",' in text and '"--no-build-isolation",' in text
+
+
+def test_engine_git_pins_keep_only_commit_pinned_sources() -> None:
+    sha = "b" * 40
+    pin = f"agentseam @ git+https://github.com/open-coder-ai/agentseam@{sha}"
+    requires = [
+        "pyyaml>=6.0",
+        pin,
+        'pytest>=7; extra == "dev"',
+    ]
+    assert _engine_deps().git_pins(requires) == [pin]
+
+
+@pytest.mark.parametrize(
+    "req",
+    [
+        "agentseam @ git+https://github.com/open-coder-ai/agentseam@main",
+        "agentseam @ git+https://github.com/open-coder-ai/agentseam@" + "B" * 40,
+        "agentseam @ git+https://github.com/someone-else/agentseam@" + "b" * 40,
+        "agentseam @ git+http://github.com/open-coder-ai/agentseam@" + "b" * 40,
+        "agentseam @ https://example.invalid/agentseam.tar.gz",
+        "agentseam @ git+https://github.com/open-coder-ai/agentseam@"
+        + "b" * 40
+        + ' ; python_version >= "3.9"',
+    ],
+)
+def test_engine_git_pins_refuse_loose_sources(req: str) -> None:
+    with pytest.raises(SystemExit):
+        _engine_deps().git_pins([req])

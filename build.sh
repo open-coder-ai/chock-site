@@ -1,6 +1,6 @@
 #!/bin/sh
 # Cloudflare Pages build (and CI): the pinned engine and catalog, then the site in dist/.
-# Network: the two git sources below and PyPI. No secrets.
+# Network: GitHub (engine, catalog and the engine's git pins) and PyPI. No secrets.
 set -eu
 
 cd "$(dirname "$0")"
@@ -50,6 +50,8 @@ echo "build.sh: engine $FRAMEWORK_REF from $ENGINE_URL"
 venv_pip() { "$work/venv/bin/python" -m pip --disable-pip-version-check "$@"; }
 venv_pip install -q --require-hashes -r requirements-build.txt
 venv_pip install -q --no-deps --no-build-isolation "chock @ git+$ENGINE_URL@$FRAMEWORK_REF"
+# The engine's own git pins (agentseam at a commit), also --no-deps.
+"$work/venv/bin/python" scripts/install_engine_deps.py
 venv_pip check
 
 "$work/venv/bin/python" -m sitegen --catalog "$work/catalog" --out dist

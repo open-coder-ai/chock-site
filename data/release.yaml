@@ -1,3 +1,0 @@
-# The site's release version: dist/version.json and the footer show it.
-# The release check (chock-release check.py) requires it to equal the manifest version.
-version: "0.0.0"
