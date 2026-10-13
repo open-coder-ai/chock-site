@@ -38,7 +38,10 @@ def load_witness(data_dir: Path, clients: list[str]) -> dict[str, Any]:
 
 
 def load_evidence(data_dir: Path, witness: dict[str, Any]) -> dict[str, Any]:
-    """data/evidence.yaml, checked: each row an untested agent with a positive issue number."""
+    """data/evidence.yaml, checked: each `issues` row an untested agent with a positive issue number.
+
+    Its `agents` rows (agents with no plugin) are checked with the agent routes (routes.py).
+    """
     data = yaml.safe_load((data_dir / EVIDENCE_YAML).read_text(encoding="utf-8"))
     if data["issue_url"] != EVIDENCE_ISSUES + "__NUMBER__":
         raise PageError(
@@ -68,6 +71,28 @@ def evidence_notice(
     return {key: data_fill(text, subs) for key, text in evidence["texts"].items()} | {
         "url": data_fill(evidence["issue_url"], subs)
     }
+
+
+def drop_engine_evidence(
+    rules: list[dict[str, Any]], block: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """The warning rules without the engine's "Evidence wanted" notes: evidence.yaml says that, once.
+
+    Each dropped rule must name the same issue as the site's notice for each of its clients.
+    """
+    prefix = block["engine_evidence_prefix"]
+    kept = []
+    for rule in rules:
+        if not (rule["kind"] == "client" and rule["says"].startswith(prefix)):
+            kept.append(rule)
+            continue
+        for client in rule["clients"]:
+            notice = block["clients"][client]["evidence"]
+            if notice is None or not rule["says"].endswith(notice["url"]):
+                raise PageError(
+                    f"engine evidence note for {client} names an issue evidence.yaml does not"
+                )
+    return kept
 
 
 def quiz_agent_options(quiz: dict[str, Any], block: dict[str, Any]) -> None:
@@ -160,6 +185,11 @@ def builder_clients(
     evidence = load_evidence(data_dir, witness)
     graded = graded_clients(policies, engine.client_ids())
     repos = _per_client(config, "plugin_repos", engine.client_ids())
+    for client, repo in repos.items():
+        if repo is not None and not repo.startswith(
+            "https://github.com/open-coder-ai/"
+        ):
+            raise PageError(f"site.json plugin_repos: {client} is {repo!r}")
     removes = _per_client(config, "remove", engine.client_ids())
     clients = {}
     for client, state in witness["clients"].items():
@@ -194,6 +224,7 @@ def builder_clients(
         "graded": graded,
         "ungraded": UNGRADED,
         "engine_untested_prefix": config["engine_untested_prefix"],
+        "engine_evidence_prefix": config["engine_evidence_prefix"],
         "bundle_version": config["bundle_version"],
         "commands": config["commands"],
         "texts": texts,

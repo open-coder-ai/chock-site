@@ -77,6 +77,17 @@ def first_sentence(text: str) -> str:
     return text[: end.end()] if end else text
 
 
+def lead_sentences(text: str, min_chars: int) -> str:
+    """The description's opening sentences, as many as reach `min_chars` (a page's meta description)."""
+    lead = ""
+    rest = text
+    while rest and len(lead) < min_chars:
+        sentence = first_sentence(rest)
+        lead = f"{lead} {sentence}".strip()
+        rest = rest[len(sentence) :].lstrip()
+    return lead
+
+
 def _examples(path: Path) -> list[Example]:
     """The first refused and first allowed execute cases in evals/suite.yaml (5.5)."""
     suite_file = path / EVALS

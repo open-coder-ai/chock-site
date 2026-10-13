@@ -20,8 +20,8 @@ def _edit(path: Path, edit) -> None:
 
 
 def untested_data(dest: Path) -> Path:
-    """Copy data/ to dest, mark CLIENT untested and give it the ISSUE evidence row."""
+    """Copy data/ to dest, mark CLIENT untested and add the ISSUE evidence row."""
     shutil.copytree(DATA, dest)
     _edit(dest / "witness.yaml", lambda d: d["clients"].update({CLIENT: "untested"}))
-    _edit(dest / "evidence.yaml", lambda d: d.update(issues={CLIENT: ISSUE}))
+    _edit(dest / "evidence.yaml", lambda d: d["issues"].update({CLIENT: ISSUE}))
     return dest

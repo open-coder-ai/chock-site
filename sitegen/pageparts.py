@@ -269,7 +269,11 @@ def _footer_links(site: Site, templates: Path) -> dict[str, Safe]:
         ("/coding/builder/", "Builder"),
     ]
     clients = site.data["builder_clients"]
-    repos = [clients["clients"][c]["plugin_repo"] for c in clients["order"]]
+    repos = [
+        repo
+        for c in clients["order"]
+        if (repo := clients["clients"][c]["plugin_repo"]) is not None
+    ]
     agents = [(url, url.rstrip("/").rsplit("/", 1)[-1]) for url in repos]
     project = [
         (links["engine_repo"], "GitHub"),

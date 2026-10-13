@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 from conftest import CATALOG, SCREENSHOTS, assert_clean, collect
 
 from sitegen import engine
@@ -15,7 +16,10 @@ from tests.fixtures.untested import CLIENT, ISSUE
 ROOT = Path(__file__).resolve().parents[2]
 PRESETS = {p.id: p for p in load_presets(ROOT / "data" / "presets.yaml")}
 BUILDER = "/coding/builder/"
-CLIENTS = ("claude-code", "cursor", "codex", "copilot", "devin")
+WITNESS = yaml.safe_load((ROOT / "data" / "witness.yaml").read_text(encoding="utf-8"))
+# Every `chock install --client` target, in the picker's order (S-ALL).
+CLIENTS = tuple(WITNESS["clients"])
+WITNESSED = ("claude-code", "cursor", "codex", "copilot", "devin")
 PRESET = "git-hygiene"
 SIZES = {
     "desktop": {"width": 1280, "height": 900},
@@ -48,7 +52,7 @@ def _visible_clients(page, selector: str) -> list[str]:
     )
 
 
-def test_default_is_claude_code_and_the_picker_lists_five_agents(
+def test_default_is_claude_code_and_the_picker_lists_every_install_client(
     page, site_url
 ) -> None:
     page.goto(site_url + BUILDER)
@@ -57,6 +61,8 @@ def test_default_is_claude_code_and_the_picker_lists_five_agents(
         "els => els.map(e => e.value)"
     )
     assert values == list(CLIENTS)
+    assert sorted(values) == sorted(engine.client_ids())
+    assert len(values) == 12
     assert page.locator("#client-claude-code").is_checked()
     assert page.evaluate("location.hash") == ""
     assert_clean(page)
@@ -79,6 +85,11 @@ def test_each_agent_gets_its_command_steps_and_labels(page, site_url, client) ->
     assert _visible_clients(page, ".client-steps") == [client]
     untested = _visible_clients(page, ".client-untested")
     assert untested == ([] if about["witness"] == "witnessed" else [client])
+    evidence = _visible_clients(page, ".client-evidence")
+    assert evidence == ([client] if about["evidence"] else [])
+    if evidence:
+        box = page.locator(f".client-evidence[data-client='{client}']")
+        assert box.locator("a").get_attribute("href") == about["evidence"]["url"]
     if untested:
         link = page.locator(f".client-untested[data-client='{client}'] a")
         assert link.get_attribute("href") == about["report"]
@@ -91,8 +102,9 @@ def test_each_agent_gets_its_command_steps_and_labels(page, site_url, client) ->
         "els => els.map(e => [e.dataset.policyId, e.dataset.label,"
         " e.querySelector('.bsays').textContent])"
     )
+    labels = {p["id"]: p["agent_labels"][client] for p in site["policies"]}
     for policy_id, keyword, says in rows:
-        label = about["labels"][policy_id]
+        label = labels[policy_id]
         assert (keyword, says) == (label["keyword"], label["says"]), policy_id
     assert page.locator(".sel-item").count() == len(PRESETS[PRESET].members)
     assert_clean(page)
@@ -142,16 +154,15 @@ def test_grades_note_shows_only_without_per_client_grades(page, site_url) -> Non
     assert_clean(page)
 
 
-def test_every_agent_is_witnessed_and_shows_no_untested_notes(page, site_url) -> None:
-    """W-CUR: with Cursor witnessed, no agent gets the untested line or evidence notice."""
+def test_witnessed_agents_show_no_untested_notes(page, site_url) -> None:
+    """W-CUR: Cursor is witnessed, so it gets neither the untested line nor the evidence notice."""
     clients = _site(page, site_url)["builder_clients"]["clients"]
-    assert {c: d["witness"] for c, d in clients.items()} == dict.fromkeys(
-        CLIENTS, "witnessed"
-    )
+    witnessed = [c for c, d in clients.items() if d["witness"] == "witnessed"]
+    assert witnessed == list(WITNESSED)
     _pick(page, site_url, "cursor")
     command = page.locator("[data-selection-code]").inner_text()
     assert command.endswith(" --client cursor --apply")
-    assert page.locator(".client-untested, .client-evidence").count() == 0
+    assert _visible_clients(page, ".client-untested, .client-evidence") == []
     page.goto(site_url + "/coding/install/")
     section = page.locator("section[aria-labelledby='agent-cursor']")
     assert section.locator(".client-untested, .client-evidence").count() == 0

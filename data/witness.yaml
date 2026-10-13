@@ -12,3 +12,10 @@ clients:
   codex: witnessed
   copilot: witnessed
   devin: witnessed
+  antigravity: untested
+  gemini-cli: untested
+  goose: untested
+  grok: untested
+  kimi-code: untested
+  factory-droid: untested
+  openhands: untested
