@@ -981,6 +981,48 @@ def _toc(ctx: Ctx, body: Body, html: str) -> Safe:
     return Safe(ctx.t("toc", TITLE=ctx.texts["on_this_page"], ITEMS=Safe(items)))
 
 
+def _search(ctx: Ctx) -> Safe:
+    """The search box for the docs nav; without JS only its link to the docs index shows."""
+    texts = ctx.texts["search"]
+    return Safe(
+        ctx.t(
+            "search",
+            INDEX=texts["index"],
+            NONE=texts["none"],
+            ONE=texts["one"],
+            MANY=texts["many"],
+            FAILED=texts["failed"],
+            DOCS_HREF=_page_href(ctx, "overview"),
+            FALLBACK=texts["fallback"],
+            LABEL=texts["label"],
+            PLACEHOLDER=texts["placeholder"],
+            RESULTS=texts["results"],
+        )
+    )
+
+
+def _excerpt(ctx: Ctx, summary: str) -> str:
+    """A page's summary as one line of plain text, cut at a word boundary."""
+    text = " ".join(summary.replace("`", "").split())
+    limit = ctx.texts["search"]["excerpt_chars"]
+    if len(text) <= limit:
+        return text
+    return text[:limit].rsplit(" ", 1)[0].rstrip(" ,.;:") + "…"
+
+
+def _search_entry(
+    ctx: Ctx, body: Body, html: str, path: str, title: str, summary: str
+) -> dict[str, Any]:
+    """One page's row in the search index: title, URL, excerpt and its h2/h3 headings."""
+    found = sorted(body.renderer.toc, key=lambda h: html.index(f'id="{h[1]}"'))
+    return {
+        "title": title,
+        "url": path,
+        "excerpt": _excerpt(ctx, summary),
+        "headings": [{"id": id_, "text": text} for _, id_, text in found],
+    }
+
+
 def _write(
     ctx: Ctx,
     out_dir: Path,
@@ -992,12 +1034,14 @@ def _write(
     intro: str,
     crumb: str,
     body: Body,
-) -> tuple[str, str]:
-    """One docs page and its Markdown twin; returns the page path and the twin text."""
+    summary: str,
+) -> tuple[str, str, dict[str, Any]]:
+    """One docs page and its Markdown twin; returns the path, the twin and its search row."""
     built_html, built_md = _built(ctx)
     html = "".join(body.html)
     content = ctx.t(
         "layout",
+        SEARCH=_search(ctx),
         NAV=_nav(ctx, key),
         TOC=_toc(ctx, body, html),
         COPY=ctx.texts["copy"],
@@ -1028,7 +1072,7 @@ def _write(
             },
         },
         nav=DOCS,
-        scripts=("common.js", "docs.js"),
+        scripts=("common.js", "docs.js", "search.js"),
     )
     twin = render_text_file(
         ctx.templates / MD / DOCS / "page.md",
@@ -1040,7 +1084,7 @@ def _write(
         BUILT=built_md,
     )
     write_md(out_dir, path, twin)
-    return path, twin
+    return path, twin, _search_entry(ctx, body, html, path, title, summary)
 
 
 def _new_body(ctx: Ctx) -> Body:
@@ -1066,6 +1110,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         cli=engine.cli_commands(),
     )
     written: list[tuple[str, str, str]] = []
+    rows: list[dict[str, Any]] = []
 
     def emit(
         key: str,
@@ -1075,8 +1120,9 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         intro: str,
         crumb: str,
         body: Body,
+        summary: str = "",
     ) -> None:
-        page_path, twin = _write(
+        page_path, twin, row = _write(
             ctx,
             out_dir,
             key=key,
@@ -1086,8 +1132,10 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             intro=intro,
             crumb=crumb,
             body=body,
+            summary=summary or intro,
         )
         written.append((page_path, title, twin))
+        rows.append(row)
 
     for key, page in docs["pages"].items():
         ctx.page = page
@@ -1153,9 +1201,11 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             ),
             policies_page["title"],
             body,
+            policy.description,
         )
 
     _api(ctx, out_dir, written)
+    _search_index(ctx, out_dir, rows)
     llms = "".join(
         f"- [Docs: {p['nav_label']}]({p['path']}index.md): {p['description']}\n"
         for p in docs["pages"].values()
@@ -1172,6 +1222,8 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         data_lines=(
             "- [/api/docs/index.json](/api/docs/index.json): every docs page, "
             "and each agent's routes, grade and witness rows\n"
+            "- [/api/docs/search.json](/api/docs/search.json): the docs search index: "
+            "each page's title, URL, excerpt and headings\n"
         ),
     )
 
@@ -1192,3 +1244,20 @@ def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str]]) -> None:
         encoding="utf-8",
         newline="\n",
     )
+
+
+def _search_index(ctx: Ctx, out_dir: Path, rows: list[dict[str, Any]]) -> None:
+    """/api/docs/search.json for the docs search box; the build fails past its byte budget."""
+    texts = ctx.texts["search"]
+    doc = {"schema_version": 1, "pages": rows}
+    text = json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + "\n"
+    data = text.encode("utf-8")
+    if len(data) > texts["budget_bytes"]:
+        msg = (
+            f"{texts['index']} is {len(data)} bytes, over its budget of "
+            f"{texts['budget_bytes']} (data/docs.yaml texts.search.budget_bytes)"
+        )
+        raise PageError(msg)
+    target = out_dir / texts["index"].lstrip("/")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(data)
