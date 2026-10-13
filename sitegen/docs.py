@@ -6,7 +6,9 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
+
+import yaml
 
 from . import clientdata, clientpage, docsfacts, docsource, engine
 from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
@@ -24,6 +26,7 @@ from .render import md as md_escape
 
 DOCS = "docs"
 MD = "md"
+ACTIONS_YAML = "page_actions.yaml"
 COMMIT_URL = "__REPO__/commit/__REF__"
 BLOB_URL = "__REPO__/blob/__REF__/__PATH__"
 CATALOG_COMMIT = "https://github.com/open-coder-ai/chock-catalog/commit/"
@@ -50,6 +53,7 @@ class Ctx:
     agents: list[dict[str, Any]]
     cli: list[dict[str, str]]
     page: dict[str, Any] = field(default_factory=dict)
+    actions: dict[str, Any] = field(default_factory=dict)
 
     def t(self, name: str, **tokens: object) -> str:
         """A docs template, filled."""
@@ -981,6 +985,50 @@ def _toc(ctx: Ctx, body: Body, html: str) -> Safe:
     return Safe(ctx.t("toc", TITLE=ctx.texts["on_this_page"], ITEMS=Safe(items)))
 
 
+def load_actions(data_dir: Path) -> dict[str, Any]:
+    """data/page_actions.yaml, refused unless every open link is https with one prompt."""
+    actions = yaml.safe_load((data_dir / ACTIONS_YAML).read_text(encoding="utf-8"))
+    if actions["prompt"].count("__TWIN__") != 1:
+        raise PageError(f"{ACTIONS_YAML}: prompt must name __TWIN__ once")
+    for item in actions["open"]:
+        href = item["href"]
+        if not href.startswith("https://") or href.count("__PROMPT__") != 1:
+            raise PageError(
+                f"{ACTIONS_YAML}: {item['label']!r} needs https and one __PROMPT__"
+            )
+    return actions
+
+
+def _page_actions(ctx: Ctx, path: str) -> Safe:
+    """Copy page and its menu; the open links ask an assistant to read this page's twin."""
+    twin = f"{path}index.md"
+    labels = ctx.actions["labels"]
+    prompt = data_fill(
+        ctx.actions["prompt"], {"__TWIN__": ctx.site.data["site_url"] + twin}
+    )
+    items = "".join(
+        ctx.t(
+            "page-action-open",
+            HREF=data_fill(item["href"], {"__PROMPT__": quote(prompt, safe="")}),
+            LABEL=item["label"],
+        )
+        for item in ctx.actions["open"]
+    )
+    return Safe(
+        ctx.t(
+            "page-actions",
+            MD_HREF=twin,
+            VIEW=labels["view"],
+            COPIED=labels["copied"],
+            FAILED=labels["failed"],
+            COPY=labels["copy"],
+            MENU=labels["menu"],
+            COPY_MARKDOWN=labels["copy_markdown"],
+            OPEN=Safe(items),
+        )
+    )
+
+
 def _write(
     ctx: Ctx,
     out_dir: Path,
@@ -1004,6 +1052,7 @@ def _write(
         CRUMB=crumb,
         TITLE=title,
         SUB=Prose(description),
+        ACTIONS=_page_actions(ctx, path),
         INTRO=Prose(intro),
         BODY=Safe(html),
         PAGER=_pager(ctx, key) if path == _page_href(ctx, key) else Safe(""),
@@ -1064,8 +1113,9 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         prose=docsource.load(data_dir, site.framework_ref),
         agents=docsfacts.agents(docs, site.data["agent_routes"]),
         cli=engine.cli_commands(),
+        actions=load_actions(data_dir),
     )
-    written: list[tuple[str, str, str]] = []
+    written: list[tuple[str, str, str, str]] = []
 
     def emit(
         key: str,
@@ -1087,7 +1137,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             crumb=crumb,
             body=body,
         )
-        written.append((page_path, title, twin))
+        written.append((page_path, title, description, twin))
 
     for key, page in docs["pages"].items():
         ctx.page = page
@@ -1161,14 +1211,14 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         for p in docs["pages"].values()
     )
     llms += "".join(
-        f"- [Docs: {md_escape(title)}]({path}index.md)\n"
-        for path, title, _ in written
+        f"- [Docs: {md_escape(title)}]({path}index.md): {md_escape(description)}\n"
+        for path, title, description, _ in written
         if path not in {p["path"] for p in docs["pages"].values()}
     )
     return SectionResult(
-        pages=[p for p, _, _ in written],
+        pages=[p for p, _, _, _ in written],
         llms=llms,
-        docs=[(f"{p}index.md", twin) for p, _, twin in written],
+        docs=[(f"{p}index.md", twin) for p, _, _, twin in written],
         data_lines=(
             "- [/api/docs/index.json](/api/docs/index.json): every docs page, "
             "and each agent's routes, grade and witness rows\n"
@@ -1176,7 +1226,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
     )
 
 
-def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str]]) -> None:
+def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str, str]]) -> None:
     """/api/docs/index.json: the docs pages and the per-agent facts they show."""
     api = out_dir / "api" / DOCS
     api.mkdir(parents=True, exist_ok=True)
@@ -1184,7 +1234,9 @@ def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str]]) -> None:
         "schema_version": 1,
         "engine": ctx.site.framework_ref,
         "catalog": ctx.site.catalog_ref,
-        "pages": [{"path": p, "md": f"{p}index.md", "title": t} for p, t, _ in written],
+        "pages": [
+            {"path": p, "md": f"{p}index.md", "title": t} for p, t, _, _ in written
+        ],
         "agents": [{k: v for k, v in a.items() if k != "notes"} for a in ctx.agents],
     }
     (api / "index.json").write_text(
