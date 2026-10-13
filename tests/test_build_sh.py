@@ -245,6 +245,18 @@ def test_engine_git_pins_keep_only_commit_pinned_sources(sep: str) -> None:
         "agentseam @ git+https://github.com/open-coder-ai/agentseam@main",
         "agentseam @ git+https://github.com/open-coder-ai/agentseam@" + "B" * 40,
         "agentseam @ git+https://github.com/someone-else/agentseam@" + "b" * 40,
+        "agentseam @ git+https://gitlab.com/open-coder-ai/agentseam@" + "b" * 40,
+        "agentseam @ git+https://github.com.evil.example/open-coder-ai/agentseam@"
+        + "b" * 40,
+        "agentseam @ git+https://evil.example@github.com/open-coder-ai/agentseam@"
+        + "b" * 40,
+        "agentseam @ git+https://github.com/open-coder-ai/agentseam@bebbfa6",
+        "agentseam @ git+https://github.com/open-coder-ai/agentseam@" + "b" * 41,
+        "agentseam @ git+https://github.com/open-coder-ai/agentseam/extra@" + "b" * 40,
+        "agentseam @ git+https://github.com/open-coder-ai/../x/agentseam@" + "b" * 40,
+        "agentseam @ git+https://github.com/open-coder-ai/agentseam@"
+        + "b" * 40
+        + "#subdirectory=x",
         "agentseam @ git+http://github.com/open-coder-ai/agentseam@" + "b" * 40,
         "agentseam @ https://example.invalid/agentseam.tar.gz",
         "agentseam @ git+https://github.com/open-coder-ai/agentseam@"
