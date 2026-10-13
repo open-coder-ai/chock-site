@@ -9,7 +9,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from . import clientdata, clientpage, docsfacts, docsource, engine
-from .docsmd import Renderer, first_sections, rewrite_links, sections
+from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
 from .model import Policy, SectionResult, Site
 from .pageparts import (
     PageError,
@@ -87,7 +87,7 @@ def _section(ctx: Ctx, body: Body, heading: str, html: str, md: str) -> None:
     body.html.append(
         ctx.t(
             "section",
-            ID=body.renderer.heading_id(heading),
+            ID=body.renderer.toc_heading(2, heading),
             HEADING=heading,
             BODY=Safe(html),
         )
@@ -96,7 +96,7 @@ def _section(ctx: Ctx, body: Body, heading: str, html: str, md: str) -> None:
 
 
 def _h3(ctx: Ctx, body: Body, heading: str) -> str:
-    return ctx.t("h3", ID=body.renderer.heading_id(heading), HEADING=heading)
+    return ctx.t("h3", ID=body.renderer.toc_heading(3, heading), HEADING=heading)
 
 
 def _para(ctx: Ctx, text: str) -> str:
@@ -153,6 +153,58 @@ def _page_href(ctx: Ctx, key: str) -> str:
 # --- blocks: each appends HTML and Markdown for one part of a page ---------------
 
 
+def _tab_part(ctx: Ctx, part: str | dict[str, Any]) -> tuple[str, str]:
+    """One part of a path's tab: the install command, the pick step, or engine-doc commands."""
+    if part == "install":
+        cmd = install_command(ctx.site)
+        return _command(ctx, cmd), f"    {cmd}\n\n"
+    if part == "pick":
+        forms = _command_forms(ctx)
+        return (
+            _para(ctx, ctx.texts["pick_body"])
+            + "".join(_command(ctx, f) for f in forms),
+            f"{ctx.texts['pick_body']}\n\n" + "".join(f"    {f}\n\n" for f in forms),
+        )
+    if not isinstance(part, dict):
+        raise PageError(f"docs.yaml paths: unknown tab part {part!r}")
+    text = ctx.prose[part["file"]]
+    if text is None:
+        raise PageError(f"docs.yaml paths: {part['file']} is not in the snapshot")
+    html, md = [], []
+    for title in part["sections"]:
+        lang, code = first_code(sections(text, [title]))
+        html.append(_code(ctx, code, lang))
+        md.append("".join(f"    {line}\n" for line in code.splitlines()) + "\n")
+    return "".join(html), "".join(md)
+
+
+def _path_tabs(ctx: Ctx, body: Body) -> tuple[str, str]:
+    """Each path's commands as a tab; without JS the panels stay stacked under their h3."""
+    site_url = ctx.site.data["site_url"]
+    panels, md = [], []
+    for path in ctx.texts["paths"]:
+        page = ctx.docs["pages"][path["page"]]
+        parts = [_tab_part(ctx, part) for part in path["tab"]]
+        link = ctx.t("link", HREF=page["path"], TEXT=page["nav_label"])
+        panels.append(
+            ctx.t(
+                "tab-panel",
+                ID=body.renderer.heading_id(path["title"]),
+                HEADING=path["title"],
+                BODY=Safe(
+                    "".join(h for h, _ in parts) + ctx.t("para", TEXT=Safe(link))
+                ),
+            )
+        )
+        md.append(
+            f"### {path['title']}\n\n{ctx.texts['ask_code']}\n\n"
+            + "".join(m for _, m in parts)
+            + f"[{page['nav_label']}]({site_url}{page['path']}index.md)\n\n"
+        )
+    html = ctx.t("tabs", LABEL=ctx.texts["paths_heading"], PANELS=Safe("".join(panels)))
+    return html, "".join(md)
+
+
 def _paths(ctx: Ctx, body: Body) -> None:
     cards = [
         ctx.t(
@@ -168,12 +220,13 @@ def _paths(ctx: Ctx, body: Body) -> None:
         f"{p['body']}\n"
         for p in ctx.texts["paths"]
     )
+    tabs_html, tabs_md = _path_tabs(ctx, body)
     _section(
         ctx,
         body,
         ctx.texts["paths_heading"],
-        ctx.t("cards", CARDS=Safe("".join(cards))),
-        md,
+        ctx.t("cards", CARDS=Safe("".join(cards))) + tabs_html,
+        f"{md}\n{tabs_md}",
     )
 
 
@@ -595,8 +648,9 @@ def _prose(ctx: Ctx, body: Body, entry: dict[str, Any]) -> None:
         else sections(text, entry["sections"])
     )
     resolve = _resolver(ctx, entry["file"])
-    renderer = Renderer(ctx.templates, resolve)
+    renderer = Renderer(ctx.templates, resolve, callouts=ctx.texts["callouts"])
     renderer.ids = body.renderer.ids
+    renderer.toc = body.renderer.toc
     body.html.append(
         ctx.t(
             "prose",
@@ -915,6 +969,18 @@ def _built(ctx: Ctx) -> tuple[Safe, str]:
     return Safe(html), md
 
 
+def _toc(ctx: Ctx, body: Body, html: str) -> Safe:
+    """The "On this page" list: the page's h2 and h3 in document order; empty under two."""
+    found = sorted(body.renderer.toc, key=lambda h: html.index(f'id="{h[1]}"'))
+    if len(found) < 2:
+        return Safe("")
+    items = "".join(
+        ctx.t("toc-item", LEVEL=str(level), HREF=f"#{id_}", TEXT=text)
+        for level, id_, text in found
+    )
+    return Safe(ctx.t("toc", TITLE=ctx.texts["on_this_page"], ITEMS=Safe(items)))
+
+
 def _write(
     ctx: Ctx,
     out_dir: Path,
@@ -929,14 +995,17 @@ def _write(
 ) -> tuple[str, str]:
     """One docs page and its Markdown twin; returns the page path and the twin text."""
     built_html, built_md = _built(ctx)
+    html = "".join(body.html)
     content = ctx.t(
         "layout",
         NAV=_nav(ctx, key),
+        TOC=_toc(ctx, body, html),
+        COPY=ctx.texts["copy"],
         CRUMB=crumb,
         TITLE=title,
         SUB=Prose(description),
         INTRO=Prose(intro),
-        BODY=Safe("".join(body.html)),
+        BODY=Safe(html),
         PAGER=_pager(ctx, key) if path == _page_href(ctx, key) else Safe(""),
         BUILT=built_html,
     )
@@ -959,6 +1028,7 @@ def _write(
             },
         },
         nav=DOCS,
+        scripts=("common.js", "docs.js"),
     )
     twin = render_text_file(
         ctx.templates / MD / DOCS / "page.md",
@@ -974,7 +1044,9 @@ def _write(
 
 
 def _new_body(ctx: Ctx) -> Body:
-    body = Body(Renderer(ctx.templates, lambda href: href))
+    body = Body(
+        Renderer(ctx.templates, lambda href: href, callouts=ctx.texts["callouts"])
+    )
     body.renderer.ids.add("top")
     return body
 

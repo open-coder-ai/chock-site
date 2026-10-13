@@ -32,6 +32,42 @@ def _paths(page, site_url: str) -> list[str]:
     return paths + ["/404.html"]
 
 
+# WCAG 2.2 AA contrast of each element's text against the first opaque background behind it.
+_CONTRAST = """selector => {
+    const parse = c => {
+        const m = c.match(/rgba?\\(([^)]+)\\)/);
+        if (m) {
+            const [r, g, b, a = 1] = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+            return [r / 255, g / 255, b / 255, a];
+        }
+        const s = c.match(/color\\(srgb ([^)]+)\\)/);
+        if (s) {
+            const [r, g, b, a = 1] = s[1].split(/[ /]+/).filter(Boolean).map(Number);
+            return [r, g, b, a];
+        }
+        throw new Error("unparsed colour " + c);
+    };
+    const lum = ([r, g, b]) => {
+        const f = v => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    };
+    const back = e => {
+        for (let x = e; x; x = x.parentElement) {
+            const c = parse(getComputedStyle(x).backgroundColor);
+            if (c[3] === 1) return c;
+        }
+        return parse(getComputedStyle(document.body).backgroundColor);
+    };
+    return [...document.querySelectorAll(selector)]
+        .filter(e => e.getClientRects().length > 0)
+        .map(e => {
+            const [a, b] = [lum(parse(getComputedStyle(e).color)), lum(back(e))];
+            const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+            return { what: e.className + ": " + e.textContent.trim().slice(0, 30), ratio };
+        });
+}"""
+
+
 def _heading_levels(page) -> list[int]:
     return page.evaluate(
         """() => [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')]
@@ -135,3 +171,26 @@ def test_tab_order_reaches_every_builder_control(browser, site_url) -> None:
             assert_clean(page)
         finally:
             context.close()
+
+
+# SITE-UX components: tabs, the "On this page" list, copy buttons and callouts.
+_DOCS_TEXT = (
+    ".docs-tab, .docs-toc a, .docs-toc-title, .code-copy, .callout p, .callout a"
+)
+
+
+def test_docs_components_pass_contrast(page, site_url) -> None:
+    low, seen = [], 0
+    for path in _paths(page, site_url):
+        if not path.startswith("/docs/"):
+            continue
+        page.goto(site_url + path)
+        page.wait_for_selector(".docs-main[data-copy-label]")
+        rows = page.evaluate(_CONTRAST, _DOCS_TEXT)
+        seen += len(rows)
+        low += [
+            f"{path} {r['what']}: {r['ratio']:.2f}" for r in rows if r["ratio"] < 4.5
+        ]
+    assert seen > 0
+    assert not low, "\n".join(low)
+    assert_clean(page)

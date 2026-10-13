@@ -125,12 +125,26 @@ texts:
   policy_description: "__NAME__: what it does, its label on each agent, what it misses, and examples."
   policy_intro: "Catalog policy __ID__, version __VERSION__, labelled __WORD__ on __AGENT__."
   on_this_page: "On this page"
+  copy: "Copy"
+  # Callout labels for `> [!NOTE]`, `> [!TIP]` and `> [!WARNING]` in engine docs.
+  callouts: {note: Note, tip: Tip, warning: Warning}
   next: "Next"
   previous: "Previous"
   paths_heading: Two paths
+  # Each path is a card and a tab. A tab lists, in order: `install` (the engine install
+  # command), `pick` (the builder's command forms), or {file, sections}: the first code
+  # block of each named section of that engine doc.
   paths:
-    - {title: "Plugin path", body: "The install command builds one plugin for one agent from a selection. No repository changes.", page: quickstart-plugin}
-    - {title: "Repo path", body: "chock init and chock sync wire a repository's agent hooks, git hooks and CI.", page: quickstart-repo}
+    - title: "Plugin path"
+      body: "The install command builds one plugin for one agent from a selection. No repository changes."
+      page: quickstart-plugin
+      tab: [install, pick]
+    - title: "Repo path"
+      body: "chock init and chock sync wire a repository's agent hooks, git hooks and CI."
+      page: quickstart-repo
+      tab:
+        - install
+        - {file: docs/getting-started.md, sections: [2. Onboard a repository, 3. Install a policy]}
   labels_heading: What a label means
   labels_intro: "Every policy carries one label per agent. These are the engine's label words:"
   grades_heading: Grades and what they rest on

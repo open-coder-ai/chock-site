@@ -71,6 +71,7 @@
   --warn-bg: #4A3C1C;
   --warn-fg: #E8C77A;
   --ok: #5FD3A0;
+  --info: #8DB8F2;
   --dash: #67769B;
   --dots: #34405E;
   /* Vertical rhythm: the gap between blocks, and between items of one block. */
@@ -160,11 +161,11 @@ pre code {
    whatever the neighbours' own margins (their facing margins are zeroed, so collapsing
    cannot undo it). A box at the edge of a boxed container sits flush with its padding.
    Code never wraps; a long command scrolls inside its box. */
-main :where(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) { margin-block: var(--flow); }
-main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):first-child { margin-top: 0; }
-main :where(.output-box, .section, .client-step) > :where(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):last-child { margin-bottom: 0; }
-main :not(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):has(+ :is(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden])) { margin-bottom: 0 !important; }
-main :is(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) + :not(pre, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors) { margin-top: 0 !important; }
+main :where(pre, .code-block, .callout, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) { margin-block: var(--flow); }
+main :where(.output-box, .section, .client-step) > :where(pre, .code-block, .callout, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):first-child { margin-top: 0; }
+main :where(.output-box, .section, .client-step) > :where(pre, .code-block, .callout, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):last-child { margin-bottom: 0; }
+main :not(pre, .code-block, .callout, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):has(+ :is(pre, .code-block, .callout, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden])) { margin-bottom: 0 !important; }
+main :is(pre, .code-block, .callout, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors):not([hidden]) + :not(pre, .code-block, .callout, .quiz-note, .client-untested, .client-evidence, .note-card, .noscript-note, .friction-note, .author-errors) { margin-top: 0 !important; }
 
 button, input, select, textarea { font-weight: inherit; }
 
@@ -1217,8 +1218,8 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 
 /* Install steps, on the install page and in the builder: one rhythm between the
    command, the lead-in, each step, the notes and the remove block. */
-.install-agent > :not(pre, .client-evidence), .client-steps > :not(pre), .steps-list .client-step { margin: 0; }
-.install-agent > * + :not(pre, .client-evidence), .client-steps > * + :not(pre), .steps-list .client-step + .client-step { margin-top: var(--flow-tight); }
+.install-agent > :not(pre, .code-block, .client-evidence), .client-steps > :not(pre, .code-block), .steps-list .client-step { margin: 0; }
+.install-agent > * + :not(pre, .code-block, .client-evidence), .client-steps > * + :not(pre, .code-block), .steps-list .client-step + .client-step { margin-top: var(--flow-tight); }
 .install-agent > * + .steps-heading { margin-top: var(--flow); }
 .steps-list pre { padding: 10px 12px; }
 .noscript-note {
@@ -1877,9 +1878,10 @@ body { overflow-x: clip; }
 @media print {
   body > header, .section-nav, .skip-link, footer, .nav-toggle,
   .mobile-bar, .side-buttons, .filters, .breadcrumb, button.copy,
-  button.download, .sel-item .remove, .tabs {
+  button.download, .sel-item .remove, .tabs, .docs-tab-list, .docs-toc {
     display: none;
   }
+  .docs-tab-panel[hidden], .docs-tab-heading[hidden] { display: block; }
   * { color: #000 !important; background: none !important; }
   a { text-decoration: underline; }
   .card, .example, .side-card, .stat, .step, .demo, .cta, .fact,
@@ -1966,13 +1968,62 @@ body { overflow-x: clip; }
 .docs-state { display: inline-block; padding: 1px 10px; border-radius: 999px; font-family: var(--mono); font-size: 13px; border: 1px solid var(--line-2); }
 .docs-state-witnessed { color: var(--ok); }
 .docs-state-untested { color: var(--warn-fg); background: var(--warn-bg); }
-.docs-notice { padding: 12px 16px; background: var(--warn-bg); color: var(--warn-fg); border-radius: 12px; }
 .docs-pager { display: flex; justify-content: space-between; gap: 16px; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); }
 .docs-pager-link { color: var(--text); text-decoration: none; }
 .docs-pager-link:hover { color: var(--accent); }
 .docs-pager-next { margin-left: auto; text-align: right; }
 .docs-pager-link .mono { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .docs-built { margin-top: 32px; color: var(--muted); font-size: 13px; }
+
+/* "On this page": a third column on wide screens, a closed box above the page on narrow ones. */
+.docs-layout:has(> .docs-toc) { grid-template-columns: 200px minmax(0, 1fr) 190px; gap: 40px; }
+.docs-layout > .docs-nav { grid-column: 1; grid-row: 1; }
+.docs-layout > .docs-main { grid-column: 2; grid-row: 1; }
+.docs-toc { grid-column: 3; grid-row: 1; position: sticky; top: var(--sticky-top); align-self: start; max-height: calc(100vh - var(--sticky-top)); overflow-y: auto; padding: 56px 0 24px; font-size: 14px; }
+.docs-toc-title { margin: 0 0 8px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.docs-toc ul { list-style: none; margin: 0; padding: 0; }
+.docs-toc a { display: block; padding: 4px 10px; border-left: 2px solid var(--line); color: var(--body); text-decoration: none; overflow-wrap: anywhere; }
+.docs-toc .docs-toc-h3 a { padding-left: 22px; font-size: 13px; }
+.docs-toc a:hover { color: var(--text); border-left-color: var(--line-2); }
+.docs-toc a[aria-current="true"] { color: var(--text); border-left-color: var(--accent); }
+
+/* Tabs (docs.js adds the tab list; without it the panels stay stacked under their h3). */
+.docs-tabs { margin-top: 28px; }
+.docs-tab-list { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); }
+.docs-tab { margin-bottom: -1px; padding: 10px 14px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--body); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+.docs-tab:hover { color: var(--text); }
+.docs-tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.docs-tab-heading { margin: 28px 0 10px; color: var(--text); }
+.docs-tabs-on .docs-tab-panel { padding-top: var(--flow); }
+.docs-tab-panel:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+
+/* Code blocks get a Copy button from docs.js. The wrapper draws the box and keeps a
+   gutter for the button, so the code scrolls inside its own area and never under it. */
+.code-block { position: relative; padding-right: 72px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; }
+main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 0; }
+.code-copy { position: absolute; top: 9px; right: 9px; }
+
+/* Callouts: `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]` in engine docs, and evidence notices. */
+.callout { --callout: var(--info); padding: 12px 16px; background: color-mix(in srgb, var(--callout) 10%, var(--panel)); border: 1px solid var(--line); border-left: 4px solid var(--callout); border-radius: 12px; color: var(--body); }
+.callout-tip { --callout: var(--ok); }
+.callout-warning { --callout: var(--warn-fg); background: var(--warn-bg); }
+.callout > * { margin: 0; }
+.callout > * + * { margin-top: var(--flow-tight); }
+.callout-title { color: var(--text); font-weight: 600; }
+
+/* Beside the list, table words stay whole; on a phone they may still break to fit. */
+@media (min-width: 961px) {
+  .docs-table th, .docs-table td { overflow-wrap: break-word; }
+}
+
+@media (max-width: 1180px) {
+  .docs-layout:has(> .docs-toc) { grid-template-columns: 220px minmax(0, 1fr); gap: 0 48px; }
+  .docs-layout > .docs-nav { grid-row: 1 / span 2; }
+  .docs-toc { grid-column: 2; position: static; max-height: none; padding: 32px 0 0; }
+  .docs-layout:has(> .docs-toc) > .docs-main { grid-row: 2; }
+  .docs-toc-box { padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .docs-toc-box:not([open]) .docs-toc-title { margin: 0; }
+}
 
 @media (max-width: 960px) {
   .docs-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -1981,6 +2032,9 @@ body { overflow-x: clip; }
   .docs-nav-group { flex-basis: 100%; }
   .docs-nav li a { border-left: 0; border-bottom: 2px solid var(--line); }
   .docs-nav li a[aria-current="page"] { border-bottom-color: var(--accent); }
+  .docs-layout:has(> .docs-toc) { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .docs-layout > .docs-nav, .docs-layout > .docs-toc, .docs-layout > .docs-main, .docs-layout:has(> .docs-toc) > .docs-main { grid-column: 1; grid-row: auto; }
+  .docs-toc { padding-top: 16px; }
 }
 
 @media (max-width: 760px) {

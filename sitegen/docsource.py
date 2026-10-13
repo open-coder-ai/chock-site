@@ -30,7 +30,14 @@ def load_docs(data_dir: Path) -> dict[str, Any]:
 def wanted(docs: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Per chock file: the section titles every page quotes, or how many leading sections."""
     files: dict[str, dict[str, Any]] = {}
-    for page in docs["pages"].values():
+    # The overview's path tabs quote code blocks from engine docs too.
+    tabs = [
+        part
+        for path in docs["texts"]["paths"]
+        for part in path["tab"]
+        if isinstance(part, dict)
+    ]
+    for page in [*docs["pages"].values(), {"prose": tabs}]:
         for entry in page["prose"]:
             want = files.setdefault(
                 entry["file"],
