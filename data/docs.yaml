@@ -126,11 +126,6 @@ texts:
   policy_intro: "Catalog policy __ID__, version __VERSION__, labelled __WORD__ on __AGENT__."
   on_this_page: "On this page"
   copy: "Copy"
-  copied: "Copied"
-  # The page's Markdown twin: a link without JS; with JS, a button that copies the twin.
-  view_markdown: "View as Markdown"
-  copy_page: "Copy page as Markdown"
-  copy_page_failed: "Copy failed: open View as Markdown and copy the text there."
   # Callout labels for `> [!NOTE]`, `> [!TIP]` and `> [!WARNING]` in engine docs.
   callouts: {note: Note, tip: Tip, warning: Warning}
   next: "Next"

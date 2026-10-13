@@ -1,19 +1,25 @@
 """SITE-LLM: llms.txt, llms-full.txt, Markdown twins and semantic HTML on docs pages."""
 
 import dataclasses
+import html
 import re
 from html.parser import HTMLParser
 from itertools import pairwise
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 from urllib.robotparser import RobotFileParser
 
+import pytest
 import yaml
 
-from sitegen import pages
+from sitegen import docs, pages
+from sitegen.pageparts import PageError
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = yaml.safe_load((ROOT / "data" / "docs.yaml").read_text(encoding="utf-8"))
+ACTIONS = yaml.safe_load(
+    (ROOT / "data" / "page_actions.yaml").read_text(encoding="utf-8")
+)
 # llms-full.txt was 812,017 bytes when this budget was set (2026-10-13).
 LLMS_FULL_BUDGET = 1_048_576
 LINK_RE = re.compile(r"\]\((/[^\s)]*)\)")
@@ -23,7 +29,7 @@ FENCE_RE = re.compile(r"^\s*(```|~~~)")
 class _Article(HTMLParser):
     """Headings, code blocks and language classes inside the docs article."""
 
-    SKIP = ("docs-md", "docs-pager", "docs-built")
+    SKIP = ("page-actions", "docs-pager", "docs-built")
 
     def __init__(self) -> None:
         super().__init__()
@@ -161,9 +167,9 @@ def test_every_docs_page_links_its_twin(built) -> None:
         )
         assert alternate, href
         assert urljoin(_rel(built, page), alternate.group(1)) == href
-        assert re.search(
-            rf'<p class="docs-md mono"><a href="{re.escape(href)}" type="text/markdown" ',
-            text,
+        assert (
+            f'<a class="page-actions-fallback mono" href="{href}" type="text/markdown">'
+            in text
         ), href
 
 
@@ -194,14 +200,49 @@ def test_docs_html_is_semantic(built) -> None:
             assert cls and re.fullmatch(r"language-[a-z0-9-]+", cls), f"{page}: {cls}"
 
 
-def test_copy_page_button_is_only_added_by_script(built) -> None:
-    # Without JS the page shows the twin link; the button is the script's enhancement.
+def test_page_actions_start_hidden_and_fetch_only_the_twin(built) -> None:
+    # Without JS only the twin link shows; the split button and menu wait for the script.
     for page in _docs_pages(built):
-        assert "docs-copy-page" not in page.read_text(encoding="utf-8"), page
+        text = page.read_text(encoding="utf-8")
+        assert '<div class="page-actions-split" hidden ' in text, page
+        assert 'role="menu" aria-labelledby="page-actions-button" hidden>' in text, page
     script = (ROOT / "static" / "js" / "docs.js").read_text(encoding="utf-8")
     assert "fetch(url" in script
     assert script.count("fetch(") == 1
     assert "url.origin !== window.location.origin" in script
+
+
+def test_open_links_are_built_from_data(built) -> None:
+    href = "/docs/quickstart/plugin/"
+    text = (built.out / href.strip("/") / "index.html").read_text(encoding="utf-8")
+    links = re.findall(
+        r'<a class="page-actions-item" role="menuitem" tabindex="-1" href="([^"]+)" '
+        r'target="_blank" rel="noopener noreferrer">([^<]+)</a>',
+        text,
+    )
+    prompt = ACTIONS["prompt"].replace("__TWIN__", f"https://chock.sh{href}index.md")
+    assert links == [
+        (
+            html.escape(item["href"].replace("__PROMPT__", quote(prompt, safe=""))),
+            item["label"],
+        )
+        for item in ACTIONS["open"]
+    ]
+    assert len(links) == 3
+
+
+def test_page_actions_data_is_refused_when_unsafe(tmp_path) -> None:
+    for bad in (
+        {"href": "http://example.com/?q=__PROMPT__"},
+        {"href": "https://example.com/?q=x"},
+        {"href": "javascript:alert(1)//__PROMPT__"},
+    ):
+        data = {**ACTIONS, "open": [{"label": "X", **bad}]}
+        (tmp_path / "page_actions.yaml").write_text(
+            yaml.safe_dump(data), encoding="utf-8"
+        )
+        with pytest.raises(PageError):
+            docs.load_actions(tmp_path)
 
 
 def test_robots_allows_llms_files_and_twins_once_launched(built, tmp_path) -> None:

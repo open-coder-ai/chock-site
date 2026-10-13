@@ -73,21 +73,26 @@ function initCopy(main) {
   });
 }
 
-// "Copy page as Markdown": copies this page's own Markdown twin, fetched from this site only.
-// Without JS the link to the twin stays, so the Markdown is one click away either way.
-function initCopyPage(link) {
-  const url = new URL(link.getAttribute("href"), window.location.href);
+// Page actions: "Copy page" copies this page's Markdown twin, fetched from this site only.
+// The arrow is a WAI-ARIA menu button; its items are plain links written at build time.
+// Without JS only the "View as Markdown" link shows.
+function initPageActions(root) {
+  const split = root.querySelector(".page-actions-split");
+  const fallback = root.querySelector(".page-actions-fallback");
+  if (!split) return;
+  const url = new URL(split.dataset.twin, window.location.href);
   if (url.origin !== window.location.origin) return;
+  const copyButton = split.querySelector(".page-actions-copy");
+  const toggle = split.querySelector(".page-actions-toggle");
+  const menu = split.querySelector(".page-actions-menu");
+  const items = [...menu.querySelectorAll("[role=menuitem]")];
+  const label = copyButton.textContent;
   const twin = () =>
     fetch(url, { credentials: "omit" }).then((response) => {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       return response.text();
     });
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "copy docs-copy-page";
-  button.textContent = link.dataset.copyPage;
-  button.addEventListener("click", async () => {
+  const copy = async () => {
     try {
       if (window.ClipboardItem && navigator.clipboard.write) {
         // A pending item keeps the click's permission while the twin loads (Safari).
@@ -97,16 +102,59 @@ function initCopyPage(link) {
         await navigator.clipboard.writeText(await twin());
       }
     } catch {
-      announce(link.dataset.failed);
+      announce(split.dataset.failed);
       return;
     }
-    button.textContent = link.dataset.copied;
-    announce(link.dataset.copied);
+    copyButton.textContent = split.dataset.copied;
+    announce(split.dataset.copied);
     window.setTimeout(() => {
-      button.textContent = link.dataset.copyPage;
+      copyButton.textContent = label;
     }, 1600);
+  };
+  const close = (refocus) => {
+    menu.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+    if (refocus) toggle.focus();
+  };
+  const open = (index) => {
+    menu.hidden = false;
+    toggle.setAttribute("aria-expanded", "true");
+    items[(index + items.length) % items.length].focus();
+  };
+  copyButton.addEventListener("click", copy);
+  // Enter and Space reach here as a click; the first item takes focus.
+  toggle.addEventListener("click", () => (menu.hidden ? open(0) : close(false)));
+  toggle.addEventListener("keydown", (event) => {
+    const to = { ArrowDown: 0, ArrowUp: items.length - 1 }[event.key];
+    if (to === undefined) return;
+    event.preventDefault();
+    open(to);
   });
-  link.parentNode.insertBefore(button, link);
+  menu.addEventListener("keydown", (event) => {
+    const i = items.indexOf(document.activeElement);
+    const to = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: items.length - 1 }[event.key];
+    if (to !== undefined) {
+      event.preventDefault();
+      items[(to + items.length) % items.length].focus();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      close(true);
+    } else if (event.key === "Tab") {
+      close(false);
+    }
+  });
+  items.forEach((item) => {
+    item.addEventListener("click", () => {
+      const copying = item.dataset.action === "copy";
+      close(copying);
+      if (copying) copy();
+    });
+  });
+  document.addEventListener("click", (event) => {
+    if (!menu.hidden && !split.contains(event.target)) close(false);
+  });
+  split.hidden = false;
+  if (fallback) fallback.hidden = true;
 }
 
 // The list starts closed on narrow screens and marks the section being read.
@@ -151,8 +199,8 @@ const main = document.querySelector(".docs-main");
 if (main) {
   document.querySelectorAll(".docs-tabs").forEach(initTabs);
   initCopy(main);
-  const pageLink = main.querySelector(".docs-md a[data-copy-page]");
-  if (pageLink) initCopyPage(pageLink);
+  const actions = main.querySelector(".page-actions");
+  if (actions) initPageActions(actions);
 }
 const toc = document.querySelector(".docs-toc");
 if (toc) initToc(toc);
