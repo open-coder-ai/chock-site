@@ -173,9 +173,11 @@ def test_tab_order_reaches_every_builder_control(browser, site_url) -> None:
             context.close()
 
 
-# SITE-UX components: tabs, the "On this page" list, copy buttons and callouts.
+# SITE-UX components: tabs, the "On this page" list, copy buttons and callouts;
+# SITE-SEARCH: the search box (its results are checked open in test_docs_search.py).
 _DOCS_TEXT = (
-    ".docs-tab, .docs-toc a, .docs-toc-title, .code-copy, .callout p, .callout a"
+    ".docs-tab, .docs-toc a, .docs-toc-title, .code-copy, .callout p, .callout a,"
+    " .docs-search-label, .docs-search-input"
 )
 
 

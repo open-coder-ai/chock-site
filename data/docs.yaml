@@ -133,6 +133,21 @@ texts:
   callouts: {note: Note, tip: Tip, warning: Warning}
   next: "Next"
   previous: "Previous"
+  # Docs search (SITE-SEARCH): a box in the docs nav over /api/docs/search.json, built here.
+  # Without JS the box is hidden and the fallback link to the docs index shows instead.
+  search:
+    index: /api/docs/search.json
+    # The index file may not grow past this; the build fails over it, and a test checks it.
+    budget_bytes: 98304
+    excerpt_chars: 160
+    label: "Search the docs"
+    placeholder: "Search the docs"
+    results: "Search results"
+    fallback: "Browse every docs page"
+    none: "No docs page matches {query}."
+    one: "1 result. Use the arrow keys to choose, Enter to open."
+    many: "{count} results. Use the arrow keys to choose, Enter to open."
+    failed: "Search could not load. Browse every docs page instead."
   paths_heading: Two paths
   # Each path is a card and a tab. A tab lists, in order: `install` (the engine install
   # command), `pick` (the builder's command forms), or {file, sections}: the first code

@@ -9,8 +9,9 @@ MOBILE = {"width": 390, "height": 844}
 
 def test_docs_nav_reaches_every_topic_and_marks_it(page, site_url) -> None:
     page.goto(site_url + "/docs/")
+    # Topic links only: the search box's no-JS fallback also links to /docs/.
     hrefs = page.eval_on_selector_all(
-        ".docs-nav a", "els => els.map(e => e.getAttribute('href'))"
+        ".docs-nav li a", "els => els.map(e => e.getAttribute('href'))"
     )
     assert hrefs[0] == "/docs/" and len(hrefs) == len(set(hrefs))
     for href in hrefs:
