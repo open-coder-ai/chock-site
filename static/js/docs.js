@@ -1,6 +1,6 @@
 // Docs pages: tabs, copy buttons on code blocks, and the "On this page" list.
 // Each is an enhancement: without JS the panels stay stacked and the list stays open.
-import { copyText } from "./common.js";
+import { announce, copyText } from "./common.js";
 
 const NARROW = "(max-width: 1180px)";
 
@@ -73,6 +73,42 @@ function initCopy(main) {
   });
 }
 
+// "Copy page as Markdown": copies this page's own Markdown twin, fetched from this site only.
+// Without JS the link to the twin stays, so the Markdown is one click away either way.
+function initCopyPage(link) {
+  const url = new URL(link.getAttribute("href"), window.location.href);
+  if (url.origin !== window.location.origin) return;
+  const twin = () =>
+    fetch(url, { credentials: "omit" }).then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.text();
+    });
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "copy docs-copy-page";
+  button.textContent = link.dataset.copyPage;
+  button.addEventListener("click", async () => {
+    try {
+      if (window.ClipboardItem && navigator.clipboard.write) {
+        // A pending item keeps the click's permission while the twin loads (Safari).
+        const blob = twin().then((text) => new Blob([text], { type: "text/plain" }));
+        await navigator.clipboard.write([new window.ClipboardItem({ "text/plain": blob })]);
+      } else {
+        await navigator.clipboard.writeText(await twin());
+      }
+    } catch {
+      announce(link.dataset.failed);
+      return;
+    }
+    button.textContent = link.dataset.copied;
+    announce(link.dataset.copied);
+    window.setTimeout(() => {
+      button.textContent = link.dataset.copyPage;
+    }, 1600);
+  });
+  link.parentNode.insertBefore(button, link);
+}
+
 // The list starts closed on narrow screens and marks the section being read.
 function initToc(toc) {
   const box = toc.querySelector("details");
@@ -115,6 +151,8 @@ const main = document.querySelector(".docs-main");
 if (main) {
   document.querySelectorAll(".docs-tabs").forEach(initTabs);
   initCopy(main);
+  const pageLink = main.querySelector(".docs-md a[data-copy-page]");
+  if (pageLink) initCopyPage(pageLink);
 }
 const toc = document.querySelector(".docs-toc");
 if (toc) initToc(toc);

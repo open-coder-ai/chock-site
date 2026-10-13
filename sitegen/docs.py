@@ -1004,6 +1004,11 @@ def _write(
         CRUMB=crumb,
         TITLE=title,
         SUB=Prose(description),
+        MD_HREF=f"{path}index.md",
+        VIEW_MD=ctx.texts["view_markdown"],
+        COPY_PAGE=ctx.texts["copy_page"],
+        COPIED=ctx.texts["copied"],
+        COPY_FAILED=ctx.texts["copy_page_failed"],
         INTRO=Prose(intro),
         BODY=Safe(html),
         PAGER=_pager(ctx, key) if path == _page_href(ctx, key) else Safe(""),
@@ -1065,7 +1070,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         agents=docsfacts.agents(docs, site.data["agent_routes"]),
         cli=engine.cli_commands(),
     )
-    written: list[tuple[str, str, str]] = []
+    written: list[tuple[str, str, str, str]] = []
 
     def emit(
         key: str,
@@ -1087,7 +1092,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             crumb=crumb,
             body=body,
         )
-        written.append((page_path, title, twin))
+        written.append((page_path, title, description, twin))
 
     for key, page in docs["pages"].items():
         ctx.page = page
@@ -1161,14 +1166,14 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         for p in docs["pages"].values()
     )
     llms += "".join(
-        f"- [Docs: {md_escape(title)}]({path}index.md)\n"
-        for path, title, _ in written
+        f"- [Docs: {md_escape(title)}]({path}index.md): {md_escape(description)}\n"
+        for path, title, description, _ in written
         if path not in {p["path"] for p in docs["pages"].values()}
     )
     return SectionResult(
-        pages=[p for p, _, _ in written],
+        pages=[p for p, _, _, _ in written],
         llms=llms,
-        docs=[(f"{p}index.md", twin) for p, _, twin in written],
+        docs=[(f"{p}index.md", twin) for p, _, _, twin in written],
         data_lines=(
             "- [/api/docs/index.json](/api/docs/index.json): every docs page, "
             "and each agent's routes, grade and witness rows\n"
@@ -1176,7 +1181,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
     )
 
 
-def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str]]) -> None:
+def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str, str]]) -> None:
     """/api/docs/index.json: the docs pages and the per-agent facts they show."""
     api = out_dir / "api" / DOCS
     api.mkdir(parents=True, exist_ok=True)
@@ -1184,7 +1189,9 @@ def _api(ctx: Ctx, out_dir: Path, written: list[tuple[str, str, str]]) -> None:
         "schema_version": 1,
         "engine": ctx.site.framework_ref,
         "catalog": ctx.site.catalog_ref,
-        "pages": [{"path": p, "md": f"{p}index.md", "title": t} for p, t, _ in written],
+        "pages": [
+            {"path": p, "md": f"{p}index.md", "title": t} for p, t, _, _ in written
+        ],
         "agents": [{k: v for k, v in a.items() if k != "notes"} for a in ctx.agents],
     }
     (api / "index.json").write_text(

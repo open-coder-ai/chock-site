@@ -327,17 +327,19 @@ def _llms(
         ),
     ]
     total = sum(len([p for p in site.policies if p.track == t.id]) for t in site.tracks)
-    blockquote = (
-        "> chock turns a picked set of guardrail policies into plugins for AI "
+    # llmstxt.org shape: the title, the tagline as the summary blockquote, then notes.
+    notes = (
+        "chock turns a picked set of guardrail policies into plugins for AI "
         f"agents. The coding section holds {total} policies, each "
         "labelled blocks, asks, warns or advisory, on a catalog pinned at "
         f"{site.catalog_ref[:12]}. Ask the user before picking or installing "
         "anything.\n"
     )
     lines = [
-        "# chock.sh\n",
-        blockquote,
-        "## Docs\n",
+        f"# {site.data['wordmark']}\n\n",
+        f"> {site.data['pages']['home']['title']}\n\n",
+        notes,
+        "\n## Docs\n\n",
     ]
     lines += [f"- [{name}]({path}): {note}\n" for name, path, note in docs]
     for section in sections:
