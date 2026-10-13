@@ -236,6 +236,7 @@ def write_page(
         FOOTER_LINE=site.data["texts"]["footer_line"],
         CATALOG_REF=site.catalog_ref,
         CATALOG_REF_12=site.catalog_ref[:12],
+        VERSION=site.data["version"],
         SCRIPTS=script_tags,
         BODY_END=Safe(body_end),
         ARIA_DOCS=Safe(' aria-current="page"') if nav == "docs" else "",
