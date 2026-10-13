@@ -1,5 +1,5 @@
 {
-  "engine_ref": "c111603ca56534eb59083b6048456120be23616b",
+  "engine_ref": "c1a4f3a4d663749adb6a9f8b012d87ce38f1963c",
   "files": {
     "CHANGELOG.md": {
       "snapshot": "CHANGELOG.md"
@@ -21,6 +21,9 @@
     },
     "docs/custom-policies.md": {
       "snapshot": "docs__custom-policies.md"
+    },
+    "docs/decision-log.md": {
+      "snapshot": "docs__decision-log.md"
     },
     "docs/enforcement-surfaces.md": {
       "snapshot": "docs__enforcement-surfaces.md"

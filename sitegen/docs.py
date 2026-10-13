@@ -527,11 +527,14 @@ def _help_blocks(ctx: Ctx, body: Body, names: list[str]) -> tuple[str, str]:
     by_name = {c["name"]: c for c in ctx.cli}
     html, md = [], []
     for name in names:
-        command = by_name.get(name)
+        parent, _, sub = name.partition(" ")
+        command = by_name.get(parent)
         if command is None:
             raise PageError(
                 f"docs.yaml names chock {name!r}, which the engine does not have"
             )
+        if sub:
+            command = command | {"help": engine.subcommand_help(parent, sub)}
         heading = f"chock {name}"
         html += [
             _h3(ctx, body, heading),
@@ -564,19 +567,83 @@ def _toggles(ctx: Ctx, body: Body) -> None:
 
 
 def _log(ctx: Ctx, body: Body) -> None:
-    paths = engine.gate_logs()
+    files = engine.gate_logs()
+    routes = ctx.texts["log_routes"]
+    if set(files) != set(routes):
+        raise PageError(f"docs.yaml log_routes must name the routes {sorted(files)}")
     help_html, help_md = _help_blocks(ctx, body, ctx.texts["log_commands"])
+    items: list[str | Safe] = [
+        Safe(
+            ctx.t(
+                "route-files",
+                ROUTE=Prose(routes[route]),
+                FILES=Safe(", ".join(ctx.t("code", TEXT=p) for p in paths)),
+            )
+        )
+        for route, paths in files.items()
+    ]
     _section(
         ctx,
         body,
         ctx.texts["log_heading"],
         _para(ctx, ctx.texts["log_body"])
-        + _list(ctx, [Safe(ctx.t("code", TEXT=p)) for p in paths])
+        + _list(ctx, items)
         + _para(ctx, ctx.texts["log_status"])
         + help_html,
         f"{ctx.texts['log_body']}\n\n"
-        + "".join(f"- `{p}`\n" for p in paths)
+        + "".join(
+            f"- {routes[route]}: " + ", ".join(f"`{p}`" for p in paths) + "\n"
+            for route, paths in files.items()
+        )
         + f"\n{ctx.texts['log_status']}\n\n{help_md}",
+    )
+
+
+def _summary(ctx: Ctx, body: Body) -> None:
+    command = ctx.texts["summary_command"]
+    _section(
+        ctx,
+        body,
+        ctx.texts["summary_heading"],
+        _para(ctx, ctx.texts["summary_body"])
+        + _command(ctx, command)
+        + _list(ctx, ctx.texts["summary_items"]),
+        f"{ctx.texts['summary_body']}\n\n{ctx.texts['ask_code']}\n\n"
+        f"    {command}\n\n"
+        + "".join(f"- {item}\n" for item in ctx.texts["summary_items"]),
+    )
+
+
+def _export(ctx: Ctx, body: Body) -> None:
+    html, md = _help_blocks(ctx, body, ctx.texts["export_commands"])
+    _section(
+        ctx,
+        body,
+        ctx.texts["export_heading"],
+        _para(ctx, ctx.texts["export_body"]) + html,
+        f"{ctx.texts['export_body']}\n\n{md}",
+    )
+
+
+def _person_only(ctx: Ctx, body: Body) -> None:
+    want = ctx.texts["person_only_policy"]
+    policy = next((p for p in ctx.site.policies if p.id == want), None)
+    if policy is None:
+        raise PageError(f"docs.yaml person_only_policy {want!r} is not in the catalog")
+    text = data_fill(
+        ctx.texts["person_only_body"],
+        {"__ID__": policy.id, "__VERSION__": policy.version},
+    )
+    link = ctx.t(
+        "link", HREF=f"/docs/policies/{policy.id}/", TEXT=ctx.texts["person_only_link"]
+    )
+    _section(
+        ctx,
+        body,
+        ctx.texts["person_only_heading"],
+        _para(ctx, text) + ctx.t("para", TEXT=Safe(link)),
+        f"{text}\n\n[{ctx.texts['person_only_link']}]"
+        f"({ctx.site.data['site_url']}/docs/policies/{policy.id}/index.md)\n",
     )
 
 
@@ -609,6 +676,18 @@ def _client_notes(ctx: Ctx, body: Body) -> None:
     _section(ctx, body, ctx.texts["client_notes_heading"], "".join(html), "".join(md))
 
 
+def _diagnose(ctx: Ctx, body: Body) -> None:
+    items = ctx.texts["diagnose_items"]
+    _section(
+        ctx,
+        body,
+        ctx.texts["diagnose_heading"],
+        _para(ctx, ctx.texts["diagnose_intro"]) + _list(ctx, items),
+        f"{ctx.texts['diagnose_intro']}\n\n"
+        + "".join(f"- {_md_note(ctx, item)}\n" for item in items),
+    )
+
+
 def _cli(ctx: Ctx, body: Body) -> None:
     for group, title in ctx.texts["cli_groups"].items():
         names = [c["name"] for c in ctx.cli if c["group"] == group]
@@ -635,6 +714,10 @@ BLOCKS = {
     "selection": _selection,
     "toggles": _toggles,
     "log": _log,
+    "summary": _summary,
+    "export": _export,
+    "person_only": _person_only,
+    "diagnose": _diagnose,
     "measured": _measured,
     "client_notes": _client_notes,
     "cli": _cli,
