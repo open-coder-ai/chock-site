@@ -101,7 +101,7 @@ pages:
     nav_label: Troubleshooting
     description: "Known install notes per agent, what happens when a guard cannot decide, and arming a fresh clone."
     intro: "Each agent's install notes, as the engine prints them, then the engine docs on the cases that most often surprise people."
-    blocks: [client_notes]
+    blocks: [measured, client_notes]
     prose:
       - {file: docs/troubleshooting.md, first: 20, optional: true}
       - {file: docs/enforcement-surfaces.md, sections: [What happens when the guard cannot decide]}
@@ -123,7 +123,7 @@ pages:
     intro: "The newest sections of chock's CHANGELOG.md at the pinned engine commit."
     blocks: []
     prose:
-      - {file: CHANGELOG.md, first: 4}
+      - {file: CHANGELOG.md, first: 5}
 
 texts:
   ask_first: "Ask the user before running any command on this page: each one changes how their agent or repository behaves."
@@ -210,6 +210,11 @@ texts:
   log_body: "Gates run in a repository append each outcome to a local log, one JSON record per line. The engine keeps the current file and one rotated file:"
   log_status: "Read it with chock status. Its options, as the engine prints them:"
   log_commands: [status, gate-log]
+  measured_heading: Measured problems and fixes
+  # Only problems a person measured, with the date. DOC-2 adds logging and doctor.
+  measured:
+    - heading: "Windows: a Claude Code marketplace update fails with an SSL certificate error"
+      body: "Measured on 2026-10-12, on Windows with antivirus that intercepts HTTPS: Claude Code's marketplace update failed with `SSL certificate problem: unable to get local issuer certificate`, while a plain `git fetch` in the same shell succeeded. What fixed it: `git config --global http.sslBackend schannel`, then cloning the stale marketplace copy again. The chock plugin for Claude Code was not affected: it installs from a local folder marketplace, with no git fetch."
   client_notes_heading: Install notes per agent
   cli_groups: {everyday: Everyday, authoring: Authoring, aliases: Pre-launch aliases}
   prose_heading: From the engine docs

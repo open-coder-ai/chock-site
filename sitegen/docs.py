@@ -511,6 +511,14 @@ def _log(ctx: Ctx, body: Body) -> None:
     )
 
 
+def _measured(ctx: Ctx, body: Body) -> None:
+    html, md = [], []
+    for item in ctx.texts["measured"]:
+        html += [_h3(ctx, body, item["heading"]), _para(ctx, item["body"])]
+        md.append(f"### {item['heading']}\n\n{item['body']}\n\n")
+    _section(ctx, body, ctx.texts["measured_heading"], "".join(html), "".join(md))
+
+
 def _client_notes(ctx: Ctx, body: Body) -> None:
     clients = ctx.site.data["builder_clients"]
     html, md = [], []
@@ -556,6 +564,7 @@ BLOCKS = {
     "selection": _selection,
     "toggles": _toggles,
     "log": _log,
+    "measured": _measured,
     "client_notes": _client_notes,
     "cli": _cli,
 }

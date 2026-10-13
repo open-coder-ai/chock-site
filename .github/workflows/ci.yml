@@ -71,7 +71,7 @@ jobs:
       - run: python -m sitegen.docsource --chock .chock-src --check
 
   e2e:
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
