@@ -228,15 +228,15 @@ def test_engine_git_pins_are_installed_without_deps() -> None:
     assert '"--no-deps",' in text and '"--no-build-isolation",' in text
 
 
-def test_engine_git_pins_keep_only_commit_pinned_sources() -> None:
-    sha = "b" * 40
-    pin = f"agentseam @ git+https://github.com/open-coder-ai/agentseam@{sha}"
+@pytest.mark.parametrize("sep", [" @ ", "@ ", "@"])
+def test_engine_git_pins_keep_only_commit_pinned_sources(sep: str) -> None:
+    url = "git+https://github.com/open-coder-ai/agentseam@" + "b" * 40
     requires = [
         "pyyaml>=6.0",
-        pin,
+        f"agentseam{sep}{url}",
         'pytest>=7; extra == "dev"',
     ]
-    assert _engine_deps().git_pins(requires) == [pin]
+    assert _engine_deps().git_pins(requires) == [f"agentseam @ {url}"]
 
 
 @pytest.mark.parametrize(
