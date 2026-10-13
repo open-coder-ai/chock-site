@@ -1604,11 +1604,15 @@ body { overflow-x: clip; }
 /* incident and comparison tables */
 
 .table-wrap { overflow-x: auto; margin-top: 24px; border: 1px solid var(--line); border-radius: 16px; }
-.incidents, .fit { width: 100%; border-collapse: collapse; font-size: 15px; }
-.incidents th, .incidents td, .fit th, .fit td { text-align: left; padding: 14px 18px; border-top: 1px solid var(--line); vertical-align: top; }
-.incidents thead th, .fit thead th, .fit thead td { border-top: 0; background: var(--panel-2); color: var(--text); font-weight: 600; }
-.incidents tbody th, .fit tbody th { color: var(--text); font-weight: 500; }
-.incidents td, .fit td { color: var(--body); }
+.incidents, .fit, .routes { width: 100%; border-collapse: collapse; font-size: 15px; }
+.incidents th, .incidents td, .fit th, .fit td, .routes th, .routes td { text-align: left; padding: 14px 18px; border-top: 1px solid var(--line); vertical-align: top; }
+.incidents thead th, .fit thead th, .fit thead td, .routes thead th { border-top: 0; background: var(--panel-2); color: var(--text); font-weight: 600; }
+.incidents tbody th, .fit tbody th, .routes tbody th { color: var(--text); font-weight: 500; }
+.incidents td, .fit td, .routes td { color: var(--body); }
+.routes { font-size: 14px; min-width: 760px; }
+.routes code { overflow-wrap: anywhere; }
+.route-word, .route-evidence, .route-note { display: block; margin-top: 6px; }
+.route-word, .route-source { color: var(--muted); font-size: 13px; }
 .incident-policies a { display: block; font-size: 13px; overflow-wrap: anywhere; }
 .fit .fit-chock { background: var(--warn-bg); color: var(--text); }
 .fit thead .fit-chock { background: var(--accent); color: var(--on-accent); }

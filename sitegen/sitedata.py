@@ -15,6 +15,7 @@ from . import (
     quiz,
     repodata,
     report,
+    routes,
 )
 from . import catalog as catalog_mod
 from . import presets as presets_mod
@@ -110,6 +111,12 @@ def build_site(
         data_dir, site_data, policies, engine.label_words()
     )
 
+    witness = clientdata.load_witness(data_dir, engine.client_ids())
+    evidence = clientdata.load_evidence(data_dir, witness)
+    site_data["agent_routes"] = routes.agent_routes(
+        routes.load_routes(data_dir), evidence, site_data["builder_clients"]
+    )
+
     names = [c["name"] for c in site_data["builder_clients"]["clients"].values()]
     for item in site_data["faq"]["questions"]:
         item["a"] = data_fill(item["a"], {"__AGENTS__": ", ".join(names)})
@@ -141,6 +148,7 @@ def build_site(
         if all(pid in visible for pid in rule.get("policies", []))
     ]
     rules = clientdata.drop_engine_untested(rules, site_data["builder_clients"])
+    rules = clientdata.drop_engine_evidence(rules, site_data["builder_clients"])
     return Site(
         catalog_source=catalog_source,
         catalog_ref=catalog_ref,
@@ -228,7 +236,8 @@ def site_dict(site: Site) -> dict[str, Any]:
         "warning_texts": site.warning_texts,
         "command": site.command,
         "builder_texts": site.data["builder_texts"],
-        "builder_clients": site.data["builder_clients"],
+        "builder_clients": _builder_clients_json(site.data["builder_clients"]),
+        "agent_routes": site.data["agent_routes"],
         "quiz": site.data["quiz"],
         "repos": {
             "tiers": [
@@ -242,12 +251,22 @@ def site_dict(site: Site) -> dict[str, Any]:
     }
 
 
+def _builder_clients_json(block: dict[str, Any]) -> dict[str, Any]:
+    """builder_clients for site.json: each client's labels live once, in policies[].agent_labels."""
+    return block | {
+        "clients": {
+            client: {k: v for k, v in about.items() if k != "labels"}
+            for client, about in block["clients"].items()
+        }
+    }
+
+
 def write_site_json(site: Site, out_dir: Path) -> Path:
-    """dist/data/site.json, pretty JSON with a trailing newline."""
+    """dist/data/site.json, compact JSON with a trailing newline (the page-weight budget)."""
     path = out_dir / SITE_JSON
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps(site_dict(site), indent=2, ensure_ascii=False) + "\n",
+        json.dumps(site_dict(site), separators=(",", ":"), ensure_ascii=False) + "\n",
         encoding="utf-8",
         newline="\n",
     )

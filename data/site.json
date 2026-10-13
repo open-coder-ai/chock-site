@@ -18,7 +18,7 @@
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
     "author": {"title": "Author a policy", "description": "Describe a safeguard in plain words; the page fills a chock policy template and writes a setup script you read and run yourself. Nothing is compiled or run in the browser."},
-    "clients": {"title": "Agents", "description": "chock.sh builds one plugin from your picks for __NAMES__. Each agent's plugin repository is a second way to get single policies."},
+    "clients": {"title": "Agents", "description": "chock.sh builds one plugin from your picks for __NAMES__. Where an agent has a plugin repository, it is a second way to get single policies."},
     "security": {"title": "Security", "description": "What chock is and is not: friction, not a security boundary. How the pieces are verified and how to report a bug."},
     "install": {"title": "Install", "description": "Install chock, build a plugin for your agent from a selection code, and update or remove it."},
     "faq": {"title": "FAQ", "description": "Answers about chock: what the labels mean, what the command does and what it cannot do."},
@@ -143,19 +143,34 @@
   "builder_clients": {
     "bundle_version": "1.0.0",
     "engine_untested_prefix": "Untested:",
+    "engine_evidence_prefix": "Evidence wanted:",
     "plugin_repos": {
       "claude-code": "https://github.com/open-coder-ai/chock-claude-plugins",
       "cursor": "https://github.com/open-coder-ai/chock-cursor-plugins",
       "codex": "https://github.com/open-coder-ai/chock-codex-plugins",
       "copilot": "https://github.com/open-coder-ai/chock-copilot-plugins",
-      "devin": "https://github.com/open-coder-ai/chock-devin-plugins"
+      "devin": "https://github.com/open-coder-ai/chock-devin-plugins",
+      "goose": null,
+      "grok": null,
+      "antigravity": null,
+      "gemini-cli": null,
+      "openhands": null,
+      "kimi-code": null,
+      "factory-droid": null
     },
     "remove": {
       "claude-code": [{"command": "claude plugin uninstall __PLUGIN__@__MARKETPLACE__"}],
       "cursor": [{"note": "Delete the folder __PLUGIN_DIR__, then run \"Developer: Reload Window\"."}],
       "codex": [{"note": "Uninstall __PLUGIN__ in /plugins, then delete the folder __PLUGIN_DIR__."}],
       "copilot": [{"note": "Uninstall __PLUGIN__ from the __MARKETPLACE__ marketplace in Copilot, then delete the folder __PLUGIN_DIR__."}],
-      "devin": [{"note": "Remove __PLUGIN__ from Devin's plugins, then delete the folder __PLUGIN_DIR__."}]
+      "devin": [{"note": "Remove __PLUGIN__ from Devin's plugins, then delete the folder __PLUGIN_DIR__."}],
+      "goose": null,
+      "grok": null,
+      "antigravity": null,
+      "gemini-cli": null,
+      "openhands": null,
+      "kimi-code": null,
+      "factory-droid": null
     },
     "commands": {
       "witnessed": "chock install --selection '__CODE__' --client __CLIENT__ --apply",
@@ -173,8 +188,10 @@
       "card_untested": "Untested: the command builds the plugin, and you apply the steps in __NAME__ yourself.",
       "repo_line": "A second route: single-policy plugins in",
       "remove_md": "To remove it:",
+      "remove_unverified": "Removal steps not verified for __NAME__ yet. What you see when you remove it is wanted in",
       "report": "help test it",
       "command_md": "The command (ask the user before running it: it builds a plugin of hooks that change how their agent behaves):",
+      "ask_inline": " (ask the user before running it)",
       "steps_witnessed": "With --apply, chock runs these steps for __NAME__:",
       "steps_untested": "Then, in __NAME__:",
       "ungraded_word": "not graded",

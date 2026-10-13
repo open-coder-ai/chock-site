@@ -5,6 +5,7 @@ import re
 from dataclasses import replace
 from pathlib import Path
 
+from sitegen.clientpage import agent_note
 from sitegen.pageparts import status_badge
 
 STALE = ("schema 1", "builds for claude code", "claude code refuses")
@@ -37,7 +38,12 @@ def test_install_page_lists_every_agent_from_builder_clients(built) -> None:
         about = block["clients"][client]
         assert f'id="agent-{client}"' in html
         assert f"--client {client}" in html and f"--client {client}" in twin
-        for step in about["steps"] + about["remove"]:
+        for step in about["steps"]:
+            ((kind, text),) = step.items()
+            if kind == "note":
+                text = agent_note(text, block["texts"]["ask_inline"])
+            assert text.splitlines()[0] in twin, (client, text)
+        for step in about["remove"]:
             (text,) = step.values()
             assert text.splitlines()[0] in twin, (client, text)
     assert "schema</code></th><td>2 " in html.replace("\n", "")
@@ -51,7 +57,8 @@ def test_agents_page_builds_for_every_agent(built) -> None:
     for client in block["order"]:
         about = block["clients"][client]
         assert f'href="/coding/builder/#client={client}"' in html
-        assert about["plugin_repo"] in html
+        if about["plugin_repo"]:
+            assert about["plugin_repo"] in html
         assert f"state-{about['witness']}" in html
 
 

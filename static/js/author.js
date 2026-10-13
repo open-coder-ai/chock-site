@@ -618,7 +618,7 @@ async function main() {
           });
           label.appendChild(box);
           // The policy's own label on the picked agent, as the builder shows it.
-          const own = C.clients[client].labels[p.id];
+          const own = p.agent_labels[client];
           const word =
             own.keyword === C.ungraded ? C.texts.ungraded_word : site.label_words.coding[own.keyword];
           label.appendChild(labelChip(own.keyword, word, C.clients[client].meanings[own.keyword]));
