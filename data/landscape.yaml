@@ -1,0 +1,132 @@
+# "Where Chock sits" (COPY-2, org-plan plan/muse-gap-review.md): the docs page at
+# /docs/where-chock-sits/. Wording and sources only; sitegen/docs.py renders it.
+#
+# Rules for every line here:
+# - A claim about another product is that vendor's own, from its own page, and says so
+#   ("Microsoft says ..."). `url` is the page it came from; every URL was fetched on
+#   `fetched` and returned HTTP 200. Nothing here is our measurement of any product.
+# - A claim about chock carries `quotes`: each names a section this page quotes from
+#   chock's docs (see `prose` in data/docs.yaml), and the build fails unless the quote
+#   is in that section, word for word, at the pinned engine commit.
+# - No superlatives, no pricing, no claim of a tier the engine's data does not give.
+
+fetched: "2026-10-14"
+
+texts:
+  how_heading: How to read this page
+  how: "Each layer below names the products this page was checked against, what each vendor says its product does, in its own words, and then the two directions: what the layer can catch that Chock can't, and what Chock can catch that the layer can't. The vendors' claims are theirs: we fetched each page on __DATE__ and have not tested any of these products. Chock's claims quote chock's own docs at the pinned engine commit, and those sections are shown in full at the end of the page. What Chock can enforce differs per agent:"
+  agents_link: each agent's tier and grade
+  says_heading: What the vendors say
+  vendor_link: "Source: __VENDOR__"
+  layer_catches: What this layer catches that Chock can't
+  chock_catches: What Chock catches that this layer can't
+  quote: "Chock's docs, __FILE__:"
+  closing_heading: Complementary, not a substitute
+  closing: "Chock is complementary to these layers, not a substitute for any of them."
+
+layers:
+  - heading: Agent identity
+    products:
+      - name: Microsoft Entra Agent ID
+        vendor: Microsoft
+        url: https://learn.microsoft.com/en-us/entra/agent-id/what-are-agent-identities
+        says: "Microsoft says agent identities are identity accounts in Microsoft Entra ID that identify and authenticate AI agents, and that an agent uses one to request access tokens for web services, acting on its own rights or on rights a person delegates to it."
+      - name: Microsoft Agent 365
+        vendor: Microsoft
+        url: https://www.microsoft.com/microsoft-agent-365
+        says: "Microsoft says Agent 365 extends conditional access and internet traffic filtering policies from users to agents, and controls which users, data, tools and MCP servers an agent can use."
+      - name: SailPoint Agentic Fabric
+        vendor: SailPoint
+        url: https://www.globenewswire.com/news-release/2026/10/06/3375450/0/en/from-chaos-to-control-sailpoint-unlocks-a-secure-agentic-era-with-autonomous-identity-security.html
+        says: "SailPoint says Agentic Fabric maps the AI agents in an enterprise, with shadow AI discovery, runtime authorization and one-click agent lifecycle controls, and that its just-in-time provisioning replaces always-on access for AI agents."
+    layer: "Who an agent is, and what it may reach: tokens, apps, data and other agents, across a whole organisation. Taking one agent's access away everywhere at once. Chock's docs list agent identity and tokens among what Chock does not do."
+    layer_quotes:
+      - file: docs/agentic-risk-coverage.md
+        section: "What Chock does not do — stated plainly"
+        quote: "Agent identity, tokens, and spend budgets."
+      - file: docs/agentic-risk-coverage.md
+        section: "What Chock does not do — stated plainly"
+        quote: "Identity platforms and gateways own runtime credentials and quotas."
+    chock: "A wrong move made with access the agent already has. An agent with valid rights to a repository can still make a commit that breaks one of the repository's policies. At the commit tier, Chock's git hook or CI gate refuses that commit, whichever identity made it."
+    chock_quotes:
+      - file: README.md
+        section: "Guardrails, not guarantees"
+        quote: "`commit` is a git hook or CI gate that exits non-zero."
+
+  - heading: OS containment
+    products:
+      - name: Microsoft Execution Containers (MXC)
+        vendor: Microsoft
+        url: https://blogs.windows.com/windowsdeveloper/2026/10/07/microsoft-execution-containers-policy-driven-containment-for-ai-agents/
+        says: "Microsoft says developers and IT administrators declare the files and network destinations an agent workload may use, MXC enforces that boundary with a container, and the policy stays outside the workload's control, so the agent cannot grant itself more access. It lists process containers on Windows 11, macOS and Linux."
+    layer: "Every file and network access by the agent's process and what it starts, whether or not the action passes through a hook. Chock sees an action in the agent when the agent's hook hands it over, and its docs grade that tier best-effort."
+    layer_quotes:
+      - file: README.md
+        section: "Guardrails, not guarantees"
+        quote: "`in-agent` is the agent's pre-tool hook: best-effort, and it fails open."
+    chock: "A wrong move inside the boundary. Microsoft's own example gives a coding agent read and write access to its repository. Inside that access, Chock's policies judge each commit, and at the commit tier the gate refuses one that breaks a policy."
+    chock_quotes:
+      - file: README.md
+        section: "Guardrails, not guarantees"
+        quote: "`commit` is a git hook or CI gate that exits non-zero."
+
+  - heading: Gateways
+    products:
+      - name: Transcend Rails
+        vendor: Transcend
+        url: https://transcend.io/blog/rails-cursor-plugin
+        says: "Transcend says Rails works at five enforcement points: tool calls through its tool gateway, model calls through its inference gateway, outbound network requests through its network gateway, memory reads and writes in agent runtimes it provisions, and a decision API an agent can call before it acts. It says each decision is allow, deny or escalate to a named reviewer, and that tools connected directly to the IDE, beside the gateway, are not governed."
+    layer: "Model calls, outbound network requests and MCP tool calls, for any agent whose traffic is routed through the gateway, under one central policy with a named reviewer. Chock's docs leave runtime credentials and quotas to gateways."
+    layer_quotes:
+      - file: docs/agentic-risk-coverage.md
+        section: "What Chock does not do — stated plainly"
+        quote: "Identity platforms and gateways own runtime credentials and quotas."
+    chock: "Actions that never pass a gateway. Chock's controls are compiled into the agent's own hooks, git hooks and a CI gate in the repository, so a commit is checked at the git hook or in CI whether or not the agent's traffic went through a gateway."
+    chock_quotes:
+      - file: docs/concepts.md
+        section: "Enforcement surface"
+        quote: "Chock models nine: `ambient-rule`, `git-hook`, `ci-gate`, `pre-tool-use`, `stop`, `agent-hooks`, `managed-setting`, `gateway`, `mcp-gateway`."
+      - file: README.md
+        section: "Guardrails, not guarantees"
+        quote: "`commit` is a git hook or CI gate that exits non-zero."
+
+  - heading: Inventory and monitoring
+    products:
+      - name: Dataiku Agent Management
+        vendor: Dataiku
+        url: https://www.dataiku.com/blog/dataiku-agent-management
+        says: "Dataiku says Agent Management scans connected platforms, such as Microsoft Copilot Studio, Salesforce Agentforce, AWS Bedrock and Databricks, into one inventory that records each agent's owner, and monitors health, usage, cost, quality and behavior. It also says the product \"does not operate your agents or step into their decisions\"."
+      - name: SAP AI agent hub (SAP LeanIX)
+        vendor: SAP
+        url: https://www.leanix.net/en/blog/sap-leanix-announces-launch-of-ai-agent-hub-and-key-industry-partnerships
+        says: "SAP says the AI agent hub in SAP LeanIX Application Portfolio Management discovers agents from SAP, Google and Microsoft agent repositories and through an Agent2Agent protocol API, relates them to applications and business capabilities, and tracks their lifecycle status to help ensure that approved agents are the ones deployed."
+    layer: "Which agents exist across many platforms, who owns them, what they cost, how they perform, and which are approved. Chock works inside each repository it is installed in: a policy is a folder in that repository."
+    layer_quotes:
+      - file: docs/concepts.md
+        section: Policy
+        quote: "A **policy** is a self-contained folder under `.agents/policies/<id>/`"
+    chock: "The action itself, at the moment it happens. Dataiku says its product does not step into agents' decisions, and SAP's hub governs which agents are approved. Chock's gate decides on the commit, and on supported agents on the tool call, before it lands or runs."
+    chock_quotes:
+      - file: README.md
+        section: "Guardrails, not guarantees"
+        quote: "`commit` is a git hook or CI gate that exits non-zero. `in-agent` is the agent's pre-tool hook: best-effort, and it fails open."
+
+  - heading: Browser and edge
+    products:
+      - name: Island
+        vendor: Island
+        url: https://www.island.io/ai
+        says: "Island calls itself \"the control plane for your agentic enterprise\". It says it sits where AI is used, in the browser, on the endpoint, on the network and at tool calls, through its Enterprise Browser, a browser extension, Island Desktop, Island Network and an MCP gateway, and that it enforces DLP and content moderation on agent interactions."
+    layer: "What people and agents do in the browser, on the device and on the network: data leaving through a web app, a risky extension, device posture, and policy on devices an organisation does not manage. None of Chock's enforcement surfaces is a browser or an endpoint agent, and its docs leave endpoint watching to EDR products."
+    layer_quotes:
+      - file: docs/concepts.md
+        section: "Enforcement surface"
+        quote: "Chock models nine: `ambient-rule`, `git-hook`, `ci-gate`, `pre-tool-use`, `stop`, `agent-hooks`, `managed-setting`, `gateway`, `mcp-gateway`."
+      - file: docs/agentic-risk-coverage.md
+        section: "What Chock does not do — stated plainly"
+        quote: "Watching an agent after the fact is an EDR product's job"
+    chock: "A change judged in the repository itself. Where a repository runs Chock's CI gate, it checks the pushed commits there, whichever browser, device or network they came from."
+    chock_quotes:
+      - file: README.md
+        section: "Guardrails, not guarantees"
+        quote: "`commit` is a git hook or CI gate that exits non-zero."

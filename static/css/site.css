@@ -1972,6 +1972,7 @@ body { overflow-x: clip; }
 .docs-list { padding-left: 22px; }
 .docs-list li { margin-bottom: var(--flow-tight); overflow-wrap: anywhere; }
 .docs-prose blockquote { margin: var(--flow) 0; padding: 4px 18px; border-left: 3px solid var(--line-2); background: var(--panel); border-radius: 0 12px 12px 0; }
+.docs-quote { margin: var(--flow) 0; padding: 4px 18px; border-left: 3px solid var(--line-2); background: var(--panel); border-radius: 0 12px 12px 0; }
 .docs-prose li { margin-bottom: var(--flow-tight); }
 .docs-table { width: 100%; border-collapse: collapse; font-size: 15px; }
 /* Table words never break mid-word: a table too wide for the column scrolls inside its .table-wrap. */

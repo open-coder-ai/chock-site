@@ -27,6 +27,7 @@ from .render import md as md_escape
 DOCS = "docs"
 MD = "md"
 ACTIONS_YAML = "page_actions.yaml"
+LANDSCAPE_YAML = "landscape.yaml"
 COMMIT_URL = "__REPO__/commit/__REF__"
 BLOB_URL = "__REPO__/blob/__REF__/__PATH__"
 CATALOG_COMMIT = "https://github.com/open-coder-ai/chock-catalog/commit/"
@@ -54,6 +55,7 @@ class Ctx:
     cli: list[dict[str, str]]
     page: dict[str, Any] = field(default_factory=dict)
     actions: dict[str, Any] = field(default_factory=dict)
+    landscape: dict[str, Any] = field(default_factory=dict)
 
     def t(self, name: str, **tokens: object) -> str:
         """A docs template, filled."""
@@ -722,6 +724,103 @@ def _cli(ctx: Ctx, body: Body) -> None:
         raise PageError(f"docs.yaml cli_groups lacks engine groups {sorted(missing)}")
 
 
+def _quotes(ctx: Ctx, body: Body, quotes: list[dict[str, str]]) -> tuple[str, str]:
+    """Chock's own words behind a claim, refused unless this page quotes a section holding them."""
+    texts = ctx.landscape["texts"]
+    html, md = [], []
+    for q in quotes:
+        quoted = [
+            e
+            for e in ctx.page["prose"]
+            if e["file"] == q["file"] and q["section"] in e.get("sections", [])
+        ]
+        text = ctx.prose.get(q["file"])
+        if not quoted or text is None:
+            raise PageError(
+                f"{LANDSCAPE_YAML}: {q['file']} {q['section']!r} is not quoted on the page"
+            )
+        if " ".join(q["quote"].split()) not in " ".join(
+            sections(text, [q["section"]]).split()
+        ):
+            raise PageError(
+                f"{LANDSCAPE_YAML}: {q['file']} {q['section']!r} lacks {q['quote']!r}"
+            )
+        url = _engine_url(ctx, q["file"])
+        source = data_fill(texts["quote"], {"__FILE__": q["file"]})
+        html.append(
+            ctx.t(
+                "quote",
+                QUOTE=body.renderer.inline(q["quote"]),
+                SOURCE=source,
+                URL=url,
+                SECTION=q["section"],
+            )
+        )
+        md.append(f"> {q['quote']}\n>\n> {source} [{q['section']}]({url})\n\n")
+    return "".join(html), "".join(md)
+
+
+def _landscape(ctx: Ctx, body: Body) -> None:
+    """Where Chock sits: each layer's vendors in their own words, then what each side catches."""
+    data = ctx.landscape
+    texts = data["texts"]
+    how = data_fill(texts["how"], {"__DATE__": data["fetched"]})
+    agents = _page_href(ctx, "agents")
+    _section(
+        ctx,
+        body,
+        texts["how_heading"],
+        ctx.t(
+            "line-link",
+            LINE=body.renderer.inline(how),
+            URL=agents,
+            LINK=texts["agents_link"],
+        ),
+        f"{how} [{texts['agents_link']}]({ctx.site.data['site_url']}{agents}index.md)\n",
+    )
+    for layer in data["layers"]:
+        claims, claims_md = [], []
+        for product in layer["products"]:
+            link = data_fill(texts["vendor_link"], {"__VENDOR__": product["vendor"]})
+            claims.append(
+                ctx.t(
+                    "claim",
+                    NAME=product["name"],
+                    TEXT=body.renderer.inline(product["says"]),
+                    HREF=product["url"],
+                    LINK=link,
+                )
+            )
+            claims_md.append(
+                f"- **{product['name']}.** {product['says']} [{link}]({product['url']})\n"
+            )
+        layer_html, layer_md = _quotes(ctx, body, layer["layer_quotes"])
+        chock_html, chock_md = _quotes(ctx, body, layer["chock_quotes"])
+        _section(
+            ctx,
+            body,
+            layer["heading"],
+            _h3(ctx, body, texts["says_heading"])
+            + ctx.t("list", ITEMS=Safe("".join(claims)))
+            + _h3(ctx, body, texts["layer_catches"])
+            + ctx.t("para", TEXT=body.renderer.inline(layer["layer"]))
+            + layer_html
+            + _h3(ctx, body, texts["chock_catches"])
+            + ctx.t("para", TEXT=body.renderer.inline(layer["chock"]))
+            + chock_html,
+            f"### {texts['says_heading']}\n\n{''.join(claims_md)}\n"
+            f"### {texts['layer_catches']}\n\n{layer['layer']}\n\n{layer_md}"
+            f"### {texts['chock_catches']}\n\n{layer['chock']}\n\n{chock_md}",
+        )
+    _section(
+        ctx,
+        body,
+        texts["closing_heading"],
+        _para(ctx, texts["closing"]),
+        f"{texts['closing']}\n",
+    )
+
+
 BLOCKS = {
     "paths": _paths,
     "labels": _labels,
@@ -744,6 +843,7 @@ BLOCKS = {
     "measured": _measured,
     "client_notes": _client_notes,
     "cli": _cli,
+    "landscape": _landscape,
 }
 
 
@@ -1111,6 +1211,22 @@ def _search(ctx: Ctx) -> Safe:
     )
 
 
+def load_landscape(data_dir: Path) -> dict[str, Any]:
+    """data/landscape.yaml, refused unless every vendor claim names its vendor and links its https page."""
+    data = yaml.safe_load((data_dir / LANDSCAPE_YAML).read_text(encoding="utf-8"))
+    for layer in data["layers"]:
+        for product in layer["products"]:
+            if not product["url"].startswith("https://"):
+                raise PageError(
+                    f"{LANDSCAPE_YAML}: {product['name']!r} needs an https source"
+                )
+            if not product["says"].startswith(product["vendor"] + " "):
+                raise PageError(
+                    f"{LANDSCAPE_YAML}: {product['name']!r} must open with {product['vendor']!r}"
+                )
+    return data
+
+
 def load_actions(data_dir: Path) -> dict[str, Any]:
     """data/page_actions.yaml, refused unless every open link is https with one prompt."""
     actions = yaml.safe_load((data_dir / ACTIONS_YAML).read_text(encoding="utf-8"))
@@ -1264,6 +1380,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         agents=docsfacts.agents(docs, site.data["agent_routes"]),
         cli=engine.cli_commands(),
         actions=load_actions(data_dir),
+        landscape=load_landscape(data_dir),
     )
     written: list[tuple[str, str, str, str]] = []
     rows: list[dict[str, Any]] = []
