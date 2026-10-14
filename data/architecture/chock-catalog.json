@@ -1,0 +1,310 @@
+{
+  "id": "chock-catalog",
+  "order": 5,
+  "title": "chock-catalog",
+  "summary": "The policy library: the manifest schema, policy folders with their evals, the generators under tools/, registry.yaml, the catalog's own compiled output, and the build route toward the plugin repos.",
+  "intro": "Each policy is a folder of plain files: a manifest.yaml that chock's schema validates, an eval suite, and generated plugin files. tools/regen_all.py regenerates every derived file, including registry.yaml, and CI checks that none has drifted. chock plugin build and chock marketplace package the same folders for each client; the release check reads which catalog and engine commits each plugin repo was generated from.",
+  "pins": {
+    "chock": "eab53f2304332d304d5383d91d1e3ffd0e4e1bed",
+    "chock-catalog": "3e9d2d3e04cfd6fd857c4afad3901a0dd32dfeaf",
+    "chock-release": "b8daf714219902483fc1fa2d8850767539806ef6"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 510
+  },
+  "boundaries": [
+    {
+      "label": "A policy folder, its schema and its eval replay",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 112
+    },
+    {
+      "label": "Derived in the catalog, checked in CI",
+      "x": 5,
+      "y": 150,
+      "w": 790,
+      "h": 230
+    },
+    {
+      "label": "Toward the plugin repos",
+      "x": 5,
+      "y": 390,
+      "w": 790,
+      "h": 106
+    }
+  ],
+  "nodes": [
+    {
+      "id": "schema",
+      "label": "Manifest schema",
+      "kind": "code",
+      "x": 15,
+      "y": 70,
+      "source": "chock/src/chock/validation/schemas/manifest.schema.json",
+      "card": "The JSON Schema chock validates a policy's manifest.yaml against. It requires id, name, version, description, artifact, enforcement, provenance and lifecycle; artifact is rule, hook, skill or workflow, and enforcement is advise, verify or block. A sibling file, eval.schema.json, describes evals/suite.yaml."
+    },
+    {
+      "id": "manifest",
+      "label": "manifest.yaml",
+      "kind": "artifact",
+      "x": 215,
+      "y": 70,
+      "source": "chock-catalog/base/block-invisible-unicode/manifest.yaml",
+      "card": "One policy's identity and payload. The cited one declares a hook.gate of kind content_regex that runs on commit and tool_use with action block, plus compliance anchors, provenance, lifecycle status and a changelog. Published policies are folders under base/, compliance/ and agentic-security/ (tools/trees.py)."
+    },
+    {
+      "id": "evalsuite",
+      "label": "evals/suite.yaml",
+      "kind": "artifact",
+      "x": 415,
+      "y": 70,
+      "source": "chock-catalog/base/block-invisible-unicode/evals/suite.yaml",
+      "card": "The policy's test cases. A case with an execute: block names the files to stage and the verdict it expects, block or allow, so it can be replayed with no agent in the loop. A case without one is counted but not executed."
+    },
+    {
+      "id": "evalrun",
+      "label": "Eval replay",
+      "kind": "code",
+      "x": 615,
+      "y": 70,
+      "source": "chock/src/chock/eval/execute.py",
+      "card": "chock check --only evals runs this. Each executable case is replayed in a throwaway git repo in a temporary directory, against the policy's compiled git-hook gate.json, a gate built from the manifest when none is compiled, or the policy's guard for a command case. It reports the verdict it observed, and a case fails when that differs from the expected one."
+    },
+    {
+      "id": "regenall",
+      "label": "tools/regen_all.py",
+      "kind": "code",
+      "x": 15,
+      "y": 190,
+      "source": "chock-catalog/tools/regen_all.py",
+      "card": "Regenerates every derived file in dependency order: lib/ copies, plugin packages, chock sync, registry and README counts, then policy docs, the coverage matrix, quickstart.sh and figures. Then it runs the checks CI runs; --check-only writes nothing."
+    },
+    {
+      "id": "pluginjson",
+      "label": "plugin.json + skill",
+      "kind": "artifact",
+      "x": 215,
+      "y": 190,
+      "source": "chock-catalog/base/block-invisible-unicode/plugin.json",
+      "card": "Generated from manifest.yaml by chock plugin build, with skills/<id>/SKILL.md beside it, so each policy folder is also an Agent Plugins 1.0.0 package. Its extension block records the manifest, artifact, enforcement and coverage_without_chock: advisory."
+    },
+    {
+      "id": "genreg",
+      "label": "gen_registry.py",
+      "kind": "code",
+      "x": 415,
+      "y": 190,
+      "source": "chock-catalog/tools/gen_registry.py",
+      "card": "Writes registry.yaml's rows, the README's counts and the prose counts from the policies on disk. A row comes from the manifest and the eval suite's case counts. Each per-client label is graded from the hooks in packages it builds with chock plugin build --format all into a temporary directory."
+    },
+    {
+      "id": "registry",
+      "label": "registry.yaml",
+      "kind": "artifact",
+      "x": 615,
+      "y": 190,
+      "source": "chock-catalog/registry.yaml",
+      "card": "One generated row per published policy: path, version, artifact, enforcement, status, mechanism, enforces, eval_cases, eval_executed, and a label for claude-code, cursor, codex, copilot and devin saying what the policy does on that client."
+    },
+    {
+      "id": "adopted",
+      "label": ".agents/policies/",
+      "kind": "artifact",
+      "x": 15,
+      "y": 310,
+      "source": "chock-catalog/.agents/policies/block-invisible-unicode/manifest.yaml",
+      "card": "The catalog is an adopter of its own policies: .agents/policies/ holds the subset of base/ that governs this repo. tools/check_installed.py fails when an installed copy is ahead of or differs from its source, and warns when it is behind."
+    },
+    {
+      "id": "compiled",
+      "label": ".chock/compiled/",
+      "kind": "artifact",
+      "x": 215,
+      "y": 310,
+      "source": "chock-catalog/.chock/compiled/block-invisible-unicode/git-hook/gate.json",
+      "card": "What chock sync writes for each installed policy: one subfolder per surface (git-hook, ci-gate, pre-tool-use, stop, agent-hooks, mcp-gateway, managed-setting, ambient-rule). The cited file is the commit gate for block-invisible-unicode, which the eval replay uses when it exists."
+    },
+    {
+      "id": "checkreg",
+      "label": "check_registry.py",
+      "kind": "code",
+      "x": 615,
+      "y": 310,
+      "source": "chock-catalog/tools/check_registry.py",
+      "card": "Checks registry.yaml against the policies on disk: ids, paths, labels, versions, eval counts and text. CI runs it together with gen_registry.py --check --registry-only, so a stale row fails the build."
+    },
+    {
+      "id": "relcheck",
+      "label": "Release check",
+      "kind": "code",
+      "x": 15,
+      "y": 430,
+      "source": "chock-release/check.py",
+      "card": "The release train's consistency check, in chock-release. Its check 5 reads generated_from.yaml in each plugin repo (chock-claude, -cursor, -codex, -copilot and -devin-plugins) and refuses unless it names the release manifest's catalog and engine commits."
+    },
+    {
+      "id": "marketplace",
+      "label": "chock marketplace",
+      "kind": "code",
+      "x": 215,
+      "y": 430,
+      "source": "chock/src/chock/plugin/marketplace.py",
+      "card": "Writes the marketplace index over a tree built by chock plugin build: .claude-plugin/marketplace.json for claude and codex, .cursor-plugin/marketplace.json for cursor, and a root meta-plugin for devin. marketplace_repo.py adds the repo's llms.txt and issue config."
+    },
+    {
+      "id": "pluginbuild",
+      "label": "chock plugin build",
+      "kind": "code",
+      "x": 415,
+      "y": 430,
+      "source": "chock/src/chock/plugin/cli.py",
+      "card": "Packages policy folders as plugins. Without --out-dir it writes the Agent Plugins files in place; a client format such as claude, copilot, cursor, codex or devin needs --out-dir and is written to <out-dir>/<format>/<id>/. With --check it reports stale output and writes nothing."
+    }
+  ],
+  "edges": [
+    {
+      "from": "schema",
+      "to": "manifest",
+      "label": "validates",
+      "label_at": [
+        200,
+        62
+      ]
+    },
+    {
+      "from": "manifest",
+      "to": "evalsuite",
+      "label": "cases",
+      "label_at": [
+        400,
+        62
+      ]
+    },
+    {
+      "from": "evalsuite",
+      "to": "evalrun",
+      "label": "execute:",
+      "label_at": [
+        600,
+        62
+      ]
+    },
+    {
+      "from": "manifest",
+      "to": "pluginjson",
+      "label": "generates"
+    },
+    {
+      "from": "regenall",
+      "to": "pluginjson",
+      "label": "plugin build",
+      "label_at": [
+        200,
+        182
+      ]
+    },
+    {
+      "from": "evalsuite",
+      "to": "genreg",
+      "label": "case counts"
+    },
+    {
+      "from": "genreg",
+      "to": "registry",
+      "label": "writes",
+      "label_at": [
+        600,
+        182
+      ]
+    },
+    {
+      "from": "regenall",
+      "to": "genreg",
+      "label": "update_registry",
+      "via": [
+        [
+          150,
+          280
+        ],
+        [
+          500,
+          280
+        ]
+      ],
+      "label_at": [
+        320,
+        276
+      ]
+    },
+    {
+      "from": "registry",
+      "to": "checkreg",
+      "label": "verified by"
+    },
+    {
+      "from": "regenall",
+      "to": "adopted",
+      "label": "chock sync",
+      "label_at": [
+        105,
+        298
+      ]
+    },
+    {
+      "from": "adopted",
+      "to": "compiled",
+      "label": "compiles",
+      "label_at": [
+        200,
+        302
+      ]
+    },
+    {
+      "from": "pluginbuild",
+      "to": "marketplace",
+      "label": "built tree",
+      "label_at": [
+        400,
+        422
+      ]
+    },
+    {
+      "from": "marketplace",
+      "to": "relcheck",
+      "label": "generated_from",
+      "label_at": [
+        200,
+        422
+      ]
+    },
+    {
+      "from": "manifest",
+      "to": "pluginbuild",
+      "label": "packaged",
+      "via": [
+        [
+          400,
+          130
+        ],
+        [
+          400,
+          440
+        ]
+      ],
+      "label_at": [
+        360,
+        400
+      ]
+    }
+  ],
+  "path": [
+    "schema",
+    "manifest",
+    "pluginbuild",
+    "marketplace",
+    "relcheck"
+  ]
+}

@@ -146,7 +146,18 @@ def test_tier_facts_come_from_agentseam_tier_table(built) -> None:
     assert sum(int(re.search(r"\((\d+)\)", r).group(1)) for r in rows) == len(agents)
     for agent in agents:
         assert agent["tier"] == engine.tier_row(agent["id"])["tier"]
-    for diagram_id in IDS:
+    with_tiers = [
+        d.id for d in architecture.load() if any("facts" in n for n in d.nodes)
+    ]
+    # ARCH-3: diagrams 5-8 have no client box; diagram 9 is the fail-mode view.
+    assert with_tiers == [
+        "whole-train",
+        "life-of-a-policy",
+        "chock-internals",
+        "agentseam-internals",
+        "trust-boundaries",
+    ]
+    for diagram_id in with_tiers:
         twin = _twin(built, diagram_id)
         for row in rows:
             assert f"  - {md(row)}\n" in twin
@@ -189,7 +200,7 @@ def test_whole_train_boxes_link_to_their_repo_diagram(built) -> None:
         target = REPO_DIAGRAM[repo]
         assert node["link"] == f"/docs/architecture/{target}/"
         card = page.split(f'id="{architecture.card_id(diagram, node)}"', 1)[1]
-        card = card.split("</li>", 1)[0]
+        card = re.split(r'<li class="arch-card |</ol>', card, maxsplit=1)[0]
         assert (
             f'<p class="arch-card-link"><a href="/docs/architecture/{target}/">'
             f"Its diagram: {titles[target]}</a></p>"
