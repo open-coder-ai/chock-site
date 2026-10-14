@@ -2061,3 +2061,16 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
   .docs-cards { grid-template-columns: minmax(0, 1fr); }
   .docs-facts div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }
+
+/* SITE-TOC: "On this page" beside a single-column page (FAQ), reusing the docs list
+   (.docs-toc, docs.js). The text keeps its measure; the list fills the empty right side
+   on wide screens and is left out at 1,180 px and below, where there is no room for it. */
+.toc-layout { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 48px; }
+.toc-layout > .toc-main { grid-column: 1; grid-row: 1; min-width: 0; }
+.toc-layout > .docs-toc { grid-column: 2; grid-row: 1; padding-bottom: 48px; }
+.toc-main :is(h2, h3)[id] { scroll-margin-top: calc(var(--sticky-top) + 16px); }
+
+@media (max-width: 1180px) {
+  .toc-layout { display: block; }
+  .toc-layout > .docs-toc { display: none; }
+}

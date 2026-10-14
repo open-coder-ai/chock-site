@@ -1,3 +1,5 @@
+# Title of the "On this page" list beside the questions on wide screens.
+toc_title: "On this page"
 groups:
 - id: common
   title: "Common"
