@@ -678,6 +678,27 @@ def _client_notes(ctx: Ctx, body: Body) -> None:
     _section(ctx, body, ctx.texts["client_notes_heading"], "".join(html), "".join(md))
 
 
+def _doctor(ctx: Ctx, body: Body) -> None:
+    texts = ctx.texts
+    help_html, help_md = _help_blocks(ctx, body, texts["doctor_commands"])
+    url = _engine_url(ctx, texts["doctor_source_file"])
+    link = ctx.t("link", HREF=url, TEXT=texts["doctor_source"])
+    _section(
+        ctx,
+        body,
+        texts["doctor_heading"],
+        _para(ctx, texts["doctor_intro"])
+        + _list(ctx, texts["doctor_items"])
+        + _para(ctx, texts["doctor_exit"])
+        + help_html
+        + ctx.t("para", TEXT=Safe(link)),
+        f"{_md_note(ctx, texts['doctor_intro'])}\n\n"
+        + "".join(f"- {item}\n" for item in texts["doctor_items"])
+        + f"\n{texts['doctor_exit']}\n\n{help_md}"
+        + f"[{texts['doctor_source']}]({url})\n",
+    )
+
+
 def _diagnose(ctx: Ctx, body: Body) -> None:
     items = ctx.texts["diagnose_items"]
     _section(
@@ -726,6 +747,7 @@ BLOCKS = {
     "summary": _summary,
     "export": _export,
     "person_only": _person_only,
+    "doctor": _doctor,
     "diagnose": _diagnose,
     "measured": _measured,
     "client_notes": _client_notes,

@@ -53,7 +53,7 @@ def test_monitor_states_the_person_only_rule_from_the_catalog(built) -> None:
 def test_monitor_quotes_the_engine_decision_log(built) -> None:
     page = _page(built, "monitor")
     assert "/docs/decision-log.md" in page
-    for heading in ("Levels", "Reading it"):
+    for heading in ("Levels", "Heartbeat", "Reading it"):
         assert f">{heading}</h2>" in page, heading
 
 
@@ -69,3 +69,21 @@ def test_troubleshooting_says_how_to_read_the_log(built) -> None:
     for line in section.splitlines():
         if "`chock " in line:
             assert "ask" in line.lower(), line
+
+
+def test_troubleshooting_shows_chock_doctor_as_the_engine_prints_it(built) -> None:
+    page, twin = (
+        _page(built, "troubleshooting"),
+        _page(built, "troubleshooting", "index.md"),
+    )
+    doctor = next(c for c in engine.cli_commands() if c["name"] == "doctor")
+    assert f">{html.escape(TEXTS['doctor_heading'])}</h2>" in page
+    assert html.escape(doctor["help"]) in page
+    assert doctor["help"].split("\n\n", 1)[0] in twin
+    assert f"/{built.site.framework_ref}/{TEXTS['doctor_source_file']}" in page
+
+
+def test_summary_names_the_heartbeat(built) -> None:
+    page = _page(built, "monitor")
+    assert any("session_start" in item for item in TEXTS["summary_items"])
+    assert "no heartbeat available" in page

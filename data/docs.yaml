@@ -88,16 +88,15 @@ pages:
     intro: "Every chock hook writes one line per decision to a local log. Nothing leaves the machine. chock status reads the log and sums it up; chock witness export writes one client's records to a file you attach yourself."
     blocks: [log, summary, export, person_only]
     prose:
-      # The Summary section joins once the engine writes heartbeats (OBS-1).
       - file: docs/decision-log.md
-        sections: [Levels, "Settings (a person's, only)", Reading it]
+        sections: [Levels, Heartbeat, "Settings (a person's, only)", Reading it]
   troubleshooting:
     path: /docs/troubleshooting/
     title: Troubleshooting
     nav_label: Troubleshooting
-    description: "Measured problems and fixes, reading the decision log, install notes per agent, what happens when a guard cannot decide, and arming a fresh clone."
-    intro: "Problems a person measured, how to read what the hooks decided, each agent's install notes as the engine prints them, then the engine docs on the cases that most often surprise people."
-    blocks: [measured, diagnose, client_notes]
+    description: "Measured problems and fixes, checking hooks with chock doctor, reading the decision log, install notes per agent, what happens when a guard cannot decide, and arming a fresh clone."
+    intro: "Problems a person measured, how to check that each agent's hooks are in place and running, how to read what the hooks decided, each agent's install notes as the engine prints them, then the engine docs on the cases that most often surprise people."
+    blocks: [measured, doctor, diagnose, client_notes]
     prose:
       - {file: docs/troubleshooting.md, first: 20, optional: true}
       - {file: docs/enforcement-surfaces.md, sections: [What happens when the guard cannot decide]}
@@ -254,6 +253,7 @@ texts:
     - "p50 and p95 `duration_ms` per hook (client and surface). At `info` only the calls a policy fired on are logged, so the latencies cover those; set `debug` to time every call."
     - "A WARN when a hook's p95 is within 25% of its client's hook timeout. A client timeout fails open, so a call slower than that goes through unchecked. An undocumented timeout is shown as `unknown`, never warned on."
     - "The top 5 guard faults, by policy and reason code."
+    - "Heartbeats (`session_start` records): hook records with no `session_start` before them, and `session_start` records with no hook record after them, per route and client. A client agentseam records no session-start event for is listed as \"no heartbeat available\", never as missing one."
   export_heading: "Export evidence: chock witness export"
   export_body: "`chock witness export --client <client>` writes one client's records from both routes, redacted, to a new local JSON file, and prints the agentseam issue to attach it to. An existing file is refused, never overwritten. Nothing is uploaded: you attach the file yourself, after reading it."
   export_commands: [witness export]
@@ -266,9 +266,23 @@ texts:
   measured:
     - heading: "Windows: a Claude Code marketplace update fails with an SSL certificate error"
       body: "Measured on 2026-10-12, on Windows with antivirus that intercepts HTTPS: Claude Code's marketplace update failed with `SSL certificate problem: unable to get local issuer certificate`, while a plain `git fetch` in the same shell succeeded. What fixed it: `git config --global http.sslBackend schannel`, then cloning the stale marketplace copy again. The chock plugin for Claude Code was not affected: it installs from a local folder marketplace, with no git fetch."
+  doctor_heading: "Check the hooks: chock doctor"
+  doctor_intro: "Most clients fail open when a hook crashes, times out or never loads, so a silent hook looks exactly like a protected session. `chock doctor` checks that each client's chock hooks are in place, current, and seen running, on the sync route and the plugin route. It reads only: no network, and it never runs a client. Each check prints one line, `PASS`, `WARN`, `FAIL` or `INFO`, with a one-line fix:"
+  doctor_items:
+    - "hooks: the file the client reads runs chock's runtime, and the runtime is there;"
+    - "launcher: the launcher is there, and a `python3`, `python` or `py` on PATH is 3.11+;"
+    - "engine: the runtime is byte-identical to what the installed chock builds; a plugin's recorded engine version and commit are compared too;"
+    - "trust: for clients that run a hook only once a person trusts it (Codex, Grok), how to; chock cannot read that record;"
+    - "client: the versions agentseam witnessed; `--client-version` compares yours;"
+    - "last fired and heartbeat: from the decision log, the last record per hook surface, and the `session_start` heartbeats. A client with no documented session-start event reads \"no heartbeat available\", never a failure."
+  doctor_exit: "Exit 1 when any check fails or no chock hooks are found, else 0."
+  doctor_commands: [doctor]
+  doctor_source: "The engine's doctor docs"
+  doctor_source_file: docs/doctor.md
   diagnose_heading: Read what the hooks decided
   diagnose_intro: "The decision log (see Monitor) is where to look when a policy did not fire, or fired when you did not expect it. What the engine docs say about reading it:"
   diagnose_items:
+    - "`chock doctor` first: most clients fail open when a hook crashes or never loads, so a session with no `session_start` heartbeat is the sign of a hook that did not run, and doctor reports it."
     - "`chock status --only log` lists the decisions on both routes. At the default level, `info`, only blocks, asks, warns, guard faults and overrides are written, not allows."
     - "To see every call, allows included, with a redacted trace (wire event, tool, matched rule, the guard's exit code, per-stage timings), a person sets the level to `debug`: `CHOCK_LOG_LEVEL=debug` in the shell the agent client was started from, or `{\"level\": \"debug\"}` in `.chock/chock-log.json`. An agent cannot change the level."
     - "`chock status --summary` lists the top guard faults and warns when a hook's p95 is within 25% of its client's hook timeout, because a client timeout fails open."
