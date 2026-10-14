@@ -51,15 +51,15 @@ def test_home_uses_only_catalog_examples(built) -> None:
 
 def test_home_hero_demo_and_stats(built) -> None:
     html = (built.out / "index.html").read_text(encoding="utf-8")
-    assert "A kill switch for your coding agent&#x27;s" in html
-    assert "wrong moves." in html
-    assert "OPEN SOURCE · KILL SWITCH FOR CODING AGENTS" in html
+    assert "Blocks your coding agent&#x27;s" in html
+    assert "wrong moves before they land." in html
+    assert "OPEN SOURCE · POLICY BLOCKS FOR CODING AGENTS" in html
     assert (
-        "A kill switch for your coding agent&#x27;s wrong moves. Part of open-coder-ai."
+        "Blocks your coding agent&#x27;s wrong moves before they land. Part of open-coder-ai."
         in html
     )
     assert (
-        "<title>A kill switch for your coding agent&#x27;s wrong moves. · chock.sh</title>"
+        "<title>Blocks your coding agent&#x27;s wrong moves before they land. · chock.sh</title>"
         in html
     )
     data = json.loads((built.out / "data" / "site.json").read_text(encoding="utf-8"))

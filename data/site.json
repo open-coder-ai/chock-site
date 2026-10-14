@@ -13,7 +13,7 @@
     {"key": "clients", "label": "Agents"}
   ],
   "pages": {
-    "home": {"title": "A kill switch for your coding agent's wrong moves.", "description": "A kill switch for your coding agent's wrong moves."},
+    "home": {"title": "Blocks your coding agent's wrong moves before they land.", "description": "Blocks your coding agent's wrong moves before they land."},
     "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ of them, each labelled blocks, asks, warns or advisory."},
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
@@ -52,7 +52,7 @@
     "notfound_sub": "That page is not part of chock.sh.",
     "design_badge": "DESIGN IN PROGRESS",
     "available_badge": "AVAILABLE NOW",
-    "footer_tagline": "A kill switch for your coding agent's wrong moves. Part of open-coder-ai.",
+    "footer_tagline": "Blocks your coding agent's wrong moves before they land. Part of open-coder-ai.",
     "policies_search": "Search __COUNT__ policies: secrets, git, curl…",
     "computed_note": "Counts are computed from the catalog at each build.",
     "grades_agent_note": "Labels and counts are the catalog's grades on __AGENT__; each policy's page lists its grade on every agent."
