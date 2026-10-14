@@ -21,6 +21,8 @@ nav:
     pages: [agents, policies, configure, monitor, troubleshooting]
   - group: Reference
     pages: [cli, release-notes]
+  - group: Architecture
+    pages: [architecture]
 
 pages:
   overview:
@@ -117,6 +119,15 @@ pages:
     blocks: []
     prose:
       - {file: CHANGELOG.md, first: 5}
+  # ARCH-1: the diagrams come from data/architecture/<id>.json (sitegen/architecture.py).
+  architecture:
+    path: /docs/architecture/
+    title: Architecture
+    nav_label: Architecture
+    description: "How the chock repositories fit together, and the path one policy takes from the catalog to your agent's hook."
+    intro: "Blocks your coding agent's wrong moves before they land. These diagrams show how: each box cites the file that does the work, at a pinned commit, and each has a card. Select a box to read its card, or read the cards in order below each diagram."
+    blocks: [architecture]
+    prose: []
 
 texts:
   ask_first: "Ask the user before running any command on this page: each one changes how their agent or repository behaves."
