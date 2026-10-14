@@ -1,0 +1,266 @@
+{
+  "id": "agentseam-internals",
+  "order": 4,
+  "title": "agentseam internals",
+  "summary": "Inside agentseam: the contract, the adapters and their vendor data, the dispatcher, the capability matrix and its evidence, install and doctor, and the probe.",
+  "intro": "agentseam is the layer between each agent's hook format and one shared contract. An adapter turns a vendor's payload into one Event and speaks a Decision back in that vendor's dialect. Beside the runtime sits what agentseam knows about each agent, and how it knows it.",
+  "pins": {
+    "agentseam": "dd4f0a485a36313328d381305cf09658d3c36fb4",
+    "chock": "eab53f2304332d304d5383d91d1e3ffd0e4e1bed"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 510
+  },
+  "boundaries": [
+    {
+      "label": "One hook call",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 215
+    },
+    {
+      "label": "What each agent can do, and how we know",
+      "x": 5,
+      "y": 270,
+      "w": 790,
+      "h": 226
+    }
+  ],
+  "nodes": [
+    {
+      "id": "vendordata",
+      "label": "Vendor data",
+      "kind": "artifact",
+      "x": 15,
+      "y": 70,
+      "source": "agentseam/src/agentseam/data/vendors/claude_code.json",
+      "card": "One JSON entry per agent under data/vendors/, checked against vendors/schema.json: how its payload is recognised and parsed, its events and verdicts, and where its hook config lives. The cited entry is Claude Code's."
+    },
+    {
+      "id": "adapters",
+      "label": "Adapters",
+      "kind": "code",
+      "x": 215,
+      "y": 70,
+      "source": "agentseam/src/agentseam/adapters/__init__.py",
+      "card": "17 adapters. 16 are a family engine bound to that agent's vendor data; VS Code Copilot stays a module of its own. Each parses a vendor payload into an Event and speaks a Decision in the vendor's dialect."
+    },
+    {
+      "id": "contract",
+      "label": "Contract",
+      "kind": "code",
+      "x": 415,
+      "y": 70,
+      "source": "agentseam/src/agentseam/contract.py",
+      "card": "The shared vocabulary: 12 canonical events (pre_tool, stop, session_start and the rest), the Event envelope, and the Decision outcomes allow, deny, escalate, transform, warn and vouch."
+    },
+    {
+      "id": "bundler",
+      "label": "Bundler",
+      "kind": "code",
+      "x": 615,
+      "y": 70,
+      "source": "agentseam/src/agentseam/bundler.py",
+      "card": "Renders the engine and one vendor entry into one standalone, stdlib-only file, so a hook runs without agentseam installed."
+    },
+    {
+      "id": "client",
+      "label": "Agent's client",
+      "kind": "client",
+      "x": 15,
+      "y": 175,
+      "source": "agentseam/src/agentseam/harness.py",
+      "card": "The coding agent itself, outside agentseam. Its hook runs a command with the payload on stdin and reads the answer from stdout and the exit code. harness.py records how to drive each agent headlessly for the probe."
+    },
+    {
+      "id": "dispatch",
+      "label": "Dispatcher",
+      "kind": "code",
+      "x": 215,
+      "y": 175,
+      "source": "agentseam/src/agentseam/dispatch.py",
+      "card": "stdin to Event, to your handler, to the vendor's dialect, to stdout and the exit code. A Decision the agent cannot honour at that event is reduced by the capability matrix: a transform it cannot apply becomes escalate. A handler that raises earns a refusal. A payload no adapter recognises is allowed."
+    },
+    {
+      "id": "handler",
+      "label": "chock's handler",
+      "kind": "code",
+      "x": 415,
+      "y": 175,
+      "source": "chock/src/chock/gate/runtime_bundle.py",
+      "card": "One consumer: chock's per-agent runtime is agentseam's bundle plus chock's own gate handler, which judges the Event and returns a Decision. Where agentseam allows a payload it cannot read, chock's runtime refuses it in the client's dialect instead."
+    },
+    {
+      "id": "install",
+      "label": "agentseam install",
+      "kind": "code",
+      "x": 15,
+      "y": 310,
+      "source": "agentseam/src/agentseam/install.py",
+      "card": "Writes a hook command into an agent's config, idempotently, and marks every entry it owns so uninstall removes only those. It changes the agent's config, so ask the user before running it."
+    },
+    {
+      "id": "matrix",
+      "label": "Capability matrix",
+      "kind": "artifact",
+      "x": 215,
+      "y": 310,
+      "source": "agentseam/src/agentseam/data/matrix.json",
+      "card": "One row per agent: 27 rows, by tier 9 block+rewrite, 8 block, 8 unadapted and 2 none. Each row says per event whether a hook can block or rewrite and how it fails, with the basis, date and version of each claim."
+    },
+    {
+      "id": "tiertable",
+      "label": "Tier table",
+      "kind": "code",
+      "x": 415,
+      "y": 310,
+      "source": "agentseam/src/agentseam/tier_table.py",
+      "facts": "tiers",
+      "card": "The per-agent enforcement table, derived from the matrix rather than kept by hand: tier, grade, fail mode, basis and date. A consumer such as chock adds its own wiring column; agentseam never learns it."
+    },
+    {
+      "id": "doctor",
+      "label": "agentseam doctor",
+      "kind": "code",
+      "x": 15,
+      "y": 430,
+      "source": "agentseam/src/agentseam/cli_report.py",
+      "card": "Reports what is wired here and how old each capability claim is, offline. It exits 1 when a claim is stale."
+    },
+    {
+      "id": "evidence",
+      "label": "Evidence and age",
+      "kind": "code",
+      "x": 215,
+      "y": 430,
+      "source": "agentseam/src/agentseam/staleness.py",
+      "card": "How each row's claims were established (matrix_evidence.py: live-run, vendor-source, vendor-docs and other bases) and how old that evidence is (staleness.py). Staleness is shown, never hidden."
+    },
+    {
+      "id": "probe",
+      "label": "agentseam probe",
+      "kind": "code",
+      "x": 415,
+      "y": 430,
+      "source": "agentseam/src/agentseam/probe/experiment.py",
+      "card": "Measures what an agent's hooks enforce instead of asserting it: does deny block, and what happens when the hook dies. Each trial gates one harmless command that appends to a sentinel file. It runs against the real agent, a frozen recording, or a reference agent; a reference run may never claim live-run."
+    },
+    {
+      "id": "recordings",
+      "label": "Recordings",
+      "kind": "artifact",
+      "x": 615,
+      "y": 430,
+      "source": "agentseam/src/agentseam/data/recordings/claude_code@2.1.275.json",
+      "card": "Frozen witness recordings, one file per agent and version, that the package reads and never writes. The cited one is Claude Code 2.1.275."
+    }
+  ],
+  "edges": [
+    {
+      "from": "vendordata",
+      "to": "adapters",
+      "label": "bind",
+      "label_at": [
+        200,
+        62
+      ]
+    },
+    {
+      "from": "adapters",
+      "to": "contract",
+      "label": "Event",
+      "label_at": [
+        400,
+        62
+      ]
+    },
+    {
+      "from": "bundler",
+      "to": "handler",
+      "label": "bundle()"
+    },
+    {
+      "from": "client",
+      "to": "dispatch",
+      "label": "stdin",
+      "label_at": [
+        200,
+        167
+      ]
+    },
+    {
+      "from": "dispatch",
+      "to": "adapters",
+      "label": "parse, speak"
+    },
+    {
+      "from": "dispatch",
+      "to": "handler",
+      "label": "Event",
+      "label_at": [
+        400,
+        167
+      ]
+    },
+    {
+      "from": "dispatch",
+      "to": "matrix",
+      "label": "capability()"
+    },
+    {
+      "from": "matrix",
+      "to": "tiertable",
+      "label": "derives",
+      "label_at": [
+        400,
+        302
+      ]
+    },
+    {
+      "from": "install",
+      "to": "client",
+      "label": "hook entry"
+    },
+    {
+      "from": "doctor",
+      "to": "install",
+      "label": "installed()"
+    },
+    {
+      "from": "matrix",
+      "to": "evidence",
+      "label": "verified"
+    },
+    {
+      "from": "evidence",
+      "to": "doctor",
+      "label": "age",
+      "label_at": [
+        200,
+        422
+      ]
+    },
+    {
+      "from": "probe",
+      "to": "matrix",
+      "label": "checked against"
+    },
+    {
+      "from": "probe",
+      "to": "recordings",
+      "label": "--record",
+      "label_at": [
+        600,
+        422
+      ]
+    }
+  ],
+  "path": [
+    "client",
+    "dispatch",
+    "adapters",
+    "contract"
+  ]
+}
