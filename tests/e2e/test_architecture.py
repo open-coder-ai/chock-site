@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ARCH = ROOT / "data" / "architecture"
 DESKTOP = {"width": 1366, "height": 900}
 MOBILE = {"width": 390, "height": 844}
-IDS = ["whole-train", "life-of-a-policy"]
+IDS = ["whole-train", "life-of-a-policy", "chock-internals", "agentseam-internals"]
 
 
 def _diagram(diagram_id: str) -> dict:

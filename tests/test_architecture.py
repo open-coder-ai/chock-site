@@ -15,7 +15,7 @@ from sitegen.render import md
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 ARCH = DATA / "architecture"
-IDS = ["whole-train", "life-of-a-policy"]
+IDS = ["whole-train", "life-of-a-policy", "chock-internals", "agentseam-internals"]
 TAGLINE = "Blocks your coding agent's wrong moves before they land."
 
 

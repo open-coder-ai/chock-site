@@ -1,0 +1,286 @@
+{
+  "id": "chock-internals",
+  "order": 3,
+  "title": "chock internals",
+  "summary": "Inside the engine: the CLI, compile/, the gate builder and gate/runner, hooks/, plugin/, guardrails/, the MCP gateway and the decision log.",
+  "intro": "chock is one command-line program. Its build-time commands turn each policy into compiled files and wire them into the repo, or package them as plugins. At run time, a small vendored runtime judges each tool call with the gate runner and writes one line to a local log.",
+  "pins": {
+    "chock": "eab53f2304332d304d5383d91d1e3ffd0e4e1bed",
+    "agentseam": "dd4f0a485a36313328d381305cf09658d3c36fb4"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 510
+  },
+  "boundaries": [
+    {
+      "label": "Commands you run, and what they write",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 215
+    },
+    {
+      "label": "Each tool call, on your machine",
+      "x": 5,
+      "y": 270,
+      "w": 790,
+      "h": 226
+    }
+  ],
+  "nodes": [
+    {
+      "id": "cli",
+      "label": "chock CLI",
+      "kind": "code",
+      "x": 15,
+      "y": 70,
+      "source": "chock/src/chock/data/commands.json",
+      "card": "One entry point. data/commands.json maps each command to the module that runs it. Everyday: init, add, install, remove, sync, check, status, doctor, witness, enable, disable and bundle. Authoring: compile, plugin, marketplace, gateway, mcp, review and compliance, among others."
+    },
+    {
+      "id": "compile",
+      "label": "compile/",
+      "kind": "code",
+      "x": 215,
+      "y": 70,
+      "source": "chock/src/chock/compile/compiler.py",
+      "card": "Reads one policy folder and runs one emitter per surface: git hook, CI gate, pre-tool-use, stop, Claude managed settings, ambient rule, MCP gateway and agent hooks. chock sync recompiles every policy and rewires the repo."
+    },
+    {
+      "id": "gatebuild",
+      "label": "Gate builder",
+      "kind": "code",
+      "x": 415,
+      "y": 70,
+      "source": "chock/src/chock/gate/build.py",
+      "card": "Turns a manifest's hook.gate into a resolved gate.json. The git-hook, CI and tool-call emitters call it."
+    },
+    {
+      "id": "compiled",
+      "label": ".chock/compiled/",
+      "kind": "artifact",
+      "x": 615,
+      "y": 70,
+      "source": "chock/.chock/compiled/block-invisible-unicode/pre-tool-use/gate.json",
+      "card": "What compile writes: one folder per policy, one subfolder per surface, with its gate.json and the hook fragments for each agent. The cited file is chock's own copy for block-invisible-unicode."
+    },
+    {
+      "id": "plugin",
+      "label": "plugin/",
+      "kind": "code",
+      "x": 15,
+      "y": 175,
+      "source": "chock/src/chock/plugin/bundle_build.py",
+      "card": "Packages policies as plugins. chock plugin build makes one package per policy. The selection route (ask the user before running it) merges a whole selection into one plugin per client. A merged plugin carries the client's vendored runtime, as the repo route does."
+    },
+    {
+      "id": "guardrails",
+      "label": "guardrails/",
+      "kind": "code",
+      "x": 215,
+      "y": 175,
+      "source": "chock/src/chock/guardrails/toggle.py",
+      "card": "Turns one policy in a merged plugin on or off. In a merged plugin, every member's hook runs through this wrapper, which reads .chock/guardrails.json, or ~/.chock/guardrails.json outside a repo. A missing or invalid file, or one unlike its reviewed record, means all on. chock bundle on|off is the only writer, and a Stop is refused while a toggle file has loosened."
+    },
+    {
+      "id": "hooks",
+      "label": "hooks/",
+      "kind": "code",
+      "x": 415,
+      "y": 175,
+      "source": "chock/src/chock/hooks/in_agent_install.py",
+      "card": "The wiring that sync runs. It merges compiled hook fragments into each agent's own config file, installs the git hooks, and writes each agent's vendored runtime into .chock/bin/."
+    },
+    {
+      "id": "gateway",
+      "label": "gateway/ MCP proxy",
+      "kind": "code",
+      "x": 615,
+      "y": 175,
+      "source": "chock/src/chock/gateway/proxy.py",
+      "card": "chock gateway run wraps one MCP server over stdio. Each tools/call is checked against every compiled gateway-gate.json (content_regex, egress_allowlist) before it reaches the server. A block returns a JSON-RPC error. An ask also blocks, because a proxy on a pipe cannot prompt. A gate of an unknown kind refuses the call. A warning goes to stderr and lets the call through."
+    },
+    {
+      "id": "client",
+      "label": "Agent's client",
+      "kind": "client",
+      "x": 615,
+      "y": 310,
+      "source": "agentseam/src/agentseam/dispatch.py",
+      "facts": "tiers",
+      "card": "The coding agent. It runs the registered hook command with the call on stdin, and sends MCP tool calls to a server, which the gateway can wrap. What its hook can enforce is agentseam's data."
+    },
+    {
+      "id": "runtime",
+      "label": "Vendored runtime",
+      "kind": "artifact",
+      "x": 415,
+      "y": 310,
+      "source": "chock/.chock/bin/claude_code.py",
+      "card": "One stdlib-only file per agent: agentseam's bundle for that agent plus chock's gate handler (gate/runtime_bundle.py). It parses the payload, runs the gate, and answers in the client's own dialect. The cited file is chock's own runtime for Claude Code."
+    },
+    {
+      "id": "runner",
+      "label": "gate/runner",
+      "kind": "code",
+      "x": 215,
+      "y": 310,
+      "source": "chock/src/chock/gate/runner/verdict.py",
+      "card": "Stdlib only. gate/assemble.py builds it into the single file .chock/bin/gate.py. It evaluates a gate's kind and caps the result by the declared action and the rollout level: observe allows at most a warning, ask at most an ask. It exits 0 allow, 1 block, 2 cannot judge, 3 ask or 4 warn."
+    },
+    {
+      "id": "journal",
+      "label": "Decision log",
+      "kind": "log",
+      "x": 215,
+      "y": 430,
+      "source": "chock/src/chock/gate/runner/journal.py",
+      "card": "journal.py holds the log's level, settings, redaction and writer; gate/decision_log.py writes one line per hook call. On the repo route the file is .chock/log/gate-events.jsonl, on the plugin route ~/.chock/log/<agent>/events.jsonl. It never logs contents and never changes the decision."
+    },
+    {
+      "id": "readers",
+      "label": "status and doctor",
+      "kind": "code",
+      "x": 15,
+      "y": 430,
+      "source": "chock/src/chock/gatelog_read.py",
+      "card": "The log's readers. chock status --only log reads both routes. chock doctor checks that each client's hook is present, current and seen running, and never runs a client. chock witness export writes one client's records, redacted, to a local file and never uploads it."
+    }
+  ],
+  "edges": [
+    {
+      "from": "cli",
+      "to": "compile",
+      "label": "compile, sync",
+      "label_at": [
+        200,
+        62
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "gatebuild",
+      "label": "hook.gate",
+      "label_at": [
+        400,
+        62
+      ]
+    },
+    {
+      "from": "gatebuild",
+      "to": "compiled",
+      "label": "gate.json",
+      "label_at": [
+        600,
+        62
+      ]
+    },
+    {
+      "from": "cli",
+      "to": "plugin",
+      "label": "plugin build"
+    },
+    {
+      "from": "cli",
+      "to": "guardrails",
+      "label": "bundle on|off",
+      "label_at": [
+        245,
+        150
+      ]
+    },
+    {
+      "from": "guardrails",
+      "to": "plugin",
+      "label": "wrapper",
+      "label_at": [
+        200,
+        167
+      ]
+    },
+    {
+      "from": "compiled",
+      "to": "hooks",
+      "label": "fragments"
+    },
+    {
+      "from": "compiled",
+      "to": "gateway",
+      "label": "gateway-gate.json"
+    },
+    {
+      "from": "hooks",
+      "to": "runtime",
+      "label": "writes .chock/bin/"
+    },
+    {
+      "from": "plugin",
+      "to": "runtime",
+      "label": "carries a copy",
+      "via": [
+        [
+          440,
+          262
+        ]
+      ],
+      "label_at": [
+        330,
+        258
+      ]
+    },
+    {
+      "from": "client",
+      "to": "runtime",
+      "label": "stdin",
+      "label_at": [
+        600,
+        302
+      ]
+    },
+    {
+      "from": "client",
+      "to": "gateway",
+      "label": "tools/call"
+    },
+    {
+      "from": "runtime",
+      "to": "runner",
+      "label": "--gate",
+      "label_at": [
+        400,
+        302
+      ]
+    },
+    {
+      "from": "runner",
+      "to": "journal",
+      "label": "gate record"
+    },
+    {
+      "from": "runtime",
+      "to": "journal",
+      "label": "hook record"
+    },
+    {
+      "from": "journal",
+      "to": "readers",
+      "label": "reads",
+      "label_at": [
+        200,
+        422
+      ]
+    }
+  ],
+  "path": [
+    "cli",
+    "compile",
+    "gatebuild",
+    "compiled",
+    "hooks",
+    "runtime",
+    "runner",
+    "journal",
+    "readers"
+  ]
+}
