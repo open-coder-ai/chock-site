@@ -1,0 +1,292 @@
+{
+  "id": "context-report",
+  "order": 6,
+  "title": "context-report",
+  "summary": "Produce, verify, attest: how chock's eval export and context-report's producers write a report, how verify checks it, and what the spec says about signing it.",
+  "intro": "A context-report is an in-toto Statement/v1 about one artifact for one agent, with one row per measured fact. Each row says whether anyone can recompute it (re-derivable) or only the author reports it (claimed), and the report never gives one pass or fail for the whole artifact. chock can export its policies' eval cases in context-report's run/v0.1 format. context-report produces the rows and writes the statement; verify checks it is well-formed and bound to the artifact by digest. Signing is described in the spec; at this pin no code in context-report signs a report.",
+  "pins": {
+    "chock": "eab53f2304332d304d5383d91d1e3ffd0e4e1bed",
+    "context-report": "3bf4d169b86abd3f7ed70c67b3b19327a7ce77a5"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 635
+  },
+  "boundaries": [
+    {
+      "label": "Produce: rows and one statement",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 330
+    },
+    {
+      "label": "Verify: check a statement",
+      "x": 5,
+      "y": 380,
+      "w": 790,
+      "h": 110
+    },
+    {
+      "label": "Attest: what the spec asks, and what the repo signs",
+      "x": 5,
+      "y": 510,
+      "w": 790,
+      "h": 110
+    }
+  ],
+  "nodes": [
+    {
+      "id": "export",
+      "label": "chock eval export",
+      "kind": "code",
+      "x": 15,
+      "y": 70,
+      "source": "chock/src/chock/eval/context_report.py",
+      "card": "chock eval export --format context-report --out DIR takes each policy's tier-3 cases (those with no execute block in evals/suite.yaml). It writes the rule lines chock renders into subjects/<id>.md, one evals/<case>/prompt.md and graders/expect.md per case, and a run.json with no models and no judge filled in. chock does not import context-report."
+    },
+    {
+      "id": "manifest",
+      "label": "run/v0.1 manifest",
+      "kind": "artifact",
+      "x": 215,
+      "y": 70,
+      "source": "context-report/spec/run/v0.1/README.md",
+      "card": "The input to context-report run: the subjects, the target agent, the subject models, the tasks and how many runs per arm. Tasks can be a directory of cases (prompt.md plus graders/*.md), which run/evalcases.py compiles. It is metadata only; what an artifact does is read from the artifact."
+    },
+    {
+      "id": "runner",
+      "label": "context-report run",
+      "kind": "code",
+      "x": 415,
+      "y": 70,
+      "source": "context-report/src/context_report/run/runner.py",
+      "card": "Checks the manifest before any model call, then, for each subject and model, records the arms' transcripts under out/runs/<run id>/ and writes one statement through produce_statement. This is the path that calls the subject and judge models named in the manifest."
+    },
+    {
+      "id": "efficacy",
+      "label": "efficacy row",
+      "kind": "code",
+      "x": 615,
+      "y": 70,
+      "source": "context-report/src/context_report/efficacy/row.py",
+      "card": "Builds the efficacy row from graded arms: the task run with the rule prepended and without it (the prompt-prefix-v1 ablation). It reports the lift with a 95% Newcombe interval, and its basis is always claimed."
+    },
+    {
+      "id": "payloads",
+      "label": "Recorded payloads",
+      "kind": "artifact",
+      "x": 15,
+      "y": 175,
+      "source": "context-report/src/context_report/data/payloads-v0.1.json",
+      "card": "Per-target pre-tool-use payload shapes, and where a deny appears in a hook's stdout. The file says they were taken from agentseam's vendor data."
+    },
+    {
+      "id": "produce",
+      "label": "produce_statement",
+      "kind": "code",
+      "x": 215,
+      "y": 175,
+      "source": "context-report/src/context_report/produce/run.py",
+      "card": "context-report produce digests the subject, then runs the artifact's own hook command on recorded payloads for the reachability, fault and cost rows. Every v0.1 attribute gets a row; one it cannot measure says NotAvailable or NotApplicable and why. Nothing under produce/ imports a network or model module."
+    },
+    {
+      "id": "rows",
+      "label": "Row rules",
+      "kind": "code",
+      "x": 615,
+      "y": 175,
+      "source": "context-report/src/context_report/rows.py",
+      "card": "A row is refused when it breaks a rule: a re-derivable row must carry an inputHash (sha256 over the subject digest, target, client version, attribute and inputs), an unmeasured row must give its reasoning, and efficacy must be claimed."
+    },
+    {
+      "id": "statement",
+      "label": "in-toto Statement",
+      "kind": "code",
+      "x": 415,
+      "y": 175,
+      "source": "context-report/src/context_report/statement.py",
+      "card": "Wraps the rows in one in-toto Statement/v1 per subject digest and target, with the context-report v0.1 predicateType. The digest is sha256 of a file, or of a sorted list of each file's path and sha256 for a directory. validate() checks it against the v0.1 schema shipped in the package."
+    },
+    {
+      "id": "report",
+      "label": "report.json",
+      "kind": "artifact",
+      "x": 415,
+      "y": 280,
+      "source": "context-report/spec/attestation/v0.1/examples/plugin-copilot.json",
+      "card": "The statement as JSON: subject[0].digest.sha256 names the artifact, and predicate.attributes holds the rows, each with its basis and result. The cited file is the spec's worked example."
+    },
+    {
+      "id": "verify",
+      "label": "verify_statement",
+      "kind": "code",
+      "x": 215,
+      "y": 420,
+      "source": "context-report/src/context_report/verify.py",
+      "card": "context-report verify REPORT --subject PATH validates the schema, recomputes the subject digest and lists each row as re-derivable, claimed or unmeasured. It ends with well-formed and bound: True or False, and exits 1 on a schema error or a digest mismatch. It does not re-run any row and never grades the artifact."
+    },
+    {
+      "id": "recompute",
+      "label": "recompute_rows",
+      "kind": "code",
+      "x": 415,
+      "y": 420,
+      "source": "context-report/src/context_report/verify.py",
+      "card": "A function in verify.py, not a CLI command: for each re-derivable row it asks a Recomputer for the row again and compares result, values and measurement. Claimed rows are skipped. The only built-in Recomputer checks that the row has an inputHash; it does not re-run the measurement."
+    },
+    {
+      "id": "svr",
+      "label": "to_svr verdict",
+      "kind": "code",
+      "x": 15,
+      "y": 420,
+      "source": "context-report/src/context_report/verify.py",
+      "card": "A function in verify.py, not a CLI command: it turns a verification into an in-toto statement with an SVR v0.2 predicate, whose subject is the report's own digest and whose properties say well-formed, bound and how many rows are claimed. It does not sign anything."
+    },
+    {
+      "id": "release",
+      "label": "release.yml",
+      "kind": "code",
+      "x": 215,
+      "y": 550,
+      "source": "context-report/.github/workflows/release.yml",
+      "card": "On a published GitHub Release, builds the wheel and sdist, publishes them to PyPI, signs them with Sigstore and attaches the signature bundles. This signs the context-report package, not a report."
+    },
+    {
+      "id": "signing",
+      "label": "Signing (spec)",
+      "kind": "artifact",
+      "x": 615,
+      "y": 550,
+      "source": "context-report/spec/attestation/v0.1/README.md",
+      "card": "The spec says a producer SHOULD emit the statement through actions/attest (a DSSE envelope in a Sigstore bundle, signed with the CI workflow's identity and logged in Rekor), and a consumer checks it with gh attestation verify --predicate-type. At this pin no workflow runs actions/attest, and spec/index.md names an attest.yml workflow the repo does not contain."
+    }
+  ],
+  "edges": [
+    {
+      "from": "export",
+      "to": "manifest",
+      "label": "run.json, cases",
+      "label_at": [
+        200,
+        62
+      ]
+    },
+    {
+      "from": "manifest",
+      "to": "runner",
+      "label": "reads",
+      "label_at": [
+        400,
+        62
+      ]
+    },
+    {
+      "from": "runner",
+      "to": "efficacy",
+      "label": "graded arms",
+      "label_at": [
+        600,
+        62
+      ]
+    },
+    {
+      "from": "runner",
+      "to": "produce",
+      "label": "per subject, model"
+    },
+    {
+      "from": "efficacy",
+      "to": "rows",
+      "label": "claimed row",
+      "label_at": [
+        748,
+        154
+      ]
+    },
+    {
+      "from": "payloads",
+      "to": "produce",
+      "label": "stdin",
+      "label_at": [
+        200,
+        167
+      ]
+    },
+    {
+      "from": "produce",
+      "to": "statement",
+      "label": "rows, digest",
+      "label_at": [
+        400,
+        167
+      ]
+    },
+    {
+      "from": "rows",
+      "to": "statement",
+      "label": "checked",
+      "label_at": [
+        600,
+        167
+      ]
+    },
+    {
+      "from": "statement",
+      "to": "report",
+      "label": "writes",
+      "label_at": [
+        535,
+        258
+      ]
+    },
+    {
+      "from": "report",
+      "to": "verify",
+      "label": "--subject"
+    },
+    {
+      "from": "report",
+      "to": "recompute",
+      "label": "re-derivable rows",
+      "label_at": [
+        560,
+        372
+      ]
+    },
+    {
+      "from": "verify",
+      "to": "svr",
+      "label": "Verification",
+      "label_at": [
+        200,
+        412
+      ]
+    },
+    {
+      "from": "report",
+      "to": "signing",
+      "label": "SHOULD sign",
+      "via": [
+        [
+          700,
+          308
+        ]
+      ],
+      "label_at": [
+        650,
+        300
+      ]
+    }
+  ],
+  "path": [
+    "export",
+    "manifest",
+    "runner",
+    "produce",
+    "statement",
+    "report",
+    "verify"
+  ]
+}
