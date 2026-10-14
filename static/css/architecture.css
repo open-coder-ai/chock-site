@@ -117,6 +117,7 @@
 .arch-card-kind, .arch-sha { color: var(--arch-muted); font-size: 12px; }
 .arch-card-text, .arch-facts { color: var(--arch-text); font-size: 15px; }
 .arch-card-source { font-size: 13px; overflow-wrap: anywhere; }
+.arch-card-link { font-size: 14px; }
 .arch-card:target { outline: 2px solid var(--arch-path); outline-offset: 2px; }
 
 @media print {

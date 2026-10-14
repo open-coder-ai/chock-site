@@ -11,7 +11,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +40,7 @@ DIAGRAM_KEYS = {
 }
 OPTIONAL_KEYS = {"boundaries", "path"}
 NODE_KEYS = {"id", "label", "kind", "x", "y", "source", "card"}
-NODE_OPTIONAL = {"w", "h", "facts"}
+NODE_OPTIONAL = {"w", "h", "facts", "link"}
 EDGE_KEYS = {"from", "to", "label"}
 EDGE_OPTIONAL = {"via", "label_at"}
 FACTS = ("tiers",)
@@ -60,6 +60,8 @@ class Diagram:
     intro: str
     pins: dict[str, str]
     raw: dict[str, Any]
+    # A node's `link` (another diagram's docs path) to that diagram's title, set by load().
+    link_titles: dict[str, str] = field(default_factory=dict)
 
     @property
     def nodes(self) -> list[dict[str, Any]]:
@@ -110,6 +112,12 @@ def _check_node(name: str, node: dict[str, Any], doc: dict, texts: dict) -> None
         _refuse(name, f"node {node['id']!r}: unknown kind {node['kind']!r}")
     if node.get("facts") not in (None, *FACTS):
         _refuse(name, f"node {node['id']!r}: unknown facts {node['facts']!r}")
+    if "link" in node and link_target(texts, node["link"]) in (None, doc["id"]):
+        _refuse(
+            name,
+            f"node {node['id']!r}: link {node['link']!r} must be another diagram's "
+            f"{texts['link_base']}<id>/ path",
+        )
     repo, path = split_source(node["source"])
     if repo not in doc["pins"] or not path or path.startswith("/") or ".." in path:
         _refuse(
@@ -175,8 +183,29 @@ def _check(name: str, doc: dict[str, Any], texts: dict[str, Any]) -> None:
         _keys(name, "boundary", box, {"label", "x", "y", "w", "h"}, set())
 
 
-def load(data_dir: Path = DATA, texts: dict[str, Any] | None = None) -> list[Diagram]:
-    """Every data/architecture/*.json, checked, in `order`."""
+def link_target(texts: dict[str, Any], link: str) -> str | None:
+    """The diagram id a node's `link` names, or None if it is not a diagram path."""
+    rest = link.removeprefix(texts["link_base"])
+    if rest == link or not rest.endswith("/") or not ID_RE.match(rest[:-1]):
+        return None
+    return rest[:-1]
+
+
+def missing_links(diagrams: list[Diagram], texts: dict[str, Any]) -> list[str]:
+    """Every node `link` whose target diagram does not exist."""
+    ids = {d.id for d in diagrams}
+    return [
+        f"{d.id}: node {n['id']!r} links to {n['link']}, which is no diagram"
+        for d in diagrams
+        for n in d.nodes
+        if "link" in n and link_target(texts, n["link"]) not in ids
+    ]
+
+
+def load(
+    data_dir: Path = DATA, texts: dict[str, Any] | None = None, links: bool = True
+) -> list[Diagram]:
+    """Every data/architecture/*.json, checked, in `order`; with `links`, refuse a broken link."""
     texts = texts or load_texts(data_dir)
     out = []
     for file in sorted((data_dir / FOLDER).glob("*.json")):
@@ -196,6 +225,14 @@ def load(data_dir: Path = DATA, texts: dict[str, Any] | None = None) -> list[Dia
     orders = [d.order for d in out]
     if len(set(orders)) != len(orders):
         raise PageError(f"data/{FOLDER}: two diagrams share an order")
+    broken = missing_links(out, texts)
+    if links and broken:
+        raise PageError(f"data/{FOLDER}: " + "; ".join(broken))
+    titles = {f"{texts['link_base']}{d.id}/": d.title for d in out}
+    for d in out:
+        d.link_titles = {
+            n["link"]: titles[n["link"]] for n in d.nodes if n.get("link") in titles
+        }
     return sorted(out, key=lambda d: d.order)
 
 
@@ -446,6 +483,18 @@ class Renderer:
                 if facts
                 else ""
             )
+            link_html = (
+                self.t(
+                    "card-link",
+                    HREF=node["link"],
+                    TEXT=data_fill(
+                        self.texts["link_text"],
+                        {"__TITLE__": diagram.link_titles[node["link"]]},
+                    ),
+                )
+                if "link" in node
+                else ""
+            )
             items.append(
                 self.t(
                     "card",
@@ -456,6 +505,7 @@ class Renderer:
                     KIND_LABEL=self.texts["kinds"][node["kind"]],
                     CARD=node["card"],
                     FACTS=Safe(facts_html),
+                    LINK=Safe(link_html),
                     SOURCE_WORD=self.texts["source_word"],
                     HREF=source_url(self.texts, diagram, node["source"]),
                     SOURCE=node["source"],
@@ -511,6 +561,11 @@ def page(
             f"{md_escape(node['card'])} {md_escape(texts['source_word'])}: "
             f"[{md_escape(node['source'])}]({source_url(texts, diagram, node['source'])})\n"
         )
+        if "link" in node:
+            text = data_fill(
+                texts["link_text"], {"__TITLE__": diagram.link_titles[node["link"]]}
+            )
+            line += f"  [{md_escape(text)}]({node['link']}index.md)\n"
         facts = draw.facts(node)
         if facts:
             line += f"  {md_escape(texts['tiers_intro'])}\n"
@@ -684,7 +739,7 @@ def missing_sources(diagrams: list[Diagram], where: Callable[[str], Path]) -> li
 
 
 def main(argv: list[str] | None = None) -> int:
-    """`--check`: every cited path exists at its pinned commit, in clones under --clones."""
+    """`--check`: every cited path exists at its pinned commit, and every node link names a diagram."""
     parser = argparse.ArgumentParser(prog="python -m sitegen.architecture")
     parser.add_argument("--check", action="store_true", required=True)
     parser.add_argument(
@@ -703,7 +758,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     overrides = dict(item.split("=", 1) for item in args.repo)
     texts = load_texts()
-    diagrams = load(texts=texts)
+    diagrams = load(texts=texts, links=False)
 
     def where(repo: str) -> Path:
         return Path(overrides[repo]) if repo in overrides else args.clones / repo
@@ -714,17 +769,21 @@ def main(argv: list[str] | None = None) -> int:
             for repo, sha in d.pins.items():
                 if repo not in overrides:
                     fetch(args.clones, repo, sha, texts)
-    problems = missing_sources(diagrams, where)
+    problems = missing_sources(diagrams, where) + missing_links(diagrams, texts)
     for problem in problems:
         print(problem, file=sys.stderr)
     cited = sum(len(d.nodes) for d in diagrams)
     if problems:
         print(
-            f"{len(problems)} of {cited} cited paths or pins are missing",
+            f"{len(problems)} of {cited} cited paths, pins or links are missing",
             file=sys.stderr,
         )
         return 1
-    print(f"all {cited} cited paths exist at their pinned commits")
+    linked = sum("link" in n for d in diagrams for n in d.nodes)
+    print(
+        f"all {cited} cited paths exist at their pinned commits, "
+        f"and all {linked} links name a diagram"
+    )
     return 0
 
 

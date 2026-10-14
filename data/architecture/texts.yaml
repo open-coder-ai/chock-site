@@ -10,6 +10,10 @@ blob_url: "__URL__/blob/__SHA__/__PATH__"
 commit_url: "__URL__/commit/__SHA__"
 # Where the build writes each diagram's JSON, for agents and tools.
 api_dir: /api/docs/architecture
+# The docs path of the Architecture section. A node's optional `link` is <link_base><id>/ for
+# another diagram; its card shows link_text, and the check refuses a link to no diagram.
+link_base: /docs/architecture/
+link_text: "Its diagram: __TITLE__"
 
 # Node size when a node gives none, and the average glyph widths the build uses to refuse a
 # label or repo name too long for its box (13px sans label, 11px mono repo line).

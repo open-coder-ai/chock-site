@@ -1,4 +1,4 @@
-"""ARCH-1: the Architecture docs section, its diagrams, twins and the cited-path check."""
+"""ARCH-1..3: the Architecture docs section, its diagrams, links, twins and the cited-path check."""
 
 import json
 import re
@@ -15,7 +15,17 @@ from sitegen.render import md
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 ARCH = DATA / "architecture"
-IDS = ["whole-train", "life-of-a-policy", "chock-internals", "agentseam-internals"]
+IDS = [
+    "whole-train",
+    "life-of-a-policy",
+    "chock-internals",
+    "agentseam-internals",
+    "chock-catalog",
+    "context-report",
+    "chock-site",
+    "release-train",
+    "trust-boundaries",
+]
 TAGLINE = "Blocks your coding agent's wrong moves before they land."
 
 
@@ -154,6 +164,83 @@ def test_no_hand_written_fail_modes_or_kill_switch() -> None:
             assert not re.search(r"fails? (open|closed)|fail-(open|closed)", text), file
 
 
+# Diagram 1's boxes link to the diagram of the repo their source lives in.
+REPO_DIAGRAM = {
+    "chock": "chock-internals",
+    "agentseam": "agentseam-internals",
+    "chock-catalog": "chock-catalog",
+    "chock-release": "release-train",
+    "context-report": "context-report",
+    "chock-site": "chock-site",
+}
+
+
+def test_whole_train_boxes_link_to_their_repo_diagram(built) -> None:
+    diagram = _diagrams()["whole-train"]
+    page = _page(built, "whole-train")
+    twin = _twin(built, "whole-train")
+    titles = {d.id: d.title for d in architecture.load()}
+    linked = 0
+    for node in diagram.nodes:
+        repo, _ = architecture.split_source(node["source"])
+        if repo not in REPO_DIAGRAM:
+            assert "link" not in node
+            continue
+        target = REPO_DIAGRAM[repo]
+        assert node["link"] == f"/docs/architecture/{target}/"
+        card = page.split(f'id="{architecture.card_id(diagram, node)}"', 1)[1]
+        card = card.split("</li>", 1)[0]
+        assert (
+            f'<p class="arch-card-link"><a href="/docs/architecture/{target}/">'
+            f"Its diagram: {titles[target]}</a></p>"
+        ) in card
+        assert (
+            f"[Its diagram: {md(titles[target])}](/docs/architecture/{target}/index.md)"
+            in twin
+        )
+        assert (built.out / "docs" / "architecture" / target / "index.html").exists()
+        linked += 1
+    assert linked == len(diagram.nodes) - 1
+
+
+def test_link_base_is_the_architecture_page_path() -> None:
+    docs = docsource.load_docs(DATA)
+    assert (
+        architecture.load_texts()["link_base"] == docs["pages"]["architecture"]["path"]
+    )
+
+
+def test_missing_links_names_a_link_to_no_diagram() -> None:
+    texts = architecture.load_texts()
+    diagrams = architecture.load()
+    node = diagrams[0].nodes[0]
+    node["link"] = "/docs/architecture/no-such-diagram/"
+    want = (
+        f"whole-train: node {node['id']!r} links to "
+        "/docs/architecture/no-such-diagram/, which is no diagram"
+    )
+    assert architecture.missing_links(diagrams, texts) == [want]
+
+
+def test_check_reports_a_broken_link(tmp_path: Path, monkeypatch, capsys) -> None:
+    data = _data_with(
+        tmp_path,
+        lambda d: _node(d, "gate").update(link="/docs/architecture/nowhere/"),
+    )
+    load = architecture.load
+    monkeypatch.setattr(
+        architecture, "load", lambda **kw: load(data, kw["texts"], kw["links"])
+    )
+    clones = tmp_path / "clones"
+    clones.mkdir()
+    assert architecture.main(["--check", "--clones", str(clones)]) == 1
+    err = capsys.readouterr().err
+    assert (
+        "life-of-a-policy: node 'gate' links to /docs/architecture/nowhere/, "
+        "which is no diagram"
+    ) in err
+
+
 # --- validation -----------------------------------------------------------------
 
 
@@ -199,6 +286,24 @@ def _node(doc, node_id):
         (lambda d: d["pins"].update({"chock-site": "0" * 40}), "pins no node cites"),
         (lambda d: d.update(colour="red"), "unknown ['colour']"),
         (lambda d: d.update(id="other"), "must match the file name"),
+        (
+            lambda d: _node(d, "gate").update(link="/docs/architecture/nowhere/"),
+            "which is no diagram",
+        ),
+        (
+            lambda d: _node(d, "gate").update(link="https://example.com/"),
+            "must be another diagram's",
+        ),
+        (
+            lambda d: _node(d, "gate").update(link="/docs/architecture/whole-train"),
+            "must be another diagram's",
+        ),
+        (
+            lambda d: _node(d, "gate").update(
+                link="/docs/architecture/life-of-a-policy/"
+            ),
+            "must be another diagram's",
+        ),
     ],
 )
 def test_load_refuses_a_broken_diagram(tmp_path: Path, edit, message: str) -> None:
