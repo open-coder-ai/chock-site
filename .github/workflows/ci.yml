@@ -55,6 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          # full history: architecture diagrams cite chock-site files at a pinned commit
+          fetch-depth: 0
           persist-credentials: false
       - id: refs
         run: echo "framework=$(cat .framework-ref)" >> "$GITHUB_OUTPUT"
@@ -69,6 +71,8 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements-dev.txt
       - run: python -m sitegen.docsource --chock .chock-src --check
+      # ARCH-1: every repo/path a diagram cites exists at the commit it pins (public clones).
+      - run: python -m sitegen.architecture --check --fetch --clones .arch-src --repo chock-site=.
 
   e2e:
     timeout-minutes: 25

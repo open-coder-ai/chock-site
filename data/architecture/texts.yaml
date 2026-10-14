@@ -1,0 +1,68 @@
+# The Architecture docs section (ARCH-1, org-plan plan/arch-diagrams.md, Option B).
+# Wording and layout defaults only. Each diagram is one data/architecture/<id>.json: nodes,
+# edges, optional boundaries and an optional main path, each node citing `repo/path` at the
+# commit the file pins for that repo. sitegen/architecture.py renders them; CI checks every
+# cited path exists at its pin (python -m sitegen.architecture --check).
+
+# A pinned repo's GitHub home; a source link is <repo_url>/blob/<sha>/<path>.
+repo_url: "https://github.com/open-coder-ai/__REPO__"
+blob_url: "__URL__/blob/__SHA__/__PATH__"
+commit_url: "__URL__/commit/__SHA__"
+# Where the build writes each diagram's JSON, for agents and tools.
+api_dir: /api/docs/architecture
+
+# Node size when a node gives none, and the average glyph widths the build uses to refuse a
+# label or repo name too long for its box (13px sans label, 11px mono repo line).
+node: {w: 170, h: 56}
+label_char_px: 7.4
+repo_char_px: 6.7
+node_pad_px: 12
+
+kinds:
+  repo: Repository
+  code: Engine code
+  artifact: Generated file
+  client: The agent's client
+  log: Local log
+
+# Fail modes as agentseam's tier table names them; an unknown one fails the build.
+fail_modes:
+  open: "fails open"
+  closed: "fails closed"
+  configurable: "fail mode configurable"
+  n/a: "no adapted pre-tool hook"
+tiers_intro: "agentseam's tier table at the release the engine pins, by fail mode:"
+tiers_row: "__MODE__ (__COUNT__): __AGENTS__"
+tiers_agent: "__NAME__ (__TIER__)"
+
+index_heading: Diagrams
+kinds_heading: Kinds of box
+kinds_intro: "Each box's outline colour says what kind of thing it is:"
+kind_notes:
+  repo: "a repository in the chock train."
+  code: "engine code that runs as a command or inside a hook."
+  artifact: "a file chock writes or a policy carries; its outline is dashed."
+  client: "the agent's client, and what passes between it and the hook."
+  log: "a file the hook writes on your machine."
+kind_row: "__KIND__: __NOTE__"
+index_item: "__TITLE__: __SUMMARY__"
+diagram_heading: Diagram
+diagram_label: "Diagram: __TITLE__"
+scroll_label: "Diagram: __TITLE__ (scrolls sideways)"
+legend_label: "Kinds of box"
+path_button: "Highlight the main path"
+theme_button: "Light theme"
+close_button: "Close"
+panel_label: "Selected component"
+nojs_hint: "Select a box to read its card below."
+js_hint: "Select a box to read its card here."
+components_heading: Components
+source_word: Source
+facts_word: Facts
+connections_heading: Connections
+connection_row: "__FROM__ → __TO__: __LABEL__"
+path_heading: Main path
+path_intro: "The flow this diagram is about, in order:"
+sources_heading: Pinned sources
+sources_intro: "Every box cites a file at these commits. CI fails the build if a cited path is missing at its commit."
+data_link: "This diagram as JSON"

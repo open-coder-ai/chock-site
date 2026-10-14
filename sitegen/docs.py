@@ -10,7 +10,7 @@ from urllib.parse import quote, urlsplit
 
 import yaml
 
-from . import clientdata, clientpage, docsfacts, docsource, engine
+from . import architecture, clientdata, clientpage, docsfacts, docsource, engine
 from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
 from .model import Policy, SectionResult, Site
 from .pageparts import (
@@ -54,6 +54,7 @@ class Ctx:
     cli: list[dict[str, str]]
     page: dict[str, Any] = field(default_factory=dict)
     actions: dict[str, Any] = field(default_factory=dict)
+    data_dir: Path = architecture.DATA
 
     def t(self, name: str, **tokens: object) -> str:
         """A docs template, filled."""
@@ -701,6 +702,13 @@ def _cli(ctx: Ctx, body: Body) -> None:
         raise PageError(f"docs.yaml cli_groups lacks engine groups {sorted(missing)}")
 
 
+def _architecture(ctx: Ctx, body: Body) -> None:
+    """The Architecture page: its list of diagrams (data/architecture/)."""
+    texts = architecture.load_texts(ctx.data_dir)
+    diagrams = architecture.load(ctx.data_dir, texts)
+    architecture.index(ctx, body, _section, diagrams, texts, ctx.page["path"])
+
+
 BLOCKS = {
     "paths": _paths,
     "labels": _labels,
@@ -722,6 +730,7 @@ BLOCKS = {
     "measured": _measured,
     "client_notes": _client_notes,
     "cli": _cli,
+    "architecture": _architecture,
 }
 
 
@@ -1242,6 +1251,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         agents=docsfacts.agents(docs, site.data["agent_routes"]),
         cli=engine.cli_commands(),
         actions=load_actions(data_dir),
+        data_dir=data_dir,
     )
     written: list[tuple[str, str, str, str]] = []
     rows: list[dict[str, Any]] = []
@@ -1337,6 +1347,23 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             body,
             policy.description,
         )
+
+    arch_page = docs["pages"]["architecture"]
+    arch_texts = architecture.load_texts(data_dir)
+    diagrams = architecture.load(data_dir, arch_texts)
+    for diagram in diagrams:
+        body = _new_body(ctx)
+        architecture.page(ctx, body, _section, diagram, arch_texts)
+        emit(
+            "architecture",
+            f"{arch_page['path']}{diagram.id}/",
+            diagram.title,
+            diagram.summary,
+            diagram.intro,
+            arch_page["title"],
+            body,
+        )
+    architecture.write_data(out_dir, diagrams, arch_texts)
 
     _api(ctx, out_dir, written)
     _search_index(ctx, out_dir, rows)
