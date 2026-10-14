@@ -1,0 +1,226 @@
+{
+  "id": "life-of-a-policy",
+  "order": 2,
+  "title": "The life of a policy",
+  "summary": "One policy from its manifest in chock-catalog, through chock compile and an install, to a tool call, its verdict and the decision log.",
+  "intro": "A policy is written once, compiled into the files each surface runs, and installed per agent. After that, every tool call the agent makes runs through the hook, gets a verdict, and leaves one line in a local log.",
+  "pins": {
+    "chock": "39df00bbf7646a08481247f31d5091d09850f96f",
+    "agentseam": "dd4f0a485a36313328d381305cf09658d3c36fb4",
+    "chock-catalog": "3e9d2d3e04cfd6fd857c4afad3901a0dd32dfeaf"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 610
+  },
+  "boundaries": [
+    {
+      "label": "Build: once per policy, once per install",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 320
+    },
+    {
+      "label": "Each tool call, on your machine",
+      "x": 5,
+      "y": 380,
+      "w": 790,
+      "h": 220
+    }
+  ],
+  "nodes": [
+    {
+      "id": "manifest",
+      "label": "Policy manifest",
+      "kind": "artifact",
+      "x": 15,
+      "y": 70,
+      "source": "chock-catalog/base/block-invisible-unicode/manifest.yaml",
+      "card": "A policy is a folder under chock-catalog's base/. Its manifest.yaml names the policy, its enforcement and its hook: a declarative gate, or a guard script in implementations/. This one declares a content gate on commit and on tool use."
+    },
+    {
+      "id": "compile",
+      "label": "chock compile",
+      "kind": "code",
+      "x": 215,
+      "y": 70,
+      "source": "chock/src/chock/compile/compiler.py",
+      "card": "Reads a policy folder and runs one emitter per surface: the ambient rule, agent hooks, git hook, CI step, Claude managed settings and the MCP gateway. The output lands in .chock/compiled/<policy>/."
+    },
+    {
+      "id": "gate",
+      "label": "gate.json",
+      "kind": "artifact",
+      "x": 415,
+      "y": 70,
+      "source": "chock/src/chock/gate/build.py",
+      "card": "The manifest's hook.gate, resolved into one gate.json per surface: before a tool runs, at the turn's end, in the git hook and in CI."
+    },
+    {
+      "id": "guard",
+      "label": "Guard script",
+      "kind": "artifact",
+      "x": 415,
+      "y": 170,
+      "source": "chock-catalog/base/block-destructive-commands/implementations/block-destructive-commands.py",
+      "card": "A policy's own program, for a check a pattern cannot express. The hook hands it the shell command (--guard) and reads its verdict. The cited one is block-destructive-commands."
+    },
+    {
+      "id": "rules",
+      "label": "Ambient rule",
+      "kind": "artifact",
+      "x": 415,
+      "y": 270,
+      "source": "chock/src/chock/compile/emitters/ambient.py",
+      "card": "Text the agent reads, as an AGENTS.md block. It blocks nothing on its own; the gate and the guard do."
+    },
+    {
+      "id": "install",
+      "label": "Install per agent",
+      "kind": "code",
+      "x": 615,
+      "y": 70,
+      "source": "chock/src/chock/hooks/in_agent_install.py",
+      "card": "chock sync writes each agent's hook file in that agent's own format, and its runtime into .chock/bin/. chock install builds the same for one agent as a plugin (ask the user before running either). Each hook command names the gate.json or guard it runs."
+    },
+    {
+      "id": "toolcall",
+      "label": "A tool call",
+      "kind": "client",
+      "x": 615,
+      "y": 420,
+      "source": "agentseam/src/agentseam/dispatch.py",
+      "card": "The agent's client runs the hook before the tool runs and passes the call on stdin. agentseam's dispatcher reads it, and that agent's adapter turns the payload into one Event."
+    },
+    {
+      "id": "verdict",
+      "label": "Verdict",
+      "kind": "code",
+      "x": 415,
+      "y": 420,
+      "source": "chock/src/chock/gate/runner/verdict.py",
+      "card": "Evaluates the compiled gate, caps the verdict by the rollout level in force, and concludes with an exit code: block, ask, warn or allow."
+    },
+    {
+      "id": "reply",
+      "label": "Back to the client",
+      "kind": "client",
+      "x": 415,
+      "y": 520,
+      "source": "agentseam/src/agentseam/contract.py",
+      "facts": "tiers",
+      "card": "The adapter speaks the Decision in the client's own dialect, and the client refuses or runs the tool. What a hook can do in each agent, and what happens when it cannot run, is agentseam's data, not ours."
+    },
+    {
+      "id": "log",
+      "label": "Decision log",
+      "kind": "log",
+      "x": 215,
+      "y": 420,
+      "source": "chock/src/chock/gate/decision_log.py",
+      "card": "One line per hook call, in a local file: <repo>/.chock/log/gate-events.jsonl on the repo route, ~/.chock/log/<agent>/events.jsonl on the plugin route. Writing it never changes the decision, and the hook sends nothing over the network."
+    }
+  ],
+  "edges": [
+    {
+      "from": "manifest",
+      "to": "compile",
+      "label": "read",
+      "label_at": [
+        200,
+        62
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "gate",
+      "label": "hook.gate",
+      "label_at": [
+        400,
+        62
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "rules",
+      "label": "ambient",
+      "via": [
+        [
+          300,
+          298
+        ]
+      ]
+    },
+    {
+      "from": "manifest",
+      "to": "guard",
+      "label": "implementations/",
+      "via": [
+        [
+          100,
+          198
+        ]
+      ],
+      "label_at": [
+        200,
+        192
+      ]
+    },
+    {
+      "from": "gate",
+      "to": "install",
+      "label": "--gate",
+      "label_at": [
+        600,
+        62
+      ]
+    },
+    {
+      "from": "guard",
+      "to": "install",
+      "label": "--guard"
+    },
+    {
+      "from": "install",
+      "to": "toolcall",
+      "label": "hook registered",
+      "label_at": [
+        700,
+        366
+      ]
+    },
+    {
+      "from": "toolcall",
+      "to": "verdict",
+      "label": "Event",
+      "label_at": [
+        600,
+        412
+      ]
+    },
+    {
+      "from": "verdict",
+      "to": "log",
+      "label": "one line",
+      "label_at": [
+        400,
+        412
+      ]
+    },
+    {
+      "from": "verdict",
+      "to": "reply",
+      "label": "Decision"
+    }
+  ],
+  "path": [
+    "manifest",
+    "compile",
+    "gate",
+    "install",
+    "toolcall",
+    "verdict",
+    "log"
+  ]
+}

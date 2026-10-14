@@ -38,7 +38,8 @@ def wanted(docs: dict[str, Any]) -> dict[str, dict[str, Any]]:
         if isinstance(part, dict)
     ]
     for page in [*docs["pages"].values(), {"prose": tabs}]:
-        for entry in page["prose"]:
+        # `checked` sections are snapshotted for a page's quote checks, not shown.
+        for entry in [*page["prose"], *page.get("checked", [])]:
             want = files.setdefault(
                 entry["file"],
                 {"sections": [], "first": 0, "optional": entry.get("optional", False)},

@@ -1,0 +1,139 @@
+/* Architecture diagrams (ARCH-1): the dusk palette by default, a light theme on request and in print. */
+
+.arch-figure,
+.arch-cards {
+  --arch-bg: var(--bg-2);
+  --arch-box: var(--panel);
+  --arch-line: var(--line-2);
+  --arch-text: var(--text);
+  --arch-muted: var(--muted);
+  --arch-edge: var(--dash);
+  --arch-path: var(--accent);
+  --arch-repo: var(--accent);
+  --arch-code: var(--info);
+  --arch-artifact: var(--muted);
+  --arch-client: var(--ok);
+  --arch-log: var(--warn-fg);
+}
+
+.arch-figure[data-theme="light"],
+.arch-figure[data-theme="light"] .arch-cards {
+  --arch-bg: #F4F6FA;
+  --arch-box: #FFFFFF;
+  --arch-line: #B9C2D0;
+  --arch-text: #1B2235;
+  --arch-muted: #4A5568;
+  --arch-edge: #6B778C;
+  --arch-path: #9A5B00;
+  --arch-repo: #9A5B00;
+  --arch-code: #1F5FAD;
+  --arch-artifact: #4A5568;
+  --arch-client: #11734B;
+  --arch-log: #7A4F00;
+}
+
+.arch-kind-repo { --arch-kind: var(--arch-repo); }
+.arch-kind-code { --arch-kind: var(--arch-code); }
+.arch-kind-artifact { --arch-kind: var(--arch-artifact); }
+.arch-kind-client { --arch-kind: var(--arch-client); }
+.arch-kind-log { --arch-kind: var(--arch-log); }
+
+.arch-figure {
+  margin: var(--flow) 0 0;
+  padding: 12px;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--arch-text);
+  background: var(--arch-bg);
+  border: 1px solid var(--arch-line);
+  border-radius: 14px;
+}
+.arch-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+.arch-toolbar[hidden], .arch-panel[hidden], .arch-hint[hidden] { display: none; }
+.arch-button {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  color: var(--arch-text);
+  background: var(--arch-box);
+  border: 1px solid var(--arch-line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.arch-button:hover { border-color: var(--arch-path); }
+.arch-button[aria-pressed="true"] { color: var(--on-accent); background: var(--arch-path); border-color: var(--arch-path); }
+.arch-figure[data-theme="light"] .arch-button[aria-pressed="true"] { color: #FFFFFF; }
+
+.arch-scroll { overflow-x: auto; }
+.arch-svg { display: block; width: 100%; min-width: 560px; height: auto; font-family: var(--sans); }
+.arch-boundary rect { fill: none; stroke: var(--arch-line); stroke-width: 1; stroke-dasharray: 6 5; }
+.arch-boundary-label { fill: var(--arch-muted); font-size: 12px; font-weight: 600; }
+.arch-edge path { fill: none; stroke: var(--arch-edge); stroke-width: 1.5; }
+.arch-marker path { fill: var(--arch-edge); }
+.arch-edge-label {
+  fill: var(--arch-muted);
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--arch-bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.arch-node { cursor: pointer; }
+.arch-node rect { fill: var(--arch-box); stroke: var(--arch-kind); stroke-width: 1.5; }
+.arch-node.arch-kind-artifact rect { stroke-dasharray: 5 3; }
+.arch-node-label { fill: var(--arch-text); font-size: 13px; font-weight: 600; }
+.arch-node-repo { fill: var(--arch-muted); font-family: var(--mono); font-size: 11px; }
+.arch-node:hover rect { stroke-width: 2.5; }
+.arch-node:focus { outline: none; }
+.arch-node:focus-visible rect, .arch-node.is-selected rect { stroke: var(--arch-path); stroke-width: 3; }
+
+.show-path .arch-edge:not(.arch-on-path), .show-path .arch-node:not(.arch-on-path) { opacity: 0.35; }
+.show-path .arch-edge.arch-on-path path { stroke: var(--arch-path); stroke-width: 3; }
+.show-path .arch-marker-path path { fill: var(--arch-path); }
+.show-path .arch-node.arch-on-path rect { stroke-width: 2.5; }
+
+.arch-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--arch-muted); }
+.arch-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.arch-swatch { display: inline-block; flex: none; width: 12px; height: 12px; border: 2px solid var(--arch-kind); border-radius: 3px; }
+.arch-hint { margin: 8px 0 0; font-size: 13px; color: var(--arch-muted); }
+
+.arch-panel { margin: 10px 0 0; }
+.arch-panel:focus { outline: none; }
+.arch-close { float: right; margin: 0 0 6px 8px; }
+.arch-data { margin: 8px 0 0; font-size: 14px; }
+
+.arch-cards { display: grid; gap: var(--flow-tight); margin: 0; padding: 0; list-style: none; }
+.arch-card {
+  padding: 12px 14px;
+  color: var(--arch-text);
+  background: var(--arch-box);
+  border: 1px solid var(--arch-line);
+  border-left: 4px solid var(--arch-kind);
+  border-radius: 10px;
+}
+.arch-card p { margin: 0; }
+.arch-card p + p, .arch-card .arch-facts { margin-top: 6px; }
+.arch-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.arch-card-kind, .arch-sha { color: var(--arch-muted); font-size: 12px; }
+.arch-card-text, .arch-facts { color: var(--arch-text); font-size: 15px; }
+.arch-card-source { font-size: 13px; overflow-wrap: anywhere; }
+.arch-card:target { outline: 2px solid var(--arch-path); outline-offset: 2px; }
+
+@media print {
+  .arch-figure, .arch-cards {
+    --arch-bg: #FFFFFF;
+    --arch-box: #FFFFFF;
+    --arch-line: #8A93A3;
+    --arch-text: #000000;
+    --arch-muted: #333333;
+    --arch-edge: #555555;
+    --arch-path: #000000;
+    --arch-repo: #6B4300;
+    --arch-code: #1F4F8F;
+    --arch-artifact: #444444;
+    --arch-client: #0E5E3D;
+    --arch-log: #6B4300;
+  }
+  .arch-toolbar, .arch-panel, .arch-hint { display: none; }
+  .arch-svg { min-width: 0; }
+}

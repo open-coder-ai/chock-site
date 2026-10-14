@@ -4,8 +4,20 @@
     "CHANGELOG.md": {
       "snapshot": "CHANGELOG.md"
     },
+    "README.md": {
+      "snapshot": "README.md"
+    },
+    "SECURITY.md": {
+      "snapshot": "SECURITY.md"
+    },
     "docs/adopting.md": {
       "snapshot": "docs__adopting.md"
+    },
+    "docs/agentic-risk-coverage.md": {
+      "snapshot": "docs__agentic-risk-coverage.md"
+    },
+    "docs/assurance-case.md": {
+      "snapshot": "docs__assurance-case.md"
     },
     "docs/baseline-policies.md": {
       "snapshot": "docs__baseline-policies.md"

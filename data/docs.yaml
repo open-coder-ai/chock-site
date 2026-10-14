@@ -18,9 +18,11 @@ nav:
   - group: Get started
     pages: [overview, quickstart-plugin, quickstart-repo]
   - group: Guides
-    pages: [agents, policies, configure, monitor, troubleshooting]
+    pages: [agents, policies, configure, monitor, troubleshooting, bypasses]
   - group: Reference
     pages: [cli, release-notes]
+  - group: Architecture
+    pages: [architecture]
 
 pages:
   overview:
@@ -99,6 +101,25 @@ pages:
       - {file: docs/troubleshooting.md, first: 20, optional: true}
       - {file: docs/enforcement-surfaces.md, sections: [What happens when the guard cannot decide]}
       - {file: docs/adopting.md, sections: [How to verify a fresh clone enforces]}
+  bypasses:
+    path: /docs/bypasses/
+    title: "What Chock doesn't stop"
+    nav_label: "What Chock doesn't stop"
+    description: "Every known way an action gets past chock, in one place, each with the chock file that says so."
+    intro: "Chock stops an action only where a hook runs and a policy matches it. Chock's own docs call its guards best-effort friction, not a security boundary. This page lists every known way an action gets past it. Each item links the chock file it comes from, at the pinned engine commit."
+    blocks: [bypasses]
+    prose: []
+    # Quoted into the docs snapshot but not shown: each source quote on this page must
+    # stand in these sections word for word, so docs-drift catches a change in chock.
+    checked:
+      - {file: README.md, sections: ["Guardrails, not guarantees", FAQ for people and agents]}
+      - {file: SECURITY.md, sections: [Threat model]}
+      - {file: docs/assurance-case.md, sections: [Top-level claim, "Residual risks, stated"]}
+      - {file: docs/baseline-policies.md, sections: [What the base catalog offers]}
+      - {file: docs/enforcement-surfaces.md, sections: [The nine surfaces, What happens when the guard cannot decide]}
+      - {file: docs/custom-policies.md, sections: [4. Labels]}
+      - {file: docs/cli-reference.md, sections: [Everyday]}
+      - {file: docs/agentic-risk-coverage.md, sections: [What Chock does not do — stated plainly]}
   cli:
     path: /docs/cli/
     title: CLI reference
@@ -117,6 +138,15 @@ pages:
     blocks: []
     prose:
       - {file: CHANGELOG.md, first: 5}
+  # ARCH-1: the diagrams come from data/architecture/<id>.json (sitegen/architecture.py).
+  architecture:
+    path: /docs/architecture/
+    title: Architecture
+    nav_label: Architecture
+    description: "How the chock repositories fit together, and the path one policy takes from the catalog to your agent's hook."
+    intro: "Blocks your coding agent's wrong moves before they land. These diagrams show how: each box cites the file that does the work, at a pinned commit, and each has a card. Select a box to read its card, or read the cards in order below each diagram."
+    blocks: [architecture]
+    prose: []
 
 texts:
   ask_first: "Ask the user before running any command on this page: each one changes how their agent or repository behaves."
@@ -278,6 +308,118 @@ texts:
     - "Logging never changes a verdict, never raises and never blocks: a line that cannot be written is dropped silently."
     - "`chock witness export --client <client>` writes that client's records, redacted, to a new local file and prints the agentseam issue to attach it to. Nothing is uploaded."
   client_notes_heading: Install notes per agent
+  # "What Chock doesn't stop" (COPY-3). Every item names the chock files it rests on. A
+  # `quote` must stand word for word in the page's `checked` sections (CHANGELOG.md: the
+  # release notes' snapshot), or the build fails. `table` adds rows read from engine,
+  # agentseam or catalog data, never typed here.
+  bypass:
+    sources: "Sources, at the pinned engine commit:"
+    # agentseam's fail-mode word for a hook whose crash, timeout or absence lets the call run.
+    fail_open: open
+    # The engine's label wording for a policy that judges a write only when the turn ends.
+    turn_end_marker: "the write itself is not judged"
+    no_hook_columns: [Agent, Routes, Why]
+    fail_open_columns: [Agent, Routes, Tier]
+    turn_end_columns: [Agent, Policies judged only at turn end]
+    # The engine's label keyword for a policy that is rule text only.
+    advisory_keyword: advise
+    advisory_line: "__COUNT__ of the __TOTAL__ policies in the pinned catalog are labelled __WORD__ on __AGENT__: rule text the agent reads, and may not follow."
+    see: "See:"
+    misses_intro: "Policies whose catalog entry lists what it misses:"
+    items:
+      - heading: "Guards are friction, not a boundary"
+        body:
+          - "Chock's guards are deterministic scripts that match patterns. Chock's own docs call them best-effort friction, not a security boundary: quoting tricks, aliases and new encodings can get past a pattern-based guard. Chock does not stop every attack. It closes common, known entry points before they ship."
+        sources:
+          - {file: docs/baseline-policies.md, quote: "best-effort friction, not a security boundary."}
+          - {file: docs/assurance-case.md, quote: "quoting tricks, aliases, and novel encodings can evade a pattern-based guard"}
+          - {file: README.md, quote: "Chock does not stop every attack"}
+      - heading: "Agents with no hook, or not wired"
+        body:
+          - "Chock can stop an action in the agent only where the agent runs a hook that chock wired. An agent outside every wired surface sees only advisory text; its work meets chock's git hooks and CI gate, where those are installed. These agents have no route, or lack one, and the reason is the engine's:"
+        table: no_hook
+        sources:
+          - {file: docs/assurance-case.md, quote: "an agent outside every wired surface sees only advisory text"}
+      - heading: "Hosts whose hook fails open"
+        body:
+          - "On a host that fails open, a hook that crashes, times out or never loads lets the tool call run, so a silent hook looks exactly like a protected session. agentseam's tier data records each agent's fail mode; these agents fail open before a tool runs. `chock doctor` checks that each agent's hooks are in place and running."
+        table: fail_open
+        see: troubleshooting
+        sources:
+          - {file: docs/assurance-case.md, quote: "Some agent hosts ignore unexpected hook exits"}
+          - {file: README.md, quote: "`in-agent` is the agent's pre-tool hook: best-effort, and it fails open."}
+      - heading: "Hook timeouts"
+        body:
+          - "A client's hook timeout fails open: when the agent stops waiting for the hook, the command runs. Chock writes a timeout above its own 30-second budget into each hook entry it writes, so its own limits fire first and ask or deny. Windsurf's hook entry has no timeout key, so Windsurf's own default applies, and it is not documented. Each agent's page lists its timeout."
+        see: agents
+        sources:
+          - {file: docs/enforcement-surfaces.md, quote: "A client's hook timeout fails **open** (the command runs)"}
+          - {file: docs/enforcement-surfaces.md, quote: "so its own default (not documented) applies"}
+      - heading: "Writes judged only at turn end"
+        body:
+          - "Some agents record no file-writing tool that chock's write hook can match. There, a policy that checks file contents does not judge the write itself: it reads what the turn left on disk when the turn ends. The file is on disk until then. Counts from each agent's labels in the pinned catalog:"
+        table: turn_end
+        sources:
+          - {file: src/chock/plugin/bundle_grade.py}
+          - {file: src/chock/plugin/gate_package.py}
+      - heading: "Git hooks: --no-verify and fresh clones"
+        body:
+          - "`git commit --no-verify` skips every git hook, and so every chock gate. `block-no-verify` refuses the flag before the command runs, but only on agents with wired hooks. Git hooks live in `.git/hooks`, which is not cloned, so a fresh clone enforces nothing until someone runs `chock sync`. The CI gate closes both gaps, but it is not automatic: `chock sync --ci` writes it."
+        sources:
+          - {file: SECURITY.md, quote: "`git commit --no-verify` skips every git hook, and therefore every Chock gate."}
+          - {file: SECURITY.md, quote: "a fresh clone enforces nothing until someone runs `chock sync`."}
+          - {file: SECURITY.md, quote: "**It is not automatic.**"}
+      - heading: "A person's CHOCK_ALLOW"
+        body:
+          - "A gate with `action: ask` cannot prompt at commit or push, so it refuses there. A person lets that one command through by running it with `CHOCK_ALLOW=<policy-id>`. This is not honoured for an agent's commit, and in CI an ask is a warning."
+          - "Chock tells an agent's commit from a person's by environment variables. `CHOCK_AGENT_COMMIT=0` says \"a person\" and wins over every marker. An agent could set it too, so it is a default, not an identity; the guards on the agent's own commands are the separate backstop."
+        sources:
+          - {file: docs/enforcement-surfaces.md, quote: "it refuses unless a person runs that one command with `CHOCK_ALLOW=<policy-id>[,<policy-id>...]` and it is not an agent commit; in CI it is a warning."}
+          - {file: docs/enforcement-surfaces.md, quote: "an agent could set it too, so it is a default and not an identity"}
+      - heading: "The observe rollout level"
+        body:
+          - "`rollout: observe` in `.chock/config.yaml` turns a compiled gate's block or ask into a warning, and `rollout: ask` caps it at ask. The action goes through and the log records what would have been blocked. Command guards, `tool_call` gates, the MCP gateway and a script hook's own exit 1 still block. An agent cannot lower the level for itself: it is held to the level committed in HEAD, or a stricter one, and `CHOCK_ROLLOUT` counts only for a person's own commit or push."
+        sources:
+          - {file: CHANGELOG.md, quote: "observe turns a block or ask into a warning"}
+          - {file: CHANGELOG.md, quote: "Not capped: command guards, `tool_call` gates, the MCP gateway and a script hook's own exit 1, which still block."}
+          - {file: CHANGELOG.md, quote: "`CHOCK_ROLLOUT` counts only for a person's own commit or push."}
+          - {file: src/chock/gate/runner/actor.py}
+      - heading: "A guardrail turned off: chock bundle off"
+        body:
+          - "On the plugin route, `chock bundle off <id>` switches one member of the plugin off. It does nothing until it is switched back on."
+        see: configure
+        sources:
+          - {file: docs/custom-policies.md, quote: "Switch one off like any member: `chock bundle off <id>`."}
+      - heading: "chock disable"
+        body:
+          - "On the repo route, `chock disable <id>` adds the policy to `policies.disabled` in `.chock/config.yaml`, recompiles the rest, and removes its git-hook wiring. A policy marked `mandatory: true` cannot be disabled."
+        sources:
+          - {file: docs/cli-reference.md, quote: "`disable` adds a policy to `policies.disabled` in `.chock/config.yaml`, recompiles the enabled policies, and removes its git-hook wiring."}
+          - {file: docs/cli-reference.md, quote: "`disable` refuses with exit 2 if the policy is `mandatory: true`."}
+      - heading: "Processes already running"
+        body:
+          - "Chock judges at fixed points: before a tool call, at a turn's end, at commit, at push and in CI. It does not watch an agent afterwards, so a process that is already running, such as a background shell or a server the agent started, is not judged again."
+        sources:
+          - {file: docs/agentic-risk-coverage.md, quote: "Chock's value is the deterministic slice *before* commit, push, or execution."}
+          - {file: docs/agentic-risk-coverage.md, quote: "Watching an agent after the fact is an EDR product's job"}
+      - heading: "Credentials"
+        body:
+          - "Chock does not manage agent identity, tokens or spend budgets. Identity platforms and gateways own runtime credentials, and chock's `gateway` surface claims nothing for them today. A policy such as `scan-secrets` refuses a credential written into a change; it does nothing about a credential the agent already holds."
+        sources:
+          - {file: docs/agentic-risk-coverage.md, quote: "Identity platforms and gateways own runtime credentials and quotas."}
+          - {file: docs/agentic-risk-coverage.md, quote: "Chock's `gateway` surface is reserved for repo-scoped budget/egress backstops and claims nothing today."}
+      - heading: "What each policy misses"
+        body:
+          - "Each policy's page has a \"What it misses\" section. Across policies, the same kinds come back: aliases, quoting and shells a guard does not parse, and values that are split, encoded or built at run time. Advisory policies block nothing."
+        table: limits
+        sources:
+          - {file: docs/baseline-policies.md, quote: "Known bypasses (aliases, quoting, non-standard clients) are documented on each policy."}
+          - {file: README.md, quote: "`advisory` is rule text the agent reads."}
+      - heading: "What Chock sends"
+        body:
+          - "Chock sends nothing over the network when it enforces. Each check is a deterministic script, with no model call and no network access at enforcement time."
+        sources:
+          - {file: README.md, quote: "no model call and no network access at enforcement time"}
   cli_groups: {everyday: Everyday, authoring: Authoring, aliases: Pre-launch aliases}
   prose_heading: From the engine docs
   ask_code: "Ask the user before running the commands below:"
