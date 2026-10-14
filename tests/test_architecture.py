@@ -146,18 +146,19 @@ def test_tier_facts_come_from_agentseam_tier_table(built) -> None:
     assert sum(int(re.search(r"\((\d+)\)", r).group(1)) for r in rows) == len(agents)
     for agent in agents:
         assert agent["tier"] == engine.tier_row(agent["id"])["tier"]
-    with_tiers = [
-        d.id for d in architecture.load() if any("facts" in n for n in d.nodes)
-    ]
     # ARCH-3: diagrams 5-8 have no client box; diagram 9 is the fail-mode view.
-    assert with_tiers == [
+    with_tiers = [
         "whole-train",
         "life-of-a-policy",
         "chock-internals",
         "agentseam-internals",
         "trust-boundaries",
     ]
+    diagrams = _diagrams()
     for diagram_id in with_tiers:
+        assert any(n.get("facts") == "tiers" for n in diagrams[diagram_id].nodes), (
+            diagram_id
+        )
         twin = _twin(built, diagram_id)
         for row in rows:
             assert f"  - {md(row)}\n" in twin
