@@ -190,7 +190,7 @@ def test_home_fits_a_phone(browser, site_url) -> None:
             )
         heading = page.locator("h1").inner_text()
         assert re.sub(r"\s+", " ", heading) == (
-            "A kill switch for your coding agent's wrong moves."
+            "Blocks your coding agent's wrong moves before they land."
         )
     finally:
         context.close()
