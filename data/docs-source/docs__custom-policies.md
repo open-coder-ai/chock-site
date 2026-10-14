@@ -15,3 +15,10 @@ policies:
 `sha256` is optional on a local entry; when present, the folder must hash to it. A selection with only local
 entries needs no `catalog`. A link or a `#s=` code never carries a local policy: install refuses one, because only a
 file has a folder beside it.
+
+## 4. Labels
+
+Each custom member reads `custom, not reviewed; <what its hooks do>` in install's output, in `chock bundle status`
+and in the plugin's "customize guardrails" skill. Switch one off like any member: `chock bundle off <id>`.
+
+To propose a policy to the catalog instead, follow the catalog's CONTRIBUTING steps and drop the `my-` prefix.

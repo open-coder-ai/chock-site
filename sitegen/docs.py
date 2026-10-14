@@ -711,6 +711,153 @@ def _diagnose(ctx: Ctx, body: Body) -> None:
     )
 
 
+def _flat(text: str) -> str:
+    """Text with blockquote marks dropped and each run of whitespace made one space."""
+    return " ".join(re.sub(r"(?m)^\s*>", "", text).split())
+
+
+def _sources(ctx: Ctx, sources: list[dict[str, str]]) -> tuple[str, str]:
+    """An item's chock files as links; each quote must stand word for word in its file's snapshot."""
+    for source in sources:
+        if "quote" not in source:
+            continue
+        text = ctx.prose.get(source["file"])
+        if text is None or _flat(source["quote"]) not in _flat(text):
+            raise PageError(
+                f"docs.yaml bypass: {source['file']} at .framework-ref does not say "
+                f"{source['quote']!r}"
+            )
+    files = list(dict.fromkeys(s["file"] for s in sources))
+    urls = [_engine_url(ctx, f) for f in files]
+    label = ctx.texts["bypass"]["sources"]
+    links = [Safe(ctx.t("link", HREF=u, TEXT=f)) for f, u in zip(files, urls)]
+    return (
+        _para(ctx, label) + _list(ctx, links),
+        f"{label}\n\n" + "".join(f"- [{f}]({u})\n" for f, u in zip(files, urls)),
+    )
+
+
+def _agent_cell(ctx: Ctx, agent: dict[str, Any]) -> tuple[Safe, str]:
+    """An agent's name linked to its docs page, as HTML and as Markdown."""
+    href = f"/docs/agents/{agent['slug']}/"
+    return (
+        Safe(ctx.t("link", HREF=href, TEXT=agent["name"])),
+        f"[{agent['name']}]({ctx.site.data['site_url']}{href}index.md)",
+    )
+
+
+def _agent_rows(
+    ctx: Ctx, cols: list[str], picked: list[tuple[dict[str, Any], list[str]]]
+) -> tuple[str, str]:
+    """A table of agents, each row its linked name and the given cells."""
+    cells = [(_agent_cell(ctx, a), rest) for a, rest in picked]
+    return (
+        _table(ctx, cols, [[h, *rest] for (h, _), rest in cells]),
+        _md_table(cols, [[m, *rest] for (_, m), rest in cells]),
+    )
+
+
+def _no_hook_table(ctx: Ctx) -> tuple[str, str]:
+    """Agents with no route, or missing one, and the engine's reason why."""
+    texts = ctx.texts["bypass"]
+    picked = [
+        (a, [_route_words(ctx, a), a["reason"]]) for a in ctx.agents if a["reason"]
+    ]
+    return _agent_rows(ctx, texts["no_hook_columns"], picked)
+
+
+def _fail_open_table(ctx: Ctx) -> tuple[str, str]:
+    """Agents whose agentseam fail mode before a tool runs is open."""
+    texts = ctx.texts["bypass"]
+    picked = [
+        (a, [_route_words(ctx, a), a["tier"]])
+        for a in ctx.agents
+        if a["fail_mode"] == texts["fail_open"]
+    ]
+    if not picked:
+        raise PageError(f"no agent's fail mode reads {texts['fail_open']!r}")
+    return _agent_rows(ctx, texts["fail_open_columns"], picked)
+
+
+def _turn_end_table(ctx: Ctx) -> tuple[str, str]:
+    """Per agent, how many policy labels judge a write only at the turn's end."""
+    texts = ctx.texts["bypass"]
+    clients = ctx.site.data["builder_clients"]
+    rows = []
+    for client in clients["order"]:
+        about = clients["clients"][client]
+        count = sum(
+            texts["turn_end_marker"] in label["says"]
+            for label in about["labels"].values()
+        )
+        if count:
+            rows.append([about["name"], str(count)])
+    if not rows:
+        raise PageError(f"no agent's label says {texts['turn_end_marker']!r}")
+    cols = texts["turn_end_columns"]
+    return _table(ctx, cols, rows), _md_table(cols, rows)
+
+
+def _limits_table(ctx: Ctx) -> tuple[str, str]:
+    """The advisory count, and links to every policy whose entry lists what it misses."""
+    texts = ctx.texts["bypass"]
+    clients = ctx.site.data["builder_clients"]
+    reference = clients["clients"][clientdata.ENGINE_CLIENT]["name"]
+    keyword = texts["advisory_keyword"]
+    if keyword not in ctx.site.label_words["coding"]:
+        raise PageError(f"docs.yaml bypass: {keyword!r} is no engine label keyword")
+    line = data_fill(
+        texts["advisory_line"],
+        {
+            "__COUNT__": str(sum(p.keyword == keyword for p in ctx.site.policies)),
+            "__TOTAL__": str(len(ctx.site.policies)),
+            "__WORD__": ctx.site.label_words["coding"][keyword],
+            "__AGENT__": reference,
+        },
+    )
+    site_url = ctx.site.data["site_url"]
+    shown = [p for p in policies_sorted(ctx.site) if p.misses]
+    links = [
+        Safe(ctx.t("link", HREF=f"/docs/policies/{p.id}/#what-it-misses", TEXT=p.name))
+        for p in shown
+    ]
+    return (
+        _para(ctx, line) + _para(ctx, texts["misses_intro"]) + _list(ctx, links),
+        f"{line}\n\n{texts['misses_intro']}\n\n"
+        + "".join(
+            f"- [{md_escape(p.name)}]({site_url}/docs/policies/{p.id}/index.md)\n"
+            for p in shown
+        ),
+    )
+
+
+BYPASS_TABLES = {
+    "no_hook": _no_hook_table,
+    "fail_open": _fail_open_table,
+    "turn_end": _turn_end_table,
+    "limits": _limits_table,
+}
+
+
+def _bypasses(ctx: Ctx, body: Body) -> None:
+    """What Chock doesn't stop: one section per known bypass, each with its chock sources."""
+    for item in ctx.texts["bypass"]["items"]:
+        html = "".join(_para(ctx, text) for text in item["body"])
+        md = "".join(f"{text}\n\n" for text in item["body"])
+        if table := item.get("table"):
+            if table not in BYPASS_TABLES:
+                raise PageError(f"docs.yaml bypass: unknown table {table!r}")
+            h, m = BYPASS_TABLES[table](ctx)
+            html, md = html + h, f"{md}{m}\n"
+        if see := item.get("see"):
+            page = ctx.docs["pages"][see]
+            label = ctx.texts["bypass"]["see"]
+            html += ctx.t("line-link", LINE=label, URL=page["path"], LINK=page["title"])
+            md += f"{label} [{page['title']}]({ctx.site.data['site_url']}{page['path']}index.md)\n\n"
+        h, m = _sources(ctx, item["sources"])
+        _section(ctx, body, item["heading"], html + h, md + m)
+
+
 def _cli(ctx: Ctx, body: Body) -> None:
     for group, title in ctx.texts["cli_groups"].items():
         names = [c["name"] for c in ctx.cli if c["group"] == group]
@@ -751,6 +898,7 @@ BLOCKS = {
     "diagnose": _diagnose,
     "measured": _measured,
     "client_notes": _client_notes,
+    "bypasses": _bypasses,
     "cli": _cli,
     "architecture": _architecture,
 }
