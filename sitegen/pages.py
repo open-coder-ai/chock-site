@@ -68,6 +68,20 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
     return "/security/", "/security/index.md", twin
 
 
+def _faq_headings(data: dict[str, Any]) -> list[tuple[int, str, str]]:
+    """The FAQ's groups (h2) and questions (h3) in page order, for "On this page"."""
+    return [
+        heading
+        for group in data["faq"]["groups"]
+        for heading in [(2, f"group-{group['id']}", group["title"])]
+        + [
+            (3, item["id"], item["q"])
+            for item in data["faq"]["questions"]
+            if item["group"] == group["id"]
+        ]
+    ]
+
+
 def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
     """The FAQ page, grouped per faq.yaml (plan 6.7), and its twin."""
     data = site.data
@@ -113,6 +127,9 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 templates / "faq.html",
                 SUB=Prose(page["description"]),
                 FAQ_GROUPS=Safe(groups),
+                TOC=docs.toc_nav(
+                    templates, data["faq"]["toc_title"], _faq_headings(data)
+                ),
             )
         ),
         jsonld_data={
@@ -128,6 +145,7 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             ],
         },
         nav="faq",
+        scripts=("common.js", "docs.js"),
     )
     twin = render_text_file(
         templates / MD / "faq.md",

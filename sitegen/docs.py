@@ -1088,16 +1088,28 @@ def _built(ctx: Ctx) -> tuple[Safe, str]:
     return Safe(html), md
 
 
+def toc_nav(templates: Path, title: str, headings: list[tuple[int, str, str]]) -> Safe:
+    """The "On this page" list for (level, id, text) headings; docs and the FAQ share it."""
+    items = "".join(
+        render_file(
+            templates / DOCS / "toc-item.html",
+            LEVEL=str(level),
+            HREF=f"#{id_}",
+            TEXT=text,
+        )
+        for level, id_, text in headings
+    )
+    return Safe(
+        render_file(templates / DOCS / "toc.html", TITLE=title, ITEMS=Safe(items))
+    )
+
+
 def _toc(ctx: Ctx, body: Body, html: str) -> Safe:
     """The "On this page" list: the page's h2 and h3 in document order; empty under two."""
     found = sorted(body.renderer.toc, key=lambda h: html.index(f'id="{h[1]}"'))
     if len(found) < 2:
         return Safe("")
-    items = "".join(
-        ctx.t("toc-item", LEVEL=str(level), HREF=f"#{id_}", TEXT=text)
-        for level, id_, text in found
-    )
-    return Safe(ctx.t("toc", TITLE=ctx.texts["on_this_page"], ITEMS=Safe(items)))
+    return toc_nav(ctx.templates, ctx.texts["on_this_page"], found)
 
 
 def _search(ctx: Ctx) -> Safe:
