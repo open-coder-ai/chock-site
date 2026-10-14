@@ -1,4 +1,4 @@
-"""ARCH-1: architecture diagrams: a box shows its card, the path toggle, the theme, and no JS."""
+"""ARCH-1..3: architecture diagrams: a box shows its card, card links, the path toggle, the theme, and no JS."""
 
 import json
 from pathlib import Path
@@ -10,7 +10,17 @@ ROOT = Path(__file__).resolve().parents[2]
 ARCH = ROOT / "data" / "architecture"
 DESKTOP = {"width": 1366, "height": 900}
 MOBILE = {"width": 390, "height": 844}
-IDS = ["whole-train", "life-of-a-policy", "chock-internals", "agentseam-internals"]
+IDS = [
+    "whole-train",
+    "life-of-a-policy",
+    "chock-internals",
+    "agentseam-internals",
+    "chock-catalog",
+    "context-report",
+    "chock-site",
+    "release-train",
+    "trust-boundaries",
+]
 
 
 def _diagram(diagram_id: str) -> dict:
@@ -136,6 +146,43 @@ def test_without_js_the_svg_and_cards_render(
         region = page.locator(".arch-scroll")
         assert region.evaluate("e => e.scrollWidth > e.clientWidth")
         screenshot(page, f"arch-{diagram_id}-nojs")
+        assert_clean(page)
+    finally:
+        context.close()
+
+
+def test_a_linked_box_card_opens_its_repo_diagram(page, site_url) -> None:
+    page.set_viewport_size(DESKTOP)
+    page.goto(_url(site_url, "whole-train"))
+    page.locator('.arch-node[data-node="catalog"]').click()
+    link = page.locator(".arch-panel .arch-card-link a")
+    assert link.is_visible()
+    assert link.inner_text() == "Its diagram: chock-catalog"
+    assert link.get_attribute("href") == "/docs/architecture/chock-catalog/"
+    link.click()
+    page.wait_for_url("**/docs/architecture/chock-catalog/")
+    assert page.locator("#arch-chock-catalog .arch-svg").is_visible()
+    assert_clean(page)
+
+
+def test_without_js_a_card_link_opens_its_repo_diagram(browser, site_url) -> None:
+    # Reduced motion turns off smooth scrolling, so the card is still when it is clicked.
+    context = browser.new_context(
+        java_script_enabled=False, viewport=MOBILE, reduced_motion="reduce"
+    )
+    try:
+        page = context.new_page()
+        collect(page, site_url)
+        page.goto(_url(site_url, "whole-train"))
+        links = page.locator("ol.arch-cards .arch-card-link a")
+        linked = [n for n in _diagram("whole-train")["nodes"] if "link" in n]
+        assert links.count() == len(linked)
+        page.locator('.arch-node[data-node="adapters"]').click()
+        link = page.locator("#arch-whole-train-adapters .arch-card-link a")
+        assert link.is_visible()
+        link.click()
+        page.wait_for_url("**/docs/architecture/agentseam-internals/")
+        assert page.locator("#arch-agentseam-internals .arch-svg").is_visible()
         assert_clean(page)
     finally:
         context.close()

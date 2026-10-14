@@ -1,0 +1,331 @@
+{
+  "id": "chock-site",
+  "order": 7,
+  "title": "chock-site",
+  "summary": "How chock.sh is built: the pinned engine and catalog, data/ and templates/, the one-pass renderer, the docs snapshot and its drift check, and what lands in dist/.",
+  "intro": "chock-site is a static site generator. python -m sitegen reads a chock-catalog checkout at .catalog-ref and the chock engine installed at .framework-ref, adds the facts in data/, and fills template files in one pass. It writes HTML pages, a Markdown twin of each, llms.txt and JSON under /api into dist/. Prose quoted from chock's docs comes from a committed snapshot that CI compares with chock at the same commit.",
+  "pins": {
+    "chock-site": "86cd0bd25a0b39beaec8bb98a7c6a3b20ac7c402"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 510
+  },
+  "boundaries": [
+    {
+      "label": "Pinned inputs and facts",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 110
+    },
+    {
+      "label": "python -m sitegen",
+      "x": 5,
+      "y": 150,
+      "w": 590,
+      "h": 220
+    },
+    {
+      "label": "Docs snapshot",
+      "x": 605,
+      "y": 150,
+      "w": 190,
+      "h": 350
+    },
+    {
+      "label": "dist/",
+      "x": 5,
+      "y": 395,
+      "w": 590,
+      "h": 105
+    }
+  ],
+  "nodes": [
+    {
+      "id": "refs",
+      "label": "Pinned refs",
+      "kind": "artifact",
+      "x": 15,
+      "y": 70,
+      "source": "chock-site/.framework-ref",
+      "card": "Two one-line files: .framework-ref holds the chock commit the site is built against (39df00b) and .catalog-ref the chock-catalog commit (563a6ce). CI checks out chock-catalog at .catalog-ref and installs chock from its git URL at .framework-ref."
+    },
+    {
+      "id": "engine",
+      "label": "engine.py",
+      "kind": "code",
+      "x": 215,
+      "y": 70,
+      "source": "chock-site/sitegen/engine.py",
+      "card": "The only module that imports chock and agentseam, from the chock package installed at .framework-ref. It supplies each policy's pack hash, label words, warning rules, client install steps, the selection schema, CLI help text, and agentseam's matrix and tier rows."
+    },
+    {
+      "id": "catalog",
+      "label": "catalog.py",
+      "kind": "code",
+      "x": 415,
+      "y": 70,
+      "source": "chock-site/sitegen/catalog.py",
+      "card": "Reads registry.yaml and each policy's manifest.yaml and evals/suite.yaml from the catalog checkout into Policy records. It drops ids listed in data/hidden.yaml and deprecated or retired policies, and links each policy to the catalog tree at .catalog-ref."
+    },
+    {
+      "id": "data",
+      "label": "data/ facts",
+      "kind": "artifact",
+      "x": 615,
+      "y": 70,
+      "source": "chock-site/data/site.json",
+      "card": "Facts as data: site.json and the YAML files hold page copy, presets, FAQ, agent routes and the docs structure, read by the Python build and, through site.json, the JS. data/docs.yaml names the sections of chock's docs each docs page quotes."
+    },
+    {
+      "id": "main",
+      "label": "sitegen/__main__.py",
+      "kind": "code",
+      "x": 15,
+      "y": 190,
+      "source": "chock-site/sitegen/__main__.py",
+      "card": "python -m sitegen --catalog .catalog --out dist. It refuses a catalog whose HEAD is not .catalog-ref, and an --out that is a filesystem root, the repo, the home folder, or a non-empty folder without its .sitegen-output marker. It then empties dist/, copies static/, and writes site.json, the CSS and every page; serve does the same and serves dist/ on 127.0.0.1 only."
+    },
+    {
+      "id": "sitedata",
+      "label": "sitedata.py",
+      "kind": "code",
+      "x": 215,
+      "y": 190,
+      "source": "chock-site/sitegen/sitedata.py",
+      "card": "build_site assembles the Site model: the catalog's policies with their engine hashes and labels, presets, client routes, quizzes and repo tiers. write_site_json writes it to dist/data/site.json as compact JSON."
+    },
+    {
+      "id": "docs",
+      "label": "docs.py",
+      "kind": "code",
+      "x": 415,
+      "y": 190,
+      "source": "chock-site/sitegen/docs.py",
+      "card": "Builds the docs section at /docs/: each page, its Markdown twin, /api/docs/index.json and /api/docs/search.json. It quotes chock's prose only from the snapshot, which docsource.load refuses if it was taken at a commit other than .framework-ref. coding.py, repos.py and general.py build the other sections."
+    },
+    {
+      "id": "snapshot",
+      "label": "data/docs-source/",
+      "kind": "artifact",
+      "x": 615,
+      "y": 190,
+      "source": "chock-site/data/docs-source/source.json",
+      "card": "The quoted sections of chock's CHANGELOG.md and nine docs/*.md files, one snapshot file each. source.json records the engine commit they were taken at (39df00b) and each file; docs/troubleshooting.md is optional and recorded as absent."
+    },
+    {
+      "id": "static",
+      "label": "static/ JS and CSS",
+      "kind": "artifact",
+      "x": 15,
+      "y": 300,
+      "source": "chock-site/static/js/common.js",
+      "card": "Copied into dist/ as is, except css/site.css, whose tokens the build fills. The JS is vanilla ES modules with no libraries that build elements with createElement. builder.js keeps the chosen agent and policies in the URL fragment, which browsers never send to a server."
+    },
+    {
+      "id": "templates",
+      "label": "templates/",
+      "kind": "artifact",
+      "x": 215,
+      "y": 300,
+      "source": "chock-site/templates/base.html",
+      "card": "HTML and Markdown template files with named placeholders, each a word in capitals between double underscores. base.html wraps every page: it carries the Content-Security-Policy meta tag, which allows scripts, styles, fonts and images from the same site only, and links the page's .md twin."
+    },
+    {
+      "id": "render",
+      "label": "render.py",
+      "kind": "code",
+      "x": 415,
+      "y": 300,
+      "source": "chock-site/sitegen/render.py",
+      "card": "One-pass fill: a single re.sub replaces every placeholder with its value, so a value holding another placeholder is never filled again. Each value goes through html.escape unless it is Safe, already rendered HTML. A token without a value or a value without a token raises RenderError; render_text fills Markdown twins without escaping."
+    },
+    {
+      "id": "docsource",
+      "label": "docsource.py",
+      "kind": "code",
+      "x": 615,
+      "y": 300,
+      "source": "chock-site/sitegen/docsource.py",
+      "card": "python -m sitegen.docsource --chock <checkout> copies the sections data/docs.yaml quotes from a chock checkout into data/docs-source/. It exits 2 if the checkout's HEAD is not .framework-ref. With --check it writes nothing and exits 1 when a snapshot file differs, is missing or is extra."
+    },
+    {
+      "id": "ci",
+      "label": "docs-drift CI",
+      "kind": "code",
+      "x": 615,
+      "y": 430,
+      "source": "chock-site/.github/workflows/ci.yml",
+      "card": "The docs-drift job checks out open-coder-ai/chock at .framework-ref into .chock-src and runs python -m sitegen.docsource --chock .chock-src --check, on every pull request and push to main. It fails when the committed snapshot no longer matches chock's docs at that commit."
+    },
+    {
+      "id": "pagesout",
+      "label": "Pages and .md twins",
+      "kind": "artifact",
+      "x": 15,
+      "y": 430,
+      "source": "chock-site/sitegen/pageparts.py",
+      "card": "write_page renders base.html around each page's content and writes it under dist/. write_md writes the page's Markdown twin beside it, as index.md for a folder path."
+    },
+    {
+      "id": "llms",
+      "label": "llms.txt",
+      "kind": "artifact",
+      "x": 215,
+      "y": 430,
+      "source": "chock-site/sitegen/pages.py",
+      "card": "write_pages writes llms.txt (title, tagline, notes, the Docs list, each section's lines and the Data list) and llms-full.txt, every Markdown twin joined in that order. It also writes api/index.json, sitemap.xml and robots.txt."
+    },
+    {
+      "id": "api",
+      "label": "/api JSON",
+      "kind": "artifact",
+      "x": 415,
+      "y": 430,
+      "source": "chock-site/sitegen/coding.py",
+      "card": "For the coding section, _api writes /api/coding/catalog.json, presets.json, one policies/<id>.json per policy, and selection.schema.json from the engine's schema. The docs and repos sections write their own files under /api/docs/ and /api/repos/."
+    }
+  ],
+  "edges": [
+    {
+      "from": "refs",
+      "to": "engine",
+      "label": "chock ref",
+      "label_at": [
+        200,
+        62
+      ]
+    },
+    {
+      "from": "refs",
+      "to": "main",
+      "label": "catalog ref"
+    },
+    {
+      "from": "engine",
+      "to": "sitedata",
+      "label": "hashes, labels"
+    },
+    {
+      "from": "catalog",
+      "to": "sitedata",
+      "label": "policies",
+      "label_at": [
+        395,
+        150
+      ]
+    },
+    {
+      "from": "data",
+      "to": "sitedata",
+      "label": "copy, presets",
+      "label_at": [
+        530,
+        146
+      ]
+    },
+    {
+      "from": "main",
+      "to": "sitedata",
+      "label": "build_site",
+      "label_at": [
+        200,
+        182
+      ]
+    },
+    {
+      "from": "sitedata",
+      "to": "docs",
+      "label": "Site model",
+      "label_at": [
+        400,
+        182
+      ]
+    },
+    {
+      "from": "snapshot",
+      "to": "docs",
+      "label": "prose",
+      "label_at": [
+        600,
+        182
+      ]
+    },
+    {
+      "from": "docsource",
+      "to": "snapshot",
+      "label": "writes"
+    },
+    {
+      "from": "ci",
+      "to": "docsource",
+      "label": "--check"
+    },
+    {
+      "from": "docs",
+      "to": "render",
+      "label": "fills"
+    },
+    {
+      "from": "templates",
+      "to": "render",
+      "label": "template files",
+      "label_at": [
+        400,
+        292
+      ]
+    },
+    {
+      "from": "render",
+      "to": "pagesout",
+      "label": "HTML, Markdown",
+      "label_at": [
+        300,
+        383
+      ]
+    },
+    {
+      "from": "static",
+      "to": "pagesout",
+      "label": "copied"
+    },
+    {
+      "from": "pagesout",
+      "to": "llms",
+      "label": "twins",
+      "label_at": [
+        200,
+        422
+      ]
+    },
+    {
+      "from": "sitedata",
+      "to": "api",
+      "label": "site_dict",
+      "via": [
+        [
+          400,
+          262
+        ],
+        [
+          400,
+          405
+        ]
+      ],
+      "label_at": [
+        440,
+        412
+      ]
+    }
+  ],
+  "path": [
+    "refs",
+    "main",
+    "sitedata",
+    "docs",
+    "render",
+    "pagesout",
+    "llms"
+  ]
+}

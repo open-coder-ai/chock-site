@@ -1,0 +1,256 @@
+{
+  "id": "release-train",
+  "order": 8,
+  "title": "The release train",
+  "summary": "How one manifest in chock-release is checked across the train, then tags every train repo, waits for chock on PyPI and moves the site's release branch.",
+  "intro": "A release is one version across the train, each repo tagged at the commit a manifest names. The owner dispatches chock-release's Release workflow: check.py refuses any mismatch, then release.py tags the repos, waits for chock's own tag-triggered workflow to publish to PyPI, and moves chock-site's release branch. agentseam, the catalog and context-report also have release workflows of their own.",
+  "pins": {
+    "chock": "eab53f2304332d304d5383d91d1e3ffd0e4e1bed",
+    "agentseam": "dd4f0a485a36313328d381305cf09658d3c36fb4",
+    "chock-catalog": "3e9d2d3e04cfd6fd857c4afad3901a0dd32dfeaf",
+    "chock-release": "b8daf714219902483fc1fa2d8850767539806ef6",
+    "context-report": "3bf4d169b86abd3f7ed70c67b3b19327a7ce77a5",
+    "chock-site": "86cd0bd25a0b39beaec8bb98a7c6a3b20ac7c402"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 500
+  },
+  "boundaries": [
+    {
+      "label": "Released on their own",
+      "x": 5,
+      "y": 370,
+      "w": 390,
+      "h": 110
+    }
+  ],
+  "nodes": [
+    {
+      "id": "runbook",
+      "label": "Release runbook",
+      "kind": "repo",
+      "x": 15,
+      "y": 40,
+      "source": "chock-release/RUNBOOK.md",
+      "card": "The owner's steps for a release: prepare PRs in each train repo, a manifest PR, a dry run, then a real run. It says only the owner runs the Release workflow, and agents never trigger it or tag. It also covers re-running after a partial failure and rolling back."
+    },
+    {
+      "id": "workflow",
+      "label": "Release workflow",
+      "kind": "code",
+      "x": 215,
+      "y": 40,
+      "source": "chock-release/.github/workflows/release.yml",
+      "card": "Starts only by manual dispatch (workflow_dispatch) with a version and dry_run, which defaults to true. The Check and plan job runs check.py with a read-only token. The release job runs only when dry_run is off, on main, in the release environment, which the runbook sets up with the owner as required reviewer."
+    },
+    {
+      "id": "manifest",
+      "label": "Release manifest",
+      "kind": "artifact",
+      "x": 415,
+      "y": 40,
+      "source": "chock-release/releases/1.0.0.example.yaml",
+      "card": "The shape of releases/<version>.yaml: the version, one 40-hex commit for each train repo (chock, chock-catalog, five plugin repos, chock-site, chock-quickstart, chock-example), and agentseam's commit recorded as an input that is never tagged. This example has placeholder commits, and check.py refuses it."
+    },
+    {
+      "id": "agentseam-pypi",
+      "label": "agentseam to PyPI",
+      "kind": "code",
+      "x": 615,
+      "y": 40,
+      "source": "agentseam/.github/workflows/release.yml",
+      "card": "Runs on a pushed v* tag: re-runs the tests at the tagged commit, builds and checks the sdist and wheel, then publishes them to PyPI by trusted publishing in the pypi environment. The runbook releases agentseam before chock, because PyPI refuses chock's current git pin on agentseam."
+    },
+    {
+      "id": "engine-version",
+      "label": "chock version",
+      "kind": "artifact",
+      "x": 15,
+      "y": 160,
+      "source": "chock/pyproject.toml",
+      "card": "[project].version is chock's version; check.py requires it to equal the release version. It also pins agentseam to a git commit, which the runbook says is replaced by a released agentseam version before a release."
+    },
+    {
+      "id": "check",
+      "label": "check.py",
+      "kind": "code",
+      "x": 215,
+      "y": 160,
+      "source": "chock-release/check.py",
+      "card": "Reads one manifest and the train through the GitHub API: each commit on its repo's default branch with CI green, chock's version, the catalog's and site's pins, the plugin repos' generated_from.yaml, the quickstart and example pins, and no v<version> tag at another commit. It lists every mismatch and exits 1; with --plan it prints the release plan."
+    },
+    {
+      "id": "tag",
+      "label": "release.py tag",
+      "kind": "code",
+      "x": 415,
+      "y": 160,
+      "source": "chock-release/release.py",
+      "card": "Re-runs the full check, then tags every train repo v<version> at its manifest commit through the GitHub API, with a short-lived chock-release-bot app token. A tag already at that commit is skipped, so a re-run continues where a partial release stopped."
+    },
+    {
+      "id": "chock-pypi",
+      "label": "chock to PyPI",
+      "kind": "code",
+      "x": 615,
+      "y": 160,
+      "source": "chock/.github/workflows/release.yml",
+      "card": "Runs on a pushed v* tag. A guard refuses a tag that is not v<pyproject version> or a commit not on main; then it builds the sdist and wheel, attests their build provenance and publishes them to PyPI by trusted publishing in the pypi environment. It also builds one-file binaries and attaches them, with checksums, to the GitHub release."
+    },
+    {
+      "id": "catalog-ref",
+      "label": "Catalog engine pin",
+      "kind": "artifact",
+      "x": 15,
+      "y": 280,
+      "source": "chock-catalog/.framework-ref",
+      "card": "The chock commit the catalog is built and checked against. check.py requires it to equal the manifest's chock commit."
+    },
+    {
+      "id": "site-pins",
+      "label": "Site pins",
+      "kind": "artifact",
+      "x": 215,
+      "y": 280,
+      "source": "chock-site/.framework-ref",
+      "card": "The chock commit this site builds from; .catalog-ref beside it names the catalog commit. check.py requires both to equal the manifest's commits."
+    },
+    {
+      "id": "site-step",
+      "label": "release.py site",
+      "kind": "code",
+      "x": 415,
+      "y": 280,
+      "source": "chock-release/release.py",
+      "card": "Moves chock-site's release branch to the manifest commit, fast-forward only; the runbook says Cloudflare Pages builds production from that branch. release.py verify then waits up to 30 minutes for the site's /version.json to report the manifest's version, chock commit and catalog commit."
+    },
+    {
+      "id": "pypi-wait",
+      "label": "release.py pypi",
+      "kind": "code",
+      "x": 615,
+      "y": 280,
+      "source": "chock-release/release.py",
+      "card": "Waits, up to the hour the workflow allows, until PyPI serves chock==<version> as one sdist and one wheel, then prints their sha256. It publishes nothing itself: chock's own workflow does."
+    },
+    {
+      "id": "catalog-release",
+      "label": "Catalog release",
+      "kind": "code",
+      "x": 15,
+      "y": 400,
+      "source": "chock-catalog/.github/workflows/release.yml",
+      "card": "Dispatch-only, refused off main or without green CI. Stage prepare regenerates every derived file and opens a release/v<version> pull request; after the owner merges it, stage publish tags the merge commit and drafts the GitHub release for the owner to publish."
+    },
+    {
+      "id": "report-release",
+      "label": "Report to PyPI",
+      "kind": "code",
+      "x": 215,
+      "y": 400,
+      "source": "context-report/.github/workflows/release.yml",
+      "card": "Runs when a GitHub Release is published from a v* tag: builds the wheel and sdist, publishes them to PyPI by trusted publishing, signs them with Sigstore and attaches them and their signature bundles to that Release."
+    },
+    {
+      "id": "gh-release",
+      "label": "GitHub release",
+      "kind": "code",
+      "x": 415,
+      "y": 400,
+      "source": "chock-release/.github/workflows/release.yml",
+      "card": "The publish-summary job, in the release environment again, creates the GitHub release v<version> in chock-release from the summary release.py wrote: the tags, the recorded inputs, the PyPI and site URLs, and the manifest."
+    }
+  ],
+  "edges": [
+    {
+      "from": "runbook",
+      "to": "workflow",
+      "label": "dispatch",
+      "label_at": [
+        200,
+        32
+      ]
+    },
+    {
+      "from": "workflow",
+      "to": "check",
+      "label": "runs"
+    },
+    {
+      "from": "manifest",
+      "to": "check",
+      "label": "commits"
+    },
+    {
+      "from": "check",
+      "to": "engine-version",
+      "label": "version",
+      "label_at": [
+        200,
+        152
+      ]
+    },
+    {
+      "from": "check",
+      "to": "catalog-ref",
+      "label": "engine pin"
+    },
+    {
+      "from": "check",
+      "to": "site-pins",
+      "label": "site pins"
+    },
+    {
+      "from": "check",
+      "to": "tag",
+      "label": "passes",
+      "label_at": [
+        400,
+        152
+      ]
+    },
+    {
+      "from": "tag",
+      "to": "chock-pypi",
+      "label": "v tag",
+      "label_at": [
+        600,
+        152
+      ]
+    },
+    {
+      "from": "agentseam-pypi",
+      "to": "chock-pypi",
+      "label": "released first"
+    },
+    {
+      "from": "chock-pypi",
+      "to": "pypi-wait",
+      "label": "on PyPI"
+    },
+    {
+      "from": "pypi-wait",
+      "to": "site-step",
+      "label": "then",
+      "label_at": [
+        600,
+        272
+      ]
+    },
+    {
+      "from": "site-step",
+      "to": "gh-release",
+      "label": "then"
+    }
+  ],
+  "path": [
+    "workflow",
+    "check",
+    "tag",
+    "chock-pypi",
+    "pypi-wait",
+    "site-step",
+    "gh-release"
+  ]
+}

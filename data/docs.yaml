@@ -124,7 +124,7 @@ pages:
     path: /docs/architecture/
     title: Architecture
     nav_label: Architecture
-    description: "How the chock repositories fit together, the path one policy takes from the catalog to your agent's hook, and what is inside chock and agentseam."
+    description: "How the chock repositories fit together, the path one policy takes from the catalog to your agent's hook, what is inside each repository, how a release is cut, and where each trust boundary and fail mode lies."
     intro: "Blocks your coding agent's wrong moves before they land. These diagrams show how: each box cites the file that does the work, at a pinned commit, and each has a card. Select a box to read its card, or read the cards in order below each diagram."
     blocks: [architecture]
     prose: []

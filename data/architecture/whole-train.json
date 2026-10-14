@@ -50,7 +50,8 @@
       "x": 215,
       "y": 40,
       "source": "chock-catalog/registry.yaml",
-      "card": "One folder per policy under base/: a manifest, its checks and its evals. registry.yaml lists every policy; tools/gen_registry.py writes it from the folders on disk."
+      "card": "One folder per policy under base/: a manifest, its checks and its evals. registry.yaml lists every policy; tools/gen_registry.py writes it from the folders on disk.",
+      "link": "/docs/architecture/chock-catalog/"
     },
     {
       "id": "site",
@@ -59,7 +60,8 @@
       "x": 415,
       "y": 40,
       "source": "chock-site/sitegen/__main__.py",
-      "card": "This site. sitegen builds every page from the catalog at .catalog-ref and the engine at .framework-ref, and refuses a catalog checked out at another commit."
+      "card": "This site. sitegen builds every page from the catalog at .catalog-ref and the engine at .framework-ref, and refuses a catalog checked out at another commit.",
+      "link": "/docs/architecture/chock-site/"
     },
     {
       "id": "release",
@@ -68,7 +70,8 @@
       "x": 615,
       "y": 40,
       "source": "chock-release/check.py",
-      "card": "Checks one release manifest across the train: every repo at a commit on its default branch, CI green there, the catalog and this site pinned to the manifest's engine commit, and no release tag yet. Tagging runs only after this check passes, on the owner's approval."
+      "card": "Checks one release manifest across the train: every repo at a commit on its default branch, CI green there, the catalog and this site pinned to the manifest's engine commit, and no release tag yet. Tagging runs only after this check passes, on the owner's approval.",
+      "link": "/docs/architecture/release-train/"
     },
     {
       "id": "eval",
@@ -77,7 +80,8 @@
       "x": 15,
       "y": 150,
       "source": "chock/src/chock/eval/context_report.py",
-      "card": "Exports chock policies to context-report's run/v0.1 case format. chock writes the format; it never imports context-report."
+      "card": "Exports chock policies to context-report's run/v0.1 case format. chock writes the format; it never imports context-report.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "compile",
@@ -86,7 +90,8 @@
       "x": 215,
       "y": 150,
       "source": "chock/src/chock/compile/compiler.py",
-      "card": "Reads a policy folder and runs one emitter per surface: the ambient rule, agent hooks, git hook, CI step, Claude managed settings and the MCP gateway. The output lands in .chock/compiled/<policy>/."
+      "card": "Reads a policy folder and runs one emitter per surface: the ambient rule, agent hooks, git hook, CI step, Claude managed settings and the MCP gateway. The output lands in .chock/compiled/<policy>/.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "sync",
@@ -95,7 +100,8 @@
       "x": 415,
       "y": 150,
       "source": "chock/src/chock/lifecycle.py",
-      "card": "Recompiles and rewires a repository so it matches its declared policies: each agent's hook file, the runtime in .chock/bin/, and the git hooks unless --skip-hooks. With --ci it also installs the CI gate workflow."
+      "card": "Recompiles and rewires a repository so it matches its declared policies: each agent's hook file, the runtime in .chock/bin/, and the git hooks unless --skip-hooks. With --ci it also installs the CI gate workflow.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "install",
@@ -104,7 +110,8 @@
       "x": 615,
       "y": 150,
       "source": "chock/src/chock/install/package.py",
-      "card": "Builds the policies picked on this site's builder into one merged plugin for one agent, and swaps it into place (ask the user before running it). No repository changes."
+      "card": "Builds the policies picked on this site's builder into one merged plugin for one agent, and swaps it into place (ask the user before running it). No repository changes.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "context-report",
@@ -113,7 +120,8 @@
       "x": 15,
       "y": 290,
       "source": "context-report/src/context_report/cli.py",
-      "card": "An open report format for whether an agent plugin, hook, skill or AGENTS.md works: one row per measured fact, each marked recomputable by anyone or only claimed by the author."
+      "card": "An open report format for whether an agent plugin, hook, skill or AGENTS.md works: one row per measured fact, each marked recomputable by anyone or only claimed by the author.",
+      "link": "/docs/architecture/context-report/"
     },
     {
       "id": "compiled",
@@ -122,7 +130,8 @@
       "x": 215,
       "y": 290,
       "source": "chock-catalog/.chock/compiled/block-invisible-unicode/pre-tool-use/gate.json",
-      "card": "One folder per policy and surface: gate.json files, hook fragments, the ambient rule, and the git-hook and CI entry points. The cited file is the catalog's own compiled gate for one policy."
+      "card": "One folder per policy and surface: gate.json files, hook fragments, the ambient rule, and the git-hook and CI entry points. The cited file is the catalog's own compiled gate for one policy.",
+      "link": "/docs/architecture/chock-catalog/"
     },
     {
       "id": "runtime",
@@ -131,7 +140,8 @@
       "x": 415,
       "y": 290,
       "source": "chock/src/chock/gate/runtime_bundle.py",
-      "card": "One file per agent in .chock/bin/ (claude_code.py, cursor.py and the rest): agentseam's bundled dispatcher and adapter plus chock's gate handler. Each agent's hook command runs it with --gate or --guard."
+      "card": "One file per agent in .chock/bin/ (claude_code.py, cursor.py and the rest): agentseam's bundled dispatcher and adapter plus chock's gate handler. Each agent's hook command runs it with --gate or --guard.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "plugin",
@@ -140,7 +150,8 @@
       "x": 615,
       "y": 290,
       "source": "chock/src/chock/install/place.py",
-      "card": "Where a client's plugin goes, and what chock may replace there. The plugin carries a runtime built the same way, for its one agent."
+      "card": "Where a client's plugin goes, and what chock may replace there. The plugin carries a runtime built the same way, for its one agent.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "ci",
@@ -149,7 +160,8 @@
       "x": 15,
       "y": 410,
       "source": "chock/src/chock/compile/emitters/ci.py",
-      "card": "A CI step that re-runs the policy's check over a pull request's commit range, so a change that skipped the local hooks is still judged."
+      "card": "A CI step that re-runs the policy's check over a pull request's commit range, so a change that skipped the local hooks is still judged.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "githooks",
@@ -158,7 +170,8 @@
       "x": 215,
       "y": 410,
       "source": "chock/src/chock/hooks/installers.py",
-      "card": "The git-hook dispatchers that run each policy's git-hook entry point at commit and push."
+      "card": "The git-hook dispatchers that run each policy's git-hook entry point at commit and push.",
+      "link": "/docs/architecture/chock-internals/"
     },
     {
       "id": "adapters",
@@ -167,7 +180,8 @@
       "x": 415,
       "y": 410,
       "source": "agentseam/src/agentseam/adapters/__init__.py",
-      "card": "One adapter per agent: it parses that client's hook payload into one Event, and speaks the Decision back in the client's own dialect, on stdout and in the exit code."
+      "card": "One adapter per agent: it parses that client's hook payload into one Event, and speaks the Decision back in the client's own dialect, on stdout and in the exit code.",
+      "link": "/docs/architecture/agentseam-internals/"
     },
     {
       "id": "client",
@@ -177,7 +191,8 @@
       "y": 550,
       "source": "agentseam/src/agentseam/tier_table.py",
       "facts": "tiers",
-      "card": "Claude Code, Cursor, Codex CLI and the others run the hook before a tool runs. What a hook can do there, and what happens when it cannot run, depends on the agent."
+      "card": "Claude Code, Cursor, Codex CLI and the others run the hook before a tool runs. What a hook can do there, and what happens when it cannot run, depends on the agent.",
+      "link": "/docs/architecture/agentseam-internals/"
     }
   ],
   "edges": [
