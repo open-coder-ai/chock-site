@@ -166,7 +166,10 @@ def test_a_linked_box_card_opens_its_repo_diagram(page, site_url) -> None:
 
 
 def test_without_js_a_card_link_opens_its_repo_diagram(browser, site_url) -> None:
-    context = browser.new_context(java_script_enabled=False, viewport=MOBILE)
+    # Reduced motion turns off smooth scrolling, so the card is still when it is clicked.
+    context = browser.new_context(
+        java_script_enabled=False, viewport=MOBILE, reduced_motion="reduce"
+    )
     try:
         page = context.new_page()
         collect(page, site_url)
