@@ -2074,3 +2074,11 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
   .toc-layout { display: block; }
   .toc-layout > .docs-toc { display: none; }
 }
+
+/* Header nav without JavaScript (SITE-NAV): there is no menu button, so the
+   links wrap onto as many rows as they need instead of widening the page,
+   and the taller header scrolls away rather than staying stuck on screen. */
+@media (max-width: 760px) {
+  html:not(.js) body > header { position: static; }
+  html:not(.js) #nav-links { flex-wrap: wrap; gap: 6px 18px; }
+}
