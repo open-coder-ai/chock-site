@@ -2733,3 +2733,174 @@ BLOCKS.update(
         "agentseam_cli": _agentseam_cli,
     }
 )
+
+
+# --- DOCS-4: the catalog pages, from data/catalog-source/ (sitegen/catalogdoc.py) ------
+
+
+def _catalog_subs(ctx: Ctx) -> dict[str, str]:
+    """__CATALOG__ and __ENGINE__: GitHub file links at the pinned catalog and engine commits."""
+    return {
+        "__CATALOG__": data_fill(
+            BLOB_URL,
+            {
+                "__REPO__": ctx.texts["catalog"]["repo"],
+                "__REF__": ctx.site.catalog_ref,
+                "__PATH__": "",
+            },
+        ),
+        "__ENGINE__": data_fill(
+            BLOB_URL,
+            {
+                "__REPO__": ctx.docs["engine_repo"],
+                "__REF__": ctx.site.framework_ref,
+                "__PATH__": "",
+            },
+        ),
+    }
+
+
+def _catalog_resolver(ctx: Ctx, source: str):
+    """Resolve a link in a catalog file: web links kept, repo paths sent to GitHub at the pinned commit."""
+    base = _catalog_subs(ctx)["__CATALOG__"]
+
+    def resolve(href: str) -> str:
+        parts = urlsplit(href)
+        if parts.scheme in ("http", "https", "mailto"):
+            return href
+        frag = f"#{parts.fragment}" if parts.fragment else ""
+        path = posixpath.normpath(
+            posixpath.join(posixpath.dirname(source), parts.path or source)
+        )
+        return base + quote(path) + frag
+
+    return resolve
+
+
+def _twin_href(ctx: Ctx, href: str) -> str:
+    """A site link as the Markdown twins write it: the page's index.md on the site."""
+    if href.startswith("/docs/"):
+        return f"{ctx.site.data['site_url']}{href}index.md"
+    return href
+
+
+def _catalog_renderer(ctx: Ctx, body: Body, resolve) -> Renderer:
+    renderer = Renderer(ctx.templates, resolve, callouts=ctx.texts["callouts"])
+    renderer.ids = body.renderer.ids
+    renderer.toc = body.renderer.toc
+    return renderer
+
+
+def _catalog_md(ctx: Ctx, body: Body, part: dict[str, Any]) -> tuple[str, str]:
+    text = data_fill(part["md"], _catalog_subs(ctx))
+    html = _catalog_renderer(ctx, body, lambda href: href).blocks(text)
+    md = rewrite_links(text, lambda href: _twin_href(ctx, href), ctx.texts["ask_code"])
+    return html, md
+
+
+def _catalog_quote(
+    ctx: Ctx, body: Body, part: dict[str, Any], source: dict[str, Any]
+) -> tuple[str, str]:
+    """Quoted sections of a catalog file, from the snapshot, with links sent to GitHub."""
+    path = part["quote"]
+    text = sections(source["quotes"][path], part["sections"], part.get("level", 2))
+    resolve = _catalog_resolver(ctx, path)
+    url = _catalog_subs(ctx)["__CATALOG__"] + path
+    label = ctx.texts["catalog"]["quote_from"]
+    html = ctx.t(
+        "prose",
+        FROM=label + ":",
+        URL=url,
+        FILE=path,
+        BODY=_catalog_renderer(ctx, body, resolve).blocks(text),
+    )
+    md = f"{label}: [{path}]({url})\n\n" + rewrite_links(
+        text, resolve, ctx.texts["ask_code"]
+    )
+    return html, md
+
+
+def _catalog_run(ctx: Ctx, source: dict[str, Any]) -> tuple[str, str]:
+    """The recorded adopt run: each step's note, command, output and exit code."""
+    texts = ctx.texts["catalog"]
+    examples = source["adopt"]["examples"]
+    if len(texts["run_notes"]) != len(examples):
+        raise PageError("docs.yaml texts.catalog.run_notes: one note per adopt step")
+    setup = data_fill(texts["run_setup"], {"__SCRIPT__": texts["run_script"]})
+    html, md = [_para(ctx, setup)], [f"{setup}\n\n"]
+    for note, example in zip(texts["run_notes"], examples, strict=True):
+        step = data_fill(
+            texts["run_step"],
+            {"__STEP__": str(example["step"]), "__EXIT__": str(example["exit"])},
+        )
+        shown = f"$ {example['command']}"
+        if example["output"]:
+            shown += f"\n{example['output']}"
+        html += [_para(ctx, f"{step} {note}"), _code(ctx, shown)]
+        md.append(f"{step} {note} {ctx.texts['ask_code']}\n\n```text\n{shown}\n```\n\n")
+    return "".join(html), "".join(md)
+
+
+def _catalog_trees(ctx: Ctx, source: dict[str, Any]) -> tuple[str, str]:
+    texts = ctx.texts["catalog"]
+    rows = [[t["tree"], str(t["policies"])] for t in source["trees"]]
+    return (
+        _para(ctx, texts["trees_intro"]) + _table(ctx, texts["trees_head"], rows),
+        f"{texts['trees_intro']}\n\n" + _md_table(texts["trees_head"], rows),
+    )
+
+
+def _catalog_gates(ctx: Ctx, source: dict[str, Any]) -> tuple[str, str]:
+    texts = ctx.texts["catalog"]
+    rows = [
+        [g["job"], g["if"] or texts["gates_always"], "; ".join(g["steps"])]
+        for g in source["gates"]
+    ]
+    return (
+        _para(ctx, texts["gates_intro"]) + _table(ctx, texts["gates_head"], rows),
+        f"{texts['gates_intro']}\n\n" + _md_table(texts["gates_head"], rows),
+    )
+
+
+def _catalog_regen(ctx: Ctx, source: dict[str, Any]) -> tuple[str, str]:
+    texts = ctx.texts["catalog"]
+    regen = source["regen"]
+    items = [f"`{script}`" for script in regen["scripts"]]
+    return (
+        _para(ctx, texts["regen_intro"])
+        + _code(ctx, regen["doc"])
+        + _para(ctx, texts["regen_scripts"])
+        + _list(ctx, items),
+        f"{texts['regen_intro']} {ctx.texts['ask_code']}\n\n```text\n{regen['doc']}\n```\n\n"
+        f"{texts['regen_scripts']}\n\n" + "".join(f"- {item}\n" for item in items),
+    )
+
+
+def _catalog(ctx: Ctx, body: Body) -> None:
+    """A catalog page: its `catalog` parts in order (data/docs.yaml, DOCS-4)."""
+    from . import catalogdoc  # imported here so this block stays in one place
+
+    source = catalogdoc.load(ctx.data_dir, ctx.site.catalog_ref)
+    for part in ctx.page["catalog"]:
+        if "quote" in part:
+            html, md = _catalog_quote(ctx, body, part, source)
+            if "heading" not in part:
+                body.html.append(html)
+                body.md.append(md + "\n")
+                continue
+        elif "md" in part:
+            html, md = _catalog_md(ctx, body, part)
+        elif part.get("run"):
+            html, md = _catalog_run(ctx, source)
+        elif part.get("trees"):
+            html, md = _catalog_trees(ctx, source)
+        elif part.get("gates"):
+            html, md = _catalog_gates(ctx, source)
+        elif part.get("regen"):
+            html, md = _catalog_regen(ctx, source)
+        else:
+            raise PageError(f"docs.yaml: unknown catalog part {sorted(part)}")
+        _section(ctx, body, part["heading"], html, md)
+
+
+BLOCKS["catalog"] = _catalog

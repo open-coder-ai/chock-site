@@ -26,6 +26,9 @@ nav:
   # DOCS-3: agentseam, the library under chock.
   - group: agentseam
     pages: [agentseam, agentseam-direct, agentseam-api, agentseam-cli]
+  # DOCS-4
+  - group: Catalog
+    pages: [catalog-adopt, catalog-contribute]
 
 pages:
   overview:
@@ -230,6 +233,127 @@ pages:
     intro: "Generated at build time from the argparse parser of the installed agentseam."
     blocks: [agentseam_cli]
     prose: []
+  # DOCS-4: the catalog pages. Their `catalog` parts are built by the `catalog` block from
+  # data/catalog-source/, which `python -m sitegen.catalogdoc --catalog <checkout>` snapshots
+  # from the catalog at .catalog-ref; CI fails when it drifts. A part is hand-written Markdown
+  # (`md`), quoted catalog sections (`quote`), the recorded adopt run (`run`), the policy trees
+  # (`trees`) or the catalog's CI jobs (`gates`). __CATALOG__ and __ENGINE__ in `md` stand for
+  # a GitHub file link at the pinned catalog and engine commits.
+  catalog-adopt:
+    path: /docs/catalog/adopt/
+    title: Adopt catalog policies
+    nav_label: Adopt catalog policies
+    description: "Install policies from chock-catalog into your repository, pinned to a commit and checked against a hash, with the output of a real run."
+    intro: "chock-catalog is the public catalog of chock policies. This page adds two of them to a fresh repository with `chock add`, compiles them with `chock sync`, and shows a commit refused by one of them. Every command and output below is from a recorded run."
+    blocks: [catalog]
+    prose: []
+    catalog:
+      - heading: Three ways to adopt
+        md: |
+          The catalog's README names three routes to the same policies:
+
+          - **In your repository**, for a team: policies are pinned to a catalog commit, committed with the repository, and run at the agent's own hook where the client has one, at commit and in CI. This page walks through it.
+          - **In your coding agent, as plugins**, for one person with no repository changes: one plugin repository per agent, each with its own install lines, linked from the README's [Install section](__CATALOG__README.md#install).
+          - **One plugin built from your picks**: see [Quickstart: plugin](/docs/quickstart/plugin/).
+      - heading: Adopt in your repository, step by step
+        run: true
+      - heading: Pin a commit and verify the hash
+        quote: README.md
+        sections: ["Installing this is running code"]
+        level: 3
+      - heading: Next
+        md: |
+          - Each policy's page under [Policies](/docs/policies/) lists what it refuses and how it was tested.
+          - The CLI reference has every option of [chock add](/docs/cli/add/) and [chock sync](/docs/cli/sync/).
+          - To write a policy for the catalog, see [Add a policy to the catalog](/docs/catalog/contribute/).
+  catalog-contribute:
+    path: /docs/catalog/contribute/
+    title: Add a policy to the catalog
+    nav_label: Add a policy to the catalog
+    description: "Add a new policy to chock-catalog step by step: folder, manifest, implementation, evals, the generators, and the CI jobs a pull request runs."
+    intro: "A catalog policy is one folder: a manifest, its evals and, for a guard, its implementation. The catalog's tools generate the rest and its CI checks it. The steps below follow the catalog's CONTRIBUTING.md and tools at the pinned commit, and were dry-run against it."
+    blocks: [catalog]
+    prose: []
+    catalog:
+      - quote: CONTRIBUTING.md
+        sections: ["The three rules"]
+      - heading: Add a policy, step by step
+        md: |
+          ### 1. Clone the catalog and install its engine
+
+          The catalog's CI installs the engine at the commit named in its `.framework-ref` file. Install the same one, then the test tools:
+
+          ```bash
+          git clone https://github.com/open-coder-ai/chock-catalog
+          cd chock-catalog
+          pip install "chock @ git+https://github.com/open-coder-ai/chock@$(cat .framework-ref)"
+          pip install --require-hashes -r requirements/test.txt
+          ```
+
+          ### 2. Pick a tree
+
+          A policy lives in one of the trees listed under [Policy trees](#policy-trees). The layout in CONTRIBUTING.md names `base/<id>/`. The catalog runs a subset of `base/` on itself; the `compliance` and `agentic-security` packs are published but not installed in it.
+
+          ### 3. Scaffold the folder
+
+          `chock new policy` starts from a tested template of one kind: `content_regex`, `guard`, `script`, `rule` or `skill`. Inside the catalog the id is kept as given. It writes the folder to `.agents/policies/<id>/`, the policies the catalog runs on itself, and refreshes that folder's index and `.chock/registry.json`. Move the new folder into its tree and put those three files back:
+
+          ```bash
+          chock new policy <id> --kind content_regex --repo .
+          mv .agents/policies/<id> base/<id>
+          git restore .agents/policies/INDEX.md .agents/policies/INDEX-extended.md .chock/registry.json
+          ```
+
+          The `content_regex` template writes `manifest.yaml` and `evals/suite.yaml`. CONTRIBUTING.md also offers the `policy-init` skill that `chock init` installs: ask your agent to run it. Its procedure writes to `<repo_root>/generated/` unless told otherwise, so move its folder into the tree the same way.
+
+          ### 4. Write the manifest
+
+          `manifest.yaml` holds the policy's identity and either a gate or rule text. The engine's [manifest schema](__ENGINE__src/chock/validation/schemas/manifest.schema.json) lists every field. The template's `provenance` names `author: "me"` and `license: "proprietary"`; the catalog's own manifests, such as `base/protect-main-branch/manifest.yaml`, name `license: "Apache-2.0"` and chock-catalog as `source_repo`.
+
+          ### 5. Add the implementation, if it has one
+
+          A guard consulted before a command runs is a script under `implementations/`. The catalog's CODEOWNERS file requests review for every change there. Its tests go in `tests/`, held to 100% line and branch coverage.
+
+          ### 6. Write the evals
+
+          `evals/suite.yaml` holds the cases that decide whether the claim holds. A case with an `execute` block is replayed against the real gate by `chock check`. The engine's [evals guide](__ENGINE__docs/evals.md) describes a suite.
+
+          ### 7. Add the prose entry
+
+          Add `<id>:` with `solves` and `customise` to `docs/policy-prose.yaml`. Without it, `tools/gen_policy_docs.py` stops with `docs/policy-prose.yaml has no entry for '<id>'`.
+
+          ### 8. Add the README row
+
+          `tools/check_readme.py` fails until the README lists the policy as a row in its tier's table, for a gate under **Enforced at commit**.
+
+          ### 9. Regenerate and check
+
+          `python tools/regen_all.py` regenerates every derived file and then runs every check CI runs. It ends `== CLEAN` or names the step that failed. `--fast` skips pytest with coverage and the staged adopter. What it runs is under [What regen_all.py runs](#what-regen-all-py-runs) below.
+
+          ```bash
+          python tools/regen_all.py --fast
+          ```
+
+          ### 10. Run the tests a pull request runs
+
+          `tools/select_tests.py` prints `FULL`, or the test files CI's targeted jobs run for your change, one per line. Run those files with pytest, or the whole suite for `FULL`:
+
+          ```bash
+          python tools/select_tests.py origin/main
+          python -m pytest -n auto <the files it printed>
+          ```
+
+          ### 11. Commit with a sign-off and open a pull request
+
+          The `dco` job checks every commit for a `Signed-off-by:` line. `git commit -s` adds it.
+      - heading: Policy trees
+        trees: true
+      - quote: CONTRIBUTING.md
+        sections: ["Layout", "What CI runs"]
+      - heading: What regen_all.py runs
+        regen: true
+      - heading: CI jobs
+        gates: true
 
 # DOCS-1: every command and subcommand of the engine at .framework-ref, in its order, one page
 # each under /docs/cli/<command>/[<sub>/]. The build fails when the engine's parsers differ, so a
@@ -595,6 +719,30 @@ texts:
   ask_code: "Ask the user before running the commands below:"
   ask_note: "Ask the user before running a command this note names:"
   help_more: "The full options are on this page's HTML version, as the engine prints them."
+  # DOCS-4: wording of the catalog pages' parts (sitegen/docs.py, the `catalog` block).
+  catalog:
+    repo: https://github.com/open-coder-ai/chock-catalog
+    quote_from: From the catalog docs
+    run_script: data/catalog-adopt.yaml
+    run_setup: "A real run, recorded by `python -m sitegen.catalogdoc` with the engine and the catalog at the pinned commits. The steps of `__SCRIPT__` ran in order in one fresh git repository at `/work/demo`, made with `git init -b main` and a git user name and email set, with HOME at `/home/demo`. Those paths stand for the throwaway folders the run used. Output is stdout and stderr together."
+    run_step: "Step __STEP__, exit code __EXIT__."
+    # One note per step of data/catalog-adopt.yaml, in order.
+    run_notes:
+      - "Set up chock in the repository: git hooks, agent hooks, and the authoring skills."
+      - "Copy `protect-main-branch` from the catalog at the pinned commit into `.agents/policies/`, and compile it. `chock add` prints the policy's sha256."
+      - "Add `scan-secrets` the same way, with `--verify-sha` naming the hash it must have. A different hash refuses the install."
+      - "Compile both policies, install the git hooks, register the agent hooks, and write the CI gate workflow to `.github/workflows/chock.yml`."
+      - "A commit straight to `main` is refused, and git exits 1."
+      - "Work on a branch instead."
+      - "Stage what chock wrote."
+      - "The commit on the branch runs the hooks and lands."
+    trees_intro: "The trees `tools/trees.py` names at the pinned commit, and how many policy folders each holds."
+    trees_head: [Tree, Policies]
+    gates_intro: "Every job of the catalog's `.github/workflows/ci.yml` at the pinned commit, with its condition and its named steps. A job with no condition runs on every run of the workflow. No job runs `tools/gen_adoption_transcript.py`; the nightly and release workflows do."
+    gates_head: [Job, Runs when, Steps]
+    regen_intro: "The docstring of `tools/regen_all.py` at the pinned commit:"
+    regen_scripts: "The scripts its `regenerate()` runs, in the order they appear in it. It also runs `chock plugin build` for each tree and `chock sync` when the compiled output has drifted."
+    gates_always: always
   # DOCS-2: How Chock works. Each stop fact quotes chock's docs (from the snapshot) or the engine's
   # source as installed from .framework-ref (`src/chock/...`); the build fails when a quote is gone.
   how:

@@ -50,6 +50,9 @@ jobs:
       - run: pytest -q --ignore=tests/e2e
       # DOCS-1: re-run the recorded CLI examples against the pinned engine; fail on any difference.
       - run: python -m sitegen.cliexamples --check
+      # DOCS-4: the catalog pages' snapshot of .catalog at .catalog-ref, and the adopt run
+      # (it fetches the catalog from GitHub) against the pinned engine; fail on any difference.
+      - run: python -m sitegen.catalogdoc --catalog .catalog --check
 
   docs-drift:
     timeout-minutes: 5
