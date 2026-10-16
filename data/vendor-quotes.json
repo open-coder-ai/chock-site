@@ -1,0 +1,68 @@
+{
+  "quotes": [
+    {
+      "id": "entra-agent-id",
+      "product": "Microsoft Entra Agent ID",
+      "vendor": "Microsoft",
+      "url": "https://learn.microsoft.com/en-us/entra/agent-id/what-are-agent-identities",
+      "quote": "Agent identities are identity accounts within Microsoft Entra ID that provide unique identification and authentication capabilities for AI agents.",
+      "checked": "2026-10-16"
+    },
+    {
+      "id": "agent-365",
+      "product": "Microsoft Agent 365",
+      "vendor": "Microsoft",
+      "url": "https://www.microsoft.com/microsoft-agent-365",
+      "quote": "Enforce least-privilege access by controlling which users, data, and tools or MCP servers agents can use.",
+      "checked": "2026-10-16"
+    },
+    {
+      "id": "sailpoint-agentic-fabric",
+      "product": "SailPoint Agentic Fabric",
+      "vendor": "SailPoint",
+      "url": "https://www.globenewswire.com/news-release/2026/10/06/3375450/0/en/from-chaos-to-control-sailpoint-unlocks-a-secure-agentic-era-with-autonomous-identity-security.html",
+      "quote": "New Just-in-Time (JIT) provisioning with conditions, plus effective privilege visibility, replaces always-on access for people, service accounts, and AI agents alike.",
+      "checked": "2026-10-16"
+    },
+    {
+      "id": "mxc",
+      "product": "Microsoft Execution Containers (MXC)",
+      "vendor": "Microsoft",
+      "url": "https://blogs.windows.com/windowsdeveloper/2026/10/07/microsoft-execution-containers-policy-driven-containment-for-ai-agents/",
+      "quote": "The policy remains outside the agent workload’s control, so the agent or generated code cannot grant itself additional access.",
+      "checked": "2026-10-16"
+    },
+    {
+      "id": "transcend-rails",
+      "product": "Transcend Rails",
+      "vendor": "Transcend",
+      "url": "https://transcend.io/blog/rails-cursor-plugin",
+      "quote": "Every decision resolves to allow, deny or escalate, and an escalated action waits for a named reviewer before it proceeds.",
+      "checked": "2026-10-16"
+    },
+    {
+      "id": "dataiku-agent-management",
+      "product": "Dataiku Agent Management",
+      "vendor": "Dataiku",
+      "url": "https://www.dataiku.com/blog/dataiku-agent-management",
+      "quote": "It does not operate your agents or step into their decisions, so they keep running exactly as your teams built them.",
+      "checked": "2026-10-16"
+    },
+    {
+      "id": "sap-leanix-agent-hub",
+      "product": "SAP AI agent hub (SAP LeanIX)",
+      "vendor": "SAP",
+      "url": "https://www.leanix.net/en/blog/sap-leanix-announces-launch-of-ai-agent-hub-and-key-industry-partnerships",
+      "quote": "Next, you can monitor AI agents’ status throughout their lifecycle to help ensure only approved agents are deployed to your IT landscape.",
+      "checked": "2026-10-16"
+    },
+    {
+      "id": "island",
+      "product": "Island",
+      "vendor": "Island",
+      "url": "https://www.island.io/ai",
+      "quote": "Island sits where AI is used: browser, endpoint, network, every tool call.",
+      "checked": "2026-10-16"
+    }
+  ]
+}
