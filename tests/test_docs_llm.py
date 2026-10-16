@@ -21,7 +21,9 @@ ACTIONS = yaml.safe_load(
     (ROOT / "data" / "page_actions.yaml").read_text(encoding="utf-8")
 )
 # llms-full.txt was 812,017 bytes when this budget was set (2026-10-13).
-LLMS_FULL_BUDGET = 1_048_576
+# Raised to 2 MiB on 2026-10-16 by owner decision for the complete
+# step-by-step docs (SITE-DOCS).
+LLMS_FULL_BUDGET = 2_097_152
 LINK_RE = re.compile(r"\]\((/[^\s)]*)\)")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
