@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "examples": [
+    {
+      "step": 7,
+      "of": 21,
+      "command": "chock eval",
+      "output": "\nmy-block-marker  [deterministic]\n  PASS  tc-001                             authored  my-block-marker: this change adds a line marked DO NOT COMMIT. Remo…\n  PASS  tc-002                             authored  gate exit 0\n  PASS  tc-003                             authored  my-block-marker: this change adds a line marked DO NOT COMMIT. Remo…\n  PASS  tc-004                             authored  gate exit 0\n  score 1.00\n\n5 policies: 4 pass, 44 skipped\n44 case(s) have no executable form; they are agent-mode material (tier 3).",
+      "exit": 0
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "examples": [
+    {
+      "step": 17,
+      "of": 21,
+      "command": "chock check-matrix",
+      "output": "ERROR: enforcement matrix not found: /work/demo/spec/enforcement-matrix.md\n       check-matrix is for work on Chock itself, not adopter repos.",
+      "exit": 1
+    }
+  ]
+}

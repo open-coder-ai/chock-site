@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "examples": [
+    {
+      "step": 10,
+      "of": 21,
+      "command": "chock registry list",
+      "output": "hook           my-block-marker                0.1.0        .agents/policies/my-block-marker\nskill          eval                           0.0.1        .agents/skills/eval\nskill          optimize                       0.0.1        .agents/skills/optimize\nskill          policy-init                    0.0.1        .agents/skills/policy-init\nskill          validate                       0.0.1        .agents/skills/validate",
+      "exit": 0
+    }
+  ]
+}

@@ -47,12 +47,17 @@ def _witness_copy(tmp_path: Path, edit) -> Path:
 
 def test_witnessed_needs_a_plugin_hook_row_in_chocks_ledger() -> None:
     """S-ALL: witness.yaml's "witnessed" shows only where chock's ledger has a plugin-hook row."""
-    assert clientdata.ledger_clients(DATA) == {"claude-code", "cursor", "codex"}
+    assert clientdata.ledger_clients(DATA) == {
+        "claude-code",
+        "cursor",
+        "codex",
+        "devin",
+    }
     data = clientdata.load_witness(DATA, engine.client_ids())
     assert data["default"] == "claude-code"
     shown = {c for c, s in data["clients"].items() if s == "witnessed"}
-    assert shown == {"claude-code", "cursor", "codex"}
-    assert data["unbacked"] == ["copilot", "devin"]
+    assert shown == {"claude-code", "cursor", "codex", "devin"}
+    assert data["unbacked"] == ["copilot"]
     backed = clientdata.load_witness(
         DATA,
         engine.client_ids(),

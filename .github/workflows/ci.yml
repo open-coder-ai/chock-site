@@ -48,6 +48,8 @@ jobs:
         env:
           FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
       - run: pytest -q --ignore=tests/e2e
+      # DOCS-1: re-run the recorded CLI examples against the pinned engine; fail on any difference.
+      - run: python -m sitegen.cliexamples --check
 
   docs-drift:
     timeout-minutes: 5

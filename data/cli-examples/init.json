@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "examples": [
+    {
+      "step": 1,
+      "of": 21,
+      "command": "chock init .",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nNo git-pre-commit.sh policies found; pre-commit dispatcher unchanged\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nNo git-pre-commit.sh policies found; pre-merge-commit dispatcher unchanged\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nNo git-pre-push.sh policies found; pre-push dispatcher unchanged\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered SessionStart arm hook in .claude/settings.json\nINDEX.md: ~257 tokens (chars/4, max 2000)\nINDEX.md: ~257 tokens (chars/4, max 2000)\nImplementation registered at /work/demo/.git/hooks/pre-commit.d/99-chock-validate\n[PASS] All checks passed.\nInitialized Chock in /work/demo\nAgents: AGENTS.md + claude, copilot, gemini\nSkills: eval, optimize, policy-init, validate (refresh with `chock install-skills .`)\nPolicies: none. This repo enforces nothing yet.\n  1. copy a policy folder from https://github.com/open-coder-ai/chock-catalog (base/<id>/) into .agents/policies/<id>/\n  2. chock sync --repo .\nVerify anytime with:  chock check --only verify",
+      "exit": 0
+    }
+  ]
+}

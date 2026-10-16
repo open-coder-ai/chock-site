@@ -342,3 +342,168 @@ def unwired_reason(agent: str) -> str:
 def plugin_witnessed(agent: str) -> bool:
     """Whether chock's witness ledger holds a plugin-hook row for the agent."""
     return chock.evidence.witness(agent, chock.evidence.PLUGIN_HOOK) is not None
+
+
+# DOCS-1: the argparse tree behind every `chock` command, for the per-command pages.
+CLI_PROG = "chock"
+CLI_COLUMNS = "100"
+
+
+class _Captured(Exception):
+    """Raised in place of parsing, carrying the parser a command built."""
+
+    def __init__(self, parser: Any) -> None:
+        super().__init__(parser.prog)
+        self.parser = parser
+
+
+def _capture_parser(name: str) -> tuple[Any, str]:
+    """The argparse parser `chock <name>` builds, or None, and what `--help` printed if it has none.
+
+    The handler runs with `--help` and sys.argv[0] set to `chock`, as the console script
+    runs it; parsing is stopped before it starts, so the command does nothing.
+    """
+    import argparse
+    import contextlib
+    import io
+    import os
+    import sys
+    from unittest import mock
+
+    import chock.cli
+
+    def capture(self: Any, *args: Any, **kwargs: Any) -> Any:
+        raise _Captured(self)
+
+    saved_argv0, saved_columns = sys.argv[0], os.environ.get("COLUMNS")
+    sys.argv[0], os.environ["COLUMNS"] = CLI_PROG, CLI_COLUMNS
+    buf = io.StringIO()
+    try:
+        with (
+            mock.patch.object(argparse.ArgumentParser, "parse_known_args", capture),
+            mock.patch.object(argparse.ArgumentParser, "parse_args", capture),
+            contextlib.redirect_stdout(buf),
+            contextlib.suppress(SystemExit),
+        ):
+            chock.cli.COMMANDS[name][0](["--help"])
+    except _Captured as got:
+        return got.parser, ""
+    finally:
+        sys.argv[0] = saved_argv0
+        if saved_columns is None:
+            del os.environ["COLUMNS"]
+        else:
+            os.environ["COLUMNS"] = saved_columns
+    return None, buf.getvalue().rstrip()
+
+
+def _cli_argument(parser: Any, action: Any) -> dict[str, Any]:
+    """One option or positional argument as argparse declares it."""
+    import argparse
+
+    formatter = parser._get_formatter()
+    if action.option_strings:
+        metavar = formatter._get_default_metavar_for_optional(action)
+    else:
+        metavar = formatter._get_default_metavar_for_positional(action)
+    takes_value = action.nargs != 0
+    default = action.default
+    shown = takes_value and default is not None and default is not argparse.SUPPRESS
+    return {
+        "name": ", ".join(action.option_strings)
+        or formatter._metavar_formatter(action, metavar)(1)[0],
+        "positional": not action.option_strings,
+        "value": formatter._format_args(action, metavar)
+        if takes_value and action.option_strings
+        else "",
+        "choices": [str(c) for c in action.choices] if action.choices else [],
+        "default": str(default) if shown else "",
+        "required": bool(action.required),
+        "help": formatter._expand_help(action) if action.help else "",
+    }
+
+
+def _unprefixed(usage: str) -> str:
+    """argparse's usage text without "usage: ", its wrapped lines moved left to match."""
+    prefix = "usage: "
+    first, *rest = usage.removeprefix(prefix).split("\n")
+    pad = " " * len(prefix)
+    return "\n".join([first, *(line.removeprefix(pad) for line in rest)])
+
+
+def _cli_node(
+    parser: Any, path: list[str], group: str, summary: str
+) -> list[dict[str, Any]]:
+    """The node for one parser, then its subcommands' nodes, depth first."""
+    import argparse
+    import os
+
+    saved_prog, saved_columns = parser.prog, os.environ.get("COLUMNS")
+    os.environ["COLUMNS"] = CLI_COLUMNS
+    try:
+        help_text = parser.format_help().rstrip()
+        parser.prog = " ".join([CLI_PROG, *path])
+        usage = _unprefixed(parser.format_usage().strip())
+    finally:
+        parser.prog = saved_prog
+        if saved_columns is None:
+            del os.environ["COLUMNS"]
+        else:
+            os.environ["COLUMNS"] = saved_columns
+    subs: list[tuple[str, Any, str]] = []
+    arguments = []
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            helps = {a.dest: a.help or "" for a in action._choices_actions}
+            seen: set[int] = set()
+            for sub, sub_parser in action.choices.items():
+                if id(sub_parser) not in seen:
+                    seen.add(id(sub_parser))
+                    subs.append((sub, sub_parser, helps.get(sub, "")))
+        elif not isinstance(action, argparse._HelpAction) and (
+            action.help is not argparse.SUPPRESS
+        ):
+            arguments.append(_cli_argument(parser, action))
+    node = {
+        "path": path,
+        "group": group,
+        "summary": summary,
+        "parser": True,
+        "usage": usage,
+        "arguments": arguments,
+        "subcommands": [{"name": s, "summary": h} for s, _, h in subs],
+        "help": help_text,
+    }
+    nodes = [node]
+    for sub, sub_parser, sub_help in subs:
+        nodes += _cli_node(sub_parser, [*path, sub], group, sub_help)
+    return nodes
+
+
+def cli_tree() -> list[dict[str, Any]]:
+    """Every `chock` command and subcommand as its parser declares it, in commands.json order.
+
+    A node is {path, group, summary, parser, usage, arguments, subcommands, help}. Commands
+    that parse their own arguments have parser False and only the help text they print.
+    """
+    groups = _data("commands.json")
+    nodes: list[dict[str, Any]] = []
+    for group, commands in groups.items():
+        for name, spec in commands.items():
+            parser, printed = _capture_parser(name)
+            if parser is None:
+                nodes.append(
+                    {
+                        "path": [name],
+                        "group": group,
+                        "summary": spec["help"],
+                        "parser": False,
+                        "usage": "",
+                        "arguments": [],
+                        "subcommands": [],
+                        "help": printed,
+                    }
+                )
+            else:
+                nodes += _cli_node(parser, [name], group, spec["help"])
+    return nodes

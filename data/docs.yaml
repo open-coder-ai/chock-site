@@ -126,7 +126,7 @@ pages:
     nav_label: CLI reference
     description: "Every chock command and its options, generated from the engine's own --help."
     intro: "Generated from the engine's argument parsers at the pinned commit."
-    blocks: [cli]
+    blocks: [cli_index, cli]
     prose:
       - {file: docs/cli-reference.md, sections: [Typical workflows]}
   release-notes:
@@ -147,6 +147,61 @@ pages:
     intro: "Blocks your coding agent's wrong moves before they land. These diagrams show how: each box cites the file that does the work, at a pinned commit, and each has a card. Select a box to read its card, or read the cards in order below each diagram."
     blocks: [architecture]
     prose: []
+
+# DOCS-1: every command and subcommand of the engine at .framework-ref, in its order, one page
+# each under /docs/cli/<command>/[<sub>/]. The build fails when the engine's parsers differ, so a
+# new command is listed here (and gets a page) before the site builds.
+cli_pages:
+  - init
+  - add
+  - install
+  - remove
+  - sync
+  - check
+  - status
+  - stop
+  - resume
+  - doctor
+  - incident
+  - witness
+  - witness export
+  - enable
+  - disable
+  - bundle
+  - bundle on
+  - bundle off
+  - bundle status
+  - new
+  - compile
+  - install-skills
+  - registry
+  - registry init
+  - registry scan
+  - registry list
+  - registry get
+  - registry resolve
+  - plugin
+  - marketplace
+  - gateway
+  - gateway run
+  - mcp
+  - review
+  - review emit
+  - review verify
+  - review require
+  - compliance
+  - validate
+  - verify
+  - verify init
+  - verify verify
+  - eval
+  - check-matrix
+  - recompile
+  - refresh
+  - install-hooks
+  - install-ci
+  - policies
+  - gate-log
 
 texts:
   ask_first: "Ask the user before running any command on this page: each one changes how their agent or repository behaves."
@@ -421,6 +476,38 @@ texts:
         sources:
           - {file: README.md, quote: "no model call and no network access at enforcement time"}
   cli_groups: {everyday: Everyday, authoring: Authoring, aliases: Pre-launch aliases}
+  # DOCS-1: the per-command pages. Every fact on them comes from the engine's parser at
+  # .framework-ref or from a run recorded by sitegen/cliexamples.py.
+  cli:
+    description: "What __NAME__ takes and prints, from the engine at the pinned commit; ask the user before running it."
+    index_heading: "Every command and subcommand"
+    index_intro: "One page per command and per subcommand, generated from the engine's argument parsers at the pinned commit. An alias says which command it stands for."
+    index_head: [Command, Group, Summary]
+    unknown_command: "`chock` exits 2 for a command it does not have, as its dispatcher says:"
+    dispatcher_file: src/chock/cli.py
+    syntax_heading: Syntax
+    syntax_intro: "The usage line argparse builds from this command's parser."
+    arguments_heading: "Arguments and options"
+    arguments_intro: "Every argument the parser declares, except `-h, --help`. Default is the value used when the option is left out; it is empty for a flag or when the parser sets none. Where an option takes one of a fixed set of values, Value lists them."
+    arguments_md: "Help for each argument is in the table on this page's HTML version and in Help as printed, as the engine words it."
+    arguments_head: [Argument, Value, Default, Required, Help]
+    no_arguments: "This command takes no arguments besides `-h, --help`."
+    required_yes: "yes"
+    required_no: "no"
+    subcommands_heading: Subcommands
+    subcommands_head: [Subcommand, Summary]
+    exit_heading: "Exit codes"
+    exit_usage: "2: argparse rejected the arguments, for example an option this command does not have. The site's tests run every command with an unknown option and check that it exits 2."
+    exit_own_parser: "This command reads its arguments itself, without argparse."
+    exit_recorded: "Chock documents no other exit codes. Each example below shows the code its run returned."
+    exit_unrecorded: "Chock documents no other exit codes, and this page has no recorded run."
+    examples_heading: Examples
+    script_file: data/cli-examples.yaml
+    examples_setup: "Real runs, recorded by `python -m sitegen.cliexamples` with the engine at the pinned commit. The steps of `__SCRIPT__` ran in order, offline, in one fresh git repository at `/work/demo` (made with `git init -b main`), with HOME at `/home/demo`. Those paths stand for the throwaway folders the runs used, and `<time>` stands for a timestamp. Output is stdout and stderr together."
+    examples_step: "Step __STEP__ of __OF__, exit code __EXIT__."
+    help_heading: "Help as printed"
+    help_parser: "What `--help` prints, from the same parser. The usage line names the program as the engine's parser does."
+    help_own_parser: "This command reads its arguments itself, without argparse, so this is all the engine says about them: what it prints for `--help`."
   prose_heading: From the engine docs
   ask_code: "Ask the user before running the commands below:"
   ask_note: "Ask the user before running a command this note names:"

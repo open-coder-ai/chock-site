@@ -10,7 +10,15 @@ from urllib.parse import quote, urlsplit
 
 import yaml
 
-from . import architecture, clientdata, clientpage, docsfacts, docsource, engine
+from . import (
+    architecture,
+    clientdata,
+    clientpage,
+    cliexamples,
+    docsfacts,
+    docsource,
+    engine,
+)
 from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
 from .model import Policy, SectionResult, Site
 from .pageparts import (
@@ -55,6 +63,8 @@ class Ctx:
     page: dict[str, Any] = field(default_factory=dict)
     actions: dict[str, Any] = field(default_factory=dict)
     data_dir: Path = architecture.DATA
+    cli_tree: list[dict[str, Any]] = field(default_factory=list)
+    cli_examples: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def t(self, name: str, **tokens: object) -> str:
         """A docs template, filled."""
@@ -877,6 +887,241 @@ def _architecture(ctx: Ctx, body: Body) -> None:
     architecture.index(ctx, body, _section, diagrams, texts, ctx.page["path"])
 
 
+# --- DOCS-1: one page per command and subcommand, from the engine's parsers ------
+
+
+def cli_page_key(node: dict[str, Any]) -> str:
+    """A CLI node's key: its command words joined by "/" ("bundle/status")."""
+    return "/".join(node["path"])
+
+
+def _cli_href(ctx: Ctx, node: dict[str, Any]) -> str:
+    return f"{_page_href(ctx, 'cli')}{cli_page_key(node)}/"
+
+
+def _cli_name(node: dict[str, Any]) -> str:
+    return " ".join([engine.CLI_PROG, *node["path"]])
+
+
+def _cli_covered(ctx: Ctx) -> None:
+    """Refuse a build whose docs.yaml cli_pages list differs from the engine's parser tree."""
+    listed = ctx.docs["cli_pages"]
+    found = [" ".join(n["path"]) for n in ctx.cli_tree]
+    if listed != found:
+        missing = [n for n in found if n not in listed]
+        extra = [n for n in listed if n not in found]
+        raise PageError(
+            "docs.yaml cli_pages differs from the engine's commands: "
+            f"not listed {missing}, not in the engine {extra}"
+            + ("" if missing or extra else ", order differs")
+        )
+    unknown = sorted(set(ctx.cli_examples) - {cli_page_key(n) for n in ctx.cli_tree})
+    if unknown:
+        raise PageError(f"data/cli-examples/ has recordings for no command: {unknown}")
+    for page, recording in ctx.cli_examples.items():
+        if recording["engine"] != ctx.site.framework_ref:
+            raise PageError(
+                f"data/cli-examples/{page}.json was recorded at {recording['engine']}, "
+                f".framework-ref is {ctx.site.framework_ref}: "
+                "run python -m sitegen.cliexamples --record"
+            )
+
+
+def _cli_index(ctx: Ctx, body: Body) -> None:
+    """The CLI reference's index: a link to every command's and subcommand's page."""
+    _cli_covered(ctx)
+    texts = ctx.texts["cli"]
+    groups = ctx.texts["cli_groups"]
+    head = texts["index_head"]
+    html_rows: list[list[str | Safe]] = []
+    md_rows = []
+    for node in ctx.cli_tree:
+        name = _cli_name(node)
+        href = _cli_href(ctx, node)
+        html_rows.append(
+            [
+                Safe(ctx.t("code-link", HREF=href, TEXT=name)),
+                groups[node["group"]],
+                Prose(node["summary"]),
+            ]
+        )
+        md_rows.append(
+            [
+                f"[{md_code(name)}]({ctx.site.data['site_url']}{href}index.md)",
+                groups[node["group"]],
+                node["summary"],
+            ]
+        )
+    dispatcher = _engine_url(ctx, texts["dispatcher_file"])
+    _section(
+        ctx,
+        body,
+        texts["index_heading"],
+        _para(ctx, texts["index_intro"])
+        + _table(ctx, head, html_rows)
+        + ctx.t(
+            "line-link",
+            LINE=Prose(texts["unknown_command"]),
+            URL=dispatcher,
+            LINK=texts["dispatcher_file"],
+        ),
+        f"{texts['index_intro']} {ctx.texts['ask_code']}\n\n{_md_table(head, md_rows)}\n"
+        f"{texts['unknown_command']} [{texts['dispatcher_file']}]({dispatcher})\n",
+    )
+
+
+def _cli_arguments(ctx: Ctx, body: Body, node: dict[str, Any]) -> None:
+    texts = ctx.texts["cli"]
+    head = texts["arguments_head"]
+    rows = [
+        [
+            argument["name"],
+            # Choices wrap in a narrow column once spaced; argparse prints them as {a,b}.
+            ", ".join(argument["choices"])
+            if argument["choices"]
+            else argument["value"],
+            argument["default"],
+            texts["required_yes"] if argument["required"] else texts["required_no"],
+            argument["help"],
+        ]
+        for argument in node["arguments"]
+    ]
+    if not rows:
+        _section(
+            ctx,
+            body,
+            texts["arguments_heading"],
+            _para(ctx, texts["no_arguments"]),
+            texts["no_arguments"],
+        )
+        return
+    html_rows: list[list[str | Safe]] = [
+        [
+            Safe(ctx.t("cli-code", TEXT=row[0])),
+            Safe(ctx.t("cli-code", TEXT=row[1])) if row[1] else "",
+            Safe(ctx.t("cli-code", TEXT=row[2])) if row[2] else "",
+            row[3],
+            Prose(row[4]),
+        ]
+        for row in rows
+    ]
+    # The twin leaves out the engine's help wording, as it does for --help (DOC-1).
+    md_rows = [
+        [
+            md_code(row[0]),
+            md_code(row[1]) if row[1] else "",
+            md_code(row[2]) if row[2] else "",
+            row[3],
+        ]
+        for row in rows
+    ]
+    _section(
+        ctx,
+        body,
+        texts["arguments_heading"],
+        _para(ctx, texts["arguments_intro"]) + _table(ctx, head, html_rows),
+        f"{texts['arguments_intro']} {texts['arguments_md']}\n\n"
+        f"{_md_table(head[:-1], md_rows)}",
+    )
+
+
+def _cli_subcommands(ctx: Ctx, body: Body, node: dict[str, Any]) -> None:
+    texts = ctx.texts["cli"]
+    head = texts["subcommands_head"]
+    html_rows: list[list[str | Safe]] = []
+    md_rows = []
+    for sub in node["subcommands"]:
+        child = {**node, "path": [*node["path"], sub["name"]]}
+        href = _cli_href(ctx, child)
+        name = _cli_name(child)
+        html_rows.append(
+            [Safe(ctx.t("code-link", HREF=href, TEXT=name)), Prose(sub["summary"])]
+        )
+        md_rows.append(
+            [
+                f"[{md_code(name)}]({ctx.site.data['site_url']}{href}index.md)",
+                sub["summary"],
+            ]
+        )
+    _section(
+        ctx,
+        body,
+        texts["subcommands_heading"],
+        _table(ctx, head, html_rows),
+        _md_table(head, md_rows),
+    )
+
+
+def _cli_exit(ctx: Ctx, body: Body, node: dict[str, Any], recorded: bool) -> None:
+    texts = ctx.texts["cli"]
+    lines = [texts["exit_usage"] if node["parser"] else texts["exit_own_parser"]]
+    lines.append(texts["exit_recorded"] if recorded else texts["exit_unrecorded"])
+    _section(
+        ctx,
+        body,
+        texts["exit_heading"],
+        _list(ctx, list(lines)),
+        "".join(f"- {line}\n" for line in lines),
+    )
+
+
+def _cli_examples(ctx: Ctx, body: Body, recording: dict[str, Any]) -> None:
+    texts = ctx.texts["cli"]
+    script = ctx.texts["cli"]["script_file"]
+    setup = data_fill(texts["examples_setup"], {"__SCRIPT__": script})
+    html = [_para(ctx, setup)]
+    md = [f"{setup}\n\n"]
+    for example in recording["examples"]:
+        step = data_fill(
+            texts["examples_step"],
+            {
+                "__STEP__": str(example["step"]),
+                "__OF__": str(example["of"]),
+                "__EXIT__": str(example["exit"]),
+            },
+        )
+        shown = f"$ {example['command']}"
+        if example["output"]:
+            shown += f"\n{example['output']}"
+        html += [_para(ctx, step), _code(ctx, shown)]
+        md.append(f"{step} {ctx.texts['ask_code']}\n\n```text\n{shown}\n```\n\n")
+    _section(ctx, body, texts["examples_heading"], "".join(html), "".join(md))
+
+
+def _cli_body(ctx: Ctx, body: Body, node: dict[str, Any]) -> None:
+    """One command's page: syntax, arguments, subcommands, exit codes, examples, --help."""
+    texts = ctx.texts["cli"]
+    recording = ctx.cli_examples.get(cli_page_key(node))
+    if node["parser"]:
+        _section(
+            ctx,
+            body,
+            texts["syntax_heading"],
+            _para(ctx, texts["syntax_intro"]) + _code(ctx, node["usage"]),
+            f"{texts['syntax_intro']} {ctx.texts['ask_code']}\n\n"
+            f"```text\n{node['usage']}\n```\n",
+        )
+        _cli_arguments(ctx, body, node)
+    if node["subcommands"]:
+        _cli_subcommands(ctx, body, node)
+    _cli_exit(ctx, body, node, recording is not None)
+    if recording is not None:
+        _cli_examples(ctx, body, recording)
+    intro = texts["help_parser"] if node["parser"] else texts["help_own_parser"]
+    # A twin carries argparse's usage line only; the table above holds the rest (DOC-1).
+    printed = node["help"]
+    if node["parser"]:
+        printed = printed.split("\n\n", 1)[0]
+    _section(
+        ctx,
+        body,
+        texts["help_heading"],
+        _para(ctx, intro) + _code(ctx, node["help"]),
+        f"{intro} {ctx.texts['ask_code']}\n\n```text\n{printed}\n```\n"
+        + (f"\n{ctx.texts['help_more']}\n" if node["parser"] else ""),
+    )
+
+
 BLOCKS = {
     "paths": _paths,
     "labels": _labels,
@@ -900,6 +1145,7 @@ BLOCKS = {
     "client_notes": _client_notes,
     "bypasses": _bypasses,
     "cli": _cli,
+    "cli_index": _cli_index,
     "architecture": _architecture,
 }
 
@@ -1434,6 +1680,8 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         cli=engine.cli_commands(),
         actions=load_actions(data_dir),
         data_dir=data_dir,
+        cli_tree=engine.cli_tree(),
+        cli_examples=cliexamples.load(data_dir),
     )
     written: list[tuple[str, str, str, str]] = []
     rows: list[dict[str, Any]] = []
@@ -1528,6 +1776,21 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             policies_page["title"],
             body,
             policy.description,
+        )
+
+    cli_page = docs["pages"]["cli"]
+    for node in ctx.cli_tree:
+        body = _new_body(ctx)
+        _cli_body(ctx, body, node)
+        name = _cli_name(node)
+        emit(
+            "cli",
+            _cli_href(ctx, node),
+            name,
+            data_fill(ctx.texts["cli"]["description"], {"__NAME__": name}),
+            node["summary"],
+            cli_page["title"],
+            body,
         )
 
     arch_page = docs["pages"]["architecture"]
