@@ -149,24 +149,34 @@ def check(root: Path) -> list[str]:
         name = tape.stem
         side = root / STATIC / f"{name}.json"
         if not side.is_file():
-            problems.append(f"{name}: no {STATIC}/{name}.json; render the tape and run --sidecar")
+            problems.append(
+                f"{name}: no {STATIC}/{name}.json; render the tape and run --sidecar"
+            )
             continue
         record = load(root, name)
         files = tape_files(tape.read_text(encoding="utf-8"))
         if files != {"mp4": f"{STATIC}/{name}.mp4", "poster": f"{STATIC}/{name}.png"}:
-            problems.append(f"{name}: the tape must write {STATIC}/{name}.mp4 and .png, not {files}")
+            problems.append(
+                f"{name}: the tape must write {STATIC}/{name}.mp4 and .png, not {files}"
+            )
             continue
         if record["tape_sha256"] != _sha256(tape):
-            problems.append(f"{name}: the tape changed since the video was rendered; re-render it")
+            problems.append(
+                f"{name}: the tape changed since the video was rendered; re-render it"
+            )
         for key in ("mp4", "poster"):
             path = root / record[key]
             if record[key] != files[key] or not path.is_file():
                 problems.append(f"{name}: {record[key]} is missing")
             elif record[f"{key}_sha256"] != _sha256(path):
-                problems.append(f"{name}: {record[key]} is not the file the sidecar records")
+                problems.append(
+                    f"{name}: {record[key]} is not the file the sidecar records"
+                )
         mp4 = root / files["mp4"]
         if mp4.is_file() and mp4.stat().st_size > MAX_BYTES:
-            problems.append(f"{name}: {files['mp4']} is {mp4.stat().st_size} B, over {MAX_BYTES} B")
+            problems.append(
+                f"{name}: {files['mp4']} is {mp4.stat().st_size} B, over {MAX_BYTES} B"
+            )
     return problems
 
 
@@ -176,8 +186,12 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--sidecar", metavar="NAME")
     mode.add_argument("--check", action="store_true")
-    parser.add_argument("--engine", help="the chock commit the tape ran (default: .framework-ref)")
-    parser.add_argument("--catalog", help="the chock-catalog commit the tape ran, if any")
+    parser.add_argument(
+        "--engine", help="the chock commit the tape ran (default: .framework-ref)"
+    )
+    parser.add_argument(
+        "--catalog", help="the chock-catalog commit the tape ran, if any"
+    )
     args = parser.parse_args(argv)
     if args.check:
         problems = check(ROOT)
@@ -188,10 +202,14 @@ def main(argv: list[str] | None = None) -> int:
         count = len(list((ROOT / TAPES).glob("*.tape")))
         print(f"{count} videos match their tapes, each at most {MAX_BYTES} B")
         return 0
-    engine = args.engine or (ROOT / ".framework-ref").read_text(encoding="utf-8").strip()
+    engine = (
+        args.engine or (ROOT / ".framework-ref").read_text(encoding="utf-8").strip()
+    )
     record = sidecar(ROOT, args.sidecar, engine, args.catalog)
     target = ROOT / STATIC / f"{args.sidecar}.json"
-    target.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
+    target.write_text(
+        json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
     print(f"wrote {target.relative_to(ROOT)}")
     return 0
 

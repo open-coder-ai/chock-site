@@ -312,6 +312,21 @@ EXPLAINER = {
 }
 
 
+# DOCS-6: rendered by VHS from videos/own-policy.tape (tests/test_videos.py checks the render).
+OWN = {
+    "title": "Write your own policy",
+    "src": "/video/own-policy.mp4",
+    "poster": "/video/own-policy.png",
+    "width": 1200,
+    "height": 640,
+    "duration": "0:37",
+    "description": (
+        "A silent terminal recording: chock new scaffolds a policy and chock sync "
+        "wires it. The commit with the marked line is refused; the clean one lands."
+    ),
+}
+
+
 def _with_videos(built, videos: list) -> object:
     data = {**built.site.data, "home": {**built.site.data["home"], "videos": videos}}
     return dataclasses.replace(built.site, data=data)
@@ -342,17 +357,20 @@ def test_videos_block_is_hidden_until_there_are_entries(built, tmp_path: Path) -
 
 
 def test_promo_videos_ship_below_the_hero(built) -> None:
-    assert built.site.data["home"]["videos"] == [PROMO, EXPLAINER]
+    assert built.site.data["home"]["videos"] == [PROMO, EXPLAINER, OWN]
     html = _home(built)
-    assert html.count("<video") == 2
+    assert html.count("<video") == 3
     assert "autoplay" not in html and "<track" not in html
     tags = re.findall(r"<video[^>]*>", html)
     captions = re.findall(r"<figcaption>(.*?)</figcaption>", html, re.DOTALL)
-    for video, tag, caption in zip((PROMO, EXPLAINER), tags, captions, strict=True):
+    for video, tag, caption in zip(
+        (PROMO, EXPLAINER, OWN), tags, captions, strict=True
+    ):
         for attr in ("controls", 'preload="none"', "playsinline"):
             assert attr in tag
         assert f'poster="{video["poster"]}"' in tag
-        assert 'width="1280"' in tag and 'height="720"' in tag
+        assert f'width="{video["width"]}"' in tag
+        assert f'height="{video["height"]}"' in tag
         assert " loop" not in tag and "muted" not in tag
         assert f'<source src="{video["src"]}" type="video/mp4">' in html
         size = (ROOT / "static" / video["src"].lstrip("/")).stat().st_size
@@ -373,6 +391,11 @@ def test_promo_videos_ship_below_the_hero(built) -> None:
     assert (
         "- [The full story](/video/chock-promo-v8-explainer.mp4) (1:57, MP4): "
         + EXPLAINER["description"]
+        in twin
+    )
+    assert (
+        "- [Write your own policy](/video/own-policy.mp4) (0:37, MP4): "
+        + OWN["description"]
         in twin
     )
 

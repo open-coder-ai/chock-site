@@ -3076,8 +3076,10 @@ def _video(ctx: Ctx, body: Body) -> None:
     ]
     site = ctx.site.data["site_url"]
     md = [
-        f"{words['title']}: {words['description']} ({record['duration']}) "
-        f"[{download}]({site}{src})\n\n",
+        (
+            f"{words['title']}: {words['description']} ({record['duration']}) "
+            f"[{download}]({site}{src})\n\n"
+        ),
         f"{made}\n\n{texts['tape_link']} [{record['tape']}]({tape_url})\n\n",
         f"{ctx.texts['ask_code']}\n\n```bash\n{shown}\n```\n",
     ]

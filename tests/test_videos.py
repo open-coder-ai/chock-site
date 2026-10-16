@@ -12,7 +12,11 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = yaml.safe_load((ROOT / "data" / "docs.yaml").read_text(encoding="utf-8"))
 HOME = yaml.safe_load((ROOT / "data" / "home.yaml").read_text(encoding="utf-8"))
 NAMES = ("own-policy", "adopt-policy", "catalog-policy")
-PAGES = {"write-own": "own-policy", "catalog-adopt": "adopt-policy", "catalog-contribute": "catalog-policy"}
+PAGES = {
+    "write-own": "own-policy",
+    "catalog-adopt": "adopt-policy",
+    "catalog-contribute": "catalog-policy",
+}
 
 
 def test_every_tape_matches_its_render_and_the_size_cap() -> None:
@@ -28,7 +32,9 @@ def test_a_changed_tape_fails_until_it_is_rendered_again(tmp_path: Path) -> None
     for name in NAMES:
         shutil.copy(ROOT / videos.TAPES / f"{name}.tape", tmp_path / videos.TAPES)
         for suffix in (".mp4", ".png", ".json"):
-            shutil.copy(ROOT / videos.STATIC / f"{name}{suffix}", tmp_path / videos.STATIC)
+            shutil.copy(
+                ROOT / videos.STATIC / f"{name}{suffix}", tmp_path / videos.STATIC
+            )
     assert videos.check(tmp_path) == []
     tape = tmp_path / videos.TAPES / "own-policy.tape"
     tape.write_text(tape.read_text(encoding="utf-8") + "Sleep 1s\n", encoding="utf-8")
@@ -46,8 +52,12 @@ def test_the_catalog_videos_ran_the_pinned_catalog() -> None:
 
 
 def test_shown_commands_leave_out_the_hidden_setup_and_clear() -> None:
-    tape = 'Hide\nType "secret setup"\nEnter\nShow\nType "a"\nEnter\nType "clear"\nEnter\n'
-    tape += "Type \"cat > f <<'EOF'\"\nEnter\nType 'x = \"1\"'\nEnter\nType \"EOF\"\nEnter\n"
+    tape = (
+        'Hide\nType "secret setup"\nEnter\nShow\nType "a"\nEnter\nType "clear"\nEnter\n'
+    )
+    tape += (
+        'Type "cat > f <<\'EOF\'"\nEnter\nType \'x = "1"\'\nEnter\nType "EOF"\nEnter\n'
+    )
     assert videos.shown_commands(tape) == ["$ a", "$ cat > f <<'EOF'", 'x = "1"', "EOF"]
 
 
