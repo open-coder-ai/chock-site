@@ -2242,6 +2242,484 @@ def _stop_facts(ctx: Ctx, body: Body) -> None:
     body.md.append(f"{how['stop_source']} [{how['stop_file']}]({url})\n\n")
 
 
+# --- DOCS-3: the agentseam pages, from the agentseam release chock pins ----------
+
+# Imported here, not at the top, so this block stays append-only beside DOCS-2 and DOCS-4.
+from . import agentseamdoc
+
+
+def _agentseam_ref(ctx: Ctx) -> str:
+    """The agentseam commit the pages document; refused unless it is installed and chock's pin."""
+    pinned = agentseamdoc.pinned(ctx.data_dir)
+    installed = engine.agentseam_commit()
+    required = engine.agentseam_chock_pin()
+    if not pinned == installed == required:
+        raise PageError(
+            f"agentseam: the snapshot pins {pinned}, the installed agentseam is "
+            f"{installed or 'not from git'}, chock at .framework-ref requires "
+            f"{required or 'no agentseam commit'}: install chock at .framework-ref and run "
+            "python -m sitegen.agentseamdoc snapshot and run --record"
+        )
+    return pinned
+
+
+def _agentseam_url(ctx: Ctx, path: str = "") -> str:
+    """A link into agentseam at the pinned commit: the commit, or a file (with #L<line>) in it."""
+    subs = {"__REPO__": ctx.docs["agentseam"]["repo"], "__REF__": _agentseam_ref(ctx)}
+    if not path:
+        return data_fill(COMMIT_URL, subs)
+    return data_fill(BLOB_URL, subs | {"__PATH__": path})
+
+
+def _agentseam_texts(ctx: Ctx) -> dict[str, Any]:
+    return ctx.docs["agentseam"]["texts"]
+
+
+def _agentseam_resolver(ctx: Ctx, source: str):
+    """Resolve a link in an agentseam file: web links kept, repo paths sent to GitHub at the pin."""
+
+    def resolve(href: str) -> str:
+        parts = urlsplit(href)
+        if parts.scheme in ("http", "https", "mailto"):
+            return href
+        frag = f"#{parts.fragment}" if parts.fragment else ""
+        if not parts.path:
+            return _agentseam_url(ctx, source) + frag
+        path = posixpath.normpath(posixpath.join(posixpath.dirname(source), parts.path))
+        if path.startswith(".."):
+            return _agentseam_url(ctx)
+        return _agentseam_url(ctx, path) + frag
+
+    return resolve
+
+
+def _agentseam_prose(ctx: Ctx, body: Body, file: str, text: str) -> None:
+    """A quoted agentseam file section, from the snapshot, with links sent to GitHub."""
+    texts = _agentseam_texts(ctx)
+    resolve = _agentseam_resolver(ctx, file)
+    renderer = Renderer(ctx.templates, resolve, callouts=ctx.texts["callouts"])
+    renderer.ids = body.renderer.ids
+    renderer.toc = body.renderer.toc
+    url = _agentseam_url(ctx, file)
+    body.html.append(
+        ctx.t(
+            "prose",
+            FROM=texts["prose_heading"] + ":",
+            URL=url,
+            FILE=file,
+            BODY=renderer.blocks(text),
+        )
+    )
+    body.md.append(
+        f"{texts['prose_heading']}: [{file}]({url})\n\n"
+        + rewrite_links(text, resolve, ctx.texts["ask_code"])
+        + "\n"
+    )
+
+
+def _agentseam_release(ctx: Ctx, body: Body) -> None:
+    """The facts about the agentseam release the pages document."""
+    texts = _agentseam_texts(ctx)
+    labels = texts["release_rows"]
+    meta = engine.agentseam_meta()
+    ref = _agentseam_ref(ctx)
+    commit_url = _agentseam_url(ctx)
+    pyproject = _engine_url(ctx, "pyproject.toml")
+    rows: list[tuple[str, str, str | Safe]] = [
+        ("package", f"agentseam {meta['version']}", ""),
+        ("commit", ref, Safe(ctx.t("link", HREF=commit_url, TEXT=ref))),
+        ("python", meta["requires_python"], ""),
+        ("license", meta["license"], ""),
+        ("requires", meta["requires"] or texts["no_requires"], ""),
+        ("script", engine.AGENTSEAM_PROG, ""),
+        (
+            "pinned",
+            texts["pinned_by"],
+            Safe(ctx.t("link", HREF=pyproject, TEXT=texts["pinned_by"])),
+        ),
+    ]
+    _section(
+        ctx,
+        body,
+        texts["release_heading"],
+        _facts(ctx, [(labels[k], html or Prose(v)) for k, v, html in rows]),
+        "".join(
+            f"- {labels[k]}: "
+            + (
+                f"[{v}]({commit_url})"
+                if k == "commit"
+                else f"[{v}]({pyproject})"
+                if k == "pinned"
+                else v
+            )
+            + "\n"
+            for k, v, _ in rows
+        ),
+    )
+
+
+def _agentseam_about(ctx: Ctx, body: Body) -> None:
+    """What agentseam is: the release, its own docs quoted, and the other agentseam pages."""
+    import html
+
+    _agentseam_release(ctx, body)
+    texts = _agentseam_texts(ctx)
+    site = ctx.site.data["site_url"]
+    items: list[str | Safe] = []
+    md = []
+    for item in texts["pages_items"]:
+        page = ctx.docs["pages"][item["page"]]
+        tail = data_fill(texts["pages_line"], {"__TEXT__": item["text"]})
+        link = ctx.t("link", HREF=page["path"], TEXT=page["title"])
+        items.append(Safe(link + html.escape(tail, quote=True)))
+        md.append(f"- [{page['title']}]({site}{page['path']}index.md){tail}\n")
+    _section(ctx, body, texts["pages_heading"], _list(ctx, items), "".join(md))
+    prose = agentseamdoc.load(ctx.data_dir)
+    for entry in ctx.docs["agentseam"]["quotes"]:
+        if entry.get("whole"):
+            continue
+        _agentseam_prose(ctx, body, entry["file"], prose[entry["file"]])
+
+
+def _agentseam_direct(ctx: Ctx, body: Body) -> None:
+    """Install, the files, and the recorded run of the README's handler."""
+    texts = _agentseam_texts(ctx)
+    cfg = ctx.docs["agentseam"]
+    ref = _agentseam_ref(ctx)
+    meta = engine.agentseam_meta()
+    command = data_fill(
+        texts["install_command"], {"__REPO__": cfg["repo"], "__REF__": ref}
+    )
+    python = data_fill(texts["install_python"], {"__PYTHON__": meta["requires_python"]})
+    _section(
+        ctx,
+        body,
+        texts["install_heading"],
+        _para(ctx, texts["install_intro"])
+        + _command(ctx, command)
+        + _para(ctx, python),
+        f"{texts['install_intro']}\n\n```bash\n{command}\n```\n\n{python}\n",
+    )
+    script = agentseamdoc.load_script(ctx.data_dir)
+    if set(script["files"]) != set(texts["files"]):
+        raise PageError(
+            f"docs.yaml agentseam.texts.files names {sorted(texts['files'])}, "
+            f"{cfg['run_script']} writes {sorted(script['files'])}"
+        )
+    example = cfg["texts"]["example_file"]
+    example_url = _agentseam_url(ctx, example)
+    intro = data_fill(texts["files_intro"], {"__EXAMPLE__": f"`{example}`"})
+    html_parts = [ctx.t("line-link", LINE=Prose(intro), URL=example_url, LINK=example)]
+    md = [f"{intro} [{example}]({example_url})\n\n"]
+    for name, text in script["files"].items():
+        lang = "python" if name.endswith(".py") else "json"
+        html_parts += [
+            _h3(ctx, body, name),
+            _para(ctx, texts["files"][name]),
+            _code(ctx, text.rstrip("\n"), lang),
+        ]
+        md.append(f"### {name}\n\n{texts['files'][name]}\n\n```{lang}\n{text}```\n\n")
+    _section(ctx, body, texts["files_heading"], "".join(html_parts), "".join(md))
+    recording = agentseamdoc.load_run(ctx.data_dir)
+    if recording["agentseam"] != ref:
+        raise PageError(
+            f"data/{cfg['run_record']} was recorded at agentseam {recording['agentseam']}, "
+            f"the pages document {ref}: run python -m sitegen.agentseamdoc run --record"
+        )
+    commands = [agentseamdoc.shown_command(step) for step in script["steps"]]
+    if [e["command"] for e in recording["examples"]] != commands:
+        raise PageError(
+            f"data/{cfg['run_record']} differs from the steps of {cfg['run_script']}: "
+            "run python -m sitegen.agentseamdoc run --record"
+        )
+    notes = texts["run_notes"]
+    if sorted(notes) != list(range(1, len(commands) + 1)):
+        raise PageError(
+            f"docs.yaml agentseam.texts.run_notes needs one note per step, 1 to {len(commands)}"
+        )
+    run_intro = data_fill(
+        texts["run_intro"], {"__SCRIPT__": f"data/{cfg['run_script']}"}
+    )
+    html_parts = [_para(ctx, run_intro)]
+    md = [f"{run_intro}\n\n"]
+    for example in recording["examples"]:
+        step = data_fill(
+            texts["run_step"],
+            {
+                "__STEP__": str(example["step"]),
+                "__OF__": str(example["of"]),
+                "__EXIT__": str(example["exit"]),
+            },
+        )
+        note = notes[example["step"]]
+        shown = f"$ {example['command']}"
+        if example["output"]:
+            shown += f"\n{example['output']}"
+        html_parts += [_para(ctx, f"{step} {note}"), _code(ctx, shown)]
+        md.append(f"{step} {note} {ctx.texts['ask_code']}\n\n```text\n{shown}\n```\n\n")
+    _section(ctx, body, texts["run_heading"], "".join(html_parts), "".join(md))
+
+
+def _api_groups(
+    ctx: Ctx, api: list[dict[str, Any]]
+) -> list[tuple[str, list[dict[str, Any]]]]:
+    """The API entries in docs.yaml's groups; refused unless they cover `__all__` exactly once."""
+    by_name = {entry["name"]: entry for entry in api}
+    listed = [n for g in ctx.docs["agentseam"]["api_groups"] for n in g["names"]]
+    missing = [n for n in by_name if n not in listed]
+    extra = [n for n in listed if n not in by_name]
+    twice = sorted({n for n in listed if listed.count(n) > 1})
+    if missing or extra or twice:
+        raise PageError(
+            "docs.yaml agentseam.api_groups differs from agentseam.__all__: "
+            f"not listed {missing}, not exported {extra}, listed twice {twice}"
+        )
+    return [
+        (g["heading"], [by_name[n] for n in g["names"]])
+        for g in ctx.docs["agentseam"]["api_groups"]
+    ]
+
+
+def _api_value(texts: dict[str, Any], entry: dict[str, Any]) -> str:
+    if entry["size"] is not None:
+        return data_fill(
+            texts["api_size"],
+            {"__KIND__": entry["kind"], "__COUNT__": str(entry["size"])},
+        )
+    return entry["value"]
+
+
+def _api_doc(texts: dict[str, Any], entry: dict[str, Any]) -> str:
+    return entry["doc"] or texts["no_doc"]
+
+
+def _api_values(ctx: Ctx, entries: list[dict[str, Any]]) -> tuple[str, str]:
+    """Constants as one Name, Value table."""
+    texts = _agentseam_texts(ctx)
+    head = texts["api_value_head"]
+    rows = [(e["name"], _api_value(texts, e), e["size"] is None) for e in entries]
+    html_rows: list[list[str | Safe]] = [
+        [
+            Safe(ctx.t("cli-code", TEXT=name)),
+            Safe(ctx.t("cli-code", TEXT=value)) if code else value,
+        ]
+        for name, value, code in rows
+    ]
+    md_rows = [[md_code(n), md_code(v) if code else v] for n, v, code in rows]
+    return _table(ctx, head, html_rows), _md_table(head, md_rows)
+
+
+def _api_members(ctx: Ctx, members: list[dict[str, Any]]) -> tuple[str, str]:
+    """A class's or module's members as one table: name, kind, signature, summary."""
+    texts = _agentseam_texts(ctx)
+    head = texts["api_member_head"]
+    html_rows: list[list[str | Safe]] = []
+    md_rows = []
+    for m in members:
+        shown = (
+            _api_value(texts, m) if m.get("value") or m.get("size") is not None else ""
+        )
+        signature = m["signature"] or shown
+        doc = "" if shown else _api_doc(texts, m)
+        html_rows.append(
+            [
+                Safe(ctx.t("cli-code", TEXT=m["name"])),
+                m["kind"],
+                Safe(ctx.t("cli-code", TEXT=signature)) if signature else "",
+                Prose(doc),
+            ]
+        )
+        md_rows.append(
+            [
+                md_code(m["name"]),
+                m["kind"],
+                md_code(signature) if signature else "",
+                doc,
+            ]
+        )
+    return _table(ctx, head, html_rows), _md_table(head, md_rows)
+
+
+def _api_entry_html(ctx: Ctx, body: Body, entry: dict[str, Any]) -> tuple[str, str]:
+    """One exported class, function or module: heading, signature, summary, source, members."""
+    texts = _agentseam_texts(ctx)
+    name = entry["name"]
+    html = [_h3(ctx, body, name)]
+    md = [f"### {name}\n\n"]
+    if entry["signature"]:
+        line = f"{name}{entry['signature']}"
+        html.append(_code(ctx, line, "python"))
+        md.append(f"```python\n{line}\n```\n\n")
+    if entry["kind"] == "module":
+        intro = data_fill(texts["api_module"], {"__MODULE__": entry["module"]})
+        html += [_para(ctx, _api_doc(texts, entry)), _para(ctx, intro)]
+        md.append(f"{_api_doc(texts, entry)}\n\n{intro}\n\n")
+    else:
+        html.append(_para(ctx, _api_doc(texts, entry)))
+        md.append(f"{_api_doc(texts, entry)}\n\n")
+    if entry["source"]:
+        path = entry["source"]
+        url = _agentseam_url(ctx, path)
+        html.append(
+            ctx.t(
+                "line-link", LINE=texts["api_heading_source"] + ":", URL=url, LINK=path
+            )
+        )
+        md.append(f"{texts['api_heading_source']}: [{path}]({url})\n\n")
+    if entry["members"]:
+        h, m = _api_members(ctx, entry["members"])
+        html.append(h)
+        md.append(f"{m}\n")
+    return "".join(html), "".join(md)
+
+
+def _agentseam_api(ctx: Ctx, body: Body) -> None:
+    """Every name agentseam exports, grouped as docs.yaml says, read from the installed release."""
+    texts = _agentseam_texts(ctx)
+    _agentseam_ref(ctx)
+    api = engine.agentseam_api()
+    _section(
+        ctx,
+        body,
+        texts["api_about_heading"],
+        _para(ctx, texts["api_intro"]),
+        f"{texts['api_intro']}\n",
+    )
+    for heading, entries in _api_groups(ctx, api):
+        html, md = [], []
+        values = [
+            e for e in entries if e["kind"] not in ("class", "function", "module")
+        ]
+        for entry in entries:
+            if entry in values:
+                continue
+            h, m = _api_entry_html(ctx, body, entry)
+            html.append(h)
+            md.append(m)
+        if values:
+            h, m = _api_values(ctx, values)
+            html.append(h)
+            md.append(m)
+            if any(e["name"] == "MATRIX" for e in values):
+                agents = ctx.docs["pages"]["agents"]
+                html.append(
+                    ctx.t(
+                        "line-link",
+                        LINE=texts["api_matrix"],
+                        URL=agents["path"],
+                        LINK=agents["title"],
+                    )
+                )
+                md.append(
+                    f"\n{texts['api_matrix']} "
+                    f"[{agents['title']}]({ctx.site.data['site_url']}{agents['path']}index.md)\n"
+                )
+        _section(ctx, body, heading, "".join(html), "".join(md))
+
+
+def _agentseam_cli_name(node: dict[str, Any]) -> str:
+    return " ".join([engine.AGENTSEAM_PROG, *node["path"]])
+
+
+def _agentseam_breakable(ctx: Ctx, text: str) -> str | Safe:
+    """Help text with a line-break chance after each "/", so a long path wraps at phone width."""
+    import html
+
+    if "`" in text or "/" not in text:
+        return Prose(text)
+    parts = re.split(r"(?<=/)", text)
+    return Safe(ctx.t("wbr").join(html.escape(part, quote=True) for part in parts))
+
+
+def _agentseam_cli_arguments(ctx: Ctx, node: dict[str, Any]) -> tuple[str, str]:
+    """A command's arguments as argparse prints them, each with its default, then its help.
+
+    The default sits in the argument's cell, so the help column keeps the width a long
+    word in agentseam's help needs at phone width.
+    """
+    import html
+
+    texts = _agentseam_texts(ctx)
+    if not node["arguments"]:
+        return _para(ctx, texts["cli_no_arguments"]), f"{texts['cli_no_arguments']}\n\n"
+    head = texts["cli_arguments_head"]
+    html_rows: list[list[str | Safe]] = []
+    md_rows = []
+    for argument in node["arguments"]:
+        code, tail = _cli_argument_cell(ctx, argument)
+        default = argument["default"]
+        cell = ctx.t("cli-argument", CODE=code, TAIL=tail)
+        md_cell = md_code(code) + md_escape(tail)
+        if default:
+            label = html.escape(f" {texts['cli_default']} ", quote=True)
+            cell += label + ctx.t("cli-code", TEXT=default)
+            md_cell += f" {texts['cli_default']} {md_code(default)}"
+        html_rows.append([Safe(cell), _agentseam_breakable(ctx, argument["help"])])
+        md_rows.append([md_cell, md_escape(argument["help"])])
+    return _table(ctx, head, html_rows), _md_table(head, md_rows) + "\n"
+
+
+def _agentseam_cli(ctx: Ctx, body: Body) -> None:
+    """The agentseam command and each subcommand, from its parser, then exit codes and --help."""
+    texts = _agentseam_texts(ctx)
+    _agentseam_ref(ctx)
+    nodes = engine.agentseam_cli()
+    head = texts["cli_head"]
+    rows = [(_agentseam_cli_name(n), n["summary"]) for n in nodes]
+    _section(
+        ctx,
+        body,
+        texts["cli_heading"],
+        _para(ctx, texts["cli_intro"])
+        + _table(
+            ctx, head, [[Safe(ctx.t("cli-code", TEXT=c)), Prose(s)] for c, s in rows]
+        ),
+        f"{texts['cli_intro']}\n\n"
+        + _md_table(head, [[md_code(c), s] for c, s in rows]),
+    )
+    for node in nodes:
+        name = _agentseam_cli_name(node)
+        args_html, args_md = _agentseam_cli_arguments(ctx, node)
+        html = [
+            _para(ctx, node["summary"]) if node["summary"] else "",
+            _para(ctx, texts["cli_usage"] + ":"),
+            _code(ctx, node["usage"]),
+            args_html,
+        ]
+        md = [
+            f"{node['summary']}\n\n" if node["summary"] else "",
+            f"{texts['cli_usage']}:\n\n```text\n{node['usage']}\n```\n\n",
+            args_md,
+        ]
+        if node["subcommands"]:
+            subs = [" ".join([name, s["name"]]) for s in node["subcommands"]]
+            html += [
+                _para(ctx, texts["cli_subcommands"]),
+                _list(ctx, [Safe(ctx.t("cli-code", TEXT=s)) for s in subs]),
+            ]
+            md.append(
+                f"{texts['cli_subcommands']}\n\n"
+                + "".join(f"- {md_code(s)}\n" for s in subs)
+            )
+        _section(ctx, body, name, "".join(html), "".join(md))
+    lines = texts["exit_lines"]
+    _section(
+        ctx,
+        body,
+        texts["exit_heading"],
+        _list(ctx, list(lines)),
+        "".join(f"- {line}\n" for line in lines),
+    )
+    root = nodes[0]
+    _section(
+        ctx,
+        body,
+        texts["help_heading"],
+        _para(ctx, texts["help_intro"]) + _code(ctx, root["help"]),
+        f"{texts['help_intro']}\n\n```text\n{root['help']}\n```\n",
+    )
+
+
 BLOCKS.update(
     {
         "how_steps": _how_steps,
@@ -2249,5 +2727,9 @@ BLOCKS.update(
         "surfaces": _surfaces,
         "stop_help": _stop_help,
         "stop_facts": _stop_facts,
+        "agentseam_about": _agentseam_about,
+        "agentseam_direct": _agentseam_direct,
+        "agentseam_api": _agentseam_api,
+        "agentseam_cli": _agentseam_cli,
     }
 )
