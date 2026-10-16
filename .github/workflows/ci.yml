@@ -53,6 +53,9 @@ jobs:
       # DOCS-4: the catalog pages' snapshot of .catalog at .catalog-ref, and the adopt run
       # (it fetches the catalog from GitHub) against the pinned engine; fail on any difference.
       - run: python -m sitegen.catalogdoc --catalog .catalog --check
+      # DOCS-5: re-run the Write policies pages' recorded runs against the pinned engine; fail on
+      # any difference.
+      - run: python -m sitegen.writedoc --check
 
   docs-drift:
     timeout-minutes: 5

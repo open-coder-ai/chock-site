@@ -832,3 +832,13 @@ def agentseam_chock_pin() -> str:
         if name.strip() == AGENTSEAM_PROG and "@" in url:
             return url.rsplit("@", 1)[1].split(";", 1)[0].strip()
     return ""
+
+
+# --- DOCS-5: the schemas the Write policies reference pages tabulate -------------------
+
+
+def engine_schemas(name: str) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    """One of the engine's validation schemas, and every schema file it can $ref, by $id."""
+    from chock.validation.loading import SCHEMA_STORE
+
+    return load_schema(name), dict(SCHEMA_STORE)
