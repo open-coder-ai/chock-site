@@ -1868,3 +1868,228 @@ def _search_index(ctx: Ctx, out_dir: Path, rows: list[dict[str, Any]]) -> None:
     target = out_dir / texts["index"].lstrip("/")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(data)
+
+
+# --- DOCS-2: How Chock works ------------------------------------------------------
+
+
+def _how_steps(ctx: Ctx, body: Body) -> None:
+    """The lifecycle diagram's main path as a list: each step's box, its card and the file it cites."""
+    how = ctx.texts["how"]
+    texts = architecture.load_texts(ctx.data_dir)
+    diagram = next(
+        (
+            d
+            for d in architecture.load(ctx.data_dir, texts)
+            if d.id == how["steps_diagram"]
+        ),
+        None,
+    )
+    if diagram is None or not diagram.path:
+        raise PageError(
+            f"docs.yaml how.steps_diagram {how['steps_diagram']!r} has no main path"
+        )
+    nodes = {n["id"]: n for n in diagram.nodes}
+    steps = [
+        (nodes[i], architecture.source_url(texts, diagram, nodes[i]["source"]))
+        for i in diagram.path
+    ]
+    items = "".join(
+        render_file(
+            ctx.templates / architecture.FOLDER / "index-item.html",
+            HREF=url,
+            TITLE=node["label"],
+            SUMMARY=node["card"],
+        )
+        for node, url in steps
+    )
+    _section(
+        ctx,
+        body,
+        how["steps_heading"],
+        _para(ctx, how["steps_intro"]) + ctx.t("list", ITEMS=Safe(items)),
+        f"{how['steps_intro']}\n\n"
+        + "".join(
+            f"- [{md_escape(node['label'])}]({url}): {md_escape(node['card'])}\n"
+            for node, url in steps
+        ),
+    )
+
+
+def _how_diagrams(ctx: Ctx, body: Body) -> None:
+    """The diagrams that show how chock works, each linked to its page under Architecture."""
+    how = ctx.texts["how"]
+    diagrams = {d.id: d for d in architecture.load(ctx.data_dir)}
+    if missing := [i for i in how["diagrams"] if i not in diagrams]:
+        raise PageError(f"docs.yaml how.diagrams names no diagram {missing}")
+    base = _page_href(ctx, "architecture")
+    picked = [diagrams[i] for i in how["diagrams"]]
+    items = "".join(
+        render_file(
+            ctx.templates / architecture.FOLDER / "index-item.html",
+            HREF=f"{base}{d.id}/",
+            TITLE=d.title,
+            SUMMARY=d.summary,
+        )
+        for d in picked
+    )
+    _section(
+        ctx,
+        body,
+        how["diagrams_heading"],
+        _para(ctx, how["diagrams_intro"]) + ctx.t("list", ITEMS=Safe(items)),
+        f"{how['diagrams_intro']}\n\n"
+        + "".join(
+            f"- [{md_escape(d.title)}]({ctx.site.data['site_url']}{base}{d.id}/index.md): "
+            f"{md_escape(d.summary)}\n"
+            for d in picked
+        ),
+    )
+
+
+# A surface row in chock's table: its first cell is the surface name in backticks.
+SURFACE_CELL_RE = re.compile(r"^\|\s*`([a-z-]+)`\s*\|")
+
+
+def _doc_table(text: str) -> list[str]:
+    """The lines of the first Markdown table in `text`."""
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.startswith("|")), None)
+    if start is None:
+        return []
+    end = next(
+        (i for i in range(start, len(lines)) if not lines[i].startswith("|")),
+        len(lines),
+    )
+    return lines[start:end]
+
+
+def _surfaces(ctx: Ctx, body: Body) -> None:
+    """chock's own surface table, then each surface's emitter and agents as the engine's code has them."""
+    how = ctx.texts["how"]
+    source = how["surfaces_file"]
+    table = _doc_table(sections(ctx.prose[source] or "", [how["surfaces_section"]]))
+    documented = [
+        m.group(1) for line in table[2:] if (m := SURFACE_CELL_RE.match(line))
+    ]
+    rows = engine.surface_rows()
+    coded = [r["surface"] for r in rows]
+    if sorted(documented) != sorted(coded):
+        raise PageError(
+            f"{source} at .framework-ref lists surfaces {sorted(documented)}, "
+            f"the engine's code has {sorted(coded)}"
+        )
+    quoted = "\n".join(table) + "\n"
+    resolve = _resolver(ctx, source)
+    renderer = Renderer(ctx.templates, resolve, callouts=ctx.texts["callouts"])
+    renderer.ids = body.renderer.ids
+    renderer.toc = body.renderer.toc
+    url = _engine_url(ctx, source)
+    from_label = ctx.texts["prose_heading"] + ":"
+    _section(
+        ctx,
+        body,
+        how["surfaces_heading"],
+        _para(ctx, how["surfaces_intro"])
+        + ctx.t(
+            "prose",
+            FROM=from_label,
+            URL=url,
+            FILE=source,
+            BODY=renderer.blocks(quoted),
+        ),
+        f"{how['surfaces_intro']}\n\n{from_label} [{source}]({url})\n\n"
+        + rewrite_links(quoted, resolve),
+    )
+    html_rows: list[list[str | Safe]] = []
+    md_rows: list[list[str]] = []
+    for row in rows:
+        agents = ", ".join(row["agents"]) or how["no_agents"]
+        held = how["held_out"] if not row["credited"] else how["counted"]
+        if row["emitter"]:
+            emitter_url = _engine_url(ctx, row["emitter"])
+            emitter: str | Safe = Safe(
+                ctx.t("link", HREF=emitter_url, TEXT=row["emitter"])
+            )
+            emitter_md = f"[{row['emitter']}]({emitter_url})"
+        else:
+            emitter = emitter_md = how["no_emitter"]
+        html_rows.append(
+            [Safe(ctx.t("code", TEXT=row["surface"])), emitter, agents, held]
+        )
+        md_rows.append([f"`{row['surface']}`", emitter_md, agents, held])
+    _section(
+        ctx,
+        body,
+        how["code_heading"],
+        _para(ctx, how["code_intro"]) + _table(ctx, how["code_columns"], html_rows),
+        f"{how['code_intro']}\n\n" + _md_table(how["code_columns"], md_rows),
+    )
+
+
+def _stop_help(ctx: Ctx, body: Body) -> None:
+    """chock stop and chock resume, as the engine's parsers print them."""
+    how = ctx.texts["how"]
+    html, md = _help_blocks(ctx, body, how["help_commands"])
+    _section(
+        ctx,
+        body,
+        how["help_heading"],
+        _para(ctx, how["help_intro"]) + html,
+        f"{how['help_intro']}\n\n{md}",
+    )
+
+
+def _check_quotes(ctx: Ctx, sources: list[dict[str, str]]) -> None:
+    """Each quote stands word for word in its file: the docs snapshot, or the installed engine's source."""
+    for source in sources:
+        if "quote" not in source:
+            continue
+        path = source["file"]
+        text = (
+            engine.engine_source(path)
+            if path.startswith("src/")
+            else ctx.prose.get(path)
+        )
+        if text is None or _flat(source["quote"]) not in _flat(text):
+            raise PageError(
+                f"docs.yaml how: {path} at .framework-ref does not say {source['quote']!r}"
+            )
+
+
+def _stop_facts(ctx: Ctx, body: Body) -> None:
+    """What a stop does, where it is checked and its limits, each item with the chock files it quotes."""
+    how = ctx.texts["how"]
+    facts = engine.stop_facts()
+    words = " ".join(line for item in how["facts"] for line in item["body"])
+    for key in ("repo_file", "registry", "everywhere_file", "confirm_word"):
+        if facts[key] not in words:
+            raise PageError(
+                f"docs.yaml how.facts never names the engine's {facts[key]!r}"
+            )
+    for item in how["facts"]:
+        _check_quotes(ctx, item["sources"])
+        html, md = "", ""
+        if item.get("limits"):
+            html += _para(ctx, how["limits_intro"]) + _code(ctx, facts["limits"])
+            md += f"{how['limits_intro']}\n\n```text\n{facts['limits']}\n```\n\n"
+        html += _list(ctx, item["body"])
+        md += "".join(f"- {line}\n" for line in item["body"]) + "\n"
+        h, m = _sources(ctx, [{"file": s["file"]} for s in item["sources"]])
+        _section(ctx, body, item["heading"], html + h, md + m)
+    url = _engine_url(ctx, how["stop_file"])
+    body.html.append(
+        ctx.t("line-link", LINE=how["stop_source"], URL=url, LINK=how["stop_file"])
+    )
+    body.md.append(f"{how['stop_source']} [{how['stop_file']}]({url})\n\n")
+
+
+BLOCKS.update(
+    {
+        "how_steps": _how_steps,
+        "how_diagrams": _how_diagrams,
+        "surfaces": _surfaces,
+        "stop_help": _stop_help,
+        "stop_facts": _stop_facts,
+    }
+)

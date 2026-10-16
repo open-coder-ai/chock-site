@@ -1,0 +1,304 @@
+{
+  "id": "lifecycle",
+  "order": 3,
+  "title": "Lifecycle in a repository",
+  "summary": "The repo path from end to end: author a policy, check it, sync it into hook files, then each tool call, commit, push and CI run through the hook to a verdict and one log line.",
+  "intro": "A person authors and syncs once; after that every agent tool call, every commit and push, and every CI run goes through the files chock sync wrote. The agent's hooks and the git hooks reach the same gate runner, so a policy means the same thing in the session and at commit.",
+  "pins": {
+    "chock": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+    "agentseam": "bebbfa6f85cc6512238ecad5114c00d99952f664"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 550
+  },
+  "boundaries": [
+    {
+      "label": "Author and build: a person, in the repository",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 120
+    },
+    {
+      "label": "What chock compile and chock sync write",
+      "x": 5,
+      "y": 180,
+      "w": 790,
+      "h": 120
+    },
+    {
+      "label": "Each tool call, commit, push and CI run",
+      "x": 5,
+      "y": 330,
+      "w": 790,
+      "h": 210
+    }
+  ],
+  "nodes": [
+    {
+      "id": "author",
+      "label": "Author a policy",
+      "kind": "code",
+      "x": 15,
+      "y": 70,
+      "source": "chock/src/chock/scaffold/new.py",
+      "card": "chock new policy <id> writes a policy skeleton. A policy is one folder under .agents/policies/<id>/: a manifest, an optional deterministic script, and an eval suite. The policy-init skill writes one from an interview."
+    },
+    {
+      "id": "check",
+      "label": "chock check",
+      "kind": "code",
+      "x": 215,
+      "y": 70,
+      "source": "chock/src/chock/lifecycle.py",
+      "card": "Runs the repository's checks in order: validate, verify, evals, matrix, mechanisms, index, conflicts, baseline. --only picks a subset."
+    },
+    {
+      "id": "sync",
+      "label": "chock sync",
+      "kind": "code",
+      "x": 415,
+      "y": 70,
+      "source": "chock/src/chock/scaffold/recompile.py",
+      "card": "Recompiles every installed policy, then writes each wired agent's hook file, the git hooks and INDEX.md. --ci also writes the CI workflow."
+    },
+    {
+      "id": "compile",
+      "label": "chock compile",
+      "kind": "code",
+      "x": 615,
+      "y": 70,
+      "source": "chock/src/chock/compile/compiler.py",
+      "card": "Runs each surface's emitter on the policy and writes what it emits to .chock/compiled/<id>/<surface>/; a surface that emits nothing gets no folder. It also writes a coverage report."
+    },
+    {
+      "id": "agenthooks",
+      "label": "Agent hook files",
+      "kind": "artifact",
+      "x": 15,
+      "y": 220,
+      "source": "chock/src/chock/hooks/in_agent_install.py",
+      "card": "One entry per hook, in each agent's own file and format. Every entry runs the same committed launcher command."
+    },
+    {
+      "id": "githooks",
+      "label": "Git hooks",
+      "kind": "artifact",
+      "x": 215,
+      "y": 220,
+      "source": "chock/src/chock/hooks/data/dispatcher.sh",
+      "card": "A dispatcher in .git/hooks for pre-commit, pre-merge-commit and pre-push. It runs each policy's hook, which calls the vendored runner."
+    },
+    {
+      "id": "ciwf",
+      "label": "CI workflow",
+      "kind": "artifact",
+      "x": 415,
+      "y": 220,
+      "source": "chock/src/chock/scaffold/install_ci.py",
+      "card": "chock sync --ci writes .github/workflows/chock.yml. It runs the same runner with --event ci over a pull request's base...head range."
+    },
+    {
+      "id": "compiled",
+      "label": "Compiled gates",
+      "kind": "artifact",
+      "x": 615,
+      "y": 220,
+      "source": "chock/src/chock/gate/build.py",
+      "card": "Loads hook.gate from manifest.yaml and bakes one gate.json per surface."
+    },
+    {
+      "id": "toolcall",
+      "label": "Agent tool call",
+      "kind": "client",
+      "x": 15,
+      "y": 370,
+      "source": "agentseam/src/agentseam/dispatch.py",
+      "card": "Before a tool runs, and at a turn's end where wired, the client runs the hook with the call on stdin. agentseam reads it as an Event and answers in the client's own dialect. What happens when a hook cannot run is agentseam's data, listed below.",
+      "facts": "tiers"
+    },
+    {
+      "id": "launcher",
+      "label": "Launcher",
+      "kind": "code",
+      "x": 215,
+      "y": 370,
+      "source": "chock/src/chock/hooks/data/launch.sh",
+      "card": "Runs the first of git config chock.python, python3, python and py that runs Python 3.11+. With none it exits 2, never allow."
+    },
+    {
+      "id": "runtime",
+      "label": "Agent runtime",
+      "kind": "code",
+      "x": 415,
+      "y": 370,
+      "source": "chock/src/chock/gate/runtime_bundle.py",
+      "card": ".chock/bin/<agent>.py: agentseam's bundle plus chock's handler. A --guard call runs the policy's script; a --gate call asks the vendored gate runner."
+    },
+    {
+      "id": "runner",
+      "label": "Gate runner",
+      "kind": "code",
+      "x": 615,
+      "y": 370,
+      "source": "chock/src/chock/gate/runner/verdict.py",
+      "card": "Evaluates a compiled gate, caps its verdict, and concludes with an exit code. It is assembled into .chock/bin/gate.py, the same runner the git hook and CI run."
+    },
+    {
+      "id": "log",
+      "label": "Decision log",
+      "kind": "log",
+      "x": 615,
+      "y": 480,
+      "source": "chock/src/chock/gate/decision_log.py",
+      "card": "One line per hook decision. Sync route: <repo>/.chock/log/gate-events.jsonl. Plugin route: ~/.chock/log/<agent>/events.jsonl. It never raises, never changes the decision and never logs contents."
+    }
+  ],
+  "edges": [
+    {
+      "from": "author",
+      "to": "check",
+      "label": "manifest, evals",
+      "label_at": [
+        200,
+        62
+      ]
+    },
+    {
+      "from": "check",
+      "to": "sync",
+      "label": "then",
+      "label_at": [
+        400,
+        62
+      ]
+    },
+    {
+      "from": "sync",
+      "to": "compile",
+      "label": "each policy",
+      "label_at": [
+        600,
+        62
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "compiled",
+      "label": "gate.json"
+    },
+    {
+      "from": "sync",
+      "to": "agenthooks",
+      "label": "per agent",
+      "label_at": [
+        255,
+        150
+      ]
+    },
+    {
+      "from": "sync",
+      "to": "githooks",
+      "label": "git hooks",
+      "label_at": [
+        395,
+        150
+      ]
+    },
+    {
+      "from": "sync",
+      "to": "ciwf",
+      "label": "--ci",
+      "label_at": [
+        522,
+        200
+      ]
+    },
+    {
+      "from": "agenthooks",
+      "to": "launcher",
+      "label": "runs"
+    },
+    {
+      "from": "toolcall",
+      "to": "launcher",
+      "label": "stdin",
+      "label_at": [
+        200,
+        362
+      ]
+    },
+    {
+      "from": "launcher",
+      "to": "runtime",
+      "label": "Python 3.11+",
+      "label_at": [
+        400,
+        362
+      ]
+    },
+    {
+      "from": "runtime",
+      "to": "runner",
+      "label": "--gate",
+      "label_at": [
+        600,
+        442
+      ]
+    },
+    {
+      "from": "githooks",
+      "to": "runner",
+      "label": "commit, push",
+      "label_at": [
+        400,
+        312
+      ]
+    },
+    {
+      "from": "ciwf",
+      "to": "runner",
+      "label": "--event ci",
+      "label_at": [
+        565,
+        318
+      ]
+    },
+    {
+      "from": "compiled",
+      "to": "runner",
+      "label": "reads"
+    },
+    {
+      "from": "runtime",
+      "to": "toolcall",
+      "label": "verdict",
+      "via": [
+        [
+          500,
+          455
+        ],
+        [
+          100,
+          455
+        ]
+      ]
+    },
+    {
+      "from": "runner",
+      "to": "log",
+      "label": "one line"
+    }
+  ],
+  "path": [
+    "author",
+    "check",
+    "sync",
+    "agenthooks",
+    "launcher",
+    "runtime",
+    "runner",
+    "log"
+  ]
+}
