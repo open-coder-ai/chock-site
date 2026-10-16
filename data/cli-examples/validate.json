@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "examples": [
+    {
+      "step": 3,
+      "of": 21,
+      "command": "chock validate",
+      "output": "[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'",
+      "exit": 0
+    }
+  ]
+}

@@ -70,11 +70,17 @@ def _policy_ids(built) -> list[str]:
 
 
 def _docs_pages(built) -> int:
-    """Docs pages: one per docs.yaml page, agentseam agent, visible policy and architecture diagram."""
+    """Docs pages: one per docs.yaml page, agentseam agent, visible policy, architecture diagram and CLI command."""
     docs = yaml.safe_load((DATA / "docs.yaml").read_text(encoding="utf-8"))
     api = json.loads((built.out / "api" / "docs" / "index.json").read_text("utf-8"))
     diagrams = len(list((DATA / "architecture").glob("*.json")))
-    return len(docs["pages"]) + len(api["agents"]) + len(_policy_ids(built)) + diagrams
+    return (
+        len(docs["pages"])
+        + len(api["agents"])
+        + len(_policy_ids(built))
+        + diagrams
+        + len(docs["cli_pages"])
+    )
 
 
 def test_every_visible_policy_has_a_page(built) -> None:

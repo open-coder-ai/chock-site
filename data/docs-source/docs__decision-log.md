@@ -3,15 +3,19 @@
 | Level | Writes |
 | :--- | :--- |
 | `off` | nothing |
-| `info` (default) | one line each time a policy fires: block, ask, warn, a guard fault, or an override or rollout level that let a finding through |
-| `debug` | every hook call, allows included, plus a `trace`: wire event, tool, matched rule (or "no rule matched"), the guard's exit code, per-stage timings, and the command or path cut to 200 characters with every value the scan-secrets policy would block replaced by `[redacted]` |
+| `info` (default) | one line each time a policy fires: block, ask, warn, a guard fault, or an override or rollout level that let a finding through; and one line per allowed agent tool call, carrying only its `target` fingerprint. However many policy hooks judge that call, its allow is one line, written at once by the first hook to run and naming no policy (no `policy_id`, `plugin` or match fields): an allowed call is the call's, not any one policy's. A call is known by the client's `tool_use_id`, else by session, second and `target`, so with no id two identical calls in one second are one line. Every block, ask, warn, fault and override keeps its own line per policy |
+| `debug` | every hook call (one allow line per policy hook), the turn's end included, plus a `trace`: wire event, tool, matched rule (or "no rule matched"), the guard's exit code, per-stage timings, and the command or path cut to 200 characters with every value the scan-secrets policy would block replaced by `[redacted]` |
+
+`chock status` counts allowed tool calls once each, in total (`allowed_calls`), and never toward a
+policy: its per-policy columns show what a policy decided, its blocks, asks, warns and overrides.
 
 Each line carries `ts`, `route`, `level`, `agent`, `client` (when the payload names one), `event`,
-`policy_id`, `surface`, `verdict`, `reason`, `duration_ms`, `can_ask` and `session_id` (the client's
-session id, when the payload carries one). The sync route adds
+`policy_id`, `surface`, `verdict`, `reason`, `duration_ms`, `can_ask`, `actor`, `session_id` (the
+client's session id, when the payload carries one) and, on a tool call, `target`. The sync route adds
 `chock_version` (left out when the hook's Python has no chock installed). The plugin route adds
 `plugin` and `plugin_version` instead, never `chock_version`: a plugin runs its own bundled Python, not chock. On the sync route a compiled gate's line is written by `gate.py`
-and keeps its own fields (`kind`, `match_count`, `matches`, `rules`).
+and keeps its own fields (`kind`, `match_count`, `matches`, `rules`), plus `actor`, and `session_id`
+and `target` from the hook that ran it. A git hook's line carries `actor` only: a commit is no tool call.
 
 ## Heartbeat
 

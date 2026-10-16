@@ -1,0 +1,37 @@
+# DOCS-1: the scripted session behind the examples on /docs/cli/<command>/ pages.
+# `python -m sitegen.cliexamples --record` runs these steps, in order, with the installed
+# engine (it must be .framework-ref) in a fresh git repository, and writes what each one
+# printed and its exit code to data/cli-examples/<page>.json. `--check` re-runs them and
+# fails when the output or an exit code differs. Never edit the JSON by hand.
+#
+# `page` is the command path with "/" between words, e.g. bundle/status.
+# The session runs offline: no step may need the network.
+
+# Printed in place of the throwaway repository and home folder, so the paths are stable.
+repo: /work/demo
+home: /home/demo
+# Run before the first step and not shown; each page says so (texts.cli.examples_setup).
+setup:
+  - [git, init, -q, -b, main, .]
+steps:
+  - {page: init, run: [chock, init, .]}
+  - {page: new, run: [chock, new, policy, block-marker, --kind, content_regex]}
+  - {page: validate, run: [chock, validate]}
+  - {page: check, run: [chock, check, --repo, .]}
+  - {page: sync, run: [chock, sync, --repo, .]}
+  - {page: verify/verify, run: [chock, verify, verify]}
+  - {page: eval, run: [chock, eval]}
+  - {page: status, run: [chock, status, --repo, .]}
+  - {page: policies, run: [chock, policies]}
+  - {page: registry/list, run: [chock, registry, list]}
+  - {page: disable, run: [chock, disable, my-block-marker]}
+  - {page: enable, run: [chock, enable, my-block-marker]}
+  - {page: refresh, run: [chock, refresh, --check]}
+  - {page: doctor, run: [chock, doctor]}
+  - {page: bundle/status, run: [chock, bundle, status]}
+  - {page: compliance, run: [chock, compliance, report, --repo, .]}
+  - {page: check-matrix, run: [chock, check-matrix]}
+  - {page: stop, run: [chock, stop, --reason, demo]}
+  - {page: status, run: [chock, status, --repo, .]}
+  - {page: resume, run: [chock, resume]}
+  - {page: gate-log, run: [chock, gate-log]}
