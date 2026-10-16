@@ -2249,8 +2249,24 @@ def _agentseam_cli_name(node: dict[str, Any]) -> str:
     return " ".join([engine.AGENTSEAM_PROG, *node["path"]])
 
 
+def _agentseam_breakable(ctx: Ctx, text: str) -> str | Safe:
+    """Help text with a line-break chance after each "/", so a long path wraps at phone width."""
+    import html
+
+    if "`" in text or "/" not in text:
+        return Prose(text)
+    parts = re.split(r"(?<=/)", text)
+    return Safe(ctx.t("wbr").join(html.escape(part, quote=True) for part in parts))
+
+
 def _agentseam_cli_arguments(ctx: Ctx, node: dict[str, Any]) -> tuple[str, str]:
-    """A command's arguments as argparse prints them, with default and help."""
+    """A command's arguments as argparse prints them, each with its default, then its help.
+
+    The default sits in the argument's cell, so the help column keeps the width a long
+    word in agentseam's help needs at phone width.
+    """
+    import html
+
     texts = _agentseam_texts(ctx)
     if not node["arguments"]:
         return _para(ctx, texts["cli_no_arguments"]), f"{texts['cli_no_arguments']}\n\n"
@@ -2260,20 +2276,14 @@ def _agentseam_cli_arguments(ctx: Ctx, node: dict[str, Any]) -> tuple[str, str]:
     for argument in node["arguments"]:
         code, tail = _cli_argument_cell(ctx, argument)
         default = argument["default"]
-        html_rows.append(
-            [
-                Safe(ctx.t("cli-argument", CODE=code, TAIL=tail)),
-                Safe(ctx.t("cli-code", TEXT=default)) if default else "",
-                Prose(argument["help"]),
-            ]
-        )
-        md_rows.append(
-            [
-                md_code(code) + md_escape(tail),
-                md_code(default) if default else "",
-                md_escape(argument["help"]),
-            ]
-        )
+        cell = ctx.t("cli-argument", CODE=code, TAIL=tail)
+        md_cell = md_code(code) + md_escape(tail)
+        if default:
+            label = html.escape(f" {texts['cli_default']} ", quote=True)
+            cell += label + ctx.t("cli-code", TEXT=default)
+            md_cell += f" {texts['cli_default']} {md_code(default)}"
+        html_rows.append([Safe(cell), _agentseam_breakable(ctx, argument["help"])])
+        md_rows.append([md_cell, md_escape(argument["help"])])
     return _table(ctx, head, html_rows), _md_table(head, md_rows) + "\n"
 
 

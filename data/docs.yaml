@@ -641,7 +641,8 @@ agentseam:
     cli_intro: "One section per command, from agentseam's own parser at the pinned commit. Arguments are written as argparse prints them; `-h, --help` is left out."
     cli_head: [Command, Summary]
     cli_usage: "Usage"
-    cli_arguments_head: [Argument, Default, Help]
+    cli_arguments_head: [Argument, Help]
+    cli_default: "default"
     cli_no_arguments: "No arguments besides `-h, --help`."
     cli_subcommands: "Subcommands:"
     exit_heading: "Exit codes"
