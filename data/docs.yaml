@@ -488,12 +488,12 @@ texts:
     syntax_heading: Syntax
     syntax_intro: "The usage line argparse builds from this command's parser."
     arguments_heading: "Arguments and options"
-    arguments_intro: "Every argument the parser declares, except `-h, --help`. Default is the value used when the option is left out; it is empty for a flag or when the parser sets none. Where an option takes one of a fixed set of values, Value lists them."
+    arguments_intro: "Every argument the parser declares, except `-h, --help`, written as argparse prints it. Default is the value used when the option is left out; it is empty for a flag or when the parser sets none."
     arguments_md: "Help for each argument is in the table on this page's HTML version and in Help as printed, as the engine words it."
-    arguments_head: [Argument, Value, Default, Required, Help]
+    arguments_head: [Argument, Default, Help]
+    choices: "one of: __LIST__"
+    required: "(required)"
     no_arguments: "This command takes no arguments besides `-h, --help`."
-    required_yes: "yes"
-    required_no: "no"
     subcommands_heading: Subcommands
     subcommands_head: [Subcommand, Summary]
     exit_heading: "Exit codes"

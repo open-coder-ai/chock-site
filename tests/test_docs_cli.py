@@ -85,11 +85,13 @@ def test_every_argument_and_subcommand_is_on_its_page(built) -> None:
         page = _page(built, node)
         twin = _page(built, node, "index.md")
         for argument in node["arguments"]:
-            assert f"<code>{html.escape(argument['name'])}</code>" in page, (
-                node["path"],
-                argument["name"],
-            )
-            assert f"`{argument['name']}`" in twin, (node["path"], argument["name"])
+            shown = argument["name"]
+            if argument["value"] and not argument["choices"]:
+                shown += " " + argument["value"]
+            assert f"<code>{html.escape(shown)}</code>" in page, (node["path"], shown)
+            assert f"`{shown}`" in twin, (node["path"], shown)
+            for choice in argument["choices"]:
+                assert html.escape(choice) in page, (node["path"], choice)
             if argument["default"]:
                 assert f"<code>{html.escape(argument['default'])}</code>" in page
         for sub in node["subcommands"]:

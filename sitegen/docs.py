@@ -970,23 +970,26 @@ def _cli_index(ctx: Ctx, body: Body) -> None:
     )
 
 
+def _cli_argument_cell(ctx: Ctx, argument: dict[str, Any]) -> tuple[str, str]:
+    """An argument as argparse prints it (`--repo REPO`), then its choices and "required"."""
+    texts = ctx.texts["cli"]
+    code = argument["name"]
+    if argument["value"] and not argument["choices"]:
+        code = f"{code} {argument['value']}"
+    tail = []
+    if argument["choices"]:
+        tail.append(
+            data_fill(texts["choices"], {"__LIST__": ", ".join(argument["choices"])})
+        )
+    if argument["required"]:
+        tail.append(texts["required"])
+    return code, "".join(f" {part}" for part in tail)
+
+
 def _cli_arguments(ctx: Ctx, body: Body, node: dict[str, Any]) -> None:
     texts = ctx.texts["cli"]
     head = texts["arguments_head"]
-    rows = [
-        [
-            argument["name"],
-            # Choices wrap in a narrow column once spaced; argparse prints them as {a,b}.
-            ", ".join(argument["choices"])
-            if argument["choices"]
-            else argument["value"],
-            argument["default"],
-            texts["required_yes"] if argument["required"] else texts["required_no"],
-            argument["help"],
-        ]
-        for argument in node["arguments"]
-    ]
-    if not rows:
+    if not node["arguments"]:
         _section(
             ctx,
             body,
@@ -995,26 +998,22 @@ def _cli_arguments(ctx: Ctx, body: Body, node: dict[str, Any]) -> None:
             texts["no_arguments"],
         )
         return
-    html_rows: list[list[str | Safe]] = [
-        [
-            Safe(ctx.t("cli-code", TEXT=row[0])),
-            Safe(ctx.t("cli-code", TEXT=row[1])) if row[1] else "",
-            Safe(ctx.t("cli-code", TEXT=row[2])) if row[2] else "",
-            row[3],
-            Prose(row[4]),
-        ]
-        for row in rows
-    ]
-    # The twin leaves out the engine's help wording, as it does for --help (DOC-1).
-    md_rows = [
-        [
-            md_code(row[0]),
-            md_code(row[1]) if row[1] else "",
-            md_code(row[2]) if row[2] else "",
-            row[3],
-        ]
-        for row in rows
-    ]
+    html_rows: list[list[str | Safe]] = []
+    md_rows = []
+    for argument in node["arguments"]:
+        code, tail = _cli_argument_cell(ctx, argument)
+        default = argument["default"]
+        html_rows.append(
+            [
+                Safe(ctx.t("cli-argument", CODE=code, TAIL=tail)),
+                Safe(ctx.t("cli-code", TEXT=default)) if default else "",
+                Prose(argument["help"]),
+            ]
+        )
+        # The twin leaves out the engine's help wording, as it does for --help (DOC-1).
+        md_rows.append(
+            [md_code(code) + md_escape(tail), md_code(default) if default else ""]
+        )
     _section(
         ctx,
         body,
