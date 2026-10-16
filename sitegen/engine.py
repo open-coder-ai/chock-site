@@ -509,6 +509,70 @@ def cli_tree() -> list[dict[str, Any]]:
     return nodes
 
 
+# --- DOCS-2: How Chock works -----------------------------------------------------
+
+
+def _emitter_path(emitter: Any) -> str:
+    """The file a compiler emitter's `emit` is defined in, as a path in the chock repository."""
+    import inspect
+
+    return "src/" + inspect.getmodule(emitter.emit).__name__.replace(".", "/") + ".py"
+
+
+def surface_rows() -> list[dict[str, Any]]:
+    """Each enforcement surface in the engine's order: its emitter file, its agents, and whether it earns coverage."""
+    from chock.compile.compiler import EMITTERS
+    from chock.compile.surfaces import SURFACE_AGENTS, UNCREDITED_SURFACES, Surface
+
+    return [
+        {
+            "surface": surface.value,
+            "emitter": _emitter_path(EMITTERS[surface])
+            if surface in EMITTERS
+            else None,
+            "agents": sorted(a for a, has in SURFACE_AGENTS.items() if surface in has),
+            "credited": surface not in UNCREDITED_SURFACES,
+        }
+        for surface in Surface
+    ]
+
+
+def engine_source(path: str) -> str:
+    """The text of one engine file, `src/chock/...`, as installed from .framework-ref."""
+    prefix = "src/chock/"
+    if not path.startswith(prefix) or ".." in path:
+        raise ValueError(f"{path!r} is not a file under {prefix}")
+    package = Path(chock.__file__).resolve().parent
+    return (package / path.removeprefix(prefix)).read_text(encoding="utf-8")
+
+
+def stop_facts() -> dict[str, str]:
+    """What `chock stop` prints about its limits, the files a stop lives in, and the word that lifts --everywhere."""
+    from chock.gate.runner.halt import (
+        HALT_EVERYWHERE_NAME,
+        HALT_PARTS,
+        HALT_REGISTRY_PARTS,
+    )
+    from chock.stop_common import LIMITS
+    from chock.stop_everywhere import CONFIRM_WORD
+
+    registry = "~/" + "/".join(HALT_REGISTRY_PARTS)
+    return {
+        "limits": LIMITS,
+        "repo_file": "/".join(HALT_PARTS),
+        "registry": registry + "/",
+        "everywhere_file": f"{registry}/{HALT_EVERYWHERE_NAME}",
+        "confirm_word": CONFIRM_WORD,
+    }
+
+
+def check_names() -> tuple[str, ...]:
+    """The checks `chock check` runs, in its order."""
+    from chock.lifecycle import CHECKS
+
+    return CHECKS
+
+
 # DOCS-3: agentseam's public API and CLI, read from the release chock installs.
 AGENTSEAM_PROG = "agentseam"
 AGENTSEAM_SRC = "src/agentseam"

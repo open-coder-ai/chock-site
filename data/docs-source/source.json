@@ -16,6 +16,9 @@
     "docs/agentic-risk-coverage.md": {
       "snapshot": "docs__agentic-risk-coverage.md"
     },
+    "docs/architecture.md": {
+      "snapshot": "docs__architecture.md"
+    },
     "docs/assurance-case.md": {
       "snapshot": "docs__assurance-case.md"
     },
@@ -42,6 +45,9 @@
     },
     "docs/getting-started.md": {
       "snapshot": "docs__getting-started.md"
+    },
+    "docs/stop.md": {
+      "snapshot": "docs__stop.md"
     },
     "docs/troubleshooting.md": null
   }
