@@ -21,8 +21,11 @@ nav:
     pages: [agents, policies, configure, monitor, troubleshooting, bypasses]
   - group: Reference
     pages: [cli, release-notes]
-  - group: Architecture
-    pages: [architecture]
+  - group: How Chock works
+    pages: [how-it-works, surfaces, stop, architecture]
+  # DOCS-3: agentseam, the library under chock.
+  - group: agentseam
+    pages: [agentseam, agentseam-direct, agentseam-api, agentseam-cli]
   # DOCS-4
   - group: Catalog
     pages: [catalog-adopt, catalog-contribute]
@@ -141,6 +144,40 @@ pages:
     blocks: []
     prose:
       - {file: CHANGELOG.md, first: 5}
+  # DOCS-2: How Chock works. Diagrams are data/architecture/<id>.json; the surface table and the
+  # stop facts are read from the engine at .framework-ref; quoted prose is in the docs snapshot.
+  how-it-works:
+    path: /docs/how-it-works/
+    title: How Chock works
+    nav_label: How it works
+    description: "The lifecycle of a policy in a repository, from authoring to a verdict and a log line, with diagrams that cite the engine's files."
+    intro: "Blocks your coding agent's wrong moves before they land. A person authors a policy once. chock compile turns it into each surface's control and chock sync wires those into the repository. From then on, on agents whose hooks chock wires, the hooks judge each tool call, commit and push, return a verdict and write one line to a local decision log; the CI gate re-runs the same check on a pull request."
+    blocks: [how_steps, how_diagrams]
+    prose:
+      - {file: docs/architecture.md, sections: [The components, Pointer model, "The CLI is a package manager, not a runtime"]}
+      - {file: docs/decision-log.md, sections: [Hash chain]}
+  surfaces:
+    path: /docs/how-it-works/surfaces/
+    title: Enforcement surfaces
+    nav_label: Enforcement surfaces
+    description: "Where a compiled policy runs: each surface as chock's docs describe it, the engine emitter that writes it, and the agents that have it."
+    intro: "A surface is where a compiled control runs. The first table is chock's own, from its docs. The second is read from the engine's compiler at the pinned commit, so it changes when the code does."
+    blocks: [surfaces]
+    prose:
+      - {file: docs/enforcement-surfaces.md, sections: [How a policy picks its surfaces, Gate runner semantics]}
+  stop:
+    path: /docs/how-it-works/stop/
+    title: Stop and resume
+    nav_label: Stop and resume
+    description: "chock stop, chock resume and --everywhere: a person's stop on agents in one repository or on the whole machine, what reads it, and its limits."
+    intro: "A stop is a person's brake on agents. While one is in force, chock's hooks refuse the next tool call, commit or push of an agent in scope. Only a person at a terminal lifts it."
+    blocks: [stop_help, stop_facts]
+    prose:
+      - {file: docs/decision-log.md, sections: [Stop and override]}
+    # Snapshotted for the quote checks on this page, not shown: the section names `chock install`
+    # in a table with no ask line, so the page restates it, and each restatement quotes it.
+    checked:
+      - {file: docs/stop.md, sections: ["Everywhere: one stop for the machine"]}
   # ARCH-1: the diagrams come from data/architecture/<id>.json (sitegen/architecture.py).
   architecture:
     path: /docs/architecture/
@@ -149,6 +186,40 @@ pages:
     description: "How the chock repositories fit together, and the path one policy takes from the catalog to your agent's hook."
     intro: "Blocks your coding agent's wrong moves before they land. These diagrams show how: each box cites the file that does the work, at a pinned commit, and each has a card. Select a box to read its card, or read the cards in order below each diagram."
     blocks: [architecture]
+    prose: []
+  # DOCS-3: agentseam pages. Facts come from the agentseam release chock pins, read at build
+  # time (API, CLI), quoted from its docs (data/agentseam-source/) or recorded (agentseam-run).
+  agentseam:
+    path: /docs/agentseam/
+    title: What agentseam is
+    nav_label: What agentseam is
+    description: "agentseam, the library under chock: one handler API over each coding agent's own hooks."
+    intro: "agentseam is the stdlib-only Python library and CLI that chock builds on. It turns each coding agent's hook payload into one normalized Event, and a handler's Decision back into that agent's own reply. You can use it on its own, without chock."
+    blocks: [agentseam_about]
+    prose: []
+  agentseam-direct:
+    path: /docs/agentseam/direct/
+    title: Use agentseam without chock
+    nav_label: Use it without chock
+    description: "Install agentseam, write a handler, wire it into your agents' hooks and see it refuse, from a recorded run."
+    intro: "A handler is a Python function that takes an Event and returns a Decision. agentseam wires the command that runs it into each agent's hook config. Every output on this page is from a real run, recorded with the agentseam release this site documents."
+    blocks: [agentseam_direct]
+    prose: []
+  agentseam-api:
+    path: /docs/agentseam/api/
+    title: agentseam Python API
+    nav_label: Python API
+    description: "Every name agentseam exports, with its signature and docstring, read from the pinned release."
+    intro: "Generated at build time from the installed agentseam: each name in `agentseam.__all__`, its signature from `inspect.signature`, and the first paragraph of its own docstring."
+    blocks: [agentseam_api]
+    prose: []
+  agentseam-cli:
+    path: /docs/agentseam/cli/
+    title: agentseam CLI
+    nav_label: agentseam CLI
+    description: "The agentseam command and every subcommand, generated from its argument parser."
+    intro: "Generated at build time from the argparse parser of the installed agentseam."
+    blocks: [agentseam_cli]
     prose: []
   # DOCS-4: the catalog pages. Their `catalog` parts are built by the `catalog` block from
   # data/catalog-source/, which `python -m sitegen.catalogdoc --catalog <checkout>` snapshots
@@ -660,3 +731,188 @@ texts:
     regen_intro: "The docstring of `tools/regen_all.py` at the pinned commit:"
     regen_scripts: "The scripts its `regenerate()` runs, in the order they appear in it. It also runs `chock plugin build` for each tree and `chock sync` when the compiled output has drifted."
     gates_always: always
+  # DOCS-2: How Chock works. Each stop fact quotes chock's docs (from the snapshot) or the engine's
+  # source as installed from .framework-ref (`src/chock/...`); the build fails when a quote is gone.
+  how:
+    steps_heading: "The lifecycle, step by step"
+    steps_intro: "The main path of the lifecycle diagram. Each step links the engine file that does the work, at the pinned commit:"
+    steps_diagram: lifecycle
+    diagrams_heading: Diagrams
+    diagrams_intro: "Each box cites the engine file that does the work, at a pinned commit. Each diagram has a page with a card per box."
+    diagrams: [lifecycle, enforcement-surfaces, stop-and-resume, life-of-a-policy]
+    surfaces_heading: The surfaces
+    surfaces_file: docs/enforcement-surfaces.md
+    surfaces_section: The nine surfaces
+    surfaces_intro: "chock's own table of the surfaces, from its docs at the pinned commit:"
+    code_heading: Where each surface comes from in the engine
+    code_intro: "Read from the engine at the pinned commit: the compiler's emitter for each surface (`EMITTERS` in `chock.compile.compiler`), the agents the engine gives it, by the engine's agent names (`SURFACE_AGENTS`), and whether it is held out of every coverage word (`UNCREDITED_SURFACES`). The build fails when the surfaces in chock's table and in its code differ."
+    code_columns: [Surface, Emitter, Agents, Held out of coverage]
+    no_emitter: "none: not emitted"
+    no_agents: "none"
+    held_out: "yes"
+    counted: "no"
+    help_heading: "chock stop and chock resume"
+    help_intro: "Both commands, as the engine's parsers print them."
+    help_commands: [stop, resume]
+    limits_intro: "After it writes a stop, chock stop prints its limits in the engine's own words:"
+    stop_source: "The engine's stop docs, in full:"
+    stop_file: docs/stop.md
+    facts:
+      - heading: In one repository
+        body:
+          - "`chock stop` writes `.chock/stop.json`: the scope, the reason, who (git `user.email`) and when. Every tool call, commit and push by an agent in scope is then refused until a person resumes."
+          - "`--agent <client>` stops one client; without it every agent is stopped. `--reason` is what the agent is told: `stopped: <reason>`."
+          - "The file is never committed. It is mirrored in `~/.chock/stops/`, for hooks that cannot tell which repository their session is in, and the hooks read both fail-closed: a stop file that cannot be read refuses every agent."
+        sources:
+          - {file: src/chock/stop.py, quote: "every tool call, commit and push by an agent in scope is refused until resume."}
+          - {file: src/chock/stop.py, quote: '{"scope": args.agent or HALT_ALL, "reason": args.reason, "who": git_email(repo) or UNKNOWN}'}
+          - {file: src/chock/stop.py, quote: 'doc["when"] = log_now()'}
+          - {file: src/chock/stop.py, quote: "Stop this one client only (default: every agent)"}
+          - {file: src/chock/stop.py, quote: "Why: the agent is told `stopped: <reason>`"}
+          - {file: src/chock/stop.py, quote: "The file is `.chock/stop.json` (never committed), mirrored in `~/.chock/stops/` for hooks that cannot tell which repository their session is in; the hooks read both fail-closed"}
+          - {file: src/chock/stop.py, quote: "cannot be read, so every agent is refused."}
+      - heading: Only a person changes a stop
+        body:
+          - "An agent's `chock stop` or `chock resume` is refused, and the refusal is logged."
+          - "`chock resume` needs a person at their own terminal: stdin and stdout must be a TTY, and the person types the repository's name. If the name does not match, the stop stays in force."
+        sources:
+          - {file: src/chock/stop_common.py, quote: "Only a person changes a stop (the actor rule): an agent's `chock stop` or `chock resume` is refused, logged."}
+          - {file: src/chock/stop.py, quote: "Only a person at their own terminal resumes: stdin and stdout are TTYs and they type the repository's name."}
+          - {file: src/chock/stop.py, quote: "the name typed does not match; the stop is still in force."}
+      - heading: "Everywhere: one stop for the machine"
+        body:
+          - "`chock stop --everywhere` writes `~/.chock/stops/_everywhere.json`. While it exists, every chock hook on the machine refuses every tool call, whatever its repository, session or client. `--agent` is refused with it: the scope is every agent."
+          - "`chock resume --everywhere` is person-only too: it needs stdin and stdout to be a TTY and asks for the word `everywhere` to be typed. It removes that file only; a per-repository stop stays in force."
+          - "`chock status` and `chock doctor` lead with `STOPPED EVERYWHERE` while it is in force."
+        sources:
+          - {file: docs/stop.md, quote: "`stop --everywhere` writes `~/.chock/stops/_everywhere.json`"}
+          - {file: docs/stop.md, quote: "While it exists every Chock hook on the machine refuses every tool call, whatever its repository, session or client"}
+          - {file: docs/stop.md, quote: "`--agent` is refused with it: the scope is every agent."}
+          - {file: docs/stop.md, quote: "needs stdin and stdout to be a TTY, and asks for the word `everywhere` to be typed. It removes that file only; a per-repository stop stays in force"}
+          - {file: docs/stop.md, quote: "`chock status` and `chock doctor` lead with `STOPPED EVERYWHERE` while it is in force."}
+      - heading: Where the stop is checked
+        body:
+          - "`chock sync` wires one hook of its own per client, `--stop-check`, with no matcher, so the stop sees every tool call, reads included. The plugin route carries the same entry."
+          - "At the git hooks, an agent's commit or push is refused and a person's passes. Only the main checkout's `.chock/bin/gate.py` tells an agent from a person."
+          - "The MCP gateway refuses each `tools/call` while a stop reaches it, with an MCP error, and forwards every other method, so the client can still connect and list tools."
+        sources:
+          - {file: docs/stop.md, quote: "`chock sync` wires one hook of its own per client, `--stop-check`, with no matcher"}
+          - {file: docs/stop.md, quote: "so the stop sees every tool call, reads included. The plugin route carries the same entry"}
+          - {file: src/chock/hooks/data/dispatcher.sh, quote: "while .chock/stop.json is in force, an agent's commit or push is refused; a person's passes."}
+          - {file: docs/stop.md, quote: "At the git hooks only the main checkout's `.chock/bin/gate.py` tells an agent from a person"}
+          - {file: docs/stop.md, quote: "The gateway refuses each `tools/call` while a stop reaches it (an MCP error, `stopped: <reason>`); it forwards `initialize`, `tools/list` and every other method, so the client can still connect and list tools."}
+      - heading: Limits
+        limits: true
+        body:
+          - "It reaches only agents whose hooks chock wires and that the client runs. An agent with no hook is stopped at commit and push only."
+          - "Devin's hook is best-effort: the vendor runs it fail-open, so a hook that errors or times out lets the call through."
+          - "A person, or an agent working outside this repository's hooks, is not affected, and such an agent can delete the stop files directly."
+          - "The terminal check is best-effort: an agent that can run a shell may give `resume` a pseudo-terminal and type the name."
+        sources:
+          - {file: src/chock/stop_common.py}
+          - {file: docs/stop.md, quote: "It reaches only agents whose hooks Chock wires and that the client runs. An agent with no hook is stopped at commit and push only."}
+          - {file: docs/stop.md, quote: "Devin's hook is best-effort: the vendor runs it fail-open, so a hook that errors or times out lets the call through."}
+          - {file: docs/stop.md, quote: "A person, or an agent working outside this repository's hooks, is not affected. Such an agent can also delete .chock/stop.json or `~/.chock/stops` directly"}
+          - {file: docs/stop.md, quote: "The terminal check is best-effort: an agent that can run a shell may give `resume` a pseudo-terminal"}
+
+# DOCS-3: the agentseam pages (sitegen/docs.py, sitegen/agentseamdoc.py). They document the
+# agentseam commit in data/agentseam-source/source.json. The build fails unless the installed
+# agentseam is that commit and chock at .framework-ref requires that same commit.
+agentseam:
+  repo: https://github.com/open-coder-ai/agentseam
+  source_dir: agentseam-source
+  run_script: agentseam-run.yaml
+  run_record: agentseam-run.json
+  # Quoted from agentseam at the pinned commit; `python -m sitegen.agentseamdoc snapshot` copies them.
+  quotes:
+    - {file: README.md, sections: [How it works]}
+    # heading: false quotes a section's body without its own heading line.
+    - {file: docs/design.md, level: 1, sections: [Design], heading: false}
+    - {file: docs/quickstart.sh, whole: true}
+  # The API page's sections. Every name in agentseam.__all__ is listed once; the build fails
+  # when one is missing, listed twice, or not exported.
+  api_groups:
+    - heading: "Contract: Event and Decision"
+      names: [Event, Decision]
+    - heading: Dispatch
+      names: [run, handle, degrade]
+    - heading: Matrix
+      names: [MATRIX, agents, adapted_agents, capability, can_block, can_rewrite, can_transform, enforcement_level]
+    - heading: Events
+      names: [EVENTS, SESSION_START, SESSION_END, PROMPT_SUBMIT, PRE_TOOL, POST_TOOL, TOOL_FAILURE, PRE_COMPACT, STOP, SUBAGENT_START, SUBAGENT_STOP, INSTRUCTIONS_LOADED, FILE_CHANGED, UNKNOWN]
+    - heading: Outcomes
+      names: [ALLOW, DENY, ESCALATE, TRANSFORM, WARN, VOUCH, ASK, REWRITE]
+    - heading: Submodules
+      names: [adapters, bundler, instructions, packaging, permissions]
+    - heading: Version
+      names: [__version__]
+  texts:
+    release_heading: "The release these pages document"
+    release_rows:
+      package: Package
+      commit: Commit
+      python: Python
+      license: Licence
+      requires: Runtime dependencies
+      script: Console script
+      pinned: Pinned by
+    no_requires: "none"
+    pinned_by: "chock's pyproject.toml at the engine commit this site builds from"
+    pages_heading: "The agentseam pages"
+    pages_items:
+      - {page: agentseam-direct, text: "install it, write a handler and wire it, from a recorded run"}
+      - {page: agentseam-api, text: "every exported name, its signature and docstring"}
+      - {page: agentseam-cli, text: "the agentseam command and each subcommand"}
+      - {page: agents, text: "what each agent can enforce, from agentseam's matrix"}
+    pages_line: ": __TEXT__."
+    prose_heading: "From the agentseam docs"
+    install_heading: Install
+    install_intro: "agentseam is one Python package with no runtime dependencies and one console script, `agentseam`. Installing chock installs it too, at the commit below. agentseam's README installs it from PyPI with `pip install agentseam`; a PyPI release can differ from this commit. To get the code these pages document, install from the commit (ask the user before running it):"
+    install_command: "pip install \"agentseam @ git+__REPO__@__REF__\""
+    install_python: "It needs Python __PYTHON__."
+    files_heading: "The files"
+    files_intro: "The run below starts in an empty git repository holding these files. `my_handler.py` is the handler from agentseam's README Quick start, word for word; the site's tests check it against agentseam's `docs/quickstart.sh` at the pinned commit. The two payloads take the shape of the Claude Code `PreToolUse` example in agentseam's __EXAMPLE__, with their content changed."
+    example_file: examples/generated/claude_code.md
+    files:
+      my_handler.py: "The handler. `run(handler)` reads one payload from stdin, identifies the agent that sent it (best effort, with `adapters.detect`), calls the handler with the normalized Event, and prints the reply in that agent's dialect."
+      deny.json: "A Claude Code PreToolUse payload: the agent wants to write a line with `AKIA` in it to AGENTS.md."
+      allow.json: "The same payload with harmless content."
+      in_process.py: "The same check called in process with `handle()`, which returns the reply instead of printing it."
+    run_heading: "The recorded run"
+    run_intro: "Real runs, recorded by `python -m sitegen.agentseamdoc run --record` with agentseam at the pinned commit. The steps of `__SCRIPT__` ran in order, offline, in one fresh git repository at `/work/demo` (made with `git init -b main`), with HOME at `/home/demo`. Those paths stand for the throwaway folders the runs used. Output is stdout and stderr together; CI re-runs the steps and fails when any output or exit code differs."
+    run_step: "Step __STEP__ of __OF__, exit code __EXIT__."
+    # One line per step, saying what its output shows. Keyed by the step's number.
+    run_notes:
+      1: "The version of the installed agentseam."
+      2: "Every agent in agentseam's matrix: its id, tier and hook config file. `install` takes these ids, or `all`."
+      3: "The README's install line. It wires `python3 my_handler.py` at `pre_tool` into each agent that has a hook adapter, and prints each agent's grade there. Junie's and Kimi Code's config files sit under HOME."
+      4: "What it wrote for Claude Code. Each entry is marked `_agentseam`, so `uninstall` removes only its own entries."
+      5: "The hook as Claude Code runs it, fed the payload with `AKIA`. The handler returned `Decision.deny`, and agentseam printed the refusal in Claude Code's `PreToolUse` dialect."
+      6: "The harmless payload. The handler returned `Decision.allow()`, and agentseam printed nothing: the exit code carries the answer."
+      7: "In process, `handle()` returns the normalized Event, the Decision, the exit code and the text `run()` would print."
+      8: "`uninstall all` removes agentseam's entries from every agent's config."
+      9: "Claude Code's settings file after uninstall."
+    api_about_heading: "How this reference is made"
+    api_heading_source: Source
+    api_intro: "Names are listed as `agentseam` exports them. A summary is the first paragraph of the object's own docstring at the pinned commit; \"No docstring.\" means it has none. Source links go to the line that defines the object."
+    no_doc: "No docstring."
+    api_members: "Members"
+    api_member_head: [Member, Kind, Signature, Summary]
+    api_value_head: [Name, Value]
+    api_size: "a __KIND__ with __COUNT__ entries"
+    api_module: "Module `__MODULE__`. Its public names, from `__all__` where the module sets one, otherwise the functions and classes it defines:"
+    api_matrix: "The matrix as data. The site renders it on the Agents pages."
+    cli_heading: "Every command and subcommand"
+    cli_intro: "One section per command, from agentseam's own parser at the pinned commit. Arguments are written as argparse prints them; `-h, --help` is left out."
+    cli_head: [Command, Summary]
+    cli_usage: "Usage"
+    cli_arguments_head: [Argument, Help]
+    cli_default: "default"
+    cli_no_arguments: "No arguments besides `-h, --help`."
+    cli_subcommands: "Subcommands:"
+    exit_heading: "Exit codes"
+    exit_lines:
+      - "2: argparse rejected the arguments. The site's tests run each command and subcommand with an unknown option and check that it exits 2."
+      - "This page lists no other codes. The runs on Use agentseam without chock show the code each one returned."
+    help_heading: "Help as printed"
+    help_intro: "What `agentseam --help` prints, from the same parser."

@@ -209,3 +209,33 @@ per gateway process; wrap N servers with N entries.
 > before crediting `ci-gate` toward `enforced-at-commit` — the same check `pre-tool-use` gets, and for
 > the same reason: unlike git hooks, nothing installs the CI workflow automatically as a side effect
 > of `compile` or `recompile`.
+
+## How a policy picks its surfaces
+
+A hook that must stop a command targets `git-hook` + `ci-gate` (the universal floor) and, where available,
+`pre-tool-use` + `managed-setting`. A hook whose `on:` includes `tool_use` is compiled to the `pre-tool-use`
+surface on agents that support it (thirteen of them, Claude Code and Cursor among them; Copilot CLI and VS Code
+get the same guard via `agent-hooks`, and a content gate's write check as a `PreToolUse` entry over `Edit|Write`
+there). A hook whose `on:` includes `tool_call` (a `content_regex` or `script` gate with `params.tools`, globs
+over tool names such as `mcp__Firecrawl__*` or `WebFetch`) gates PreToolUse for any tool by name, on the nine
+agents whose vendor facts record a tool vocabulary (Claude Code, Codex CLI, Cursor, Gemini CLI, Factory Droid,
+goose, Mistral Vibe, OpenHands, and Copilot via `agent-hooks`); the others get no `tool_call` entry and are
+credited nothing for it. A gate's `outside_repo` globs let its PreToolUse write check see declared files outside
+the repository (the turn-end check cannot). A `script` gate on `tool_call` also keeps a local per-session
+tool-call log under `.chock/state/` that its script can read; see
+[`spec/session-log.md`](../spec/session-log.md). A best-practice rule with no deterministic check compiles only
+to `ambient-rule`. The compiler always pairs a control with the **strongest available backstop** — e.g. a git
+hook plus a CI gate, because a git hook alone can be skipped with `--no-verify`.
+
+## Gate runner semantics
+
+At commit time the vendored runner scans the staged files git reports as added, copied,
+modified, renamed, or type-changed. It disables `core.quotePath` for its diff calls, so
+non-ASCII paths arrive unescaped and are scanned like any other file. `dependency_allowlist`
+gates match their watched manifest basenames (e.g. `package.json`) anywhere in the tree, not
+only at the repo root. In CI range mode, a base ref that cannot be resolved fails **closed** —
+the gate exits 2 rather than passing an unscanned range.
+A compiled gate never judges chock's generated tree (`.chock/`) or its own policy's folder
+(`.agents/policies/<id>/`): that folder's evals and references show the very content the gate
+refuses, so judging them refused the policy's own adoption commit. Every other path, another
+policy's folder included, is judged as before.

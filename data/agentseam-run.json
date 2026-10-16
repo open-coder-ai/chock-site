@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "agentseam": "bebbfa6f85cc6512238ecad5114c00d99952f664",
+  "examples": [
+    {
+      "step": 1,
+      "of": 9,
+      "command": "agentseam --version",
+      "output": "0.3.5",
+      "exit": 0
+    },
+    {
+      "step": 2,
+      "of": 9,
+      "command": "agentseam agents",
+      "output": "aider            none           (no hook config)\namp              unadapted      (no hook config)\nantigravity      block          .agents/hooks.json\nclaude_code      block+rewrite  .claude/settings.json\ncline            block          .clinerules/hooks\ncodex_cli        block+rewrite  .codex/hooks.json\ncopilot          unadapted      (no hook config)\ncursor           block+rewrite  .cursor/hooks.json\ndeepseek_harness unadapted      (no hook config)\ndevin            block+rewrite  .devin/hooks.v1.json\nfactory_droid    block          .factory/hooks.json\ngemini_cli       block+rewrite  .gemini/settings.json\ngoose            block          .agents/plugins/agentseam/hooks/hooks.json\ngrok             block          .grok/hooks/agentseam.json\njunie            block+rewrite  ~/.junie/config.json\nkilo_code        unadapted      (no hook config)\nkimi_code        block          ~/.kimi-code/config.toml\nkiro             unadapted      (no hook config)\nmistral_vibe     block          .vibe/hooks.toml\nopencode         unadapted      (no hook config)\nopenhands        block          .openhands/hooks.json\nreplit           unadapted      (no hook config)\nroo_code         unadapted      (no hook config)\ntabnine          block          .tabnine/agent/settings.json\nvscode_copilot   block+rewrite  .github/hooks/*.json\nwindsurf         block          .windsurf/hooks.json\nzed              none           (no hook config)",
+      "exit": 0
+    },
+    {
+      "step": 3,
+      "of": 9,
+      "command": "agentseam install all 'python3 my_handler.py' --events pre_tool --repo .",
+      "output": "wired antigravity      -> ./.agents/hooks.json   [pre_tool=best-effort]\nwired claude_code      -> ./.claude/settings.json   [pre_tool=best-effort]\nwired cline            -> ./.clinerules/hooks   [pre_tool=best-effort]\n                       not live until trusted: in the VS Code extension, tick Enable Hooks under Cline's Feature settings; hooks run on macOS and Linux only\nwired codex_cli        -> ./.codex/hooks.json   [pre_tool=best-effort]\n                       not live until trusted: run /hooks in Codex and trust the new hook (trust is per hook hash: re-trust after any change)\nwired cursor           -> ./.cursor/hooks.json   [pre_tool=enforceable]\nwired devin            -> ./.devin/hooks.v1.json   [pre_tool=best-effort]\nwired factory_droid    -> ./.factory/hooks.json   [pre_tool=best-effort]\nwired gemini_cli       -> ./.gemini/settings.json   [pre_tool=best-effort]\nwired goose            -> ./.agents/plugins/agentseam/hooks/hooks.json   [pre_tool=best-effort]\nwired grok             -> ./.grok/hooks/agentseam.json   [pre_tool=best-effort]\n                       not live until trusted: trust it in the agent\nwired junie            -> /home/demo/.junie/config.json   [pre_tool=best-effort]\nwired kimi_code        -> /home/demo/.kimi-code/config.toml   [pre_tool=best-effort]\nwired mistral_vibe     -> ./.vibe/hooks.toml   [pre_tool=best-effort]\n                       not live until trusted: trust it in the agent\nwired openhands        -> ./.openhands/hooks.json   [pre_tool=best-effort]\nwired tabnine          -> ./.tabnine/agent/settings.json   [pre_tool=best-effort]\nwired vscode_copilot   -> ./.github/hooks/agentseam.json   [pre_tool=best-effort]\nwired windsurf         -> ./.windsurf/hooks.json   [pre_tool=best-effort]",
+      "exit": 0
+    },
+    {
+      "step": 4,
+      "of": 9,
+      "command": "cat .claude/settings.json",
+      "output": "{\n  \"hooks\": {\n    \"PreToolUse\": [\n      {\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"python3 my_handler.py\",\n            \"_agentseam\": \"agentseam\"\n          }\n        ],\n        \"_agentseam\": \"agentseam\"\n      }\n    ]\n  }\n}",
+      "exit": 0
+    },
+    {
+      "step": 5,
+      "of": 9,
+      "command": "python3 my_handler.py < deny.json",
+      "output": "{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"no AWS keys in memory files\"}}",
+      "exit": 0
+    },
+    {
+      "step": 6,
+      "of": 9,
+      "command": "python3 my_handler.py < allow.json",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 7,
+      "of": 9,
+      "command": "python3 in_process.py",
+      "output": "event: claude_code pre_tool Write AGENTS.md\ndecision: deny no AWS keys in memory files\nexit code: 0\nprinted: {\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"no AWS keys in memory files\"}}",
+      "exit": 0
+    },
+    {
+      "step": 8,
+      "of": 9,
+      "command": "agentseam uninstall all --repo .",
+      "output": "antigravity      removed\nclaude_code      removed\ncline            removed\ncodex_cli        removed\ncursor           removed\ndevin            removed\nfactory_droid    removed\ngemini_cli       removed\ngoose            removed\ngrok             removed\njunie            removed\nkimi_code        removed\nmistral_vibe     removed\nopenhands        removed\ntabnine          removed\nvscode_copilot   removed\nwindsurf         removed",
+      "exit": 0
+    },
+    {
+      "step": 9,
+      "of": 9,
+      "command": "cat .claude/settings.json",
+      "output": "{}",
+      "exit": 0
+    }
+  ]
+}
