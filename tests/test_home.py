@@ -319,7 +319,7 @@ OWN = {
     "poster": "/video/own-policy.png",
     "width": 1200,
     "height": 640,
-    "duration": "0:37",
+    "duration": "0:35",
     "description": (
         "A silent terminal recording: chock new scaffolds a policy and chock sync "
         "wires it. The commit with the marked line is refused; the clean one lands."
@@ -394,7 +394,7 @@ def test_promo_videos_ship_below_the_hero(built) -> None:
         in twin
     )
     assert (
-        "- [Write your own policy](/video/own-policy.mp4) (0:37, MP4): "
+        "- [Write your own policy](/video/own-policy.mp4) (0:35, MP4): "
         + OWN["description"]
         in twin
     )

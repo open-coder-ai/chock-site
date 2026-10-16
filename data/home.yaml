@@ -22,7 +22,7 @@ videos:
     poster: /video/own-policy.png
     width: 1200
     height: 640
-    duration: "0:37"
+    duration: "0:35"
     description: "A silent terminal recording: chock new scaffolds a policy and chock sync wires it. The commit with the marked line is refused; the clean one lands."
 primary_cta: "Build your plugin"
 secondary_cta: "Browse the policies"
