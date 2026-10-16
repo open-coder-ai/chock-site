@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "examples": [
+    {
+      "step": 21,
+      "of": 21,
+      "command": "chock gate-log",
+      "output": "policy      surface       events  allow  block    ask   warn  last block\nchock-stop  unknown            1      1      0      0      0  never\n\nNever recorded (1): my-block-marker\nAdvisory policies emit no runtime event, so absence here is not evidence of a gap.",
+      "exit": 0
+    }
+  ]
+}
