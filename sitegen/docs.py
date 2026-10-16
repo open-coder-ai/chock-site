@@ -1,5 +1,7 @@
 """The docs section at /docs/: overview, both quickstarts, agents, policies, configure, monitor, reference."""
 
+import datetime as dt
+import hashlib
 import json
 import posixpath
 import re
@@ -18,6 +20,7 @@ from . import (
     docsfacts,
     docsource,
     engine,
+    vendorquotes,
 )
 from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
 from .model import Policy, SectionResult, Site
@@ -35,6 +38,7 @@ from .render import md as md_escape
 DOCS = "docs"
 MD = "md"
 ACTIONS_YAML = "page_actions.yaml"
+LANDSCAPE_YAML = "landscape.yaml"
 COMMIT_URL = "__REPO__/commit/__REF__"
 BLOB_URL = "__REPO__/blob/__REF__/__PATH__"
 CATALOG_COMMIT = "https://github.com/open-coder-ai/chock-catalog/commit/"
@@ -62,6 +66,8 @@ class Ctx:
     cli: list[dict[str, str]]
     page: dict[str, Any] = field(default_factory=dict)
     actions: dict[str, Any] = field(default_factory=dict)
+    landscape: dict[str, Any] = field(default_factory=dict)
+    today: dt.date = field(default_factory=lambda: dt.datetime.now(dt.UTC).date())
     data_dir: Path = architecture.DATA
     cli_tree: list[dict[str, Any]] = field(default_factory=list)
     cli_examples: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -880,6 +886,127 @@ def _cli(ctx: Ctx, body: Body) -> None:
         raise PageError(f"docs.yaml cli_groups lacks engine groups {sorted(missing)}")
 
 
+def _quotes(ctx: Ctx, body: Body, quotes: list[dict[str, str]]) -> tuple[str, str]:
+    """Chock's own words behind a claim, refused unless this page quotes a section holding them."""
+    texts = ctx.landscape["texts"]
+    html, md = [], []
+    for q in quotes:
+        quoted = [
+            e
+            for e in ctx.page["prose"]
+            if e["file"] == q["file"] and q["section"] in e.get("sections", [])
+        ]
+        text = ctx.prose.get(q["file"])
+        if not quoted or text is None:
+            raise PageError(
+                f"{LANDSCAPE_YAML}: {q['file']} {q['section']!r} is not quoted on the page"
+            )
+        if " ".join(q["quote"].split()) not in " ".join(
+            sections(text, [q["section"]]).split()
+        ):
+            raise PageError(
+                f"{LANDSCAPE_YAML}: {q['file']} {q['section']!r} lacks {q['quote']!r}"
+            )
+        url = _engine_url(ctx, q["file"])
+        source = data_fill(texts["quote"], {"__FILE__": q["file"]})
+        html.append(
+            ctx.t(
+                "quote",
+                QUOTE=body.renderer.inline(q["quote"]),
+                SOURCE=source,
+                URL=url,
+                SECTION=q["section"],
+            )
+        )
+        md.append(f"> {q['quote']}\n>\n> {source} [{q['section']}]({url})\n\n")
+    return "".join(html), "".join(md)
+
+
+def _example(ctx: Ctx, quote: dict[str, str]) -> tuple[str, str]:
+    """One vendor example: its quoted sentence, source and date, noted when out of date."""
+    texts = ctx.landscape["texts"]
+    link = data_fill(texts["vendor_link"], {"__VENDOR__": quote["vendor"]})
+    as_of = data_fill(texts["as_of"], {"__DATE__": quote["checked"]})
+    stale = (
+        data_fill(texts["stale"], {"__DATE__": quote["checked"]})
+        if vendorquotes.is_stale(quote["checked"], ctx.today)
+        else ""
+    )
+    html = ctx.t(
+        "example",
+        NAME=quote["product"],
+        VENDOR=quote["vendor"],
+        QUOTE=quote["quote"],
+        HREF=quote["url"],
+        LINK=link,
+        ASOF=as_of,
+        STALE=Safe(ctx.t("stale", TEXT=stale)) if stale else "",
+    )
+    md = (
+        f"- **{md_escape(quote['product'])}** ({md_escape(quote['vendor'])}): "
+        f"\u201c{md_escape(quote['quote'])}\u201d [{link}]({quote['url']}), {as_of}."
+        + (f" *{stale}*" if stale else "")
+        + "\n"
+    )
+    return html, md
+
+
+def _landscape(ctx: Ctx, body: Body) -> None:
+    """Where Chock sits: per layer, what it and Chock control, both directions, then examples."""
+    data = ctx.landscape
+    texts = data["texts"]
+    how = texts["how"]
+    agents = _page_href(ctx, "agents")
+    _section(
+        ctx,
+        body,
+        texts["how_heading"],
+        ctx.t(
+            "line-link",
+            LINE=body.renderer.inline(how),
+            URL=agents,
+            LINK=texts["agents_link"],
+        ),
+        f"{how} [{texts['agents_link']}]({ctx.site.data['site_url']}{agents}index.md)\n",
+    )
+    for layer in data["layers"]:
+        examples = [_example(ctx, data["quotes"][key]) for key in layer["examples"]]
+        layer_html, layer_md = _quotes(ctx, body, layer["layer_quotes"])
+        chock_html, chock_md = _quotes(ctx, body, layer["chock_quotes"])
+        html = (
+            _h3(ctx, body, texts["controls_heading"])
+            + ctx.t("para", TEXT=body.renderer.inline(layer["controls"]))
+            + ctx.t("para", TEXT=body.renderer.inline(layer["chock_controls"]))
+            + _h3(ctx, body, texts["layer_catches"])
+            + ctx.t("para", TEXT=body.renderer.inline(layer["layer"]))
+            + layer_html
+            + _h3(ctx, body, texts["chock_catches"])
+            + ctx.t("para", TEXT=body.renderer.inline(layer["chock"]))
+            + chock_html
+        )
+        md = (
+            f"### {texts['controls_heading']}\n\n{layer['controls']}\n\n"
+            f"{layer['chock_controls']}\n\n"
+            f"### {texts['layer_catches']}\n\n{layer['layer']}\n\n{layer_md}"
+            f"### {texts['chock_catches']}\n\n{layer['chock']}\n\n{chock_md}"
+        )
+        if examples:
+            html += _h3(ctx, body, texts["examples_heading"]) + ctx.t(
+                "list", ITEMS=Safe("".join(h for h, _ in examples))
+            )
+            md += f"### {texts['examples_heading']}\n\n" + "".join(
+                m for _, m in examples
+            )
+        _section(ctx, body, layer["heading"], html, md)
+    _section(
+        ctx,
+        body,
+        texts["closing_heading"],
+        _para(ctx, texts["closing"]),
+        f"{texts['closing']}\n",
+    )
+
+
 def _architecture(ctx: Ctx, body: Body) -> None:
     """The Architecture page: its list of diagrams (data/architecture/)."""
     texts = architecture.load_texts(ctx.data_dir)
@@ -1144,6 +1271,7 @@ BLOCKS = {
     "client_notes": _client_notes,
     "bypasses": _bypasses,
     "cli": _cli,
+    "landscape": _landscape,
     "cli_index": _cli_index,
     "architecture": _architecture,
 }
@@ -1525,6 +1653,35 @@ def _search(ctx: Ctx) -> Safe:
     )
 
 
+def chock_quotes_digest(layers: list[dict[str, Any]]) -> str:
+    """sha256 of every chock quote on the page, in order, so a changed quote is noticed."""
+    rows = [
+        q for layer in layers for q in layer["layer_quotes"] + layer["chock_quotes"]
+    ]
+    blob = json.dumps(rows, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()
+
+
+def load_landscape(data_dir: Path) -> dict[str, Any]:
+    """data/landscape.yaml with its vendor quotes, refused on an unknown example or changed chock quote."""
+    data = yaml.safe_load((data_dir / LANDSCAPE_YAML).read_text(encoding="utf-8"))
+    digest = chock_quotes_digest(data["layers"])
+    if digest != data["chock_quotes_sha256"]:
+        raise PageError(
+            f"{LANDSCAPE_YAML}: chock quotes changed (sha256 {digest}); "
+            "check each against chock's docs, then update chock_quotes_sha256"
+        )
+    quotes = {q["id"]: q for q in vendorquotes.load(data_dir)}
+    for layer in data["layers"]:
+        unknown = sorted(set(layer["examples"]) - set(quotes))
+        if unknown:
+            raise PageError(
+                f"{LANDSCAPE_YAML}: {layer['heading']!r} names unknown examples {unknown}"
+            )
+    data["quotes"] = quotes
+    return data
+
+
 def load_actions(data_dir: Path) -> dict[str, Any]:
     """data/page_actions.yaml, refused unless every open link is https with one prompt."""
     actions = yaml.safe_load((data_dir / ACTIONS_YAML).read_text(encoding="utf-8"))
@@ -1678,6 +1835,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         agents=docsfacts.agents(docs, site.data["agent_routes"]),
         cli=engine.cli_commands(),
         actions=load_actions(data_dir),
+        landscape=load_landscape(data_dir),
         data_dir=data_dir,
         cli_tree=engine.cli_tree(),
         cli_examples=cliexamples.load(data_dir),
