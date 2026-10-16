@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "catalog": "563a6cef73b08d64396cf903829e528d56dd1ac1",
+  "examples": [
+    {
+      "step": 1,
+      "command": "chock init .",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nNo git-pre-commit.sh policies found; pre-commit dispatcher unchanged\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nNo git-pre-commit.sh policies found; pre-merge-commit dispatcher unchanged\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nNo git-pre-push.sh policies found; pre-push dispatcher unchanged\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered SessionStart arm hook in .claude/settings.json\nINDEX.md: ~257 tokens (chars/4, max 2000)\nINDEX.md: ~257 tokens (chars/4, max 2000)\nImplementation registered at /work/demo/.git/hooks/pre-commit.d/99-chock-validate\n[PASS] All checks passed.\nInitialized Chock in /work/demo\nAgents: AGENTS.md + claude, copilot, gemini\nSkills: eval, optimize, policy-init, validate (refresh with `chock install-skills .`)\nPolicies: none. This repo enforces nothing yet.\n  1. copy a policy folder from https://github.com/open-coder-ai/chock-catalog (base/<id>/) into .agents/policies/<id>/\n  2. chock sync --repo .\nVerify anytime with:  chock check --only verify",
+      "exit": 0
+    },
+    {
+      "step": 2,
+      "command": "chock add protect-main-branch --ref 563a6cef73b08d64396cf903829e528d56dd1ac1",
+      "output": "Added protect-main-branch to .agents/policies/protect-main-branch\n  from https://github.com/open-coder-ai/chock-catalog at 563a6cef73b08d64396cf903829e528d56dd1ac1\n  sha256 eba164d09c22b46f5c2d2656607d73596d3b0ce4c77818737efc5272d78719ee\nINDEX.md: ~314 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "exit": 0
+    },
+    {
+      "step": 3,
+      "command": "chock add scan-secrets --ref 563a6cef73b08d64396cf903829e528d56dd1ac1 --verify-sha 9e20ae14cf86f18c3178ec32320186b80a3a9a32952a1ad851fb9ffd1fd0719c",
+      "output": "Added scan-secrets to .agents/policies/scan-secrets\n  from https://github.com/open-coder-ai/chock-catalog at 563a6cef73b08d64396cf903829e528d56dd1ac1\n  sha256 9e20ae14cf86f18c3178ec32320186b80a3a9a32952a1ad851fb9ffd1fd0719c\nINDEX.md: ~428 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "exit": 0
+    },
+    {
+      "step": 4,
+      "command": "chock sync --repo . --ci",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nRegistered 2 pre-commit policy implementation(s)\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nRegistered 2 pre-merge-commit policy implementation(s)\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nRegistered 1 pre-push policy implementation(s)\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered 2 PreToolUse/Stop hook(s) in .claude/settings.json\n  claude_code: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run, recorded 2026-09-07)\n  claude_code: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 2 hook entr(y/ies) in .gemini/settings.json\n  gemini_cli: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis vendor-source, recorded 2026-08-28)\n  gemini_cli: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 1 agent hook(s) in .github/hooks/chock.json\n  vscode_copilot: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run-partial, recorded 2026-09-28)\nINDEX.md: ~428 tokens (chars/4, max 2000)\nRecompiled 2 policies\nprotect-main-branch:\n  claude: enforced-at-commit\n  copilot: enforced-at-commit\n  gemini: enforced-at-commit\nscan-secrets:\n  claude: enforced-at-commit + best-effort at tool use (live-run)\n  copilot: enforced-at-commit + best-effort at tool use (live-run-partial)\n  gemini: enforced-at-commit + best-effort at tool use (vendor-source)\n== install ci workflow\nInstalled CI workflow at /work/demo/.github/workflows/chock.yml",
+      "exit": 0
+    },
+    {
+      "step": 5,
+      "command": "git commit --allow-empty -m notes",
+      "output": "Direct commits/pushes to a protected branch (main|master) are blocked. Create a feature branch and open a pull request.\n  - main",
+      "exit": 1
+    },
+    {
+      "step": 6,
+      "command": "git switch -c adopt-chock",
+      "output": "Switched to a new branch 'adopt-chock'",
+      "exit": 0
+    },
+    {
+      "step": 7,
+      "command": "git add -A",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 8,
+      "command": "git commit -q -m 'Adopt chock'",
+      "output": "== validate\n[PASS] All checks passed.",
+      "exit": 0
+    }
+  ]
+}

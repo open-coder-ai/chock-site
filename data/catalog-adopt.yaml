@@ -1,0 +1,28 @@
+# DOCS-4: the scripted adopt run on /docs/catalog/adopt/.
+# `python -m sitegen.catalogdoc --catalog <checkout>` runs these steps, in order, with the
+# installed engine (it must be .framework-ref) in a fresh git repository, and writes what each
+# one printed and its exit code to data/catalog-source/adopt.json. `--check` re-runs them and
+# fails when the output or an exit code differs. Never edit the JSON by hand.
+#
+# __CATALOG_REF__ is replaced by .catalog-ref. `chock add` fetches the catalog from GitHub,
+# so this run needs the network. The --verify-sha value is the hash `chock add` printed for
+# scan-secrets at .catalog-ref; a pin move that changes the policy changes the hash and fails
+# the check.
+
+# Printed in place of the throwaway repository and home folder, so the paths are stable.
+repo: /work/demo
+home: /home/demo
+# Run before the first step and not shown; the page says so (texts.catalog.run_setup).
+setup:
+  - [git, init, -q, -b, main, .]
+  - [git, config, --global, user.name, demo]
+  - [git, config, --global, user.email, demo@example.invalid]
+steps:
+  - {run: [chock, init, .]}
+  - {run: [chock, add, protect-main-branch, --ref, __CATALOG_REF__]}
+  - {run: [chock, add, scan-secrets, --ref, __CATALOG_REF__, --verify-sha, 9e20ae14cf86f18c3178ec32320186b80a3a9a32952a1ad851fb9ffd1fd0719c]}
+  - {run: [chock, sync, --repo, ., --ci]}
+  - {run: [git, commit, --allow-empty, -m, notes]}
+  - {run: [git, switch, -c, adopt-chock]}
+  - {run: [git, add, -A]}
+  - {run: [git, commit, -q, -m, Adopt chock]}

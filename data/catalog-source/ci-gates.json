@@ -1,0 +1,127 @@
+[
+  {
+    "job": "dco",
+    "if": "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
+    "steps": [
+      "Check Signed-off-by on every PR commit"
+    ]
+  },
+  {
+    "job": "no-private-data",
+    "if": "github.event_name == 'pull_request'",
+    "steps": [
+      "Scan commit messages for local or personal data"
+    ]
+  },
+  {
+    "job": "scope",
+    "if": null,
+    "steps": [
+      "Restore the file times main last recorded",
+      "Plan this run"
+    ]
+  },
+  {
+    "job": "generated",
+    "if": null,
+    "steps": [
+      "Read the framework pin",
+      "Check out the framework",
+      "The framework checkout is the pinned commit",
+      "Install Chock and the lint tooling",
+      "Registry matches the policies on disk",
+      "Installed policies trail, never lead, what this catalog publishes",
+      "Workflow triggers cannot hand fork code our secrets",
+      "Compiled artifacts match their manifests",
+      "Published policies are current Agent Plugins packages",
+      "Lint (ruff, the framework's rule set)",
+      "Formatting (ruff format)"
+    ]
+  },
+  {
+    "job": "adopter",
+    "if": null,
+    "steps": [
+      "Read the framework pin",
+      "Check out the framework",
+      "The framework checkout is the pinned commit",
+      "Install Chock",
+      "This repo is a valid adopter",
+      "Declared effects match what the guards actually do",
+      "Reviewer evidence, if the PR carries any"
+    ]
+  },
+  {
+    "job": "tests-shard",
+    "if": "needs.scope.outputs.full == 'true'",
+    "steps": [
+      "Read the framework pin",
+      "Check out the framework",
+      "The framework checkout is the pinned commit",
+      "Install Chock and the test tooling",
+      "Tests, one shard (every policy, every rule)"
+    ]
+  },
+  {
+    "job": "durations",
+    "if": "always() && github.event_name == 'push' && needs.scope.outputs.full == 'true'",
+    "steps": [
+      "Restore the file times main last recorded",
+      "Sum the junit times by test file and keep each file's longest test",
+      "Slow-test report",
+      "Save the file times for the next run",
+      "No single test takes longer than the cap"
+    ]
+  },
+  {
+    "job": "tests-policy",
+    "if": "needs.scope.outputs.full == 'false' && needs.scope.outputs.has_matrix == 'true'",
+    "steps": [
+      "Read the framework pin",
+      "Check out the framework",
+      "The framework checkout is the pinned commit",
+      "Install Chock and the test tooling",
+      "Tests of this policy, its implementations at 100% line and branch coverage"
+    ]
+  },
+  {
+    "job": "tests-targeted",
+    "if": "needs.scope.outputs.full == 'false'",
+    "steps": [
+      "Read the framework pin",
+      "Check out the framework",
+      "The framework checkout is the pinned commit",
+      "Install Chock and the test tooling",
+      "Changed tests no policy job owns, and repo standards"
+    ]
+  },
+  {
+    "job": "tests",
+    "if": "always()",
+    "steps": [
+      "Every test job this run needed passed",
+      "Install the coverage tooling",
+      "Combine the shards, 100% line and branch coverage"
+    ]
+  },
+  {
+    "job": "staged-adopter",
+    "if": null,
+    "steps": [
+      "Read the framework pin",
+      "Check out the framework",
+      "The framework checkout is the pinned commit",
+      "Install Chock",
+      "Stage the published policies and skills as an adopter would",
+      "Validate the staged policies and replay their evals",
+      "OWASP ASI coverage claim holds in the staged adopter"
+    ]
+  },
+  {
+    "job": "policies",
+    "if": "always()",
+    "steps": [
+      "Every policies job passed"
+    ]
+  }
+]
