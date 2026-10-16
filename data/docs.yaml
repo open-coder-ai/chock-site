@@ -20,7 +20,7 @@ nav:
   - group: Guides
     pages: [agents, policies, configure, monitor, troubleshooting, bypasses]
   - group: Reference
-    pages: [cli, release-notes]
+    pages: [cli, release-notes, where-chock-sits]
   - group: How Chock works
     pages: [how-it-works, surfaces, stop, architecture]
 
@@ -138,6 +138,18 @@ pages:
     blocks: []
     prose:
       - {file: CHANGELOG.md, first: 5}
+  # COPY-2: wording and sources in data/landscape.yaml; the prose below is what its quotes cite.
+  where-chock-sits:
+    path: /docs/where-chock-sits/
+    title: Where Chock sits
+    nav_label: Where Chock sits
+    description: "Chock beside agent identity, OS containment, gateways, inventory and browser controls: what each layer catches that Chock can't, and what Chock catches that it can't."
+    intro: "Chock works in your repository: in your coding agent's own hooks, in git hooks and in CI. Other products govern AI agents at other layers. For each layer, this page says what it can catch that Chock can't, and what Chock can catch that it can't."
+    blocks: [landscape]
+    prose:
+      - {file: README.md, sections: ["Guardrails, not guarantees"]}
+      - {file: docs/agentic-risk-coverage.md, sections: ["What Chock does not do — stated plainly"]}
+      - {file: docs/concepts.md, sections: [Policy, Enforcement surface]}
   # DOCS-2: How Chock works. Diagrams are data/architecture/<id>.json; the surface table and the
   # stop facts are read from the engine at .framework-ref; quoted prose is in the docs snapshot.
   how-it-works:
