@@ -21,8 +21,8 @@ nav:
     pages: [agents, policies, configure, monitor, troubleshooting, bypasses]
   - group: Reference
     pages: [cli, release-notes, where-chock-sits]
-  - group: Architecture
-    pages: [architecture]
+  - group: How Chock works
+    pages: [how-it-works, surfaces, stop, architecture]
 
 pages:
   overview:
@@ -150,6 +150,40 @@ pages:
       - {file: README.md, sections: ["Guardrails, not guarantees"]}
       - {file: docs/agentic-risk-coverage.md, sections: ["What Chock does not do — stated plainly"]}
       - {file: docs/concepts.md, sections: [Policy, Enforcement surface]}
+  # DOCS-2: How Chock works. Diagrams are data/architecture/<id>.json; the surface table and the
+  # stop facts are read from the engine at .framework-ref; quoted prose is in the docs snapshot.
+  how-it-works:
+    path: /docs/how-it-works/
+    title: How Chock works
+    nav_label: How it works
+    description: "The lifecycle of a policy in a repository, from authoring to a verdict and a log line, with diagrams that cite the engine's files."
+    intro: "Blocks your coding agent's wrong moves before they land. A person authors a policy once. chock compile turns it into each surface's control and chock sync wires those into the repository. From then on, on agents whose hooks chock wires, the hooks judge each tool call, commit and push, return a verdict and write one line to a local decision log; the CI gate re-runs the same check on a pull request."
+    blocks: [how_steps, how_diagrams]
+    prose:
+      - {file: docs/architecture.md, sections: [The components, Pointer model, "The CLI is a package manager, not a runtime"]}
+      - {file: docs/decision-log.md, sections: [Hash chain]}
+  surfaces:
+    path: /docs/how-it-works/surfaces/
+    title: Enforcement surfaces
+    nav_label: Enforcement surfaces
+    description: "Where a compiled policy runs: each surface as chock's docs describe it, the engine emitter that writes it, and the agents that have it."
+    intro: "A surface is where a compiled control runs. The first table is chock's own, from its docs. The second is read from the engine's compiler at the pinned commit, so it changes when the code does."
+    blocks: [surfaces]
+    prose:
+      - {file: docs/enforcement-surfaces.md, sections: [How a policy picks its surfaces, Gate runner semantics]}
+  stop:
+    path: /docs/how-it-works/stop/
+    title: Stop and resume
+    nav_label: Stop and resume
+    description: "chock stop, chock resume and --everywhere: a person's stop on agents in one repository or on the whole machine, what reads it, and its limits."
+    intro: "A stop is a person's brake on agents. While one is in force, chock's hooks refuse the next tool call, commit or push of an agent in scope. Only a person at a terminal lifts it."
+    blocks: [stop_help, stop_facts]
+    prose:
+      - {file: docs/decision-log.md, sections: [Stop and override]}
+    # Snapshotted for the quote checks on this page, not shown: the section names `chock install`
+    # in a table with no ask line, so the page restates it, and each restatement quotes it.
+    checked:
+      - {file: docs/stop.md, sections: ["Everywhere: one stop for the machine"]}
   # ARCH-1: the diagrams come from data/architecture/<id>.json (sitegen/architecture.py).
   architecture:
     path: /docs/architecture/
@@ -524,3 +558,86 @@ texts:
   ask_code: "Ask the user before running the commands below:"
   ask_note: "Ask the user before running a command this note names:"
   help_more: "The full options are on this page's HTML version, as the engine prints them."
+  # DOCS-2: How Chock works. Each stop fact quotes chock's docs (from the snapshot) or the engine's
+  # source as installed from .framework-ref (`src/chock/...`); the build fails when a quote is gone.
+  how:
+    steps_heading: "The lifecycle, step by step"
+    steps_intro: "The main path of the lifecycle diagram. Each step links the engine file that does the work, at the pinned commit:"
+    steps_diagram: lifecycle
+    diagrams_heading: Diagrams
+    diagrams_intro: "Each box cites the engine file that does the work, at a pinned commit. Each diagram has a page with a card per box."
+    diagrams: [lifecycle, enforcement-surfaces, stop-and-resume, life-of-a-policy]
+    surfaces_heading: The surfaces
+    surfaces_file: docs/enforcement-surfaces.md
+    surfaces_section: The nine surfaces
+    surfaces_intro: "chock's own table of the surfaces, from its docs at the pinned commit:"
+    code_heading: Where each surface comes from in the engine
+    code_intro: "Read from the engine at the pinned commit: the compiler's emitter for each surface (`EMITTERS` in `chock.compile.compiler`), the agents the engine gives it, by the engine's agent names (`SURFACE_AGENTS`), and whether it is held out of every coverage word (`UNCREDITED_SURFACES`). The build fails when the surfaces in chock's table and in its code differ."
+    code_columns: [Surface, Emitter, Agents, Held out of coverage]
+    no_emitter: "none: not emitted"
+    no_agents: "none"
+    held_out: "yes"
+    counted: "no"
+    help_heading: "chock stop and chock resume"
+    help_intro: "Both commands, as the engine's parsers print them."
+    help_commands: [stop, resume]
+    limits_intro: "After it writes a stop, chock stop prints its limits in the engine's own words:"
+    stop_source: "The engine's stop docs, in full:"
+    stop_file: docs/stop.md
+    facts:
+      - heading: In one repository
+        body:
+          - "`chock stop` writes `.chock/stop.json`: the scope, the reason, who (git `user.email`) and when. Every tool call, commit and push by an agent in scope is then refused until a person resumes."
+          - "`--agent <client>` stops one client; without it every agent is stopped. `--reason` is what the agent is told: `stopped: <reason>`."
+          - "The file is never committed. It is mirrored in `~/.chock/stops/`, for hooks that cannot tell which repository their session is in, and the hooks read both fail-closed: a stop file that cannot be read refuses every agent."
+        sources:
+          - {file: src/chock/stop.py, quote: "every tool call, commit and push by an agent in scope is refused until resume."}
+          - {file: src/chock/stop.py, quote: '{"scope": args.agent or HALT_ALL, "reason": args.reason, "who": git_email(repo) or UNKNOWN}'}
+          - {file: src/chock/stop.py, quote: 'doc["when"] = log_now()'}
+          - {file: src/chock/stop.py, quote: "Stop this one client only (default: every agent)"}
+          - {file: src/chock/stop.py, quote: "Why: the agent is told `stopped: <reason>`"}
+          - {file: src/chock/stop.py, quote: "The file is `.chock/stop.json` (never committed), mirrored in `~/.chock/stops/` for hooks that cannot tell which repository their session is in; the hooks read both fail-closed"}
+          - {file: src/chock/stop.py, quote: "cannot be read, so every agent is refused."}
+      - heading: Only a person changes a stop
+        body:
+          - "An agent's `chock stop` or `chock resume` is refused, and the refusal is logged."
+          - "`chock resume` needs a person at their own terminal: stdin and stdout must be a TTY, and the person types the repository's name. If the name does not match, the stop stays in force."
+        sources:
+          - {file: src/chock/stop_common.py, quote: "Only a person changes a stop (the actor rule): an agent's `chock stop` or `chock resume` is refused, logged."}
+          - {file: src/chock/stop.py, quote: "Only a person at their own terminal resumes: stdin and stdout are TTYs and they type the repository's name."}
+          - {file: src/chock/stop.py, quote: "the name typed does not match; the stop is still in force."}
+      - heading: "Everywhere: one stop for the machine"
+        body:
+          - "`chock stop --everywhere` writes `~/.chock/stops/_everywhere.json`. While it exists, every chock hook on the machine refuses every tool call, whatever its repository, session or client. `--agent` is refused with it: the scope is every agent."
+          - "`chock resume --everywhere` is person-only too: it needs stdin and stdout to be a TTY and asks for the word `everywhere` to be typed. It removes that file only; a per-repository stop stays in force."
+          - "`chock status` and `chock doctor` lead with `STOPPED EVERYWHERE` while it is in force."
+        sources:
+          - {file: docs/stop.md, quote: "`stop --everywhere` writes `~/.chock/stops/_everywhere.json`"}
+          - {file: docs/stop.md, quote: "While it exists every Chock hook on the machine refuses every tool call, whatever its repository, session or client"}
+          - {file: docs/stop.md, quote: "`--agent` is refused with it: the scope is every agent."}
+          - {file: docs/stop.md, quote: "needs stdin and stdout to be a TTY, and asks for the word `everywhere` to be typed. It removes that file only; a per-repository stop stays in force"}
+          - {file: docs/stop.md, quote: "`chock status` and `chock doctor` lead with `STOPPED EVERYWHERE` while it is in force."}
+      - heading: Where the stop is checked
+        body:
+          - "`chock sync` wires one hook of its own per client, `--stop-check`, with no matcher, so the stop sees every tool call, reads included. The plugin route carries the same entry."
+          - "At the git hooks, an agent's commit or push is refused and a person's passes. Only the main checkout's `.chock/bin/gate.py` tells an agent from a person."
+          - "The MCP gateway refuses each `tools/call` while a stop reaches it, with an MCP error, and forwards every other method, so the client can still connect and list tools."
+        sources:
+          - {file: docs/stop.md, quote: "`chock sync` wires one hook of its own per client, `--stop-check`, with no matcher"}
+          - {file: docs/stop.md, quote: "so the stop sees every tool call, reads included. The plugin route carries the same entry"}
+          - {file: src/chock/hooks/data/dispatcher.sh, quote: "while .chock/stop.json is in force, an agent's commit or push is refused; a person's passes."}
+          - {file: docs/stop.md, quote: "At the git hooks only the main checkout's `.chock/bin/gate.py` tells an agent from a person"}
+          - {file: docs/stop.md, quote: "The gateway refuses each `tools/call` while a stop reaches it (an MCP error, `stopped: <reason>`); it forwards `initialize`, `tools/list` and every other method, so the client can still connect and list tools."}
+      - heading: Limits
+        limits: true
+        body:
+          - "It reaches only agents whose hooks chock wires and that the client runs. An agent with no hook is stopped at commit and push only."
+          - "Devin's hook is best-effort: the vendor runs it fail-open, so a hook that errors or times out lets the call through."
+          - "A person, or an agent working outside this repository's hooks, is not affected, and such an agent can delete the stop files directly."
+          - "The terminal check is best-effort: an agent that can run a shell may give `resume` a pseudo-terminal and type the name."
+        sources:
+          - {file: src/chock/stop_common.py}
+          - {file: docs/stop.md, quote: "It reaches only agents whose hooks Chock wires and that the client runs. An agent with no hook is stopped at commit and push only."}
+          - {file: docs/stop.md, quote: "Devin's hook is best-effort: the vendor runs it fail-open, so a hook that errors or times out lets the call through."}
+          - {file: docs/stop.md, quote: "A person, or an agent working outside this repository's hooks, is not affected. Such an agent can also delete .chock/stop.json or `~/.chock/stops` directly"}
+          - {file: docs/stop.md, quote: "The terminal check is best-effort: an agent that can run a shell may give `resume` a pseudo-terminal"}
