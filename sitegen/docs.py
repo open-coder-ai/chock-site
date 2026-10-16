@@ -2957,7 +2957,7 @@ def _writing_rows(ctx: Ctx, rows: list[dict[str, Any]]) -> tuple[str, str]:
                 row["type"],
                 required,
                 Prose(allowed),
-                Prose(row["description"]),
+                _agentseam_breakable(ctx, row["description"]),
             ]
         )
         md_rows.append(
