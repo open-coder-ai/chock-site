@@ -6,6 +6,7 @@ with another code than the committed recording.
 """
 
 import argparse
+import difflib
 import json
 import os
 import re
@@ -78,9 +79,12 @@ def _paths(tmp: Path, script: dict[str, Any]) -> tuple[Path, Path, dict[str, str
 
 
 def _env(home: Path) -> dict[str, str]:
-    """A fixed environment: PATH from this process, and nothing else from it."""
+    """A fixed environment: PATH from this process, led by this Python's folder, and nothing else.
+
+    The hooks' launcher and `chock doctor` run the first `python3` on PATH, so it is this one.
+    """
     return {
-        "PATH": os.environ["PATH"],
+        "PATH": os.pathsep.join([str(Path(sys.executable).parent), os.environ["PATH"]]),
         "HOME": str(home),
         "LANG": "C.UTF-8",
         "TZ": "UTC",
@@ -203,6 +207,20 @@ def main(argv: list[str] | None = None) -> int:
             or (folder / name).read_text(encoding="utf-8") != wanted[name]
         )
         if drift:
+            for name in drift:
+                committed = (
+                    (folder / name).read_text(encoding="utf-8")
+                    if name in present
+                    else ""
+                )
+                sys.stderr.writelines(
+                    difflib.unified_diff(
+                        committed.splitlines(keepends=True),
+                        wanted.get(name, "").splitlines(keepends=True),
+                        f"committed/{name}",
+                        f"re-run/{name}",
+                    )
+                )
             print(
                 "CLI examples differ from a re-run at .framework-ref: "
                 + ", ".join(drift)
