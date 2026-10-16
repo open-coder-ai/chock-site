@@ -1,0 +1,121 @@
+# Weekly check of the vendor quotes on /docs/where-chock-sits/ (data/vendor-quotes.json).
+# Runs on schedule and by hand only, never on a PR or push, so a vendor's website
+# change cannot block unrelated work.
+# - check: fetches each quote's page; keeps ONE open issue listing the quotes that broke
+#   (closed again once every quote verifies).
+# - record: sets `checked` to today on the quotes that verified, as a commit on the bot
+#   branch bot/vendor-quote-dates, and opens a PR from it if none is open. The commit
+#   merges main into the branch's previous head, so the push is a fast-forward and no
+#   history is rewritten. A person reviews and merges the PR.
+name: vendor-quotes
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: vendor-quotes
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: check quotes
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # check out the data and checker
+      issues: write # open, update or close the one tracking issue
+    outputs:
+      verified: ${{ steps.check.outputs.verified }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - id: check
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python -m sitegen.vendorquotes check --report report.json --issue-body issue.md --run-url "$RUN_URL"
+          echo "verified=$(jq -r '.verified | join(" ")' report.json)" >> "$GITHUB_OUTPUT"
+          echo "broken=$(jq -r '.broken | length' report.json)" >> "$GITHUB_OUTPUT"
+      - name: open, update or close the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BROKEN: ${{ steps.check.outputs.broken }}
+          TITLE: "Vendor quotes on Where Chock sits no longer verify"
+        run: |
+          number=$(gh issue list --state open --search "in:title \"$TITLE\"" --json number,title \
+            | jq -r --arg t "$TITLE" 'map(select(.title == $t)) | .[0].number // empty')
+          if [ "$BROKEN" != "0" ]; then
+            if [ -n "$number" ]; then
+              gh issue edit "$number" --body-file issue.md
+            else
+              gh issue create --title "$TITLE" --body-file issue.md
+            fi
+          elif [ -n "$number" ]; then
+            gh issue close "$number" --comment "Every vendor quote verified on $(date -u +%F)."
+          fi
+
+  record:
+    name: record verified dates
+    needs: check
+    if: needs.check.outputs.verified != ''
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the bot branch
+      pull-requests: write # open its PR
+    env:
+      BRANCH: bot/vendor-quote-dates
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - env:
+          VERIFIED: ${{ needs.check.outputs.verified }}
+        run: python -m sitegen.vendorquotes record --verified "$VERIFIED" --date "$(date -u +%F)"
+      - name: commit to the bot branch and open a PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh auth setup-git
+          git add data/vendor-quotes.json
+          tree=$(git write-tree)
+          main=$(git rev-parse HEAD)
+          parents=(-p "$main")
+          if git fetch --no-tags origin "refs/heads/$BRANCH"; then
+            head=$(git rev-parse FETCH_HEAD)
+            if [ "$(git rev-parse "$head^{tree}")" = "$tree" ]; then
+              echo "bot branch already holds these dates"
+              exit 0
+            fi
+            parents=(-p "$head" -p "$main")
+          fi
+          if [ "$(git rev-parse "$main^{tree}")" = "$tree" ]; then
+            echo "main already holds these dates"
+            exit 0
+          fi
+          bot="github-actions[bot]"
+          email="41898283+github-actions[bot]@users.noreply.github.com"
+          commit=$(git -c user.name="$bot" -c user.email="$email" commit-tree "$tree" "${parents[@]}" \
+            -m "vendor quotes: record dates verified $(date -u +%F)" \
+            -m "Signed-off-by: $bot <$email>")
+          git push origin "$commit:refs/heads/$BRANCH"
+          if [ "$(gh pr list --head "$BRANCH" --state open --json number --jq length)" = "0" ]; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "Vendor quotes: record verified dates" \
+              --body "The weekly vendor-quotes workflow found these quotes on their pages and set \`checked\` in data/vendor-quotes.json. Only dates change. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
