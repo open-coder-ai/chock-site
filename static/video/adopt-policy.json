@@ -3,14 +3,14 @@
   "tape": "videos/adopt-policy.tape",
   "tape_sha256": "a1da7e54a6845de877ce1080422c03405c38fc3afcec3e4398c7bc3ab06f9b0b",
   "mp4": "static/video/adopt-policy.mp4",
-  "mp4_sha256": "7cfa8249a9b9046284e8ebf8bcfec3e85e28f127fefd35ecd17c54f3012db078",
-  "mp4_bytes": 590844,
+  "mp4_sha256": "87b63893b67a79863e24f9af17ca5692be4c2b13d9e8e7c83cdf11b66582b827",
+  "mp4_bytes": 586213,
   "poster": "static/video/adopt-policy.png",
-  "poster_sha256": "9a70e1aa13722ebf4ea9943733b1979895813178f2d974ae8f5d381572b292ed",
+  "poster_sha256": "089aaae56cf90451f29deedeb5dbde21f47111295fb3e0cbbcc55b5ff3724837",
   "width": 1200,
   "height": 640,
-  "duration": "0:30",
-  "engine": "2264c312d9c97020a1de09aec47a46ca1db35d8f",
+  "duration": "0:29",
+  "engine": "7a1c6d7a4956106b4f42ca6003a10993892bee43",
   "catalog": "563a6cef73b08d64396cf903829e528d56dd1ac1",
-  "vhs": "vhs version v0.10.0"
+  "vhs": "vhs version v0.10.0 (517bcda)"
 }

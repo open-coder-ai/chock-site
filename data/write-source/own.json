@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "engine": "2264c312d9c97020a1de09aec47a46ca1db35d8f",
+  "engine": "7a1c6d7a4956106b4f42ca6003a10993892bee43",
   "run": "own",
   "examples": [
     {
@@ -30,7 +30,7 @@
     {
       "step": 5,
       "command": "chock validate",
-      "output": "[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'",
+      "output": "[PASS] All checks passed.",
       "exit": 0
     },
     {
@@ -48,7 +48,7 @@
     {
       "step": 8,
       "command": "chock check --repo .",
-      "output": "== validate\n[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'\n== verify lockfile\nverify: all packs match lockfile\n== policy evals\n\nmy-block-marker  [deterministic]\n  PASS  tc-001                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-002                             authored  gate exit 0\n  PASS  tc-003                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-004                             authored  gate exit 0\n  score 1.00\n\n5 policies: 4 pass, 44 skipped\n44 case(s) have no executable form; they are agent-mode material (tier 3).\n== enforcement matrix (skipped: no spec/enforcement-matrix.md in this repo)\n== matrix mechanisms (skipped: no spec/enforcement-matrix.md in this repo)\n== index freshness\n== ambient conflicts\n[PASS] All checks passed.\n== policy baseline (skipped: no --base given; CI passes the pull request's base branch)\n== result: PASS",
+      "output": "== validate\n[PASS] All checks passed.\n== verify lockfile\nverify: all packs match lockfile\n== policy evals\n\nmy-block-marker  [deterministic]\n  PASS  tc-001                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-002                             authored  gate exit 0\n  PASS  tc-003                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-004                             authored  gate exit 0\n  score 1.00\n\n5 policies: 4 pass, 44 skipped\n44 case(s) have no executable form; they are agent-mode material (tier 3).\n== enforcement matrix (skipped: no spec/enforcement-matrix.md in this repo)\n== matrix mechanisms (skipped: no spec/enforcement-matrix.md in this repo)\n== index freshness\n== ambient conflicts\n[PASS] All checks passed.\n== policy baseline (skipped: no --base given; CI passes the pull request's base branch)\n== result: PASS",
       "exit": 0
     },
     {
@@ -60,7 +60,7 @@
     {
       "step": 10,
       "command": "git commit -q -m 'Add my-block-marker'",
-      "output": "== validate\n[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'\n== result: PASS",
+      "output": "== validate\n[PASS] All checks passed.\n== result: PASS",
       "exit": 0
     },
     {
@@ -96,7 +96,7 @@
     {
       "step": 16,
       "command": "git commit -q -m 'Add notes'",
-      "output": "== validate\n[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'\n== result: PASS",
+      "output": "== validate\n[PASS] All checks passed.\n== result: PASS",
       "exit": 0
     }
   ]
