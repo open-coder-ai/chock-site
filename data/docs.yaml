@@ -23,6 +23,9 @@ nav:
     pages: [cli, release-notes]
   - group: Architecture
     pages: [architecture]
+  # DOCS-3: agentseam, the library under chock.
+  - group: agentseam
+    pages: [agentseam, agentseam-direct, agentseam-api, agentseam-cli]
 
 pages:
   overview:
@@ -146,6 +149,40 @@ pages:
     description: "How the chock repositories fit together, and the path one policy takes from the catalog to your agent's hook."
     intro: "Blocks your coding agent's wrong moves before they land. These diagrams show how: each box cites the file that does the work, at a pinned commit, and each has a card. Select a box to read its card, or read the cards in order below each diagram."
     blocks: [architecture]
+    prose: []
+  # DOCS-3: agentseam pages. Facts come from the agentseam release chock pins, read at build
+  # time (API, CLI), quoted from its docs (data/agentseam-source/) or recorded (agentseam-run).
+  agentseam:
+    path: /docs/agentseam/
+    title: What agentseam is
+    nav_label: What agentseam is
+    description: "agentseam, the library under chock: one handler API over each coding agent's own hooks."
+    intro: "agentseam is the stdlib-only Python library and CLI that chock builds on. It turns each coding agent's hook payload into one normalized Event, and a handler's Decision back into that agent's own reply. You can use it on its own, without chock."
+    blocks: [agentseam_about]
+    prose: []
+  agentseam-direct:
+    path: /docs/agentseam/direct/
+    title: Use agentseam without chock
+    nav_label: Use it without chock
+    description: "Install agentseam, write a handler, wire it into your agents' hooks and see it refuse, from a recorded run."
+    intro: "A handler is a Python function that takes an Event and returns a Decision. agentseam wires the command that runs it into each agent's hook config. Every output on this page is from a real run, recorded with the agentseam release this site documents."
+    blocks: [agentseam_direct]
+    prose: []
+  agentseam-api:
+    path: /docs/agentseam/api/
+    title: agentseam Python API
+    nav_label: Python API
+    description: "Every name agentseam exports, with its signature and docstring, read from the pinned release."
+    intro: "Generated at build time from the installed agentseam: each name in `agentseam.__all__`, its signature from `inspect.signature`, and the first paragraph of its own docstring."
+    blocks: [agentseam_api]
+    prose: []
+  agentseam-cli:
+    path: /docs/agentseam/cli/
+    title: agentseam CLI
+    nav_label: agentseam CLI
+    description: "The agentseam command and every subcommand, generated from its argument parser."
+    intro: "Generated at build time from the argparse parser of the installed agentseam."
+    blocks: [agentseam_cli]
     prose: []
 
 # DOCS-1: every command and subcommand of the engine at .framework-ref, in its order, one page
@@ -512,3 +549,104 @@ texts:
   ask_code: "Ask the user before running the commands below:"
   ask_note: "Ask the user before running a command this note names:"
   help_more: "The full options are on this page's HTML version, as the engine prints them."
+
+# DOCS-3: the agentseam pages (sitegen/docs.py, sitegen/agentseamdoc.py). They document the
+# agentseam commit in data/agentseam-source/source.json. The build fails unless the installed
+# agentseam is that commit and chock at .framework-ref requires that same commit.
+agentseam:
+  repo: https://github.com/open-coder-ai/agentseam
+  source_dir: agentseam-source
+  run_script: agentseam-run.yaml
+  run_record: agentseam-run.json
+  # Quoted from agentseam at the pinned commit; `python -m sitegen.agentseamdoc snapshot` copies them.
+  quotes:
+    - {file: README.md, sections: [How it works]}
+    # heading: false quotes a section's body without its own heading line.
+    - {file: docs/design.md, level: 1, sections: [Design], heading: false}
+    - {file: docs/quickstart.sh, whole: true}
+  # The API page's sections. Every name in agentseam.__all__ is listed once; the build fails
+  # when one is missing, listed twice, or not exported.
+  api_groups:
+    - heading: "Contract: Event and Decision"
+      names: [Event, Decision]
+    - heading: Dispatch
+      names: [run, handle, degrade]
+    - heading: Matrix
+      names: [MATRIX, agents, adapted_agents, capability, can_block, can_rewrite, can_transform, enforcement_level]
+    - heading: Events
+      names: [EVENTS, SESSION_START, SESSION_END, PROMPT_SUBMIT, PRE_TOOL, POST_TOOL, TOOL_FAILURE, PRE_COMPACT, STOP, SUBAGENT_START, SUBAGENT_STOP, INSTRUCTIONS_LOADED, FILE_CHANGED, UNKNOWN]
+    - heading: Outcomes
+      names: [ALLOW, DENY, ESCALATE, TRANSFORM, WARN, VOUCH, ASK, REWRITE]
+    - heading: Submodules
+      names: [adapters, bundler, instructions, packaging, permissions]
+    - heading: Version
+      names: [__version__]
+  texts:
+    release_heading: "The release these pages document"
+    release_rows:
+      package: Package
+      commit: Commit
+      python: Python
+      license: Licence
+      requires: Runtime dependencies
+      script: Console script
+      pinned: Pinned by
+    no_requires: "none"
+    pinned_by: "chock's pyproject.toml at the engine commit this site builds from"
+    pages_heading: "The agentseam pages"
+    pages_items:
+      - {page: agentseam-direct, text: "install it, write a handler and wire it, from a recorded run"}
+      - {page: agentseam-api, text: "every exported name, its signature and docstring"}
+      - {page: agentseam-cli, text: "the agentseam command and each subcommand"}
+      - {page: agents, text: "what each agent can enforce, from agentseam's matrix"}
+    pages_line: ": __TEXT__."
+    prose_heading: "From the agentseam docs"
+    install_heading: Install
+    install_intro: "agentseam is one Python package with no runtime dependencies and one console script, `agentseam`. Installing chock installs it too, at the commit below. agentseam's README installs it from PyPI with `pip install agentseam`; a PyPI release can differ from this commit. To get the code these pages document, install from the commit (ask the user before running it):"
+    install_command: "pip install \"agentseam @ git+__REPO__@__REF__\""
+    install_python: "It needs Python __PYTHON__."
+    files_heading: "The files"
+    files_intro: "The run below starts in an empty git repository holding these files. `my_handler.py` is the handler from agentseam's README Quick start, word for word; the site's tests check it against agentseam's `docs/quickstart.sh` at the pinned commit. The two payloads take the shape of the Claude Code `PreToolUse` example in agentseam's __EXAMPLE__, with their content changed."
+    example_file: examples/generated/claude_code.md
+    files:
+      my_handler.py: "The handler. `run(handler)` reads one payload from stdin, identifies the agent that sent it (best effort, with `adapters.detect`), calls the handler with the normalized Event, and prints the reply in that agent's dialect."
+      deny.json: "A Claude Code PreToolUse payload: the agent wants to write a line with `AKIA` in it to AGENTS.md."
+      allow.json: "The same payload with harmless content."
+      in_process.py: "The same check called in process with `handle()`, which returns the reply instead of printing it."
+    run_heading: "The recorded run"
+    run_intro: "Real runs, recorded by `python -m sitegen.agentseamdoc run --record` with agentseam at the pinned commit. The steps of `__SCRIPT__` ran in order, offline, in one fresh git repository at `/work/demo` (made with `git init -b main`), with HOME at `/home/demo`. Those paths stand for the throwaway folders the runs used. Output is stdout and stderr together; CI re-runs the steps and fails when any output or exit code differs."
+    run_step: "Step __STEP__ of __OF__, exit code __EXIT__."
+    # One line per step, saying what its output shows. Keyed by the step's number.
+    run_notes:
+      1: "The version of the installed agentseam."
+      2: "Every agent in agentseam's matrix: its id, tier and hook config file. `install` takes these ids, or `all`."
+      3: "The README's install line. It wires `python3 my_handler.py` at `pre_tool` into each agent that has a hook adapter, and prints each agent's grade there. Junie's and Kimi Code's config files sit under HOME."
+      4: "What it wrote for Claude Code. Each entry is marked `_agentseam`, so `uninstall` removes only its own entries."
+      5: "The hook as Claude Code runs it, fed the payload with `AKIA`. The handler returned `Decision.deny`, and agentseam printed the refusal in Claude Code's `PreToolUse` dialect."
+      6: "The harmless payload. The handler returned `Decision.allow()`, and agentseam printed nothing: the exit code carries the answer."
+      7: "In process, `handle()` returns the normalized Event, the Decision, the exit code and the text `run()` would print."
+      8: "`uninstall all` removes agentseam's entries from every agent's config."
+      9: "Claude Code's settings file after uninstall."
+    api_about_heading: "How this reference is made"
+    api_heading_source: Source
+    api_intro: "Names are listed as `agentseam` exports them. A summary is the first paragraph of the object's own docstring at the pinned commit; \"No docstring.\" means it has none. Source links go to the line that defines the object."
+    no_doc: "No docstring."
+    api_members: "Members"
+    api_member_head: [Member, Kind, Signature, Summary]
+    api_value_head: [Name, Value]
+    api_size: "a __KIND__ with __COUNT__ entries"
+    api_module: "Module `__MODULE__`. Its public names, from `__all__` where the module sets one, otherwise the functions and classes it defines:"
+    api_matrix: "The matrix as data. The site renders it on the Agents pages."
+    cli_heading: "Every command and subcommand"
+    cli_intro: "One section per command, from agentseam's own parser at the pinned commit. Arguments are written as argparse prints them; `-h, --help` is left out."
+    cli_head: [Command, Summary]
+    cli_usage: "Usage"
+    cli_arguments_head: [Argument, Default, Help]
+    cli_no_arguments: "No arguments besides `-h, --help`."
+    cli_subcommands: "Subcommands:"
+    exit_heading: "Exit codes"
+    exit_lines:
+      - "2: argparse rejected the arguments. The site's tests run each command and subcommand with an unknown option and check that it exits 2."
+      - "This page lists no other codes. The runs on Use agentseam without chock show the code each one returned."
+    help_heading: "Help as printed"
+    help_intro: "What `agentseam --help` prints, from the same parser."
