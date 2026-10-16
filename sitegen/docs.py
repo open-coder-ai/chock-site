@@ -3025,3 +3025,63 @@ def _writing(ctx: Ctx, body: Body) -> None:
 
 
 BLOCKS["write"] = _writing
+
+
+# --- DOCS-6: a page's video, rendered by VHS from videos/<name>.tape (sitegen/videos.py) ---
+
+
+def _video(ctx: Ctx, body: Body) -> None:
+    """The page's video, then what it was recorded with and every command it shows, from its tape."""
+    from . import videos  # imported here so this block stays in one place
+
+    texts = ctx.texts["videos"]
+    name = ctx.page["video"]
+    words = texts["items"][name]
+    record = videos.load(videos.ROOT, name)
+    tape = (videos.ROOT / record["tape"]).read_text(encoding="utf-8")
+    shown = "\n".join(videos.shown_commands(tape))
+    src, poster = videos.site_path(record["mp4"]), videos.site_path(record["poster"])
+    size = f"{record['mp4_bytes'] / 1_000_000:.1f} MB"
+    download = data_fill(texts["download"], {"__SIZE__": size})
+    figure = ctx.t(
+        "video",
+        TITLE=words["title"],
+        SRC=src,
+        POSTER=poster,
+        WIDTH=str(record["width"]),
+        HEIGHT=str(record["height"]),
+        DOWNLOAD=download,
+        DESCRIPTION=words["description"],
+        DURATION=record["duration"],
+    )
+    engine = record["engine"]
+    made = data_fill(
+        texts["catalog_made" if record["catalog"] else "made"],
+        {
+            "__TAPE__": record["tape"],
+            "__ENGINE__": engine[:12],
+            "__CATALOG__": (record["catalog"] or "")[:12],
+        },
+    )
+    made = f"{made} {words['setup']}"
+    tape_url = data_fill(
+        BLOB_URL,
+        {"__REPO__": texts["repo"], "__REF__": "main", "__PATH__": record["tape"]},
+    )
+    html = [
+        figure,
+        _para(ctx, made),
+        ctx.t("line-link", LINE=texts["tape_link"], URL=tape_url, LINK=record["tape"]),
+        _code(ctx, shown, "bash"),
+    ]
+    site = ctx.site.data["site_url"]
+    md = [
+        f"{words['title']}: {words['description']} ({record['duration']}) "
+        f"[{download}]({site}{src})\n\n",
+        f"{made}\n\n{texts['tape_link']} [{record['tape']}]({tape_url})\n\n",
+        f"{ctx.texts['ask_code']}\n\n```bash\n{shown}\n```\n",
+    ]
+    _section(ctx, body, texts["heading"], "".join(html), "".join(md))
+
+
+BLOCKS["video"] = _video
