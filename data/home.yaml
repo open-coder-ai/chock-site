@@ -16,6 +16,14 @@ videos:
     height: 720
     duration: "1:57"
     description: "A two-minute look at how chock stops an agent's risky moves, and the incidents behind each policy."
+  # DOCS-6: rendered by VHS from videos/own-policy.tape; static/video/own-policy.json records it.
+  - title: "Write your own policy"
+    src: /video/own-policy.mp4
+    poster: /video/own-policy.png
+    width: 1200
+    height: 640
+    duration: "0:37"
+    description: "A silent terminal recording: chock new scaffolds a policy and chock sync wires it. The commit with the marked line is refused; the clean one lands."
 primary_cta: "Build your plugin"
 secondary_cta: "Browse the policies"
 steps_heading: "How it works"

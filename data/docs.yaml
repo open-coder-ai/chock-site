@@ -248,7 +248,8 @@ pages:
     nav_label: Adopt catalog policies
     description: "Install policies from chock-catalog into your repository, pinned to a commit and checked against a hash, with the output of a real run."
     intro: "chock-catalog is the public catalog of chock policies. This page adds two of them to a fresh repository with `chock add`, compiles them with `chock sync`, and shows a commit refused by one of them. Every command and output below is from a recorded run."
-    blocks: [catalog]
+    blocks: [video, catalog]
+    video: adopt-policy
     prose: []
     catalog:
       - heading: Three ways to adopt
@@ -275,7 +276,8 @@ pages:
     nav_label: Add a policy to the catalog
     description: "Add a new policy to chock-catalog step by step: folder, manifest, implementation, evals, the generators, and the CI jobs a pull request runs."
     intro: "A catalog policy is one folder: a manifest, its evals and, for a guard, its implementation. The catalog's tools generate the rest and its CI checks it. The steps below follow the catalog's CONTRIBUTING.md and tools at the pinned commit, and were dry-run against it."
-    blocks: [catalog]
+    blocks: [video, catalog]
+    video: catalog-policy
     prose: []
     catalog:
       - quote: CONTRIBUTING.md
@@ -370,7 +372,8 @@ pages:
     nav_label: Your own policy
     description: "Create a policy in your own repository step by step: scaffold it, read its manifest and evals, validate, eval, sync, and see a commit refused. Every output is from a recorded run."
     intro: "A policy is a folder under `.agents/policies/<id>/` in your repository: a manifest, an eval suite and, for some kinds, a script. This page makes one with `chock new`, checks it, compiles it with `chock sync`, and shows the commit it refuses. Every command and output below is from a recorded run with the engine at the pinned commit."
-    blocks: [write]
+    blocks: [video, write]
+    video: own-policy
     prose: []
     checked:
       - {file: docs/custom-policies.md, sections: [1. Start from a template]}
@@ -974,6 +977,29 @@ texts:
     schema_required: ["yes", "no"]
     schema_pattern: "pattern __PATTERN__"
     schema_pattern_file: "a pattern; it holds a backslash, so it is shown only in the schema file"
+
+  # DOCS-6: the `video` block (sitegen/docs.py). Each page's video is static/video/<name>.mp4,
+  # rendered by VHS from videos/<name>.tape; static/video/<name>.json records what it ran.
+  videos:
+    heading: Watch it
+    repo: https://github.com/open-coder-ai/chock-site
+    download: "Download the video (MP4, __SIZE__)"
+    made: "A silent terminal recording, rendered by VHS from `__TAPE__`. The commands it shows ran with chock __ENGINE__, and are listed below in order."
+    catalog_made: "A silent terminal recording, rendered by VHS from `__TAPE__`. The commands it shows ran with chock __ENGINE__ and chock-catalog __CATALOG__, and are listed below in order."
+    tape_link: "The tape:"
+    items:
+      own-policy:
+        title: Write your own policy
+        description: "chock new scaffolds a policy and chock sync wires it. The commit with the marked line is refused; the clean one lands."
+        setup: "Before the first command, a hidden step made an empty git repository at `/work/demo`."
+      adopt-policy:
+        title: Adopt a catalog policy
+        description: "chock add installs protect-main-branch from the catalog at a pinned commit and chock sync wires it. A commit to main is refused; the same commit on a branch lands."
+        setup: "Before the first command, a hidden step made an empty git repository at `/work/demo`."
+      catalog-policy:
+        title: Add a policy to the catalog
+        description: "A new policy is scaffolded inside chock-catalog, moved into the base tree and given its prose entry and README row; regen_all.py regenerates the derived files and runs the checks."
+        setup: "Before the first command, a hidden step cloned chock-catalog at the pinned commit to `/work/catalog`, and installed the engine that commit pins and the catalog's test requirements."
 
 # DOCS-3: the agentseam pages (sitegen/docs.py, sitegen/agentseamdoc.py). They document the
 # agentseam commit in data/agentseam-source/source.json. The build fails unless the installed

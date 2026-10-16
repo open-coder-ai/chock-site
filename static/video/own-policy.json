@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "tape": "videos/own-policy.tape",
+  "tape_sha256": "643a82b071e2319d38fc3841a2cbd464e85b32251eff8ff7bdb0a0e8b611829a",
+  "mp4": "static/video/own-policy.mp4",
+  "mp4_sha256": "d9bd580abe697b8cd97460c7c7a8080bc95f9ba8a5877097d8a5ed26217560e6",
+  "mp4_bytes": 918641,
+  "poster": "static/video/own-policy.png",
+  "poster_sha256": "5789bf8abbf402bfec94047272d882a6c64ed25b13f90b8cdc9bf766c8e24e99",
+  "width": 1200,
+  "height": 640,
+  "duration": "0:37",
+  "engine": "2264c312d9c97020a1de09aec47a46ca1db35d8f",
+  "catalog": null,
+  "vhs": "vhs version v0.10.0"
+}
