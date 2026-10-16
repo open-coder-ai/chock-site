@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "engine": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "engine": "2264c312d9c97020a1de09aec47a46ca1db35d8f",
   "examples": [
     {
       "step": 2,
       "of": 21,
       "command": "chock new policy block-marker --kind content_regex",
-      "output": "INDEX.md: ~335 tokens (chars/4, max 2000)\nCreated policy 'my-block-marker' at /work/demo/.agents\nNext:  python -m chock check .",
+      "output": "INDEX.md: ~336 tokens (chars/4, max 2000)\nCreated policy 'my-block-marker' at /work/demo/.agents\nNext:  python -m chock sync --repo .\n       python -m chock check --repo .",
       "exit": 0
     }
   ]
