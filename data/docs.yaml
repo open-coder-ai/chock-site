@@ -29,6 +29,9 @@ nav:
   # DOCS-4
   - group: Catalog
     pages: [catalog-adopt, catalog-contribute]
+  # DOCS-5
+  - group: Write policies
+    pages: [write-own, write-fly, write-manifest, write-evals]
 
 pages:
   overview:
@@ -354,6 +357,110 @@ pages:
         regen: true
       - heading: CI jobs
         gates: true
+
+  # DOCS-5: the Write policies pages. Their `write` parts are built by the `write` block: a
+  # hand-written Markdown part (`md`), a run recorded by `python -m sitegen.writedoc` into
+  # data/write-source/ (`run`), a quoted chock doc section (`quote`, which must also be listed
+  # under `checked` so the docs snapshot holds it), or a table of every field of one of the
+  # installed engine's schemas (`schema`). __ENGINE__ in `md` stands for a GitHub file link at
+  # the pinned engine commit.
+  write-own:
+    path: /docs/write/own-policy/
+    title: Write your own policy
+    nav_label: Your own policy
+    description: "Create a policy in your own repository step by step: scaffold it, read its manifest and evals, validate, eval, sync, and see a commit refused. Every output is from a recorded run."
+    intro: "A policy is a folder under `.agents/policies/<id>/` in your repository: a manifest, an eval suite and, for some kinds, a script. This page makes one with `chock new`, checks it, compiles it with `chock sync`, and shows the commit it refuses. Every command and output below is from a recorded run with the engine at the pinned commit."
+    blocks: [write]
+    prose: []
+    checked:
+      - {file: docs/custom-policies.md, sections: [1. Start from a template]}
+    write:
+      - heading: Before you start
+        md: |
+          - chock is installed: see [Quickstart: repo path](/docs/quickstart/repo/).
+          - The repository is a git repository. The run below starts in a fresh one.
+      - quote: docs/custom-policies.md
+        sections: [1. Start from a template]
+      - heading: Write a policy, step by step
+        run: own
+      - heading: Make it refuse your own text
+        md: |
+          The template refuses one example marker. To make it yours:
+
+          1. In `manifest.yaml`, set `hook.gate.params.content_pattern` to your regular expression and `hook.gate.message` to the line the agent sees. The template's own description says to keep the pattern from matching its own text: the message is quoted in `.agents/policies/INDEX.md`, which a commit also scans.
+          2. In `evals/suite.yaml`, change each case's `execute.files` or `execute.writes` so the `block` cases hold text your pattern matches and the `allow` cases do not.
+          3. Run the same three commands again:
+
+          ```bash
+          chock eval my-<id>
+          chock sync --repo .
+          chock check --repo .
+          ```
+
+          Every field is listed on [Manifest reference](/docs/write/manifest/) and [Evals reference](/docs/write/evals/). The files `chock new` copies are the engine's [manifest template](__ENGINE__src/chock/scaffold/data/kinds/content_regex/manifest.yaml.tmpl) and [eval suite template](__ENGINE__src/chock/scaffold/data/kinds/content_regex/evals/suite.yaml.tmpl).
+      - heading: Next
+        md: |
+          - Make one while you work, from your agent or in the browser: [On the fly](/docs/write/on-the-fly/).
+          - Offer it to everyone: [Add a policy to the catalog](/docs/catalog/contribute/).
+          - Every option of [chock new](/docs/cli/new/), [chock validate](/docs/cli/validate/), [chock eval](/docs/cli/eval/), [chock sync](/docs/cli/sync/) and [chock check](/docs/cli/check/).
+  write-fly:
+    path: /docs/write/on-the-fly/
+    title: Write a policy on the fly
+    nav_label: On the fly
+    description: "Make a policy while you work: ask your agent to run the policy-init skill, scaffold one with a single chock new, or fill the templates in the browser. A recorded run writes a guard and feeds it an agent's hook event."
+    intro: "A policy can start as one sentence in the middle of a task. There are three ways to turn it into a folder chock enforces. The recorded run below writes a guard against one shell command and shows the hook refusing it."
+    blocks: [write]
+    prose: []
+    checked:
+      - {file: src/chock/packs/_skills/policy-init/SKILL.md, sections: [Procedure]}
+    write:
+      - heading: Three ways
+        md: |
+          - **Ask your agent.** `chock init` installs the `policy-init` skill at `.agents/skills/policy-init/`. Ask your agent to use it, in your own words: for example, "use the policy-init skill: never let the agent run terraform destroy". Its procedure is quoted below. Its default target is `<repo_root>/generated/`; name `.agents/policies/<id>/` instead, the folder `chock sync` compiles. Read what it wrote, then run `chock check --repo .` and `chock sync --repo .` yourself.
+          - **One command.** `chock new policy <id> --kind <kind>` writes a tested template; edit it, then eval and sync it. The run below does this for a guard, whose script is the engine's [guard template](__ENGINE__src/chock/scaffold/data/kinds/guard/implementations/%5F%5FID%5F%5F.py.tmpl).
+          - **In the browser.** The [policy author](/coding/author/) asks a few questions, fills the same templates, and writes a setup script you download, read and run yourself. It builds a plugin; nothing is compiled on the site.
+      - heading: A guard in one sitting, recorded
+        run: fly
+      - quote: src/chock/packs/_skills/policy-init/SKILL.md
+        sections: [Procedure]
+      - heading: Next
+        md: |
+          - The step-by-step page for a commit-time policy: [Your own policy](/docs/write/own-policy/).
+          - Every field: [Manifest reference](/docs/write/manifest/), [Evals reference](/docs/write/evals/).
+          - What a hook can and cannot see: [What Chock doesn't stop](/docs/bypasses/).
+  write-manifest:
+    path: /docs/write/manifest/
+    title: Manifest reference
+    nav_label: Manifest reference
+    description: "Every field of a policy's manifest.yaml, with its type, whether it is required and the values it allows, read from the engine's schema at the pinned commit."
+    intro: "`manifest.yaml` is the policy's identity and its payload: a gate, rule text, a skill or a workflow. `chock validate` checks it against the engine's JSON schemas. The tables below are generated from those schemas as installed at the pinned commit."
+    blocks: [write]
+    prose: []
+    checked:
+      - {file: docs/authoring-policies.md, sections: [Anatomy of a policy folder]}
+    write:
+      - quote: docs/authoring-policies.md
+        sections: [Anatomy of a policy folder]
+      - heading: Every field
+        schema: manifest.schema.json
+  write-evals:
+    path: /docs/write/evals/
+    title: Evals reference
+    nav_label: Evals reference
+    description: "How a policy's evals/suite.yaml is laid out, what each case says, and every field of the engine's eval schema at the pinned commit."
+    intro: "Every policy ships an eval suite at `evals/suite.yaml`. `chock eval` runs it, and a case with an `execute` block is replayed against the policy's real gate. The engine's own guide is quoted first; the table after it is generated from the engine's eval schema at the pinned commit."
+    blocks: [write]
+    prose: []
+    checked:
+      - {file: docs/evals.md, sections: [Anatomy of a suite, The four categories, Which gate a case is replayed against]}
+    write:
+      - quote: docs/evals.md
+        sections: [Anatomy of a suite, The four categories, Which gate a case is replayed against]
+      - heading: Every field
+        schema: eval.schema.json
+      - heading: Run them
+        md: |
+          `chock eval` runs every policy's suite, or one policy's when given its id. `chock check --repo .` runs them too, after validation. A recorded run of both is on [Your own policy](/docs/write/own-policy/); every option is on [chock eval](/docs/cli/eval/).
 
 # DOCS-1: every command and subcommand of the engine at .framework-ref, in its order, one page
 # each under /docs/cli/<command>/[<sub>/]. The build fails when the engine's parsers differ, so a
@@ -826,6 +933,47 @@ texts:
           - {file: docs/stop.md, quote: "Devin's hook is best-effort: the vendor runs it fail-open, so a hook that errors or times out lets the call through."}
           - {file: docs/stop.md, quote: "A person, or an agent working outside this repository's hooks, is not affected. Such an agent can also delete .chock/stop.json or `~/.chock/stops` directly"}
           - {file: docs/stop.md, quote: "The terminal check is best-effort: an agent that can run a shell may give `resume` a pseudo-terminal"}
+
+  # DOCS-5: wording of the Write policies pages' parts (sitegen/docs.py, the `write` block).
+  write:
+    run_script: data/write-policy.yaml
+    run_setup: "A real run, recorded by `python -m sitegen.writedoc` with the engine at the pinned commit. The steps of `__SCRIPT__` ran in order, offline, in one fresh git repository at `/work/demo`, made with `git init -b main` and a git user name and email set, with HOME at `/home/demo`. Those paths stand for the throwaway folders the run used, and `<time>` stands for a timestamp. Output is stdout and stderr together."
+    run_step: "Step __STEP__, exit code __EXIT__."
+    # One note per step of each run in data/write-policy.yaml, in order.
+    run_notes:
+      own:
+        - "Set up chock in the repository: the git hook dispatchers and the authoring skills."
+        - "Scaffold a policy from the tested `content_regex` template. Outside a catalog the id gains the `my-` prefix. chock prints the two steps to run next."
+        - "The manifest it wrote: the policy's identity and a `content_regex` gate that refuses an added line matching `content_pattern`, at commit and on the agent's file writes."
+        - "The two files it wrote: the manifest and the eval suite. The suite holds four cases, each with an `execute` block that is replayed against the gate."
+        - "Validate every policy folder against the engine's schemas and rules. It passes; the warning is about the id's first word."
+        - "Run the policy's evals. Each case passes."
+        - "Compile the policy and wire it: the git hooks, and the hook files of the agents chock wires in this repository. The last lines say how each agent enforces it."
+        - "Run every check, ending with one result line."
+        - "Stage what chock wrote."
+        - "Commit. chock's pre-commit hook runs, and the commit lands."
+        - "Write a file with a line the policy refuses."
+        - "Stage it."
+        - "The commit is refused with the policy's message, and git exits 1."
+        - "Remove the marker."
+        - "Stage it again."
+        - "The commit lands."
+      fly:
+        - "Set up chock in the repository. The skills it installs include `policy-init`."
+        - "Scaffold a guard from the tested `guard` template: a script that judges a shell command before the agent runs it."
+        - "The three files it wrote: the manifest, the eval suite and the guard's script. In the script, `BLOCK` and `ASK` are the patterns of the commands it refuses, or asks about first; edit both."
+        - "Replay its four eval cases against the script."
+        - "Compile it and register it with the agents chock wires in this repository. The last lines say how each agent enforces it."
+        - "Feed the hook the event Claude Code sends before a Bash tool call running `terraform destroy`. The command is the one `chock sync` wrote for the Bash tool in `.claude/settings.json`, without the git alias around it that first checks the launcher exists. The guard refuses: the hook prints the reason and a `deny` decision."
+        - "The same event for `terraform plan` prints nothing: the call is allowed."
+        - "The decision log counts the refusal."
+    schema_dir: src/chock/validation/schemas/
+    schema_source: "The schema file at the pinned commit:"
+    schema_intro: "Generated from `__FILE__` as installed from the pinned engine commit, with every `$ref` followed into the engine's other schema files. A field `a.b` is `b` inside `a`; `a[].b` is `b` in each item of the list `a`; `a.<name>.b` is `b` under any key of `a`. Required means required when its parent is present. The first table is the top level; each object below it has its own table."
+    schema_head: [Field, Type, Required, Allowed values, Description in the schema]
+    schema_required: ["yes", "no"]
+    schema_pattern: "pattern __PATTERN__"
+    schema_pattern_file: "a pattern; it holds a backslash, so it is shown only in the schema file"
 
 # DOCS-3: the agentseam pages (sitegen/docs.py, sitegen/agentseamdoc.py). They document the
 # agentseam commit in data/agentseam-source/source.json. The build fails unless the installed

@@ -2904,3 +2904,124 @@ def _catalog(ctx: Ctx, body: Body) -> None:
 
 
 BLOCKS["catalog"] = _catalog
+
+
+# --- DOCS-5: the Write policies pages, from data/write-source/ (sitegen/writedoc.py) ---
+
+
+def _writing_run(ctx: Ctx, name: str, runs: dict[str, Any]) -> tuple[str, str]:
+    """One recorded run: each step's note, command, output and exit code."""
+    texts = ctx.texts["write"]
+    if name not in runs:
+        raise PageError(f"docs.yaml write run {name!r} has no recording")
+    examples = runs[name]["examples"]
+    notes = texts["run_notes"][name]
+    if len(notes) != len(examples):
+        raise PageError(f"docs.yaml texts.write.run_notes.{name}: one note per step")
+    setup = data_fill(texts["run_setup"], {"__SCRIPT__": texts["run_script"]})
+    html, md = [_para(ctx, setup)], [f"{setup}\n\n"]
+    for note, example in zip(notes, examples, strict=True):
+        step = data_fill(
+            texts["run_step"],
+            {"__STEP__": str(example["step"]), "__EXIT__": str(example["exit"])},
+        )
+        shown = f"$ {example['command']}"
+        if example["output"]:
+            shown += f"\n{example['output']}"
+        html += [_para(ctx, f"{step} {note}"), _code(ctx, shown)]
+        md.append(f"{step} {note} {ctx.texts['ask_code']}\n\n```text\n{shown}\n```\n\n")
+    return "".join(html), "".join(md)
+
+
+def _writing_rows(ctx: Ctx, rows: list[dict[str, Any]]) -> tuple[str, str]:
+    """Schema rows as one table: field, type, required, allowed values, the schema's description."""
+    texts = ctx.texts["write"]
+    head = texts["schema_head"]
+    yes, no = texts["schema_required"]
+    html_rows: list[list[str | Safe]] = []
+    md_rows = []
+    for row in rows:
+        required = yes if row["required"] else no
+        allowed = row["allowed"]
+        if row["pattern"]:
+            # The dist check reads a backslash between name characters as a Windows path.
+            shown = (
+                texts["schema_pattern_file"]
+                if "\\" in row["pattern"]
+                else data_fill(texts["schema_pattern"], {"__PATTERN__": row["pattern"]})
+            )
+            allowed = "; ".join(p for p in (allowed, shown) if p)
+        html_rows.append(
+            [
+                Safe(ctx.t("cli-code", TEXT=row["field"])),
+                row["type"],
+                required,
+                Prose(allowed),
+                _agentseam_breakable(ctx, row["description"]),
+            ]
+        )
+        md_rows.append(
+            [
+                md_code(row["field"]),
+                md_escape(row["type"]),
+                required,
+                md_escape(allowed),
+                md_escape(row["description"]),
+            ]
+        )
+    return _table(ctx, head, html_rows), _md_table(head, md_rows)
+
+
+def _writing_schema(ctx: Ctx, body: Body, part: dict[str, Any]) -> None:
+    """A schema reference: its top-level fields, then one h3 per object field with every field under it."""
+    from . import writedoc  # imported here so this block stays in one place
+
+    texts = ctx.texts["write"]
+    name = part["schema"]
+    schema, store = engine.engine_schemas(name)
+    rows = writedoc.schema_rows(schema, store)
+    path = texts["schema_dir"] + name
+    url = _engine_url(ctx, path)
+    intro = data_fill(texts["schema_intro"], {"__FILE__": name})
+    source = ctx.t("line-link", LINE=texts["schema_source"], URL=url, LINK=path)
+    top = [r for r in rows if "." not in r["field"] and "[" not in r["field"]]
+    h, m = _writing_rows(ctx, top)
+    html = [_para(ctx, intro), source, h]
+    md = [f"{intro}\n\n{texts['schema_source']} [{path}]({url})\n\n{m}\n"]
+    for parent in top:
+        under = [
+            r
+            for r in rows
+            if r["field"].startswith(parent["field"] + ".")
+            or r["field"].startswith(parent["field"] + "[]")
+        ]
+        if not under:
+            continue
+        h, m = _writing_rows(ctx, under)
+        html += [_h3(ctx, body, parent["field"]), h]
+        md.append(f"### {parent['field']}\n\n{m}\n")
+    _section(ctx, body, part["heading"], "".join(html), "".join(md))
+
+
+def _writing(ctx: Ctx, body: Body) -> None:
+    """A Write policies page: its `write` parts in order (data/docs.yaml, DOCS-5)."""
+    from . import writedoc
+
+    runs = writedoc.load(ctx.data_dir, ctx.site.framework_ref)
+    for part in ctx.page["write"]:
+        if "quote" in part:
+            _prose(ctx, body, {"file": part["quote"], "sections": part["sections"]})
+            continue
+        if "schema" in part:
+            _writing_schema(ctx, body, part)
+            continue
+        if "md" in part:
+            html, md = _catalog_md(ctx, body, part)
+        elif "run" in part:
+            html, md = _writing_run(ctx, part["run"], runs)
+        else:
+            raise PageError(f"docs.yaml: unknown write part {sorted(part)}")
+        _section(ctx, body, part["heading"], html, md)
+
+
+BLOCKS["write"] = _writing

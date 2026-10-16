@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "engine": "2264c312d9c97020a1de09aec47a46ca1db35d8f",
+  "run": "own",
+  "examples": [
+    {
+      "step": 1,
+      "command": "chock init .",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nNo git-pre-commit.sh policies found; pre-commit dispatcher unchanged\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nNo git-pre-commit.sh policies found; pre-merge-commit dispatcher unchanged\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nNo git-pre-push.sh policies found; pre-push dispatcher unchanged\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered SessionStart arm hook in .claude/settings.json\nINDEX.md: ~257 tokens (chars/4, max 2000)\nINDEX.md: ~257 tokens (chars/4, max 2000)\nImplementation registered at /work/demo/.git/hooks/pre-commit.d/99-chock-validate\n[PASS] All checks passed.\nInitialized Chock in /work/demo\nAgents: AGENTS.md + claude, copilot, gemini\nSkills: eval, optimize, policy-init, validate (refresh with `chock install-skills .`)\nPolicies: none. This repo enforces nothing yet.\n  1. copy a policy folder from https://github.com/open-coder-ai/chock-catalog (base/<id>/) into .agents/policies/<id>/\n  2. chock sync --repo .\nVerify anytime with:  chock check --only verify",
+      "exit": 0
+    },
+    {
+      "step": 2,
+      "command": "chock new policy block-marker --kind content_regex",
+      "output": "INDEX.md: ~336 tokens (chars/4, max 2000)\nCreated policy 'my-block-marker' at /work/demo/.agents\nNext:  python -m chock sync --repo .\n       python -m chock check --repo .",
+      "exit": 0
+    },
+    {
+      "step": 3,
+      "command": "cat .agents/policies/my-block-marker/manifest.yaml",
+      "output": "id: my-block-marker\nname: \"Block Marker\"\nversion: \"0.1.0\"\ndescription: >\n  Refuses an added line that matches content_pattern, at commit and when the agent\n  writes a file. The example refuses a DO-NOT-COMMIT marker. Edit content_pattern\n  and the message; keep the pattern from matching its own text.\nartifact: hook\nenforcement: block\neffects:\n- read_only\napproval:\n  required: false\n\nhook:\n  gate:\n    kind: content_regex\n    \"on\": [commit, tool_use]\n    action: block\n    message: >\n      my-block-marker: this change adds a line with a DO-NOT-COMMIT marker. Remove the marker\n      or the line before committing.\n    params:\n      scan: added_lines\n      # [ ] matches a space, so this pattern does not match its own text.\n      content_pattern: 'DO[ ]NOT[ ]COMMIT'\n\nprovenance:\n  author: \"me\"\n  created_at: \"<time>\"\n  source_repo: \"local\"\n  license: \"proprietary\"\n  trust_tier: \"sandbox\"\n\nlifecycle:\n  status: draft\n  reviewed_by: []\n\nsecurity:\n  content_instructions: never-obey",
+      "exit": 0
+    },
+    {
+      "step": 4,
+      "command": "git status --short --untracked-files=all .agents/policies/my-block-marker",
+      "output": "?? .agents/policies/my-block-marker/evals/suite.yaml\n?? .agents/policies/my-block-marker/manifest.yaml",
+      "exit": 0
+    },
+    {
+      "step": 5,
+      "command": "chock validate",
+      "output": "[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'",
+      "exit": 0
+    },
+    {
+      "step": 6,
+      "command": "chock eval my-block-marker",
+      "output": "\nmy-block-marker  [deterministic]\n  PASS  tc-001                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-002                             authored  gate exit 0 [gate derived from manifest; policy not compiled]\n  PASS  tc-003                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-004                             authored  gate exit 0 [gate derived from manifest; policy not compiled]\n  score 1.00\n\n1 policies: 4 pass",
+      "exit": 0
+    },
+    {
+      "step": 7,
+      "command": "chock sync --repo .",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nRegistered 1 pre-commit policy implementation(s)\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nRegistered 1 pre-merge-commit policy implementation(s)\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nNo git-pre-push.sh policies found; pre-push dispatcher unchanged\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered 2 PreToolUse/Stop hook(s) in .claude/settings.json\n  claude_code: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run, recorded 2026-09-07)\n  claude_code: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 2 hook entr(y/ies) in .gemini/settings.json\n  gemini_cli: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis vendor-source, recorded 2026-08-28)\n  gemini_cli: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 1 agent hook(s) in .github/hooks/chock.json\n  vscode_copilot: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run-partial, recorded 2026-09-28)\nINDEX.md: ~336 tokens (chars/4, max 2000)\nRecompiled 1 policies\nmy-block-marker:\n  claude: enforced-at-commit + best-effort at tool use (live-run)\n  copilot: enforced-at-commit + best-effort at tool use (live-run-partial)\n  gemini: enforced-at-commit + best-effort at tool use (vendor-source)",
+      "exit": 0
+    },
+    {
+      "step": 8,
+      "command": "chock check --repo .",
+      "output": "== validate\n[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'\n== verify lockfile\nverify: all packs match lockfile\n== policy evals\n\nmy-block-marker  [deterministic]\n  PASS  tc-001                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-002                             authored  gate exit 0\n  PASS  tc-003                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-004                             authored  gate exit 0\n  score 1.00\n\n5 policies: 4 pass, 44 skipped\n44 case(s) have no executable form; they are agent-mode material (tier 3).\n== enforcement matrix (skipped: no spec/enforcement-matrix.md in this repo)\n== matrix mechanisms (skipped: no spec/enforcement-matrix.md in this repo)\n== index freshness\n== ambient conflicts\n[PASS] All checks passed.\n== policy baseline (skipped: no --base given; CI passes the pull request's base branch)\n== result: PASS",
+      "exit": 0
+    },
+    {
+      "step": 9,
+      "command": "git add -A",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 10,
+      "command": "git commit -q -m 'Add my-block-marker'",
+      "output": "== validate\n[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'\n== result: PASS",
+      "exit": 0
+    },
+    {
+      "step": 11,
+      "command": "echo 'x = 1  # DO NOT COMMIT' > notes.py",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 12,
+      "command": "git add notes.py",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 13,
+      "command": "git commit -q -m 'Add notes'",
+      "output": "my-block-marker: this change adds a line with a DO-NOT-COMMIT marker. Remove the marker or the line before committing.\n  - notes.py: content pattern",
+      "exit": 1
+    },
+    {
+      "step": 14,
+      "command": "echo 'x = 1' > notes.py",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 15,
+      "command": "git add notes.py",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 16,
+      "command": "git commit -q -m 'Add notes'",
+      "output": "== validate\n[PASS] Passed with warnings.\n  [WARN]  /work/demo/.agents/policies/my-block-marker :: interface: Artifact ID 'my-block-marker' does not start with a verb (INT-3). Suggest rename to a verb-first id, e.g. 'create-...', 'validate-...', 'check-...'\n== result: PASS",
+      "exit": 0
+    }
+  ]
+}

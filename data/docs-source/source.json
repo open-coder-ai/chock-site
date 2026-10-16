@@ -1,5 +1,5 @@
 {
-  "engine_ref": "fd3769191cace69557f1efc9d37da42ce4c48f1d",
+  "engine_ref": "2264c312d9c97020a1de09aec47a46ca1db35d8f",
   "files": {
     "CHANGELOG.md": {
       "snapshot": "CHANGELOG.md"
@@ -22,6 +22,9 @@
     "docs/assurance-case.md": {
       "snapshot": "docs__assurance-case.md"
     },
+    "docs/authoring-policies.md": {
+      "snapshot": "docs__authoring-policies.md"
+    },
     "docs/baseline-policies.md": {
       "snapshot": "docs__baseline-policies.md"
     },
@@ -43,12 +46,18 @@
     "docs/enforcement-surfaces.md": {
       "snapshot": "docs__enforcement-surfaces.md"
     },
+    "docs/evals.md": {
+      "snapshot": "docs__evals.md"
+    },
     "docs/getting-started.md": {
       "snapshot": "docs__getting-started.md"
     },
     "docs/stop.md": {
       "snapshot": "docs__stop.md"
     },
-    "docs/troubleshooting.md": null
+    "docs/troubleshooting.md": null,
+    "src/chock/packs/_skills/policy-init/SKILL.md": {
+      "snapshot": "src__chock__packs___skills__policy-init__SKILL.md"
+    }
   }
 }
