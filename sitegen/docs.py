@@ -1,5 +1,7 @@
 """The docs section at /docs/: overview, both quickstarts, agents, policies, configure, monitor, reference."""
 
+import datetime as dt
+import hashlib
 import json
 import posixpath
 import re
@@ -18,6 +20,7 @@ from . import (
     docsfacts,
     docsource,
     engine,
+    vendorquotes,
 )
 from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
 from .model import Policy, SectionResult, Site
@@ -64,6 +67,7 @@ class Ctx:
     page: dict[str, Any] = field(default_factory=dict)
     actions: dict[str, Any] = field(default_factory=dict)
     landscape: dict[str, Any] = field(default_factory=dict)
+    today: dt.date = field(default_factory=lambda: dt.datetime.now(dt.UTC).date())
     data_dir: Path = architecture.DATA
     cli_tree: list[dict[str, Any]] = field(default_factory=list)
     cli_examples: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -918,11 +922,40 @@ def _quotes(ctx: Ctx, body: Body, quotes: list[dict[str, str]]) -> tuple[str, st
     return "".join(html), "".join(md)
 
 
+def _example(ctx: Ctx, quote: dict[str, str]) -> tuple[str, str]:
+    """One vendor example: its quoted sentence, source and date, noted when out of date."""
+    texts = ctx.landscape["texts"]
+    link = data_fill(texts["vendor_link"], {"__VENDOR__": quote["vendor"]})
+    as_of = data_fill(texts["as_of"], {"__DATE__": quote["checked"]})
+    stale = (
+        data_fill(texts["stale"], {"__DATE__": quote["checked"]})
+        if vendorquotes.is_stale(quote["checked"], ctx.today)
+        else ""
+    )
+    html = ctx.t(
+        "example",
+        NAME=quote["product"],
+        VENDOR=quote["vendor"],
+        QUOTE=quote["quote"],
+        HREF=quote["url"],
+        LINK=link,
+        ASOF=as_of,
+        STALE=Safe(ctx.t("stale", TEXT=stale)) if stale else "",
+    )
+    md = (
+        f"- **{md_escape(quote['product'])}** ({md_escape(quote['vendor'])}): "
+        f"\u201c{md_escape(quote['quote'])}\u201d [{link}]({quote['url']}), {as_of}."
+        + (f" *{stale}*" if stale else "")
+        + "\n"
+    )
+    return html, md
+
+
 def _landscape(ctx: Ctx, body: Body) -> None:
-    """Where Chock sits: each layer's vendors in their own words, then what each side catches."""
+    """Where Chock sits: per layer, what it and Chock control, both directions, then examples."""
     data = ctx.landscape
     texts = data["texts"]
-    how = data_fill(texts["how"], {"__DATE__": data["fetched"]})
+    how = texts["how"]
     agents = _page_href(ctx, "agents")
     _section(
         ctx,
@@ -937,39 +970,34 @@ def _landscape(ctx: Ctx, body: Body) -> None:
         f"{how} [{texts['agents_link']}]({ctx.site.data['site_url']}{agents}index.md)\n",
     )
     for layer in data["layers"]:
-        claims, claims_md = [], []
-        for product in layer["products"]:
-            link = data_fill(texts["vendor_link"], {"__VENDOR__": product["vendor"]})
-            claims.append(
-                ctx.t(
-                    "claim",
-                    NAME=product["name"],
-                    TEXT=body.renderer.inline(product["says"]),
-                    HREF=product["url"],
-                    LINK=link,
-                )
-            )
-            claims_md.append(
-                f"- **{product['name']}.** {product['says']} [{link}]({product['url']})\n"
-            )
+        examples = [_example(ctx, data["quotes"][key]) for key in layer["examples"]]
         layer_html, layer_md = _quotes(ctx, body, layer["layer_quotes"])
         chock_html, chock_md = _quotes(ctx, body, layer["chock_quotes"])
-        _section(
-            ctx,
-            body,
-            layer["heading"],
-            _h3(ctx, body, texts["says_heading"])
-            + ctx.t("list", ITEMS=Safe("".join(claims)))
+        html = (
+            _h3(ctx, body, texts["controls_heading"])
+            + ctx.t("para", TEXT=body.renderer.inline(layer["controls"]))
+            + ctx.t("para", TEXT=body.renderer.inline(layer["chock_controls"]))
             + _h3(ctx, body, texts["layer_catches"])
             + ctx.t("para", TEXT=body.renderer.inline(layer["layer"]))
             + layer_html
             + _h3(ctx, body, texts["chock_catches"])
             + ctx.t("para", TEXT=body.renderer.inline(layer["chock"]))
-            + chock_html,
-            f"### {texts['says_heading']}\n\n{''.join(claims_md)}\n"
-            f"### {texts['layer_catches']}\n\n{layer['layer']}\n\n{layer_md}"
-            f"### {texts['chock_catches']}\n\n{layer['chock']}\n\n{chock_md}",
+            + chock_html
         )
+        md = (
+            f"### {texts['controls_heading']}\n\n{layer['controls']}\n\n"
+            f"{layer['chock_controls']}\n\n"
+            f"### {texts['layer_catches']}\n\n{layer['layer']}\n\n{layer_md}"
+            f"### {texts['chock_catches']}\n\n{layer['chock']}\n\n{chock_md}"
+        )
+        if examples:
+            html += _h3(ctx, body, texts["examples_heading"]) + ctx.t(
+                "list", ITEMS=Safe("".join(h for h, _ in examples))
+            )
+            md += f"### {texts['examples_heading']}\n\n" + "".join(
+                m for _, m in examples
+            )
+        _section(ctx, body, layer["heading"], html, md)
     _section(
         ctx,
         body,
@@ -1625,19 +1653,32 @@ def _search(ctx: Ctx) -> Safe:
     )
 
 
+def chock_quotes_digest(layers: list[dict[str, Any]]) -> str:
+    """sha256 of every chock quote on the page, in order, so a changed quote is noticed."""
+    rows = [
+        q for layer in layers for q in layer["layer_quotes"] + layer["chock_quotes"]
+    ]
+    blob = json.dumps(rows, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()
+
+
 def load_landscape(data_dir: Path) -> dict[str, Any]:
-    """data/landscape.yaml, refused unless every vendor claim names its vendor and links its https page."""
+    """data/landscape.yaml with its vendor quotes, refused on an unknown example or changed chock quote."""
     data = yaml.safe_load((data_dir / LANDSCAPE_YAML).read_text(encoding="utf-8"))
+    digest = chock_quotes_digest(data["layers"])
+    if digest != data["chock_quotes_sha256"]:
+        raise PageError(
+            f"{LANDSCAPE_YAML}: chock quotes changed (sha256 {digest}); "
+            "check each against chock's docs, then update chock_quotes_sha256"
+        )
+    quotes = {q["id"]: q for q in vendorquotes.load(data_dir)}
     for layer in data["layers"]:
-        for product in layer["products"]:
-            if not product["url"].startswith("https://"):
-                raise PageError(
-                    f"{LANDSCAPE_YAML}: {product['name']!r} needs an https source"
-                )
-            if not product["says"].startswith(product["vendor"] + " "):
-                raise PageError(
-                    f"{LANDSCAPE_YAML}: {product['name']!r} must open with {product['vendor']!r}"
-                )
+        unknown = sorted(set(layer["examples"]) - set(quotes))
+        if unknown:
+            raise PageError(
+                f"{LANDSCAPE_YAML}: {layer['heading']!r} names unknown examples {unknown}"
+            )
+    data["quotes"] = quotes
     return data
 
 
