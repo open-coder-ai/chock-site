@@ -165,7 +165,7 @@
       "copilot": [{"note": "Uninstall __PLUGIN__ from the __MARKETPLACE__ marketplace in Copilot, then delete the folder __PLUGIN_DIR__."}],
       "devin": [{"note": "Remove __PLUGIN__ from Devin's plugins, then delete the folder __PLUGIN_DIR__."}],
       "goose": null,
-      "grok": null,
+      "grok": [{"note": "Run \"grok plugin list\" and find the name grok gave __PLUGIN__, run \"grok plugin uninstall\" with that name, then delete the folder __PLUGIN_DIR__."}],
       "antigravity": null,
       "gemini-cli": null,
       "openhands": null,

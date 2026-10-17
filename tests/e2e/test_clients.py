@@ -19,7 +19,7 @@ WITNESS = clientdata.load_witness(ROOT / "data", engine.client_ids())
 # Every `chock install --client` target, in the picker's order (S-ALL).
 CLIENTS = tuple(WITNESS["clients"])
 # witness.yaml's "witnessed", where chock's ledger has a plugin-hook row.
-WITNESSED = ("claude-code", "cursor", "codex", "copilot", "devin")
+WITNESSED = ("claude-code", "cursor", "codex", "copilot", "devin", "grok")
 PRESET = "git-hygiene"
 SIZES = {
     "desktop": {"width": 1280, "height": 900},
