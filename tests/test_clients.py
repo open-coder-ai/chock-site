@@ -51,13 +51,14 @@ def test_witnessed_needs_a_plugin_hook_row_in_chocks_ledger() -> None:
         "claude-code",
         "cursor",
         "codex",
+        "copilot",
         "devin",
     }
     data = clientdata.load_witness(DATA, engine.client_ids())
     assert data["default"] == "claude-code"
     shown = {c for c, s in data["clients"].items() if s == "witnessed"}
-    assert shown == {"claude-code", "cursor", "codex", "devin"}
-    assert data["unbacked"] == ["copilot"]
+    assert shown == {"claude-code", "cursor", "codex", "copilot", "devin"}
+    assert data["unbacked"] == []
     backed = clientdata.load_witness(
         DATA,
         engine.client_ids(),
@@ -226,7 +227,7 @@ def test_site_evidence_rows_are_the_untested_agents(tmp_path: Path) -> None:
     witness = clientdata.load_witness(DATA, engine.client_ids())
     issues = clientdata.load_evidence(DATA, witness)["issues"]
     untested = {c for c, s in witness["clients"].items() if s == "untested"}
-    # copilot and devin: witness.yaml says witnessed, chock's ledger has no row; no issue.
+    # a witness.yaml "witnessed" row that chock's ledger does not back has no issue.
     assert set(issues) == untested - set(witness["unbacked"])
     assert issues == {
         "antigravity": 129,
