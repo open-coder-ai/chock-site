@@ -74,13 +74,13 @@ def test_a_real_untested_agent_gets_its_line_notice_and_no_apply(
     page.goto(site_url + "/coding/builder/#preset=git-hygiene")
     page.wait_for_selector(".sel-item")
     assert page.locator("#client-mistral-vibe").count() == 0  # sync only, no plugin
-    page.locator("#client-grok").check()
+    page.locator("#client-goose").check()
     command = page.locator("[data-selection-code]").inner_text()
-    assert command.endswith(" --client grok")
-    notice = page.locator(".client-evidence[data-client='grok']")
+    assert command.endswith(" --client goose")
+    notice = page.locator(".client-evidence[data-client='goose']")
     assert notice.is_visible()
-    assert notice.locator("a").get_attribute("href") == f"{ISSUES}188"
-    assert page.locator(".client-untested[data-client='grok']").is_visible()
+    assert notice.locator("a").get_attribute("href") == f"{ISSUES}177"
+    assert page.locator(".client-untested[data-client='goose']").is_visible()
     assert_clean(page)
 
 
