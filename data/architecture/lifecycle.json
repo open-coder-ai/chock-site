@@ -43,29 +43,32 @@
       "x": 15,
       "y": 70,
       "source": "chock/src/chock/scaffold/new.py",
-      "card": "chock new policy <id> writes a policy skeleton. A policy is one folder under .agents/policies/<id>/: a manifest, an optional deterministic script, and an eval suite. The policy-init skill writes one from an interview."
+      "card": "The chock new policy <id> command writes a policy skeleton. A policy is one folder under .agents/policies/<id>/: a manifest, an optional deterministic script, and an eval suite. The policy-init skill writes one from an interview."
     },
     {
       "id": "check",
       "label": "chock check",
+      "code": true,
       "kind": "code",
       "x": 215,
       "y": 70,
       "source": "chock/src/chock/lifecycle.py",
-      "card": "Runs the repository's checks in order: validate, verify, evals, matrix, mechanisms, index, conflicts, baseline. --only picks a subset."
+      "card": "Runs the repository's checks in order: validate, verify, evals, matrix, mechanisms, index, conflicts, baseline. The --only flag picks a subset."
     },
     {
       "id": "sync",
       "label": "chock sync",
+      "code": true,
       "kind": "code",
       "x": 415,
       "y": 70,
       "source": "chock/src/chock/scaffold/recompile.py",
-      "card": "Recompiles every installed policy, then writes each wired agent's hook file, the git hooks and INDEX.md. --ci also writes the CI workflow."
+      "card": "Recompiles every installed policy, then writes each wired agent's hook file, the git hooks and INDEX.md. With --ci it also writes the CI workflow."
     },
     {
       "id": "compile",
       "label": "chock compile",
+      "code": true,
       "kind": "code",
       "x": 615,
       "y": 70,
@@ -97,7 +100,7 @@
       "x": 415,
       "y": 220,
       "source": "chock/src/chock/scaffold/install_ci.py",
-      "card": "chock sync --ci writes .github/workflows/chock.yml. It runs the same runner with --event ci over a pull request's base...head range."
+      "card": "With --ci, chock sync writes .github/workflows/chock.yml. It runs the same runner with --event ci over a pull request's base...head range."
     },
     {
       "id": "compiled",
@@ -115,7 +118,7 @@
       "x": 15,
       "y": 370,
       "source": "agentseam/src/agentseam/dispatch.py",
-      "card": "Before a tool runs, and at a turn's end where wired, the client runs the hook with the call on stdin. agentseam reads it as an Event and answers in the client's own dialect. What happens when a hook cannot run is agentseam's data, listed below.",
+      "card": "Before a tool runs, and at a turn's end where wired, the client runs the hook with the call on stdin. Agentseam reads it as an Event and answers in the client's own dialect. What happens when a hook cannot run is agentseam's data, listed below.",
       "facts": "tiers"
     },
     {
@@ -159,7 +162,7 @@
     {
       "from": "author",
       "to": "check",
-      "label": "manifest, evals",
+      "label": "Manifest, evals",
       "label_at": [
         200,
         62
@@ -168,7 +171,7 @@
     {
       "from": "check",
       "to": "sync",
-      "label": "then",
+      "label": "Then",
       "label_at": [
         400,
         62
@@ -177,7 +180,7 @@
     {
       "from": "sync",
       "to": "compile",
-      "label": "each policy",
+      "label": "Each policy",
       "label_at": [
         600,
         62
@@ -186,12 +189,13 @@
     {
       "from": "compile",
       "to": "compiled",
-      "label": "gate.json"
+      "label": "gate.json",
+      "code": true
     },
     {
       "from": "sync",
       "to": "agenthooks",
-      "label": "per agent",
+      "label": "Per agent",
       "label_at": [
         255,
         150
@@ -200,7 +204,7 @@
     {
       "from": "sync",
       "to": "githooks",
-      "label": "git hooks",
+      "label": "Git hooks",
       "label_at": [
         395,
         150
@@ -210,6 +214,7 @@
       "from": "sync",
       "to": "ciwf",
       "label": "--ci",
+      "code": true,
       "label_at": [
         522,
         200
@@ -218,12 +223,13 @@
     {
       "from": "agenthooks",
       "to": "launcher",
-      "label": "runs"
+      "label": "Runs"
     },
     {
       "from": "toolcall",
       "to": "launcher",
       "label": "stdin",
+      "code": true,
       "label_at": [
         200,
         362
@@ -242,6 +248,7 @@
       "from": "runtime",
       "to": "runner",
       "label": "--gate",
+      "code": true,
       "label_at": [
         600,
         442
@@ -250,7 +257,7 @@
     {
       "from": "githooks",
       "to": "runner",
-      "label": "commit, push",
+      "label": "Commit, push",
       "label_at": [
         400,
         312
@@ -260,6 +267,7 @@
       "from": "ciwf",
       "to": "runner",
       "label": "--event ci",
+      "code": true,
       "label_at": [
         565,
         318
@@ -268,12 +276,12 @@
     {
       "from": "compiled",
       "to": "runner",
-      "label": "reads"
+      "label": "Reads"
     },
     {
       "from": "runtime",
       "to": "toolcall",
-      "label": "verdict",
+      "label": "Verdict",
       "via": [
         [
           500,
@@ -288,7 +296,7 @@
     {
       "from": "runner",
       "to": "log",
-      "label": "one line"
+      "label": "One line"
     }
   ],
   "path": [

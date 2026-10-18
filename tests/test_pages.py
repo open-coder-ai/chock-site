@@ -122,7 +122,7 @@ def test_label_chip_carries_word_glyph_and_title(built) -> None:
         built.out / "coding" / "policies" / "block-no-verify" / "index.html"
     ).read_text(encoding="utf-8")
     assert 'class="label label-block"' in html
-    assert 'title="blocks: The agent refuses the action."' in html
+    assert 'title="Blocks: The agent refuses the action."' in html
     assert 'aria-hidden="true">■' in html
 
 

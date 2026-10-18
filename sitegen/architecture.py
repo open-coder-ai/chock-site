@@ -18,7 +18,7 @@ from typing import Any
 import yaml
 
 from .pageparts import PageError, data_fill
-from .render import Safe, render_file
+from .render import Prose, Safe, md_code, render_file
 from .render import md as md_escape
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -40,9 +40,9 @@ DIAGRAM_KEYS = {
 }
 OPTIONAL_KEYS = {"boundaries", "path"}
 NODE_KEYS = {"id", "label", "kind", "x", "y", "source", "card"}
-NODE_OPTIONAL = {"w", "h", "facts"}
+NODE_OPTIONAL = {"w", "h", "facts", "code"}
 EDGE_KEYS = {"from", "to", "label"}
-EDGE_OPTIONAL = {"via", "label_at"}
+EDGE_OPTIONAL = {"via", "label_at", "code"}
 FACTS = ("tiers",)
 
 Point = tuple[float, float]
@@ -108,6 +108,7 @@ def _check_node(name: str, node: dict[str, Any], doc: dict, texts: dict) -> None
         _refuse(name, f"node id {node['id']!r} must be lowercase words and hyphens")
     if node["kind"] not in texts["kinds"]:
         _refuse(name, f"node {node['id']!r}: unknown kind {node['kind']!r}")
+    _check_label(name, f"node {node['id']!r}", node)
     if node.get("facts") not in (None, *FACTS):
         _refuse(name, f"node {node['id']!r}: unknown facts {node['facts']!r}")
     repo, path = split_source(node["source"])
@@ -126,13 +127,19 @@ def _check_node(name: str, node: dict[str, Any], doc: dict, texts: dict) -> None
     ):
         _refuse(name, f"node {node['id']!r} lies outside the canvas")
     room = w - 2 * texts["node_pad_px"]
-    if (
-        len(node["label"]) * texts["label_char_px"] > room
-        or len(repo) * texts["repo_char_px"] > room
-    ):
+    glyph = texts["code_char_px"] if node.get("code") else texts["label_char_px"]
+    if len(node["label"]) * glyph > room or len(repo) * texts["repo_char_px"] > room:
         _refuse(
             name, f"node {node['id']!r}: label or repo name too long for a {w}px box"
         )
+
+
+def _check_label(name: str, where: str, item: dict[str, Any]) -> None:
+    """Refuse a label holding a backtick, or a `code` flag that is not true or false."""
+    if "`" in item["label"]:
+        _refuse(name, f'{where}: a label holds no backtick; set "code": true instead')
+    if item.get("code", False) not in (True, False):
+        _refuse(name, f"{where}: code must be true or false")
 
 
 def _check(name: str, doc: dict[str, Any], texts: dict[str, Any]) -> None:
@@ -160,6 +167,7 @@ def _check(name: str, doc: dict[str, Any], texts: dict[str, Any]) -> None:
             EDGE_KEYS,
             EDGE_OPTIONAL,
         )
+        _check_label(name, f"edge {edge['from']}->{edge['to']}", edge)
         if (
             edge["from"] not in ids
             or edge["to"] not in ids
@@ -251,6 +259,24 @@ def _label_at(edge: dict[str, Any], points: list[Point]) -> Point:
     segs = list(itertools.pairwise(points))
     p, q = max(segs, key=lambda s: (s[1][0] - s[0][0]) ** 2 + (s[1][1] - s[0][1]) ** 2)
     return (p[0] + q[0]) / 2, (p[1] + q[1]) / 2 - 6
+
+
+# --- labels ---------------------------------------------------------------------
+
+
+def label_prose(item: dict[str, Any]) -> str:
+    """A node or edge label for HTML: a Prose code span when it is a command, else plain text."""
+    return Prose(f"`{item['label']}`") if item.get("code") else item["label"]
+
+
+def label_md(item: dict[str, Any]) -> str:
+    """A node or edge label for Markdown: a code span when it is a command, else escaped."""
+    return md_code(item["label"]) if item.get("code") else md_escape(item["label"])
+
+
+def text_class(base: str, item: dict[str, Any]) -> str:
+    """An SVG <text> class: `mono` added for a command, so it reads as code."""
+    return f"{base} mono" if item.get("code") else base
 
 
 # --- HTML -----------------------------------------------------------------------
@@ -358,6 +384,7 @@ class Renderer:
                     else f"{diagram.id}-arrow",
                     LX=_num(lx),
                     LY=_num(ly),
+                    LABEL_CLASS=text_class("arch-edge-label", edge),
                     LABEL=edge["label"],
                 )
             )
@@ -381,6 +408,7 @@ class Renderer:
                     TX=_num(node["x"] + w / 2),
                     LABEL_Y=_num(node["y"] + h / 2 - 3),
                     REPO_Y=_num(node["y"] + h / 2 + 14),
+                    LABEL_CLASS=text_class("arch-node-label", node),
                     LABEL=node["label"],
                     REPO=repo,
                 )
@@ -451,7 +479,7 @@ class Renderer:
                     KIND=node["kind"],
                     CARD_ID=card_id(diagram, node),
                     NODE=node["id"],
-                    LABEL=node["label"],
+                    LABEL=label_prose(node),
                     KIND_LABEL=self.texts["kinds"][node["kind"]],
                     CARD=node["card"],
                     FACTS=Safe(facts_html),
@@ -464,21 +492,29 @@ class Renderer:
         return self.t("cards", ITEMS=Safe("".join(items)))
 
 
-def _labels(diagram: Diagram) -> dict[str, str]:
-    """Node id to label."""
-    return {n["id"]: n["label"] for n in diagram.nodes}
+def _nodes(diagram: Diagram) -> dict[str, dict[str, Any]]:
+    """Node id to node."""
+    return {n["id"]: n for n in diagram.nodes}
+
+
+def _code_span(item: dict[str, Any]) -> str:
+    """A label as Prose source: wrapped in backticks when it is a command."""
+    return f"`{item['label']}`" if item.get("code") else item["label"]
 
 
 def _connection(
-    texts: dict[str, Any], labels: dict[str, str], edge: dict[str, Any]
+    texts: dict[str, Any],
+    nodes: dict[str, dict[str, Any]],
+    edge: dict[str, Any],
+    label: Callable[[dict[str, Any]], str],
 ) -> str:
-    """One edge as a line of text: from, to and its label."""
+    """One edge as a line of text: from, to and its label, each written by `label`."""
     return data_fill(
         texts["connection_row"],
         {
-            "__FROM__": labels[edge["from"]],
-            "__TO__": labels[edge["to"]],
-            "__LABEL__": edge["label"],
+            "__FROM__": label(nodes[edge["from"]]),
+            "__TO__": label(nodes[edge["to"]]),
+            "__LABEL__": label(edge),
         },
     )
 
@@ -493,7 +529,7 @@ def page(
 ) -> None:
     """One diagram page's sections, as HTML and as its Markdown twin."""
     draw = Renderer(ctx.templates, texts, ctx.agents)
-    labels = _labels(diagram)
+    nodes = _nodes(diagram)
     href = data_href(texts, diagram)
     section(
         ctx,
@@ -506,7 +542,7 @@ def page(
     md_cards = []
     for node in diagram.nodes:
         line = (
-            f"- **{md_escape(node['label'])}** ({md_escape(texts['kinds'][node['kind']])}): "
+            f"- **{label_md(node)}** ({md_escape(texts['kinds'][node['kind']])}): "
             f"{md_escape(node['card'])} {md_escape(texts['source_word'])}: "
             f"[{md_escape(node['source'])}]({source_url(texts, diagram, node['source'])})\n"
         )
@@ -519,20 +555,21 @@ def page(
         ctx, body, texts["components_heading"], draw.cards(diagram), "".join(md_cards)
     )
 
-    rows = [_connection(texts, labels, e) for e in diagram.edges]
+    rows = [_connection(texts, nodes, e, _code_span) for e in diagram.edges]
+    md_rows = [_connection(texts, nodes, e, label_md) for e in diagram.edges]
     section(
         ctx,
         body,
         texts["connections_heading"],
         ctx.t(
             "list",
-            ITEMS=Safe("".join(ctx.t("li", TEXT=row) for row in rows)),
+            ITEMS=Safe("".join(ctx.t("li", TEXT=Prose(row)) for row in rows)),
         ),
-        "".join(f"- {md_escape(row)}\n" for row in rows),
+        "".join(f"- {row}\n" for row in md_rows),
     )
 
     if diagram.path:
-        steps = [labels[i] for i in diagram.path]
+        steps = [nodes[i] for i in diagram.path]
         section(
             ctx,
             body,
@@ -540,10 +577,10 @@ def page(
             ctx.t("para", TEXT=texts["path_intro"])
             + draw.t(
                 "path-list",
-                ITEMS=Safe("".join(ctx.t("li", TEXT=s) for s in steps)),
+                ITEMS=Safe("".join(ctx.t("li", TEXT=label_prose(s)) for s in steps)),
             ),
             f"{md_escape(texts['path_intro'])}\n\n"
-            + "".join(f"{i}. {md_escape(s)}\n" for i, s in enumerate(steps, 1)),
+            + "".join(f"{i}. {label_md(s)}\n" for i, s in enumerate(steps, 1)),
         )
 
     pins = list(diagram.pins.items())
@@ -568,7 +605,7 @@ def page(
         ),
         f"{md_escape(texts['sources_intro'])}\n\n"
         + "".join(
-            f"- {md_escape(repo)} @ [{sha[:12]}]({commit_url(texts, repo, sha)})\n"
+            f"- {md_code(repo)} @ [{sha[:12]}]({commit_url(texts, repo, sha)})\n"
             for repo, sha in pins
         ),
     )

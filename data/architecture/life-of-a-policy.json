@@ -42,6 +42,7 @@
     {
       "id": "compile",
       "label": "chock compile",
+      "code": true,
       "kind": "code",
       "x": 215,
       "y": 70,
@@ -82,7 +83,7 @@
       "x": 615,
       "y": 70,
       "source": "chock/src/chock/hooks/in_agent_install.py",
-      "card": "chock sync writes each agent's hook file in that agent's own format, and its runtime into .chock/bin/. chock install builds the same for one agent as a plugin (ask the user before running either). Each hook command names the gate.json or guard it runs."
+      "card": "The chock sync command writes each agent's hook file in that agent's own format, and its runtime into .chock/bin/. The chock install command builds the same for one agent as a plugin (ask the user before running either). Each hook command names the gate.json or guard it runs."
     },
     {
       "id": "toolcall",
@@ -91,7 +92,7 @@
       "x": 615,
       "y": 420,
       "source": "agentseam/src/agentseam/dispatch.py",
-      "card": "The agent's client runs the hook before the tool runs and passes the call on stdin. agentseam's dispatcher reads it, and that agent's adapter turns the payload into one Event."
+      "card": "The agent's client runs the hook before the tool runs and passes the call on stdin. Agentseam's dispatcher reads it, and that agent's adapter turns the payload into one Event."
     },
     {
       "id": "verdict",
@@ -126,7 +127,7 @@
     {
       "from": "manifest",
       "to": "compile",
-      "label": "read",
+      "label": "Read",
       "label_at": [
         200,
         62
@@ -136,6 +137,7 @@
       "from": "compile",
       "to": "gate",
       "label": "hook.gate",
+      "code": true,
       "label_at": [
         400,
         62
@@ -145,6 +147,7 @@
       "from": "compile",
       "to": "rules",
       "label": "ambient",
+      "code": true,
       "via": [
         [
           300,
@@ -156,6 +159,7 @@
       "from": "manifest",
       "to": "guard",
       "label": "implementations/",
+      "code": true,
       "via": [
         [
           100,
@@ -171,6 +175,7 @@
       "from": "gate",
       "to": "install",
       "label": "--gate",
+      "code": true,
       "label_at": [
         600,
         62
@@ -179,12 +184,13 @@
     {
       "from": "guard",
       "to": "install",
-      "label": "--guard"
+      "label": "--guard",
+      "code": true
     },
     {
       "from": "install",
       "to": "toolcall",
-      "label": "hook registered",
+      "label": "Hook registered",
       "label_at": [
         700,
         366
@@ -202,7 +208,7 @@
     {
       "from": "verdict",
       "to": "log",
-      "label": "one line",
+      "label": "One line",
       "label_at": [
         400,
         412

@@ -12,6 +12,7 @@ import {
   labelChip,
   parseShareFragment,
   sameMembers,
+  sentenceStart,
   shareFragment,
   track,
 } from "./common.js";
@@ -102,7 +103,7 @@ async function main() {
         label.keyword === C.ungraded ? C.texts.ungraded_word : site.label_words.coding[label.keyword];
       const meaning = C.clients[client].meanings[label.keyword];
       $(".label", row).replaceWith(labelChip(label.keyword, word, meaning));
-      $(".bsays", row).textContent = label.says;
+      $(".bsays", row).textContent = sentenceStart(label.says);
     }
   }
 
@@ -199,7 +200,7 @@ async function main() {
       item.appendChild(name);
       const says = document.createElement("span");
       says.className = "sel-says";
-      says.textContent = labelOf(p.id).says;
+      says.textContent = sentenceStart(labelOf(p.id).says);
       item.appendChild(says);
       const remove = document.createElement("button");
       remove.type = "button";

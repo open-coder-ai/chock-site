@@ -114,7 +114,7 @@ def test_strictness_reads_the_repo_words(page, site_url) -> None:
         assert sorted(_ids(page)) == sorted(i for i in pool if tier[i] in allowed)
         chips = page.locator(".quiz-pick .label").all_text_contents()
         assert all(
-            c.strip().endswith(("at commit", "in agent", "advisory")) for c in chips
+            c.strip().endswith(("At commit", "In agent", "Advisory")) for c in chips
         )
 
 
@@ -232,7 +232,7 @@ def test_pages_fit_a_phone_and_screenshots(browser, site_url) -> None:
 
 def test_policy_tile_and_nav(page, site_url) -> None:
     page.goto(site_url + "/coding/policies/protect-main-branch/")
-    assert page.locator("#repo-tier .fact-value").text_content() == "at commit"
+    assert page.locator("#repo-tier .fact-value").text_content() == "At commit"
     assert page.locator('#nav-links a[href="/repos/"]').count() == 1
     page.goto(site_url + "/repos/")
     assert (

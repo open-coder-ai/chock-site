@@ -32,7 +32,14 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, md_code, render_file, render_text_file
+from .render import (
+    Prose,
+    Safe,
+    md_code,
+    render_file,
+    render_text_file,
+    sentence_start,
+)
 from .render import md as md_escape
 
 DOCS = "docs"
@@ -109,7 +116,7 @@ def _section(ctx: Ctx, body: Body, heading: str, html: str, md: str) -> None:
         ctx.t(
             "section",
             ID=body.renderer.toc_heading(2, heading),
-            HEADING=heading,
+            HEADING=Prose(heading),
             BODY=Safe(html),
         )
     )
@@ -117,7 +124,7 @@ def _section(ctx: Ctx, body: Body, heading: str, html: str, md: str) -> None:
 
 
 def _h3(ctx: Ctx, body: Body, heading: str) -> str:
-    return ctx.t("h3", ID=body.renderer.toc_heading(3, heading), HEADING=heading)
+    return ctx.t("h3", ID=body.renderer.toc_heading(3, heading), HEADING=Prose(heading))
 
 
 def _para(ctx: Ctx, text: str) -> str:
@@ -274,11 +281,15 @@ def _count(values: list[str]) -> list[tuple[str, int]]:
 
 def _grades(ctx: Ctx, body: Body) -> None:
     grades = [
-        data_fill(ctx.texts["grade_row"], {"__GRADE__": g, "__COUNT__": str(n)})
+        sentence_start(
+            data_fill(ctx.texts["grade_row"], {"__GRADE__": g, "__COUNT__": str(n)})
+        )
         for g, n in _count([a["grade"] for a in ctx.agents])
     ]
     bases = [
-        data_fill(ctx.texts["basis_row"], {"__BASIS__": b, "__COUNT__": str(n)})
+        sentence_start(
+            data_fill(ctx.texts["basis_row"], {"__BASIS__": b, "__COUNT__": str(n)})
+        )
         for b, n in _count([a["basis"] for a in ctx.agents])
     ]
     html = (
@@ -376,7 +387,10 @@ def _client_block(
     )
     html = [
         _h3(ctx, body, heading),
-        ctx.t("para", TEXT=Safe(ctx.t("state", STATE=state, WORD=word) + link)),
+        ctx.t(
+            "para",
+            TEXT=Safe(ctx.t("state", STATE=state, WORD=sentence_start(word)) + link),
+        ),
     ]
     md = [f"### {heading}\n\n", f"State: {word}.\n\n"]
     if notice := about["evidence"]:
@@ -466,7 +480,7 @@ def _agent_table(ctx: Ctx, body: Body) -> None:
     rows = [
         [
             Safe(ctx.t("link", HREF=f"/docs/agents/{a['slug']}/", TEXT=a["name"])),
-            _route_words(ctx, a),
+            sentence_start(_route_words(ctx, a)),
             a["tier"],
             a["grade"],
             a["basis"],
@@ -477,7 +491,7 @@ def _agent_table(ctx: Ctx, body: Body) -> None:
     md_rows = [
         [
             f"[{a['name']}]({site_url}/docs/agents/{a['slug']}/index.md)",
-            _route_words(ctx, a),
+            sentence_start(_route_words(ctx, a)),
             a["tier"],
             a["grade"],
             a["basis"],
@@ -553,14 +567,15 @@ def _help_blocks(ctx: Ctx, body: Body, names: list[str]) -> tuple[str, str]:
             )
         if sub:
             command = command | {"help": engine.subcommand_help(parent, sub)}
-        heading = f"chock {name}"
+        heading = md_code(f"chock {name}")
+        summary = sentence_start(command["summary"])
         html += [
             _h3(ctx, body, heading),
-            _para(ctx, command["summary"]),
+            _para(ctx, summary),
             _code(ctx, command["help"]),
         ]
         md.append(
-            f"### {heading}\n\n{command['summary']}\n\n{ctx.texts['ask_code']}\n\n"
+            f"### {heading}\n\n{summary}\n\n{ctx.texts['ask_code']}\n\n"
             f"```text\n{command['help'].split(chr(10) * 2, 1)[0]}\n```\n\n"
             f"{ctx.texts['help_more']}\n\n"
         )
@@ -777,7 +792,9 @@ def _no_hook_table(ctx: Ctx) -> tuple[str, str]:
     """Agents with no route, or missing one, and the engine's reason why."""
     texts = ctx.texts["bypass"]
     picked = [
-        (a, [_route_words(ctx, a), a["reason"]]) for a in ctx.agents if a["reason"]
+        (a, [sentence_start(_route_words(ctx, a)), sentence_start(a["reason"])])
+        for a in ctx.agents
+        if a["reason"]
     ]
     return _agent_rows(ctx, texts["no_hook_columns"], picked)
 
@@ -786,7 +803,7 @@ def _fail_open_table(ctx: Ctx) -> tuple[str, str]:
     """Agents whose agentseam fail mode before a tool runs is open."""
     texts = ctx.texts["bypass"]
     picked = [
-        (a, [_route_words(ctx, a), a["tier"]])
+        (a, [sentence_start(_route_words(ctx, a)), a["tier"]])
         for a in ctx.agents
         if a["fail_mode"] == texts["fail_open"]
     ]
@@ -1069,14 +1086,14 @@ def _cli_index(ctx: Ctx, body: Body) -> None:
             [
                 Safe(ctx.t("code-link", HREF=href, TEXT=name)),
                 groups[node["group"]],
-                Prose(node["summary"]),
+                Prose(sentence_start(node["summary"])),
             ]
         )
         md_rows.append(
             [
                 f"[{md_code(name)}]({ctx.site.data['site_url']}{href}index.md)",
                 groups[node["group"]],
-                node["summary"],
+                sentence_start(node["summary"]),
             ]
         )
     dispatcher = _engine_url(ctx, texts["dispatcher_file"])
@@ -1134,7 +1151,7 @@ def _cli_arguments(ctx: Ctx, body: Body, node: dict[str, Any]) -> None:
             [
                 Safe(ctx.t("cli-argument", CODE=code, TAIL=tail)),
                 Safe(ctx.t("cli-code", TEXT=default)) if default else "",
-                Prose(argument["help"]),
+                Prose(sentence_start(argument["help"])),
             ]
         )
         # The twin leaves out the engine's help wording, as it does for --help (DOC-1).
@@ -1161,12 +1178,15 @@ def _cli_subcommands(ctx: Ctx, body: Body, node: dict[str, Any]) -> None:
         href = _cli_href(ctx, child)
         name = _cli_name(child)
         html_rows.append(
-            [Safe(ctx.t("code-link", HREF=href, TEXT=name)), Prose(sub["summary"])]
+            [
+                Safe(ctx.t("code-link", HREF=href, TEXT=name)),
+                Prose(sentence_start(sub["summary"])),
+            ]
         )
         md_rows.append(
             [
                 f"[{md_code(name)}]({ctx.site.data['site_url']}{href}index.md)",
-                sub["summary"],
+                sentence_start(sub["summary"]),
             ]
         )
     _section(
@@ -1481,8 +1501,8 @@ def _policy_body(ctx: Ctx, body: Body, policy: Policy) -> None:
         ctx,
         body,
         texts["policy_what_heading"],
-        _para(ctx, policy.description),
-        md_escape(policy.description),
+        _para(ctx, sentence_start(policy.description)),
+        md_escape(sentence_start(policy.description)),
     )
     rows = []
     for client in clients["order"]:
@@ -1494,7 +1514,9 @@ def _policy_body(ctx: Ctx, body: Body, policy: Policy) -> None:
             if graded
             else clients["texts"]["ungraded_word"]
         )
-        rows.append([about["name"], word, label["says"]])
+        rows.append(
+            [about["name"], sentence_start(word), sentence_start(label["says"])]
+        )
     cols = texts["policy_agent_columns"]
     _section(
         ctx,
@@ -1503,7 +1525,7 @@ def _policy_body(ctx: Ctx, body: Body, policy: Policy) -> None:
         _table(ctx, cols, rows),
         _md_table(cols, [[md_escape(cell) for cell in row] for row in rows]),
     )
-    misses = policy.misses or ctx.site.data["texts"]["misses_empty"]
+    misses = sentence_start(policy.misses or ctx.site.data["texts"]["misses_empty"])
     _section(
         ctx, body, texts["policy_misses_heading"], _para(ctx, misses), md_escape(misses)
     )
@@ -1616,7 +1638,7 @@ def toc_nav(templates: Path, title: str, headings: list[tuple[int, str, str]]) -
             templates / DOCS / "toc-item.html",
             LEVEL=str(level),
             HREF=f"#{id_}",
-            TEXT=text,
+            TEXT=Prose(text),
         )
         for level, id_, text in headings
     )
@@ -1744,7 +1766,9 @@ def _search_entry(
         "title": title,
         "url": path,
         "excerpt": _excerpt(ctx, summary),
-        "headings": [{"id": id_, "text": text} for _, id_, text in found],
+        "headings": [
+            {"id": id_, "text": text.replace("`", "")} for _, id_, text in found
+        ],
     }
 
 
@@ -1760,8 +1784,12 @@ def _write(
     crumb: str,
     body: Body,
     summary: str,
+    code_title: bool = False,
 ) -> tuple[str, str, dict[str, Any]]:
-    """One docs page and its Markdown twin; returns the path, the twin and its search row."""
+    """One docs page and its Markdown twin; returns the path, the twin and its search row.
+
+    A `code_title` (a command name) is set as code in the h1 and the twin's heading.
+    """
     built_html, built_md = _built(ctx)
     html = "".join(body.html)
     content = ctx.t(
@@ -1771,7 +1799,7 @@ def _write(
         TOC=_toc(ctx, body, html),
         COPY=ctx.texts["copy"],
         CRUMB=crumb,
-        TITLE=title,
+        TITLE=Safe(ctx.t("cli-code", TEXT=title)) if code_title else title,
         SUB=Prose(description),
         ACTIONS=_page_actions(ctx, path),
         INTRO=Prose(intro),
@@ -1802,7 +1830,7 @@ def _write(
     )
     twin = render_text_file(
         ctx.templates / MD / DOCS / "page.md",
-        TITLE=md_escape(title),
+        TITLE=md_code(title) if code_title else md_escape(title),
         SUB=md_escape(description),
         INTRO=md_escape(intro),
         ASK=ctx.texts["ask_first"],
@@ -1852,6 +1880,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
         crumb: str,
         body: Body,
         summary: str = "",
+        code_title: bool = False,
     ) -> None:
         page_path, twin, row = _write(
             ctx,
@@ -1864,6 +1893,7 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             crumb=crumb,
             body=body,
             summary=summary or intro,
+            code_title=code_title,
         )
         written.append((page_path, title, description, twin))
         rows.append(row)
@@ -1945,9 +1975,10 @@ def build(site: Site, out_dir: Path, templates: Path, data_dir: Path) -> Section
             _cli_href(ctx, node),
             name,
             data_fill(ctx.texts["cli"]["description"], {"__NAME__": name}),
-            node["summary"],
+            sentence_start(node["summary"]),
             cli_page["title"],
             body,
+            code_title=True,
         )
 
     arch_page = docs["pages"]["architecture"]
@@ -2056,7 +2087,7 @@ def _how_steps(ctx: Ctx, body: Body) -> None:
         render_file(
             ctx.templates / architecture.FOLDER / "index-item.html",
             HREF=url,
-            TITLE=node["label"],
+            TITLE=architecture.label_prose(node),
             SUMMARY=node["card"],
         )
         for node, url in steps
@@ -2068,7 +2099,7 @@ def _how_steps(ctx: Ctx, body: Body) -> None:
         _para(ctx, how["steps_intro"]) + ctx.t("list", ITEMS=Safe(items)),
         f"{how['steps_intro']}\n\n"
         + "".join(
-            f"- [{md_escape(node['label'])}]({url}): {md_escape(node['card'])}\n"
+            f"- [{architecture.label_md(node)}]({url}): {md_escape(node['card'])}\n"
             for node, url in steps
         ),
     )
@@ -2162,7 +2193,12 @@ def _surfaces(ctx: Ctx, body: Body) -> None:
     html_rows: list[list[str | Safe]] = []
     md_rows: list[list[str]] = []
     for row in rows:
-        agents = ", ".join(row["agents"]) or how["no_agents"]
+        # Agent ids are identifiers: each is set as code.
+        agents: str | Safe = how["no_agents"]
+        agents_md = how["no_agents"]
+        if row["agents"]:
+            agents = Safe(", ".join(ctx.t("cli-code", TEXT=a) for a in row["agents"]))
+            agents_md = ", ".join(md_code(a) for a in row["agents"])
         held = how["held_out"] if not row["credited"] else how["counted"]
         if row["emitter"]:
             emitter_url = _engine_url(ctx, row["emitter"])
@@ -2175,7 +2211,7 @@ def _surfaces(ctx: Ctx, body: Body) -> None:
         html_rows.append(
             [Safe(ctx.t("code", TEXT=row["surface"])), emitter, agents, held]
         )
-        md_rows.append([f"`{row['surface']}`", emitter_md, agents, held])
+        md_rows.append([f"`{row['surface']}`", emitter_md, agents_md, held])
     _section(
         ctx,
         body,
@@ -2326,7 +2362,7 @@ def _agentseam_release(ctx: Ctx, body: Body) -> None:
     commit_url = _agentseam_url(ctx)
     pyproject = _engine_url(ctx, "pyproject.toml")
     rows: list[tuple[str, str, str | Safe]] = [
-        ("package", f"agentseam {meta['version']}", ""),
+        ("package", f"`agentseam {meta['version']}`", ""),
         ("commit", ref, Safe(ctx.t("link", HREF=commit_url, TEXT=ref))),
         ("python", meta["requires_python"], ""),
         ("license", meta["license"], ""),
@@ -2482,9 +2518,11 @@ def _api_groups(
 
 def _api_value(texts: dict[str, Any], entry: dict[str, Any]) -> str:
     if entry["size"] is not None:
-        return data_fill(
-            texts["api_size"],
-            {"__KIND__": entry["kind"], "__COUNT__": str(entry["size"])},
+        return sentence_start(
+            data_fill(
+                texts["api_size"],
+                {"__KIND__": entry["kind"], "__COUNT__": str(entry["size"])},
+            )
         )
     return entry["value"]
 
@@ -2654,8 +2692,9 @@ def _agentseam_cli_arguments(ctx: Ctx, node: dict[str, Any]) -> tuple[str, str]:
             label = html.escape(f" {texts['cli_default']} ", quote=True)
             cell += label + ctx.t("cli-code", TEXT=default)
             md_cell += f" {texts['cli_default']} {md_code(default)}"
-        html_rows.append([Safe(cell), _agentseam_breakable(ctx, argument["help"])])
-        md_rows.append([md_cell, md_escape(argument["help"])])
+        shown = sentence_start(argument["help"])
+        html_rows.append([Safe(cell), _agentseam_breakable(ctx, shown)])
+        md_rows.append([md_cell, md_escape(shown)])
     return _table(ctx, head, html_rows), _md_table(head, md_rows) + "\n"
 
 
@@ -2665,7 +2704,7 @@ def _agentseam_cli(ctx: Ctx, body: Body) -> None:
     _agentseam_ref(ctx)
     nodes = engine.agentseam_cli()
     head = texts["cli_head"]
-    rows = [(_agentseam_cli_name(n), n["summary"]) for n in nodes]
+    rows = [(_agentseam_cli_name(n), sentence_start(n["summary"])) for n in nodes]
     _section(
         ctx,
         body,
@@ -2679,15 +2718,16 @@ def _agentseam_cli(ctx: Ctx, body: Body) -> None:
     )
     for node in nodes:
         name = _agentseam_cli_name(node)
+        summary = sentence_start(node["summary"])
         args_html, args_md = _agentseam_cli_arguments(ctx, node)
         html = [
-            _para(ctx, node["summary"]) if node["summary"] else "",
+            _para(ctx, summary) if summary else "",
             _para(ctx, texts["cli_usage"] + ":"),
             _code(ctx, node["usage"]),
             args_html,
         ]
         md = [
-            f"{node['summary']}\n\n" if node["summary"] else "",
+            f"{summary}\n\n" if summary else "",
             f"{texts['cli_usage']}:\n\n```text\n{node['usage']}\n```\n\n",
             args_md,
         ]
@@ -2701,7 +2741,7 @@ def _agentseam_cli(ctx: Ctx, body: Body) -> None:
                 f"{texts['cli_subcommands']}\n\n"
                 + "".join(f"- {md_code(s)}\n" for s in subs)
             )
-        _section(ctx, body, name, "".join(html), "".join(md))
+        _section(ctx, body, md_code(name), "".join(html), "".join(md))
     lines = texts["exit_lines"]
     _section(
         ctx,
@@ -2943,6 +2983,9 @@ def _writing_rows(ctx: Ctx, rows: list[dict[str, Any]]) -> tuple[str, str]:
     for row in rows:
         required = yes if row["required"] else no
         allowed = row["allowed"]
+        # A JSON type name stays as the schema spells it; a phrase ("array of string") is prose.
+        kind = sentence_start(row["type"]) if " " in row["type"] else row["type"]
+        description = sentence_start(row["description"])
         if row["pattern"]:
             # The dist check reads a backslash between name characters as a Windows path.
             shown = (
@@ -2951,22 +2994,23 @@ def _writing_rows(ctx: Ctx, rows: list[dict[str, Any]]) -> tuple[str, str]:
                 else data_fill(texts["schema_pattern"], {"__PATTERN__": row["pattern"]})
             )
             allowed = "; ".join(p for p in (allowed, shown) if p)
+        allowed = sentence_start(allowed)
         html_rows.append(
             [
                 Safe(ctx.t("cli-code", TEXT=row["field"])),
-                row["type"],
+                kind,
                 required,
                 Prose(allowed),
-                _agentseam_breakable(ctx, row["description"]),
+                _agentseam_breakable(ctx, description),
             ]
         )
         md_rows.append(
             [
                 md_code(row["field"]),
-                md_escape(row["type"]),
+                md_escape(kind),
                 required,
                 md_escape(allowed),
-                md_escape(row["description"]),
+                md_escape(description),
             ]
         )
     return _table(ctx, head, html_rows), _md_table(head, md_rows)

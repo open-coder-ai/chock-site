@@ -104,12 +104,13 @@ def test_source_links_point_at_the_pinned_commit(built, diagram_id: str) -> None
 def test_twin_has_every_card_connection_and_step(built, diagram_id: str) -> None:
     diagram = _diagrams()[diagram_id]
     twin = _twin(built, diagram_id)
-    labels = {n["id"]: n["label"] for n in diagram.nodes}
+    labels = {n["id"]: architecture.label_md(n) for n in diagram.nodes}
     for node in diagram.nodes:
-        assert f"- **{node['label']}**" in twin
+        assert f"- **{labels[node['id']]}**" in twin
     for edge in diagram.edges:
         assert (
-            f"- {labels[edge['from']]} → {labels[edge['to']]}: {edge['label']}" in twin
+            f"- {labels[edge['from']]} → {labels[edge['to']]}: "
+            f"{architecture.label_md(edge)}" in twin
         )
     for i, step in enumerate(diagram.path, 1):
         assert f"{i}. {labels[step]}\n" in twin

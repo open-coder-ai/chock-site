@@ -39,7 +39,7 @@ pages:
     title: Docs
     nav_label: Overview
     description: "How chock works and how to use it: plugins for your agent, or hooks in your repo."
-    intro: "chock turns guardrail policies into hooks your AI coding agent runs. There are two ways in. The plugin path builds one plugin for one agent from the policies you pick. The repo path wires a repository's own hooks, git hooks and CI, so every clone carries the policies."
+    intro: "Chock turns guardrail policies into hooks your AI coding agent runs. There are two ways in. The plugin path builds one plugin for one agent from the policies you pick. The repo path wires a repository's own hooks, git hooks and CI, so every clone carries the policies."
     blocks: [paths, labels, grades, witness]
     prose:
       - {file: docs/concepts.md, sections: [Policy, Gate, Enforcement surface]}
@@ -57,7 +57,7 @@ pages:
     title: "Quickstart: repo path"
     nav_label: "Quickstart: repo"
     description: "Onboard a git repository with chock init and chock sync: agent hooks, git hooks and CI."
-    intro: "The repo path puts policies in the repository itself, so they travel with every clone. chock sync wires each agent's hook file, the git hooks, and optionally a CI gate."
+    intro: "The repo path puts policies in the repository itself, so they travel with every clone. `chock sync` wires each agent's hook file, the git hooks, and optionally a CI gate."
     blocks: [install, sync]
     prose:
       - file: docs/getting-started.md
@@ -94,7 +94,7 @@ pages:
     title: Monitor
     nav_label: Monitor
     description: "Where chock hooks log their decisions on each route, how to read and sum up the log, and how to export it as evidence."
-    intro: "Every chock hook writes one line per decision to a local log. Nothing leaves the machine. chock status reads the log and sums it up; chock witness export writes one client's records to a file you attach yourself."
+    intro: "Every chock hook writes one line per decision to a local log. Nothing leaves the machine. `chock status` reads the log and sums it up; `chock witness export` writes one client's records to a file you attach yourself."
     blocks: [log, summary, export, person_only]
     prose:
       - file: docs/decision-log.md
@@ -166,7 +166,7 @@ pages:
     title: How Chock works
     nav_label: How it works
     description: "The lifecycle of a policy in a repository, from authoring to a verdict and a log line, with diagrams that cite the engine's files."
-    intro: "Blocks your coding agent's wrong moves before they land. A person authors a policy once. chock compile turns it into each surface's control and chock sync wires those into the repository. From then on, on agents whose hooks chock wires, the hooks judge each tool call, commit and push, return a verdict and write one line to a local decision log; the CI gate re-runs the same check on a pull request."
+    intro: "Blocks your coding agent's wrong moves before they land. A person authors a policy once. `chock compile` turns it into each surface's control and `chock sync` wires those into the repository. From then on, on agents whose hooks chock wires, the hooks judge each tool call, commit and push, return a verdict and write one line to a local decision log; the CI gate re-runs the same check on a pull request."
     blocks: [how_steps, how_diagrams]
     prose:
       - {file: docs/architecture.md, sections: [The components, Pointer model, "The CLI is a package manager, not a runtime"]}
@@ -184,7 +184,7 @@ pages:
     path: /docs/how-it-works/stop/
     title: Stop and resume
     nav_label: Stop and resume
-    description: "chock stop, chock resume and --everywhere: a person's stop on agents in one repository or on the whole machine, what reads it, and its limits."
+    description: "How a person stops agents in one repository or on the whole machine with chock stop, chock resume and --everywhere, what reads the stop, and its limits."
     intro: "A stop is a person's brake on agents. While one is in force, chock's hooks refuse the next tool call, commit or push of an agent in scope. Only a person at a terminal lifts it."
     blocks: [stop_help, stop_facts]
     prose:
@@ -208,8 +208,8 @@ pages:
     path: /docs/agentseam/
     title: What agentseam is
     nav_label: What agentseam is
-    description: "agentseam, the library under chock: one handler API over each coding agent's own hooks."
-    intro: "agentseam is the stdlib-only Python library and CLI that chock builds on. It turns each coding agent's hook payload into one normalized Event, and a handler's Decision back into that agent's own reply. You can use it on its own, without chock."
+    description: "Agentseam, the library under chock: one handler API over each coding agent's own hooks."
+    intro: "Agentseam is the stdlib-only Python library and CLI that chock builds on. It turns each coding agent's hook payload into one normalized Event, and a handler's Decision back into that agent's own reply. You can use it on its own, without chock."
     blocks: [agentseam_about]
     prose: []
   agentseam-direct:
@@ -217,12 +217,12 @@ pages:
     title: Use agentseam without chock
     nav_label: Use it without chock
     description: "Install agentseam, write a handler, wire it into your agents' hooks and see it refuse, from a recorded run."
-    intro: "A handler is a Python function that takes an Event and returns a Decision. agentseam wires the command that runs it into each agent's hook config. Every output on this page is from a real run, recorded with the agentseam release this site documents."
+    intro: "A handler is a Python function that takes an Event and returns a Decision. Agentseam wires the command that runs it into each agent's hook config. Every output on this page is from a real run, recorded with the agentseam release this site documents."
     blocks: [agentseam_direct]
     prose: []
   agentseam-api:
     path: /docs/agentseam/api/
-    title: agentseam Python API
+    title: Agentseam Python API
     nav_label: Python API
     description: "Every name agentseam exports, with its signature and docstring, read from the pinned release."
     intro: "Generated at build time from the installed agentseam: each name in `agentseam.__all__`, its signature from `inspect.signature`, and the first paragraph of its own docstring."
@@ -230,8 +230,8 @@ pages:
     prose: []
   agentseam-cli:
     path: /docs/agentseam/cli/
-    title: agentseam CLI
-    nav_label: agentseam CLI
+    title: Agentseam CLI
+    nav_label: Agentseam CLI
     description: "The agentseam command and every subcommand, generated from its argument parser."
     intro: "Generated at build time from the argparse parser of the installed agentseam."
     blocks: [agentseam_cli]
@@ -247,7 +247,7 @@ pages:
     title: Adopt catalog policies
     nav_label: Adopt catalog policies
     description: "Install policies from chock-catalog into your repository, pinned to a commit and checked against a hash, with the output of a real run."
-    intro: "chock-catalog is the public catalog of chock policies. This page adds two of them to a fresh repository with `chock add`, compiles them with `chock sync`, and shows a commit refused by one of them. Every command and output below is from a recorded run."
+    intro: "The chock-catalog repository is the public catalog of chock policies. This page adds two of them to a fresh repository with `chock add`, compiles them with `chock sync`, and shows a commit refused by one of them. Every command and output below is from a recorded run."
     blocks: [video, catalog]
     video: adopt-policy
     prose: []
@@ -380,7 +380,7 @@ pages:
     write:
       - heading: Before you start
         md: |
-          - chock is installed: see [Quickstart: repo path](/docs/quickstart/repo/).
+          - Chock is installed: see [Quickstart: repo path](/docs/quickstart/repo/).
           - The repository is a git repository. The run below starts in a fresh one.
       - quote: docs/custom-policies.md
         sections: [1. Start from a template]
@@ -525,7 +525,7 @@ texts:
   built_engine: "Built from engine"
   built_catalog: "and catalog"
   agent_description: "__NAME__ and chock: routes, install steps, what it can enforce, and the evidence behind it."
-  agent_intro: "Routes: __ROUTES__. agentseam tier __TIER__, grade __GRADE__ before a tool runs."
+  agent_intro: "Routes: __ROUTES__. Agentseam tier __TIER__, grade __GRADE__ before a tool runs."
   policy_description: "__NAME__: what it does, its label on each agent, what it misses, and examples."
   policy_intro: "Catalog policy __ID__, version __VERSION__, labelled __WORD__ on __AGENT__."
   on_this_page: "On this page"
@@ -567,7 +567,7 @@ texts:
   labels_heading: What a label means
   labels_intro: "Every policy carries one label per agent. These are the engine's label words:"
   grades_heading: Grades and what they rest on
-  grades_intro: "agentseam grades what each agent can enforce before a tool runs, capped by the evidence behind it: a row resting on vendor docs cannot read enforceable. Counts at the pinned agentseam release:"
+  grades_intro: "Agentseam grades what each agent can enforce before a tool runs, capped by the evidence behind it: a row resting on vendor docs cannot read enforceable. Counts at the pinned agentseam release:"
   grade_row: "__GRADE__: __COUNT__ agents"
   basis_heading: "Basis of each row"
   basis_row: "__BASIS__: __COUNT__ agents"
@@ -581,8 +581,8 @@ texts:
   clients_intro: "Each agent below shows its install steps exactly as the engine prints them. Tested means a person has seen chock's refusals fire in that agent through the plugin."
   agent_page_link: "Agent page"
   sync_heading: Agents chock sync wires
-  sync_intro: "chock sync writes these agents' hook files in the repository. Name them with --agents, or leave it out for all of them."
-  sync_turn_end: "also gates the end of a turn"
+  sync_intro: "`chock sync` writes these agents' hook files in the repository. Name them with `--agents`, or leave it out for all of them."
+  sync_turn_end: "Also gates the end of a turn"
   sync_columns: [Agent, Name for --agents, Hook file, Turn end, State]
   agent_columns: [Agent, Routes, Tier, Grade, Basis, Fail mode]
   route_words: {plugin: plugin, sync: sync, none: none}
@@ -608,8 +608,8 @@ texts:
   sync_state: "Repo hooks: __STATE__. A plugin witness never clears this route."
   note_heading: Note
   note_source: Source
-  evidence_line: "chock has not seen this agent run its hooks yet. If you use it, you can help:"
-  ledger_row: "__ROUTE__ route, __SURFACE__: __CLIENT__, __DATE__. __METHOD__"
+  evidence_line: "Chock has not seen this agent run its hooks yet. If you use it, you can help:"
+  ledger_row: "On the __ROUTE__ route, __SURFACE__: __CLIENT__, __DATE__. __METHOD__"
   ledger_none: "No row in the engine's witness ledger for this agent."
   evidence_heading: Evidence wanted
   limits_heading: Known limits
@@ -641,7 +641,7 @@ texts:
   summary_command: "chock status --summary [--since DAYS] [--route sync|plugin] [--json]"
   summary_items:
     - "Fires per policy and per client, with block, ask, warn and fault counts and rates. A fault is a hook that could not judge the call: reason `guard-errored`, `guard-missing` or `fault`."
-    - "p50 and p95 `duration_ms` per hook (client and surface). At `info` only the calls a policy fired on are logged, so the latencies cover those; set `debug` to time every call."
+    - "The p50 and p95 `duration_ms` per hook (client and surface). At `info` only the calls a policy fired on are logged, so the latencies cover those; set `debug` to time every call."
     - "A WARN when a hook's p95 is within 25% of its client's hook timeout. A client timeout fails open, so a call slower than that goes through unchecked. An undocumented timeout is shown as `unknown`, never warned on."
     - "The top 5 guard faults, by policy and reason code."
     - "Heartbeats (`session_start` records): hook records with no `session_start` before them, and `session_start` records with no hook record after them, per route and client. A client agentseam records no session-start event for is listed as \"no heartbeat available\", never as missing one."
@@ -660,12 +660,12 @@ texts:
   doctor_heading: "Check the hooks: chock doctor"
   doctor_intro: "Most clients fail open when a hook crashes, times out or never loads, so a silent hook looks exactly like a protected session. `chock doctor` checks that each client's chock hooks are in place, current, and seen running, on the sync route and the plugin route. It reads only: no network, and it never runs a client. Each check prints one line, `PASS`, `WARN`, `FAIL` or `INFO`, with a one-line fix:"
   doctor_items:
-    - "hooks: the file the client reads runs chock's runtime, and the runtime is there;"
-    - "launcher: the launcher is there, and a `python3`, `python` or `py` on PATH is 3.11+;"
-    - "engine: the runtime is byte-identical to what the installed chock builds; a plugin's recorded engine version and commit are compared too;"
-    - "trust: for clients that run a hook only once a person trusts it (Codex, Grok), how to; chock cannot read that record;"
-    - "client: the versions agentseam witnessed; `--client-version` compares yours;"
-    - "last fired and heartbeat: from the decision log, the last record per hook surface, and the `session_start` heartbeats. A client with no documented session-start event reads \"no heartbeat available\", never a failure."
+    - "Hooks: the file the client reads runs chock's runtime, and the runtime is there;"
+    - "Launcher: the launcher is there, and a `python3`, `python` or `py` on PATH is 3.11+;"
+    - "Engine: the runtime is byte-identical to what the installed chock builds; a plugin's recorded engine version and commit are compared too;"
+    - "Trust: for clients that run a hook only once a person trusts it (Codex, Grok), how to; chock cannot read that record;"
+    - "Client: the versions agentseam witnessed; `--client-version` compares yours;"
+    - "Last fired and heartbeat: from the decision log, the last record per hook surface, and the `session_start` heartbeats. A client with no documented session-start event reads \"no heartbeat available\", never a failure."
   doctor_exit: "Exit 1 when any check fails or no chock hooks are found, else 0."
   doctor_commands: [doctor]
   doctor_source: "The engine's doctor docs"
@@ -714,7 +714,7 @@ texts:
           - {file: docs/assurance-case.md, quote: "an agent outside every wired surface sees only advisory text"}
       - heading: "Hosts whose hook fails open"
         body:
-          - "On a host that fails open, a hook that crashes, times out or never loads lets the tool call run, so a silent hook looks exactly like a protected session. agentseam's tier data records each agent's fail mode; these agents fail open before a tool runs. `chock doctor` checks that each agent's hooks are in place and running."
+          - "On a host that fails open, a hook that crashes, times out or never loads lets the tool call run, so a silent hook looks exactly like a protected session. Agentseam's tier data records each agent's fail mode; these agents fail open before a tool runs. `chock doctor` checks that each agent's hooks are in place and running."
         table: fail_open
         see: troubleshooting
         sources:
@@ -762,7 +762,7 @@ texts:
         see: configure
         sources:
           - {file: docs/custom-policies.md, quote: "Switch one off like any member: `chock bundle off <id>`."}
-      - heading: "chock disable"
+      - heading: "A policy disabled: chock disable"
         body:
           - "On the repo route, `chock disable <id>` adds the policy to `policies.disabled` in `.chock/config.yaml`, recompiles the rest, and removes its git-hook wiring. A policy marked `mandatory: true` cannot be disabled."
         sources:
@@ -865,15 +865,15 @@ texts:
     surfaces_heading: The surfaces
     surfaces_file: docs/enforcement-surfaces.md
     surfaces_section: The nine surfaces
-    surfaces_intro: "chock's own table of the surfaces, from its docs at the pinned commit:"
+    surfaces_intro: "Chock's own table of the surfaces, from its docs at the pinned commit:"
     code_heading: Where each surface comes from in the engine
     code_intro: "Read from the engine at the pinned commit: the compiler's emitter for each surface (`EMITTERS` in `chock.compile.compiler`), the agents the engine gives it, by the engine's agent names (`SURFACE_AGENTS`), and whether it is held out of every coverage word (`UNCREDITED_SURFACES`). The build fails when the surfaces in chock's table and in its code differ."
     code_columns: [Surface, Emitter, Agents, Held out of coverage]
-    no_emitter: "none: not emitted"
+    no_emitter: "None: not emitted"
     no_agents: "none"
     held_out: "yes"
     counted: "no"
-    help_heading: "chock stop and chock resume"
+    help_heading: "The commands: chock stop and chock resume"
     help_intro: "Both commands, as the engine's parsers print them."
     help_commands: [stop, resume]
     limits_intro: "After it writes a stop, chock stop prints its limits in the engine's own words:"
@@ -946,7 +946,7 @@ texts:
     run_notes:
       own:
         - "Set up chock in the repository: the git hook dispatchers and the authoring skills."
-        - "Scaffold a policy from the tested `content_regex` template. Outside a catalog the id gains the `my-` prefix. chock prints the two steps to run next."
+        - "Scaffold a policy from the tested `content_regex` template. Outside a catalog the id gains the `my-` prefix. Chock prints the two steps to run next."
         - "The manifest it wrote: the policy's identity and a `content_regex` gate that refuses an added line matching `content_pattern`, at commit and on the agent's file writes."
         - "The two files it wrote: the manifest and the eval suite. The suite holds four cases, each with an `execute` block that is replayed against the gate."
         - "Validate every policy folder against the engine's schemas and rules. It passes; the warning is about the id's first word."
@@ -954,7 +954,7 @@ texts:
         - "Compile the policy and wire it: the git hooks, and the hook files of the agents chock wires in this repository. The last lines say how each agent enforces it."
         - "Run every check, ending with one result line."
         - "Stage what chock wrote."
-        - "Commit. chock's pre-commit hook runs, and the commit lands."
+        - "Commit. Chock's pre-commit hook runs, and the commit lands."
         - "Write a file with a line the policy refuses."
         - "Stage it."
         - "The commit is refused with the policy's message, and git exits 1."
@@ -976,7 +976,7 @@ texts:
     schema_head: [Field, Type, Required, Allowed values, Description in the schema]
     schema_required: ["yes", "no"]
     schema_pattern: "pattern __PATTERN__"
-    schema_pattern_file: "a pattern; it holds a backslash, so it is shown only in the schema file"
+    schema_pattern_file: "A pattern; it holds a backslash, so it is shown only in the schema file"
 
   # DOCS-6: the `video` block (sitegen/docs.py). Each page's video is static/video/<name>.mp4,
   # rendered by VHS from videos/<name>.tape; static/video/<name>.json records what it ran.
@@ -1043,7 +1043,7 @@ agentseam:
       script: Console script
       pinned: Pinned by
     no_requires: "none"
-    pinned_by: "chock's pyproject.toml at the engine commit this site builds from"
+    pinned_by: "Chock's pyproject.toml at the engine commit this site builds from"
     pages_heading: "The agentseam pages"
     pages_items:
       - {page: agentseam-direct, text: "install it, write a handler and wire it, from a recorded run"}
@@ -1053,7 +1053,7 @@ agentseam:
     pages_line: ": __TEXT__."
     prose_heading: "From the agentseam docs"
     install_heading: Install
-    install_intro: "agentseam is one Python package with no runtime dependencies and one console script, `agentseam`. Installing chock installs it too, at the commit below. agentseam's README installs it from PyPI with `pip install agentseam`; a PyPI release can differ from this commit. To get the code these pages document, install from the commit (ask the user before running it):"
+    install_intro: "Agentseam is one Python package with no runtime dependencies and one console script, `agentseam`. Installing chock installs it too, at the commit below. Agentseam's README installs it from PyPI with `pip install agentseam`; a PyPI release can differ from this commit. To get the code these pages document, install from the commit (ask the user before running it):"
     install_command: "pip install \"agentseam @ git+__REPO__@__REF__\""
     install_python: "It needs Python __PYTHON__."
     files_heading: "The files"
@@ -1080,7 +1080,7 @@ agentseam:
       9: "Claude Code's settings file after uninstall."
     api_about_heading: "How this reference is made"
     api_heading_source: Source
-    api_intro: "Names are listed as `agentseam` exports them. A summary is the first paragraph of the object's own docstring at the pinned commit; \"No docstring.\" means it has none. Source links go to the line that defines the object."
+    api_intro: "Names are listed as `agentseam` exports them. A summary is the first paragraph of the object's own docstring at the pinned commit; an object without one reads \"No docstring.\" Source links go to the line that defines the object."
     no_doc: "No docstring."
     api_members: "Members"
     api_member_head: [Member, Kind, Signature, Summary]

@@ -27,13 +27,13 @@ reasons:
 notes:
   gemini_cli:
     text: "Google is sunsetting Gemini CLI for consumer tiers in favor of Antigravity CLI: there, use the Antigravity plugin."
-    source: "chock's install data (src/chock/install/data/install.json, gemini-cli steps)"
+    source: "Chock's install data (src/chock/install/data/install.json, gemini-cli steps)"
   openhands:
-    text: "chock's Claude Code plugin does not protect OpenHands, even though OpenHands reads .claude-plugin/: its matchers never match OpenHands' terminal or file_editor tools. Use the OpenHands plugin."
-    source: "chock docs/enforcement-surfaces.md"
+    text: "Chock's Claude Code plugin does not protect OpenHands, even though OpenHands reads .claude-plugin/: its matchers never match OpenHands' terminal or file_editor tools. Use the OpenHands plugin."
+    source: "docs/enforcement-surfaces.md in chock"
   copilot:
     text: "This is the Copilot plugin. Copilot's repo hooks are the GitHub Copilot (VS Code agent mode / CLI) row."
-    source: "agentseam matrix notes for copilot"
+    source: "Agentseam matrix notes for copilot"
 texts:
   heading: "Every agent"
   intro: "Every agent agentseam records, and how chock reaches it: a plugin, repo hooks, or neither, with the reason. Tested means a person has seen chock's refusals fire on that route; a plugin test says nothing about repo hooks."
@@ -45,7 +45,7 @@ texts:
   col_agent: "Agent"
   col_plugin: "Plugin (chock install)"
   col_sync: "Repo hooks (chock sync)"
-  col_record: "agentseam's record"
+  col_record: "Agentseam's record"
   no_plugin: "No plugin format."
   plugin_link: "--client __CLIENT__"
   sync_command: "chock sync --repo . --agents __AGENT__"
@@ -54,5 +54,5 @@ texts:
   builder_link: "Every agent"
   md_plugin: "Plugin (ask the user before running a command):"
   md_sync: "Repo hooks (ask the user before running a command):"
-  md_record: "agentseam:"
+  md_record: "Agentseam:"
   md_source: "Source:"
