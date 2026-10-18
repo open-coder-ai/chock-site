@@ -21,7 +21,16 @@ WITNESS = clientdata.load_witness(ROOT / "data", engine.client_ids())
 # Every `chock install --client` target, in the picker's order (S-ALL).
 CLIENTS = tuple(WITNESS["clients"])
 # witness.yaml's "witnessed", where chock's ledger has a plugin-hook row.
-WITNESSED = ("claude-code", "cursor", "codex", "copilot", "devin", "grok")
+WITNESSED = (
+    "claude-code",
+    "cursor",
+    "codex",
+    "copilot",
+    "devin",
+    "grok",
+    "goose",
+    "antigravity",
+)
 PRESET = "git-hygiene"
 SIZES = {
     "desktop": {"width": 1280, "height": 900},
@@ -64,7 +73,7 @@ def test_default_is_claude_code_and_the_picker_lists_every_install_client(
     )
     assert values == list(CLIENTS)
     assert sorted(values) == sorted(engine.client_ids())
-    assert len(values) == 12
+    assert len(values) == 11
     assert page.locator("#client-claude-code").is_checked()
     assert page.evaluate("location.hash") == ""
     assert_clean(page)

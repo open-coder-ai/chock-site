@@ -26,7 +26,7 @@ def _lowercase(page, site_url: str) -> list[str]:
     return [s for s in found if not any(s.startswith(u) for u in UPSTREAM)]
 
 
-@pytest.mark.parametrize("client", ["claude-code", "goose"])
+@pytest.mark.parametrize("client", ["claude-code", "goose", "kimi-code"])
 def test_builder_text_starts_uppercase(page, site_url, client) -> None:
     """The builder with picks, tested and untested agent: cart rows, chips, warnings, command."""
     collect(page, site_url)

@@ -257,7 +257,7 @@ def test_works_with_lists_every_install_client(built) -> None:
     html = _home(built)
     block = re.search(r'<section class="works".*?</section>', html, re.DOTALL).group(0)
     clients = _site_json(built)["builder_clients"]
-    assert block.count('class="works-item"') == len(clients["order"]) == 12
+    assert block.count('class="works-item"') == len(clients["order"]) == 11
     for client in clients["order"]:
         assert clients["clients"][client]["name"] in block
 

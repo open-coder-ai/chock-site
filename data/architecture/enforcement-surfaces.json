@@ -5,7 +5,7 @@
   "summary": "The emitters of chock compile: which emitter writes each surface, and the file chock sync installs for it.",
   "intro": "A surface is where a compiled control runs. The chock compile command hands each policy to one emitter per surface; chock sync then installs what the emitters wrote. Each arrow out of chock compile names the surfaces that emitter writes, as the engine's compiler maps them.",
   "pins": {
-    "chock": "d2e701aebd4b922f7238822c6981872f9c0a7bb5"
+    "chock": "0c12c57c1db98eb50c222bf423302ee9b35e57cd"
   },
   "canvas": {
     "width": 1000,

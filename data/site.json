@@ -153,7 +153,6 @@
       "goose": null,
       "grok": null,
       "antigravity": null,
-      "gemini-cli": null,
       "openhands": null,
       "kimi-code": null,
       "factory-droid": null
@@ -167,7 +166,6 @@
       "goose": null,
       "grok": [{"note": "Run \"grok plugin list\" and find the name grok gave __PLUGIN__, run \"grok plugin uninstall\" with that name, then delete the folder __PLUGIN_DIR__."}],
       "antigravity": null,
-      "gemini-cli": null,
       "openhands": null,
       "kimi-code": null,
       "factory-droid": null
@@ -190,6 +188,7 @@
       "repo_line": "A second route: single-policy plugins in",
       "remove_md": "To remove it:",
       "remove_unverified": "Removal steps not verified for __NAME__ yet. What you see when you remove it is wanted in",
+      "remove_report_link": "a witness report",
       "report": "help test it",
       "command_md": "The command (ask the user before running it: it builds a plugin of hooks that change how their agent behaves):",
       "ask_inline": " (ask the user before running it)",
