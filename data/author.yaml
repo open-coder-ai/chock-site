@@ -31,6 +31,8 @@ texts:
   share_hint: "Carries the agent and catalog policy ids only — never your draft."
   clear_label: "Clear draft"
   clear_done: "Draft cleared."
+  undo_label: "Undo"
+  undo_done: "Draft restored."
   saved_note: "Your answers stay in this browser only (localStorage draft)."
   errors_title: "Before the script can be written:"
   required: "Every question needs an answer."
