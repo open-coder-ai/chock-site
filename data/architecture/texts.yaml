@@ -29,9 +29,9 @@ kinds:
 
 # Fail modes as agentseam's tier table names them; an unknown one fails the build.
 fail_modes:
-  open: "Fails open"
-  closed: "Fails closed"
-  configurable: "Fail mode configurable"
+  open: "If the hook fails, the action goes through"
+  closed: "If the hook fails, the action is blocked"
+  configurable: "What a failed hook does can be configured"
   n/a: "No adapted pre-tool hook"
 tiers_intro: "Agentseam's tier table at the release the engine pins, by fail mode:"
 tiers_row: "__MODE__ (__COUNT__): __AGENTS__"
@@ -43,7 +43,7 @@ kinds_intro: "Each box's outline colour says what kind of thing it is:"
 kind_notes:
   repo: "a repository in the chock train."
   code: "engine code that runs as a command or inside a hook."
-  artifact: "a file chock writes or a policy carries; its outline is dashed."
+  artifact: "a file chock writes or a policy carries. Its outline is dashed."
   client: "the agent's client, and what passes between it and the hook."
   log: "a file the hook writes on your machine."
 kind_row: "__KIND__: __NOTE__"

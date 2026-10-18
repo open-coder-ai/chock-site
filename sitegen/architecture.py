@@ -18,7 +18,7 @@ from typing import Any
 import yaml
 
 from .pageparts import PageError, data_fill
-from .render import Prose, Safe, md_code, render_file
+from .render import Prose, Safe, md_code, md_prose, render_file
 from .render import md as md_escape
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -481,7 +481,7 @@ class Renderer:
                     NODE=node["id"],
                     LABEL=label_prose(node),
                     KIND_LABEL=self.texts["kinds"][node["kind"]],
-                    CARD=node["card"],
+                    CARD=Prose(node["card"]),
                     FACTS=Safe(facts_html),
                     SOURCE_WORD=self.texts["source_word"],
                     HREF=source_url(self.texts, diagram, node["source"]),
@@ -543,7 +543,7 @@ def page(
     for node in diagram.nodes:
         line = (
             f"- **{label_md(node)}** ({md_escape(texts['kinds'][node['kind']])}): "
-            f"{md_escape(node['card'])} {md_escape(texts['source_word'])}: "
+            f"{md_prose(node['card'])} {md_escape(texts['source_word'])}: "
             f"[{md_escape(node['source'])}]({source_url(texts, diagram, node['source'])})\n"
         )
         facts = draw.facts(node)

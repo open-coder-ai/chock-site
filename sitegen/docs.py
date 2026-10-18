@@ -36,6 +36,7 @@ from .render import (
     Prose,
     Safe,
     md_code,
+    md_prose,
     render_file,
     render_text_file,
     sentence_start,
@@ -767,10 +768,12 @@ def _sources(ctx: Ctx, sources: list[dict[str, str]]) -> tuple[str, str]:
     files = list(dict.fromkeys(s["file"] for s in sources))
     urls = [_engine_url(ctx, f) for f in files]
     label = ctx.texts["bypass"]["sources"]
-    links = [Safe(ctx.t("link", HREF=u, TEXT=f)) for f, u in zip(files, urls)]
+    links = [
+        Safe(ctx.t("link", HREF=u, TEXT=Prose(f"`{f}`"))) for f, u in zip(files, urls)
+    ]
     return (
         _para(ctx, label) + _list(ctx, links),
-        f"{label}\n\n" + "".join(f"- [{f}]({u})\n" for f, u in zip(files, urls)),
+        f"{label}\n\n" + "".join(f"- [`{f}`]({u})\n" for f, u in zip(files, urls)),
     )
 
 
@@ -2094,7 +2097,7 @@ def _how_steps(ctx: Ctx, body: Body) -> None:
             ctx.templates / architecture.FOLDER / "index-item.html",
             HREF=url,
             TITLE=architecture.label_prose(node),
-            SUMMARY=node["card"],
+            SUMMARY=Prose(node["card"]),
         )
         for node, url in steps
     )
@@ -2105,7 +2108,7 @@ def _how_steps(ctx: Ctx, body: Body) -> None:
         _para(ctx, how["steps_intro"]) + ctx.t("list", ITEMS=Safe(items)),
         f"{how['steps_intro']}\n\n"
         + "".join(
-            f"- [{architecture.label_md(node)}]({url}): {md_escape(node['card'])}\n"
+            f"- [{architecture.label_md(node)}]({url}): {md_prose(node['card'])}\n"
             for node, url in steps
         ),
     )

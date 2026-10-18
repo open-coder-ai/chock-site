@@ -44,8 +44,8 @@ def test_monitor_states_the_person_only_rule_from_the_catalog(built) -> None:
     page, twin = _page(built, "monitor"), _page(built, "monitor", "index.md")
     for text in (page, twin):
         assert f"{policy.id} ({policy.version} in the pinned catalog)" in text
-        assert "the whole <code>.chock/</code> folder" in text or (
-            "the whole `.chock/` folder" in text
+        assert "any agent write to the <code>.chock/</code> folder" in text or (
+            "any agent write to the `.chock/` folder" in text
         )
     assert f'href="/docs/policies/{policy.id}/"' in page
 

@@ -2,7 +2,7 @@
   "id": "stop-and-resume",
   "order": 5,
   "title": "Stop and resume",
-  "summary": "A person's stop on agents: the files chock stop and chock stop --everywhere write, the hooks that read them, and the log lines a stop leaves.",
+  "summary": "A person's stop on agents. It shows the files chock stop and chock stop --everywhere write, the hooks that read them, and the log lines a stop leaves.",
   "intro": "A stop is a file a person writes and every chock hook reads. While it is in force, the pre-tool stop check, the git dispatcher and the MCP gateway refuse the next action of an agent in scope, and each refusal is logged. Only a person at a terminal lifts it.",
   "pins": {
     "chock": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96"
@@ -27,7 +27,7 @@
       "h": 110
     },
     {
-      "label": "Every hook that judges an agent's next action",
+      "label": "Every hook that checks an agent's next action",
       "x": 5,
       "y": 300,
       "w": 790,
@@ -118,7 +118,7 @@
       "x": 215,
       "y": 460,
       "source": "chock/src/chock/hooks/data/dispatcher.sh",
-      "card": "Refuses an agent's commit or push while a stop is in force; a person's passes. Only the main checkout's .chock/bin/gate.py tells an agent from a person."
+      "card": "Refuses an agent's commit or push while a stop is in force. A person's commit or push passes. Only the main checkout's .chock/bin/gate.py tells an agent from a person."
     },
     {
       "id": "gateway",

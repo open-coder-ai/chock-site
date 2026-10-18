@@ -231,7 +231,12 @@ def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, s
     sections = [
         _worked_example(site, s) if s.get("worked_example") else s
         for s in (
-            {**s, "body": data_fill(s["body"], subs)}
+            {
+                **s,
+                "body": data_fill(s["body"], subs),
+                "items": [data_fill(t, subs) for t in s.get("items", [])],
+                "after": data_fill(s.get("after", ""), subs),
+            }
             for s in data["agents"]["sections"]
         )
     ]

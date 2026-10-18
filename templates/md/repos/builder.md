@@ -9,7 +9,7 @@ __NOSCRIPT__
 __QUIZ_LINES__
 ## Share link
 
-`#p=<comma-separated policy ids>` opens the result for those policies. Only ids from the catalog are read; the catalog commit and every sha256 in the commands come from this site's build, never from the link.
+`#p=<comma-separated policy ids>` opens the result for those policies. Only ids from the catalog are read. The catalog commit and every sha256 in the commands come from this site's build, never from the link.
 
 ## __INSTALL_HEADING__
 

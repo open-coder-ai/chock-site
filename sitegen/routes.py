@@ -184,7 +184,7 @@ def _record_cell(templates: Path, row: dict[str, Any]) -> str:
         extra += render_file(
             templates / "route-note.html",
             TEXT=row["note"]["text"],
-            SOURCE=row["note"]["source"],
+            SOURCE=Prose(row["note"]["source"]),
         )
     return render_file(
         templates / "route-record.html",

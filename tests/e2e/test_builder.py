@@ -153,7 +153,7 @@ def test_other_catalog_ref_shows_notice_and_can_be_used_anyway(page, site_url) -
     _open(page, site_url, "#s=" + engine.encode_selection(selection))
     notice = page.locator("#link-notice").inner_text()
     assert "000000000000" in notice
-    assert "this site shows" in notice
+    assert "This site shows" in notice
     assert _count(page) == "0 policies"
     page.get_by_role("button", name="Use the same policies here").click()
     assert _picked_ids(page) == _members("git-hygiene")

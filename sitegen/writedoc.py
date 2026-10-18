@@ -175,7 +175,7 @@ def _allowed(node: dict[str, Any]) -> str:
     for key, word in CONSTRAINTS:
         if key in node:
             parts.append(f"{word} {node[key]}")
-    return "; ".join(parts)
+    return ", ".join(parts)
 
 
 def schema_rows(

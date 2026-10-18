@@ -36,6 +36,12 @@ def md_code(value: object) -> str:
     return f"{fence}{pad}{text}{pad}{fence}"
 
 
+def md_prose(value: object) -> str:
+    """Catalog text for Markdown with its `code` spans kept as code and the rest escaped."""
+    parts = CODE_SPAN_RE.split(str(value))
+    return "".join(md_code(p) if i % 2 else md(p) for i, p in enumerate(parts))
+
+
 def sentence_start(text: str) -> str:
     """Display only: the text with its first character uppercased; the source keeps its spelling."""
     return text[:1].upper() + text[1:]

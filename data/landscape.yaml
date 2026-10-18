@@ -34,7 +34,7 @@ texts:
 layers:
   - heading: Agent identity
     controls: "Agent identity products give each AI agent an account of its own and decide what it may reach: which apps, data, tools and other agents, with which tokens, across a whole organisation."
-    chock_controls: "Chock controls what an agent does inside one repository: that repository's policies judge the agent's tool calls and commits there, whatever identity the agent runs as."
+    chock_controls: "Chock controls what an agent does inside one repository. That repository's policies check the agent's tool calls and commits there, whatever identity the agent runs as."
     examples:
       - entra-agent-id
       - agent-365
@@ -63,7 +63,7 @@ layers:
       - file: README.md
         section: "Guardrails, not guarantees"
         quote: "`in-agent` is the agent's pre-tool hook: best-effort, and it fails open."
-    chock: "A wrong move inside the boundary. A coding agent is usually given read and write access to its repository. Inside that access, Chock's policies judge each commit, and at the commit tier the gate refuses one that breaks a policy."
+    chock: "A wrong move inside the boundary. A coding agent is usually given read and write access to its repository. Inside that access, Chock's policies check each commit, and at the commit tier the gate refuses one that breaks a policy."
     chock_quotes:
       - file: README.md
         section: "Guardrails, not guarantees"
@@ -107,10 +107,10 @@ layers:
 
   - heading: Browser and edge
     controls: "Browser and edge products govern what people and agents do in the browser, on the device and on the network, including on devices an organisation does not manage."
-    chock_controls: "Chock controls changes to a repository, judged by that repository's own policies."
+    chock_controls: "Chock controls changes to a repository, checked against that repository's own policies."
     examples:
       - island
-    layer: "What people and agents do in the browser, on the device and on the network: data leaving through a web app, a risky extension, device posture, and policy on devices an organisation does not manage. None of Chock's enforcement surfaces is a browser or an endpoint agent, and its docs leave endpoint watching to EDR products."
+    layer: "What people and agents do in the browser, on the device and on the network: data leaving through a web app, a risky extension, device posture, and policy on devices an organisation does not manage. None of Chock's hook points is a browser or an endpoint agent, and its docs leave endpoint watching to EDR products."
     layer_quotes:
       - file: docs/concepts.md
         section: "Enforcement surface"
@@ -118,7 +118,7 @@ layers:
       - file: docs/agentic-risk-coverage.md
         section: "What Chock does not do — stated plainly"
         quote: "Watching an agent after the fact is an EDR product's job"
-    chock: "A change judged in the repository itself. Where a repository runs Chock's CI gate, it checks the pushed commits there, whichever browser, device or network they came from."
+    chock: "A change checked in the repository itself. Where a repository runs Chock's CI gate, it checks the pushed commits there, whichever browser, device or network they came from."
     chock_quotes:
       - file: README.md
         section: "Guardrails, not guarantees"

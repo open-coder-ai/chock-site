@@ -82,7 +82,7 @@ def test_surface_diagram_follows_the_compilers_emitters() -> None:
     compile_card = next(n["card"] for n in diagram.nodes if n["id"] == "compile")
     for row in engine.surface_rows():
         if not row["emitter"]:
-            assert f"The {row['surface']} surface has no emitter" in compile_card
+            assert f"The {row['surface']} hook point has no emitter" in compile_card
 
 
 def test_lifecycle_check_step_names_every_check_in_order() -> None:

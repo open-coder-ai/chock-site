@@ -20,8 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 BANNED = ("Free forever", "pip install chock", "limit-diff-size-rule", "[stars]")
 TEXT_SUFFIXES = {".html", ".md", ".txt", ".json", ".xml", ".css", ".js"}
 CAVEAT = (
-    "Your agent still sends context to its own model provider; chock adds no "
-    "additional destination. Installing fetches the policies once."
+    "Your agent still sends context to its own model provider. Chock does not send "
+    "it anywhere else. Installing fetches the policies once."
 )
 
 
@@ -165,8 +165,8 @@ def test_no_model_and_local_copy(built) -> None:
     assert (
         "Chock does not ask a model whether your code is safe. Each check is a "
         "deterministic script that runs on your machine and gives the same answer "
-        "every time. A passing check adds nothing to the agent's context; a refusal "
-        "adds one short reason." in text
+        "every time. When a check passes, nothing is added to the agent's context. "
+        "When it refuses, the agent gets one short reason." in text
     )
     assert (
         "Chock checks code on the laptop, in the dev container or inside the cloud "
@@ -280,7 +280,7 @@ def test_faq_adds_general_agents_answer(built) -> None:
     assert "What are general agents?" in html
     assert (
         "Agents that act for a person or a business. Their guardrails are being "
-        "designed; there is nothing to install yet." in _main_text(html)
+        "designed. There is nothing to install yet." in _main_text(html)
     )
     faq = (built.out / "faq" / "index.html").read_text(encoding="utf-8")
     assert "What are general agents?" in faq
@@ -296,7 +296,7 @@ OWN = {
     "duration": "0:35",
     "description": (
         "A silent terminal recording: chock new scaffolds a policy and chock sync "
-        "wires it. The commit with the marked line is refused; the clean one lands."
+        "wires it. Chock refuses the commit with the marked line. The clean commit lands."
     ),
 }
 
