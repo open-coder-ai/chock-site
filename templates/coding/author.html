@@ -6,7 +6,11 @@
 <div class="link-notice" id="link-notice" role="status"></div>
 <div class="builder-grid author-grid" id="author-app">
 <section class="pick" aria-labelledby="author-interview">
+<div class="author-head">
 <h2 id="author-interview">The interview</h2>
+<button type="button" class="button button-secondary button-small" id="author-clear" hidden>__CLEAR_LABEL__</button>
+</div>
+<p class="author-cleared" id="author-cleared" hidden>__CLEAR_DONE__ <button type="button" class="linkish" id="author-undo">__UNDO_LABEL__</button></p>
 __CLIENT_PICKER__
 <fieldset class="kind-picker">
 <legend>__KIND_LEGEND__</legend>
@@ -29,7 +33,7 @@ __KIND_OPTIONS__</div>
 </div>
 <div id="author-catalog-list" class="author-catalog-list"></div>
 </section>
-<p class="hint saved-note">__SAVED_NOTE__ <button type="button" class="linkish" id="author-clear">__CLEAR_LABEL__</button><span id="author-clear-done" hidden> __CLEAR_DONE__</span></p>
+<p class="hint saved-note">__SAVED_NOTE__</p>
 </section>
 <section class="selection author-review" aria-labelledby="author-review-h">
 <h2 id="author-review-h">__ADVANCED_HEADING__</h2>

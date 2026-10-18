@@ -859,7 +859,10 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .amember input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
 .amember-name { color: var(--text); overflow-wrap: anywhere; }
 
-.saved-note .linkish { margin-left: 6px; }
+.author-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.author-head .button[hidden], .author-cleared[hidden] { display: none; }
+.author-cleared { margin: 0 0 16px; font-size: 13px; color: var(--body); }
+.author-cleared .linkish { margin-left: 6px; font-size: 13px; }
 
 .afile { margin-bottom: 18px; }
 .afile-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
