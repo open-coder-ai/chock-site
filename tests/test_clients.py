@@ -54,29 +54,49 @@ def test_witnessed_needs_a_plugin_hook_row_in_chocks_ledger() -> None:
         "copilot",
         "devin",
         "grok",
+        "goose",
+        "antigravity",
     }
     data = clientdata.load_witness(DATA, engine.client_ids())
     assert data["default"] == "claude-code"
     shown = {c for c, s in data["clients"].items() if s == "witnessed"}
-    assert shown == {"claude-code", "cursor", "codex", "copilot", "devin", "grok"}
+    assert shown == {
+        "claude-code",
+        "cursor",
+        "codex",
+        "copilot",
+        "devin",
+        "grok",
+        "goose",
+        "antigravity",
+    }
     assert data["unbacked"] == []
     backed = clientdata.load_witness(
         DATA,
         engine.client_ids(),
-        {"claude-code", "cursor", "codex", "copilot", "devin", "grok"},
+        {
+            "claude-code",
+            "cursor",
+            "codex",
+            "copilot",
+            "devin",
+            "grok",
+            "goose",
+            "antigravity",
+        },
     )
     assert backed["unbacked"] == []
     assert backed["clients"]["devin"] == "witnessed"
 
 
 def test_a_client_without_a_row_is_untested(tmp_path: Path) -> None:
-    """The 6 P-ALL clients without a witness.yaml row show untested, after the rows."""
+    """The 3 P-ALL clients without a witness.yaml row show untested, after the rows."""
     data = clientdata.load_witness(DATA, engine.client_ids())
     rows = yaml.safe_load((DATA / "witness.yaml").read_text(encoding="utf-8"))[
         "clients"
     ]
     missing = [c for c in engine.client_ids() if c not in rows]
-    assert len(missing) == 6
+    assert len(missing) == 3
     assert list(data["clients"]) == [*rows, *missing]
     assert all(data["clients"][c] == "untested" for c in missing)
     folder = _witness_copy(tmp_path, lambda d: d["clients"].pop("devin"))
@@ -231,9 +251,6 @@ def test_site_evidence_rows_are_the_untested_agents(tmp_path: Path) -> None:
     # a witness.yaml "witnessed" row that chock's ledger does not back has no issue.
     assert set(issues) == untested - set(witness["unbacked"])
     assert issues == {
-        "antigravity": 129,
-        "gemini-cli": 132,
-        "goose": 177,
         "kimi-code": 135,
         "factory-droid": 184,
         "openhands": 181,
@@ -312,7 +329,7 @@ def test_no_notice_for_a_witnessed_agent(request, which) -> None:
         assert f'class="client-evidence" data-client="{client}"' not in builder
         assert "client-evidence" not in _install_section(install, client), client
     notices = len([c for c, d in block["clients"].items() if d["evidence"]])
-    assert notices >= 6
+    assert notices >= 3
     assert builder.count('class="client-evidence"') == notices
     assert install.count('class="client-evidence"') == notices
 

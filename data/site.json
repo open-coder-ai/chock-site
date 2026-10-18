@@ -153,7 +153,6 @@
       "goose": null,
       "grok": null,
       "antigravity": null,
-      "gemini-cli": null,
       "openhands": null,
       "kimi-code": null,
       "factory-droid": null
@@ -164,10 +163,9 @@
       "codex": [{"note": "Uninstall __PLUGIN__ in /plugins, then delete the folder __PLUGIN_DIR__."}],
       "copilot": [{"note": "Uninstall __PLUGIN__ from the __MARKETPLACE__ marketplace in Copilot, then delete the folder __PLUGIN_DIR__."}],
       "devin": [{"note": "Remove __PLUGIN__ from Devin's plugins, then delete the folder __PLUGIN_DIR__."}],
-      "goose": null,
+      "goose": [{"note": "Add __PLUGIN__ to disabledPlugins in ~/.config/goose/settings.json, or delete the folder __PLUGIN_DIR__, then start a new goose session."}],
       "grok": [{"note": "Run \"grok plugin list\" and find the name grok gave __PLUGIN__, run \"grok plugin uninstall\" with that name, then delete the folder __PLUGIN_DIR__."}],
-      "antigravity": null,
-      "gemini-cli": null,
+      "antigravity": [{"note": "Delete the folder __PLUGIN_DIR__ and its copy in ~/.gemini/config/plugins/, then restart Antigravity."}],
       "openhands": null,
       "kimi-code": null,
       "factory-droid": null

@@ -60,6 +60,7 @@ def test_the_named_routes(built) -> None:
         "chock sync --repo . --agents mistral-vibe"
     )
     assert {a for a, r in rows.items() if r["route"] == "sync"} == {
+        "gemini_cli",
         "mistral_vibe",
         "tabnine",
         "vscode_copilot",
@@ -124,13 +125,15 @@ def test_agent_issues_are_the_ones_agentseam_cites(built) -> None:
     rows = _rows(built)
     assert rows["mistral_vibe"]["evidence"]["number"] == 187
     assert rows["cline"]["evidence"]["number"] == 178
-    assert rows["goose"]["evidence"]["number"] == 177
+    assert rows["kimi_code"]["evidence"]["number"] == 135
+    assert rows["goose"]["evidence"] is None
     assert rows["cursor"]["evidence"] is None
 
 
 def test_cited_notes(built) -> None:
     rows = _rows(built)
     assert "Antigravity" in rows["gemini_cli"]["note"]["text"]
+    assert "not an install target of chock" in rows["gemini_cli"]["note"]["text"]
     assert "does not protect OpenHands" in rows["openhands"]["note"]["text"]
     for row in rows.values():
         if row["note"]:

@@ -30,6 +30,7 @@ upstream:
     - ask is likewise unsupported and degrades
     - exit 2 is honoured at both too and is deliberately
     - 'hookEventName is echoed rather than hardcoded:'
+    - permissionOverrides only widens permissions
   - source: agentseam src/agentseam/data/matrix.json
     starts:
     - agentseam speaks that cancel object (grammar
@@ -73,7 +74,9 @@ upstream:
     - installs the git hook dispatchers.
   - source: chock src/chock/data/witnesses.json
     starts:
+    - live probe of a chock plugin auto-discovered from
     - live probe of a chock plugin installed with
+    - live probe of chock's shipped plugin built on
     - live probe of the chock plugin, every other
     - 'live probe of the chock plugin: pin-github-actions'
     - 'live probe: a hook-JSON deny blocked a matched'

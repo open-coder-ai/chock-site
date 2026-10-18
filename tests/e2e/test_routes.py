@@ -49,16 +49,16 @@ def test_every_agent_has_a_row_with_its_routes(page, site_url) -> None:
 
 def test_a_plugin_link_opens_that_agents_section(page, site_url) -> None:
     page.goto(site_url + INSTALL)
-    page.locator("#route-goose a[href='#agent-goose']").click()
-    assert page.evaluate("location.hash") == "#agent-goose"
-    section = page.locator("section[aria-labelledby='agent-goose']")
+    page.locator("#route-kimi_code a[href='#agent-kimi-code']").click()
+    assert page.evaluate("location.hash") == "#agent-kimi-code"
+    section = page.locator("section[aria-labelledby='agent-kimi-code']")
     assert section.is_visible()
     assert section.locator(".client-evidence a").get_attribute("href") == (
-        f"{ISSUES}177"
+        f"{ISSUES}135"
     )
     removal = section.locator(".remove-unverified")
-    assert "Removal steps not verified for goose yet." in removal.inner_text()
-    assert removal.locator("a").get_attribute("href") == f"{ISSUES}177"
+    assert "Removal steps not verified for Kimi Code yet." in removal.inner_text()
+    assert removal.locator("a").get_attribute("href") == f"{ISSUES}135"
     assert_clean(page)
 
 
@@ -76,13 +76,13 @@ def test_a_real_untested_agent_gets_its_line_notice_and_no_apply(
     page.goto(site_url + "/coding/builder/#preset=git-hygiene")
     page.wait_for_selector(".sel-item")
     assert page.locator("#client-mistral-vibe").count() == 0  # sync only, no plugin
-    page.locator("#client-goose").check()
+    page.locator("#client-kimi-code").check()
     command = page.locator("[data-selection-code]").inner_text()
-    assert command.endswith(" --client goose")
-    notice = page.locator(".client-evidence[data-client='goose']")
+    assert command.endswith(" --client kimi-code")
+    notice = page.locator(".client-evidence[data-client='kimi-code']")
     assert notice.is_visible()
-    assert notice.locator("a").get_attribute("href") == f"{ISSUES}177"
-    assert page.locator(".client-untested[data-client='goose']").is_visible()
+    assert notice.locator("a").get_attribute("href") == f"{ISSUES}135"
+    assert page.locator(".client-untested[data-client='kimi-code']").is_visible()
     assert_clean(page)
 
 

@@ -15,7 +15,6 @@ plugins:
   goose: goose
   grok: grok
   antigravity: antigravity
-  gemini-cli: gemini_cli
   openhands: openhands
   kimi-code: kimi_code
   factory-droid: factory_droid
@@ -26,8 +25,8 @@ reasons:
   unadapted: "Not wired: agentseam records this agent but has no adapter for its hooks, so chock has nothing to wire."
 notes:
   gemini_cli:
-    text: "Google is sunsetting Gemini CLI for consumer tiers in favor of Antigravity CLI: there, use the Antigravity plugin."
-    source: "Chock's install data (src/chock/install/data/install.json, gemini-cli steps)"
+    text: "Gemini CLI is not an install target of chock: Antigravity CLI replaces Gemini CLI for unpaid users, so chock builds no Gemini CLI plugin. Use the Antigravity plugin."
+    source: "Chock's install command (src/chock/install/cli.py, --client gemini-cli) and agentseam's matrix notes for gemini_cli"
   openhands:
     text: "Chock's Claude Code plugin does not protect OpenHands, even though OpenHands reads .claude-plugin/: its matchers never match OpenHands' terminal or file_editor tools. Use the OpenHands plugin."
     source: "docs/enforcement-surfaces.md in chock"
