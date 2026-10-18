@@ -17,6 +17,7 @@ import {
   track,
 } from "./common.js";
 import { commandOutputs, initQuiz } from "./quiz.js";
+import { enhanceSelect } from "./select.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -60,6 +61,7 @@ async function main() {
   const chips = $$(".chip[data-facet='label']");
   const search = $("#builder-search");
   const start = $("#builder-start");
+  const startBox = enhanceSelect(start);
   const status = $("#builder-status");
   const noticeBox = $("#link-notice");
   const selCount = $(".sel-count");
@@ -276,6 +278,7 @@ async function main() {
     const ids = [...picked];
     const match = presets.find((p) => sameMembers(p.members, ids));
     start.value = match ? match.id : "";
+    startBox.sync();
   }
 
   function writeFragment() {
@@ -395,7 +398,7 @@ async function main() {
   });
 
   selList.addEventListener("click", (event) => {
-    if (event.target === emptyNode) start.focus();
+    if (event.target === emptyNode) startBox.focus();
   });
 
   // ----- outputs: tabs, copy, download -----
@@ -568,7 +571,7 @@ async function main() {
     onFinish: () => track("quiz-finished"),
     onSkip: () => {
       showQuiz(false);
-      start.focus();
+      startBox.focus();
     },
   });
 

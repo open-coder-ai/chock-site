@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from combo import pick_start
 from conftest import CATALOG, SCREENSHOTS, assert_clean, collect
 
 from sitegen import clientdata, engine
@@ -138,7 +139,7 @@ def test_the_page_fragment_keeps_the_agent(page, site_url) -> None:
     page.wait_for_selector(".sel-item")
     assert page.locator("#client-devin").is_checked()
     page.once("dialog", lambda dialog: dialog.accept())
-    page.locator("#builder-start").select_option("")
+    pick_start(page, "")
     assert page.evaluate("location.hash") == "#client=devin"
     assert_clean(page)
 

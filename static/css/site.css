@@ -935,6 +935,87 @@ footer { border-top: 1px solid var(--line); margin-top: 56px; }
 .search-field input { width: 100%; }
 .field select { min-width: 200px; }
 
+/* Select-only combobox (select.js) over a native <select>; the list opens under the button. */
+.combo { position: relative; min-width: 200px; }
+.combo-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 14px;
+  text-align: left;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+.combo-button:hover, .combo.is-open .combo-button { border-color: var(--accent); }
+.combo-chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+}
+.combo.is-open .combo-chevron { margin-top: 4px; transform: rotate(225deg); }
+.combo-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  max-width: calc(100vw - 32px);
+  max-height: min(320px, 60vh);
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 14%, transparent);
+}
+.combo-list[hidden] { display: none; }
+.combo-option {
+  display: block;
+  padding: 8px 12px 8px 30px;
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  position: relative;
+}
+.combo-option.is-active { background: var(--panel-2); }
+.combo-option.is-current { font-weight: 600; }
+.combo-option.is-current::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 5px;
+  height: 10px;
+  margin-top: -7px;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(45deg);
+}
+.combo-count { color: var(--muted); font-weight: 500; }
+@media (prefers-reduced-motion: no-preference) {
+  .combo-list:not([hidden]) { animation: combo-open 140ms ease-out; }
+  .combo-chevron { transition: transform 140ms ease-out; }
+}
+@keyframes combo-open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
 .filter-label { color: var(--body); font-size: 13px; align-self: center; }
 
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }

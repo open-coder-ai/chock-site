@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from combo import pick_start
 from conftest import assert_clean
 from test_author import _fill
 from test_author import _open as _open_author
@@ -63,7 +64,7 @@ def test_builder_copy_share_download_and_preset(page, site_url) -> None:
         page.locator("#download-file").click()
     assert _wait_for(page, sent, 3)[2] == {"name": "selection-downloaded", "props": {}}
     page.on("dialog", lambda dialog: dialog.accept())
-    page.select_option("#builder-start", "secrets")
+    pick_start(page, "secrets")
     assert _wait_for(page, sent, 4)[3] == {
         "name": "preset-picked",
         "props": {"preset": "secrets"},
@@ -222,7 +223,7 @@ def test_ui_works_when_the_endpoint_is_unreachable(page, site_url) -> None:
     page.locator("#tab-file").click()
     with page.expect_download():
         page.locator("#download-file").click()
-    page.select_option("#builder-start", "")
+    pick_start(page, "")
     assert errors == []
 
 
