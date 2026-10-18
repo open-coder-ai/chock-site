@@ -5,8 +5,8 @@
   "summary": "The repo path from end to end: author a policy, check it, sync it into hook files, then each tool call, commit, push and CI run through the hook to a verdict and one log line.",
   "intro": "A person authors and syncs once; after that every agent tool call, every commit and push, and every CI run goes through the files chock sync wrote. The agent's hooks and the git hooks reach the same gate runner, so a policy means the same thing in the session and at commit.",
   "pins": {
-    "chock": "0c12c57c1db98eb50c222bf423302ee9b35e57cd",
-    "agentseam": "945ceb09e2e22101aa4f56b11deefef5aabaa4a1"
+    "chock": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+    "agentseam": "683f95b5f2784dc3446acb1c91636ebc5ee7bee6"
   },
   "canvas": {
     "width": 800,

@@ -2272,3 +2272,9 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
   .header-inner { gap: 6px; }
   .header-inner .button-small { padding: 9px 10px; font-size: 13px; }
 }
+
+/* CC-4: chock's Claude Code plugin option under an agent's steps. */
+.claude-plugin { margin-top: var(--flow); border-left: 2px solid var(--line); padding-left: 12px; font-size: 13px; color: var(--body); }
+.claude-plugin > :not(pre, .code-block) { margin: 0; }
+.claude-plugin > * + :not(pre, .code-block) { margin-top: var(--flow-tight); }
+.claude-route strong, .claude-warning strong { color: var(--text); font-weight: 600; }

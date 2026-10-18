@@ -12,6 +12,14 @@ PAGE_PATH = re.compile(r"[\w~.-]\\[\w.-]")
 # JSON values also hold escapes and regexes, so only home, dot-folder and drive paths count.
 DATA_PATH = re.compile(r"~\\|\\\.chock|\b[A-Za-z]:\\\w")
 PAGE_SUFFIXES = (".html", ".md", ".txt")
+# Exact upstream strings the site quotes on purpose (data/dist-paths.json); stdlib only, CI runs bare.
+ALLOWED_JSON = Path(__file__).resolve().parent.parent / "data" / "dist-paths.json"
+
+
+def allowed() -> tuple[str, ...]:
+    """The exact strings data/dist-paths.json lets a page show."""
+    data = json.loads(ALLOWED_JSON.read_text(encoding="utf-8"))
+    return tuple(text for row in data["upstream"] for text in row["texts"])
 
 
 def _strings(value: Any) -> Iterator[str]:
@@ -26,8 +34,9 @@ def _strings(value: Any) -> Iterator[str]:
             yield from _strings(item)
 
 
-def find(site: Path) -> list[str]:
-    """Each file under `site` that shows a Windows-style path, with the matching text."""
+def find(site: Path, exact: tuple[str, ...] | None = None) -> list[str]:
+    """Each file under `site` that shows a Windows-style path outside the `exact` strings."""
+    exact = allowed() if exact is None else exact
     found = []
     for path in sorted(site.rglob("*")):
         if path.suffix in PAGE_SUFFIXES:
@@ -38,6 +47,8 @@ def find(site: Path) -> list[str]:
         else:
             continue
         for text in texts:
+            for listed in exact:
+                text = text.replace(listed, "")
             match = pattern.search(text)
             if match:
                 start = max(match.start() - 30, 0)

@@ -268,6 +268,7 @@ def builder_clients(
                 report if state == "witnessed" else None,
             ),
             "plugin_repo": repos[client],
+            "claude_plugin": engine.claude_plugin_offer(client),
             "build_link": data_fill(texts["build_link"], named),
             "labels": client_labels(
                 policies, client, words, data_fill(texts["ungraded_says"], named)

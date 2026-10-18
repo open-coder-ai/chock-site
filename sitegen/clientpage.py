@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from . import engine
 from .pageparts import data_fill
 from .render import Prose, Safe, render_file, sentence_start
 
@@ -154,9 +155,76 @@ def steps(block: dict[str, Any], templates: Path) -> str:
             HIDDEN=_hidden(client, block["default"]),
             HEADING=block["clients"][client]["steps_heading"],
             STEPS=Safe(step_blocks(templates, block["clients"][client]["steps"])),
+            CLAUDE_PLUGIN=Safe(claude_plugin(block, templates, client)),
         )
         for client in block["order"]
     )
+
+
+def claude_plugin(block: dict[str, Any], templates: Path, client: str) -> str:
+    """chock's Claude Code plugin option for one agent: its routes, steps and warnings, or why not."""
+    offer = block["clients"][client]["claude_plugin"]
+    if offer is None:
+        return ""
+    if "not_offered" in offer:
+        return render_file(
+            templates / "claude-plugin-none.html",
+            NOT_OFFERED=Prose(offer["not_offered"]),
+        )
+    texts = block["texts"]
+    routes = "".join(
+        render_file(
+            templates / "claude-plugin-route.html",
+            WHERE=route["where"],
+            LABEL=route["label"],
+            LEAD=Safe(
+                step_blocks(templates, [{"note": route["prefer_native"]}])
+                if route["prefer_native"]
+                else ""
+            ),
+            BUILD=Safe(
+                _build_line(templates, route["build"], texts["claude_plugin_code"])
+            ),
+            STEPS=Safe(step_blocks(templates, route["steps"])),
+        )
+        for route in offer["routes"]
+    )
+    warnings = "".join(
+        render_file(
+            templates / "claude-plugin-warning.html",
+            LABEL=texts["claude_plugin_warning"],
+            WARNING=Prose(warning),
+        )
+        for warning in offer["warnings"]
+    )
+    return render_file(
+        templates / "claude-plugin.html",
+        HEADING=texts["claude_plugin_heading"],
+        INTRO=Prose(offer["heading"]),
+        ROUTES=Safe(routes),
+        WARNINGS=Safe(warnings),
+    )
+
+
+def _build_line(templates: Path, build: str, placeholder: str) -> str:
+    """chock's build line with a slot builder.js fills with the selection code; elsewhere the placeholder."""
+    parts = build.split(engine.SELECTION_TOKEN)
+    if len(parts) != 2:
+        raise ValueError(f"build line needs one {engine.SELECTION_TOKEN}: {build!r}")
+    before, after = parts
+    return render_file(
+        templates / "claude-plugin-build.html",
+        BEFORE=before,
+        CODE=placeholder,
+        AFTER=after,
+    )
+
+
+def claude_route_steps(route: dict[str, Any], code: str) -> list[dict[str, str]]:
+    """A route's notes and steps in chock's order: the native-plugin advice, the build line, the steps."""
+    lead = [route["prefer_native"]] if route["prefer_native"] else []
+    build = data_fill(route["build"], {engine.SELECTION_TOKEN: code})
+    return [{"note": text} for text in [*lead, build]] + route["steps"]
 
 
 def markdown(block: dict[str, Any]) -> str:
@@ -185,17 +253,7 @@ def markdown(block: dict[str, Any]) -> str:
         lines.append(
             f"{block['texts']['command_md']}\n\n    {command}\n\n{data['steps_heading']}\n\n"
         )
-        number = 0
-        for item in data["steps"]:
-            (kind, text), *_ = item.items()
-            if kind == "command":
-                number += 1
-                lines.append(f"{number}. (command)\n\n   ```sh\n   {text}\n   ```\n\n")
-            elif kind == "note":
-                lines.append(f"{agent_note(text, block['texts']['ask_inline'])}\n\n")
-            else:
-                lines.extend(f"    {line}\n" for line in text.splitlines())
-                lines.append("\n")
+        lines.append(_md_steps(data["steps"], block["texts"]["ask_inline"]))
         lines.append(f"\n{block['texts']['remove_md']}\n\n")
         for step in data["remove"]:
             (kind, text), *_ = step.items()
@@ -206,5 +264,46 @@ def markdown(block: dict[str, Any]) -> str:
             )
         if data["plugin_repo"]:
             lines.append(f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n")
+        lines.append(_md_claude_plugin(block, data["claude_plugin"]))
         lines.append("\n")
+    return "".join(lines)
+
+
+def _md_steps(steps: list[dict[str, str]], ask: str) -> str:
+    """Steps for the Markdown twin: numbered commands, notes with the ask, settings indented."""
+    lines = []
+    number = 0
+    for item in steps:
+        (kind, text), *_ = item.items()
+        if kind == "command":
+            number += 1
+            lines.append(f"{number}. (command)\n\n   ```sh\n   {text}\n   ```\n\n")
+        elif kind == "note":
+            lines.append(f"{agent_note(text, ask)}\n\n")
+        else:
+            lines.extend(f"    {line}\n" for line in text.splitlines())
+            lines.append("\n")
+    return "".join(lines)
+
+
+def _md_claude_plugin(block: dict[str, Any], offer: dict[str, Any] | None) -> str:
+    """The Claude Code plugin option in the Markdown twin, or chock's reason it offers none."""
+    if offer is None:
+        return ""
+    if "not_offered" in offer:
+        return f"\n{offer['not_offered']}\n"
+    texts = block["texts"]
+    lines = [f"\n#### {texts['claude_plugin_heading']}\n\n{offer['heading']}\n\n"]
+    for route in offer["routes"]:
+        lines.append(f"{route['where']}: {route['label']}\n\n")
+        lines.append(
+            _md_steps(
+                claude_route_steps(route, f"`{texts['claude_plugin_code']}`"),
+                texts["ask_inline"],
+            )
+        )
+    lines.extend(
+        f"{texts['claude_plugin_warning']} {warning}\n\n"
+        for warning in offer["warnings"]
+    )
     return "".join(lines)
