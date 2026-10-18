@@ -553,7 +553,8 @@ async function main() {
     window.clearTimeout(draftTimer);
     draftTimer = window.setTimeout(() => {
       try {
-        if (hasDraft()) {
+        // The agent choice is kept even with an otherwise empty form; Clear draft leaves it.
+        if (hasDraft() || client !== C.default) {
           localStorage.setItem(
             DRAFT_KEY,
             JSON.stringify({ kind, name, answers, picked: [...picked], client, overrides }),
@@ -709,11 +710,18 @@ async function main() {
 
   function ctx() {
     const id = slugify(name);
+    // Every question of the kind as a string, so a partial interview builds without throwing.
+    const full = Object.fromEntries(
+      kinds[kind].fields.map((field) => {
+        const value = answers[field.key];
+        return [field.key, typeof value === "string" ? value : ""];
+      }),
+    );
     return {
       kind,
       id,
       name: nameOf(id),
-      answers,
+      answers: full,
       spec: kinds[kind],
       cfg,
       untested: T.untested_note,
@@ -732,9 +740,13 @@ async function main() {
     for (const file of files) if (file.path in overrides) file.text = overrides[file.path];
     renderFiles(freshFiles);
     const errors = validate(c, T);
-    errorsBox.hidden = errors.length === 0;
+    // An unanswered question or a blank name is not an error yet: the output says what is missing.
+    const shown = errors.filter(
+      (text) => text !== T.required && !(text === T.id_invalid && !name.trim()),
+    );
+    errorsBox.hidden = shown.length === 0;
     errorList.replaceChildren(
-      ...[...new Set(errors)].map((text) => {
+      ...[...new Set(shown)].map((text) => {
         const item = document.createElement("li");
         item.textContent = text;
         return item;

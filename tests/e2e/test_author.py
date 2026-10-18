@@ -255,6 +255,72 @@ def test_undo_expires_after_ten_seconds(page, site_url) -> None:
     assert_clean(page)
 
 
+def _fresh(page, site_url: str) -> None:
+    _open(page, site_url)
+    page.evaluate("localStorage.removeItem('chock.author.draft.v1')")
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+
+
+def test_partial_interview_shows_no_error_and_keeps_the_draft(page, site_url) -> None:
+    _fresh(page, site_url)
+    page.fill("#author-name", FILLS["content_regex"]["name"])
+    page.fill("#af-message", FILLS["content_regex"]["message"])
+    page.wait_for_timeout(600)  # the draft save is debounced 300 ms
+    assert page.locator("#author-error-list").text_content() == ""
+    # Unanswered questions are not an error: the output says what is missing instead.
+    assert page.locator("#author-errors").is_hidden()
+    assert _script(page) == "Answer the questions above."
+    assert page.locator("#author-download").is_disabled()
+    stored = _draft(page)
+    assert stored and FILLS["content_regex"]["message"] in stored
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+    assert page.locator("input[name='author-kind'][value='content_regex']").is_checked()
+    assert page.locator("#author-name").input_value() == FILLS["content_regex"]["name"]
+    assert (
+        page.locator("#af-message").input_value() == FILLS["content_regex"]["message"]
+    )
+    assert page.locator("#author-errors").is_hidden()
+    assert_clean(page)
+
+
+@pytest.mark.parametrize("kind", sorted(FILLS))
+def test_one_answer_never_errors_for_any_kind(page, site_url, kind) -> None:
+    _fresh(page, site_url)
+    page.check(f"input[name='author-kind'][value='{kind}']")
+    page.fill("#author-name", FILLS[kind]["name"])
+    page.fill("#af-message", FILLS[kind]["message"])
+    page.wait_for_timeout(600)
+    assert page.locator("#author-error-list").text_content() == ""
+    assert page.locator("#author-errors").is_hidden()
+    assert_clean(page)
+
+
+def test_an_unusable_name_is_still_an_error(page, site_url) -> None:
+    _fresh(page, site_url)
+    page.fill("#author-name", "!!!")
+    errors = page.locator("#author-error-list")
+    errors.wait_for()
+    assert page.locator("#author-errors").is_visible()
+    assert "Every question needs an answer." not in errors.inner_text()
+    assert_clean(page)
+
+
+def test_agent_choice_alone_survives_reload(page, site_url) -> None:
+    _fresh(page, site_url)
+    page.check("input[name='client'][value='codex']")
+    page.wait_for_timeout(600)
+    assert _draft(page)
+    # The agent picker is not part of the draft Clear draft resets.
+    assert page.locator("#author-clear").is_hidden()
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+    assert page.locator("input[name='client'][value='codex']").is_checked()
+    assert page.locator("#author-name").input_value() == ""
+    assert_clean(page)
+
+
 def test_no_js_hides_the_clear_controls(browser, site_url) -> None:
     context = browser.new_context(java_script_enabled=False)
     page = context.new_page()
