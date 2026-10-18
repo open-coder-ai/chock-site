@@ -1,0 +1,12 @@
+# SITE-CAPS: a sentence on chock.sh starts with a capital letter unless it starts with code.
+# tests/test_sentence_case.py checks every built page and Markdown twin against this file.
+
+# Names whose own spelling is lowercase, kept at a sentence start. Policy ids are added
+# from the catalog.
+names:
+  - goose
+
+# Sentences the site shows but another repository writes. The site does not edit them;
+# each entry names its source so the fix lands there. The test fails when an entry no
+# longer appears, so the list only shrinks.
+upstream: []
