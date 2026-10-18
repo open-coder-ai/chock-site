@@ -194,10 +194,10 @@
       "ask_inline": " (ask the user before running it)",
       "steps_witnessed": "With --apply, chock runs these steps for __NAME__:",
       "steps_untested": "Then, in __NAME__:",
-      "ungraded_word": "not graded",
-      "ungraded_says": "not graded yet for __NAME__",
+      "ungraded_word": "Not graded",
+      "ungraded_says": "Not graded yet for __NAME__",
       "ungraded_meaning": "The catalog does not grade this policy on __NAME__ yet, so how far it goes there is unknown.",
-      "ungraded_note": "The pinned catalog has no grades for __NAME__ yet: a policy without one says \"not graded yet\"."
+      "ungraded_note": "The pinned catalog has no grades for __NAME__ yet: a policy without one says \"Not graded yet\"."
     }
   },
   "builder_texts": {
