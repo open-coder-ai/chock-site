@@ -5,16 +5,19 @@
 tiers:
   - key: commit
     word: "at commit"
+    heading: "Checks at commit"
     glyph: "■"
     meaning: "The commit is refused, locally and in CI."
     equals: "enforced-at-commit"
   - key: agent
     word: "in agent"
+    heading: "Checks in the agent"
     glyph: "◆"
     meaning: "Checked by the agent's hooks once chock sync wires them; fails open if the hook crashes."
     starts_with: "best-effort"
   - key: advise
     word: "advisory"
+    heading: "Advisory"
     glyph: "○"
     meaning: "Text the agent reads; nothing stops a violation."
     equals: "advisory"

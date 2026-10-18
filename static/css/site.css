@@ -1852,12 +1852,15 @@ body { overflow-x: clip; }
 .stats-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tier-card .stat-label { margin-bottom: 10px; }
 .tier-meaning { color: var(--body); font-size: 14px; margin: 0; }
-.repos-group { margin-top: 28px; }
-.repos-group h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin: 0 0 12px; }
-.repos-count { color: var(--muted); font-family: var(--mono); font-size: 13px; }
-.repos-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; }
-.repos-list li { min-width: 0; overflow-wrap: anywhere; }
-.repos-list code { color: var(--muted); font-size: 13px; }
+.repos-group { margin-top: 32px; }
+.repos-group h3 { font-size: 18px; margin: 0 0 8px; }
+.repos-count { color: var(--muted); font-weight: 500; }
+/* Name over id, one divider per row; equal rows keep the two columns aligned. */
+.repos-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; column-gap: 32px; border-top: 1px solid var(--line); }
+.repos-list li { min-width: 0; padding: 10px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.repos-list a { color: var(--body); font-size: 15px; font-weight: 500; line-height: 1.4; text-underline-offset: 3px; }
+.repos-list a:hover, .repos-list a:focus-visible { color: var(--accent); text-decoration: underline; }
+.repos-list .repos-id { display: block; margin-top: 2px; padding: 0; border: 0; background: none; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
 .quiz-ci { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; color: var(--body); }
 .quiz-ci input { width: 18px; height: 18px; accent-color: var(--accent); }
 .quiz-unknown, .quiz-shared { color: var(--muted); font-size: 14px; margin: 12px 0 0; overflow-wrap: anywhere; }
@@ -1907,6 +1910,7 @@ body { overflow-x: clip; }
   .cards-2, .cards-3, .cards-4, .steps, .examples { grid-template-columns: minmax(0, 1fr); }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stats-tiers, .repos-list { grid-template-columns: minmax(0, 1fr); }
+  .repos-list { grid-auto-rows: auto; }
   .footer-inner { grid-template-columns: minmax(0, 1fr); padding: 32px 16px 20px; }
   .footer-line { padding: 12px 16px 32px; }
   .bmember { grid-template-columns: minmax(0, 1fr); }
