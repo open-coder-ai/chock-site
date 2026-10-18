@@ -20,15 +20,24 @@ def _names(built) -> frozenset[str]:
     return frozenset(RULES["names"]) | {p["id"] for p in site["policies"]}
 
 
+def _labels(built) -> frozenset[str]:
+    """The grade words a Markdown label row can start with ("blocks — ...")."""
+    site = json.loads((built.out / "data" / "site.json").read_text(encoding="utf-8"))
+    return frozenset(
+        w for words in site["label_words"].values() for w in words.values()
+    )
+
+
 def _findings(built) -> list[tuple[str, str]]:
     """(page, sentence) for every lowercase sentence start in the HTML pages and Markdown twins."""
     names = _names(built)
+    labels = _labels(built)
     found = []
     for path in sorted(built.out.rglob("*")):
         if path.suffix == ".html":
             blocks = html_blocks(path.read_text(encoding="utf-8"))
         elif path.suffix == ".md":
-            blocks = md_blocks(path.read_text(encoding="utf-8"))
+            blocks = md_blocks(path.read_text(encoding="utf-8"), labels)
         else:
             continue
         page = path.relative_to(built.out).as_posix()
@@ -148,6 +157,84 @@ def test_ignores_one_word_data_values(page: str) -> None:
     """One-word data values (cells, fact values), code labels and names stay unjudged."""
     names = frozenset({"goose"})
     assert [s for b in html_blocks(page) for s in lowercase_starts(b, names)] == []
+
+
+@pytest.mark.parametrize(
+    "page, expected",
+    [
+        (
+            '<li><span class="label">Blocks</span> blocks on writes</li>',
+            ["blocks on writes"],
+        ),
+        (
+            (
+                '<li><span class="label"><span class="glyph">■</span>Blocks</span>'
+                " blocks on writes</li>"
+            ),
+            ["blocks on writes"],
+        ),
+        (
+            (
+                '<li>Codex <span class="client-state">Tested</span>'
+                '<span><span class="chip">Warns</span> warns at turn end</span></li>'
+            ),
+            ["warns at turn end"],
+        ),
+    ],
+)
+def test_finds_lowercase_text_after_a_label(page: str, expected: list[str]) -> None:
+    """SITE-CAPS-3: the text after a badge in a row is judged as its own sentence."""
+    assert [s for b in html_blocks(page) for s in lowercase_starts(b)] == expected
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        (
+            '<li><span class="label"><span class="glyph">■</span>Blocks</span>'
+            " Blocks on writes</li>"
+        ),
+        '<li>Codex <span class="client-state">Tested</span> <a href="/x/">Build →</a></li>',
+        '<p><span class="label">Blocks</span> <code>git push</code> is refused.</p>',
+    ],
+)
+def test_ignores_capitalised_text_after_a_label(page: str) -> None:
+    """Text after a badge that starts uppercase or with code passes."""
+    assert [s for b in html_blocks(page) for s in lowercase_starts(b)] == []
+
+
+LABELS = frozenset({"blocks", "warns", "advisory"})
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Blocks — blocks on writes.\n", ["blocks on writes."]),
+        ("- Codex (tested): blocks — Blocks on writes\n", ["blocks"]),
+        (
+            "- Policy (`id`, v1): warns — warns at turn end.\n",
+            ["warns", "warns at turn end."],
+        ),
+    ],
+)
+def test_finds_lowercase_markdown_label_row(text: str, expected: list[str]) -> None:
+    """SITE-CAPS-3: a Markdown "label — text" row judges the label and the text after the dash."""
+    found = [s for b in md_blocks(text, LABELS) for s in lowercase_starts(b)]
+    assert found == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Blocks — Blocks on writes.\n",
+        "- `preset`: Optional — the preset the picks started from.\n",
+        "- `schema`: 2 — the selection format version.\n",
+        "Refused by scan-secrets: blocks on writes\n",
+    ],
+)
+def test_ignores_markdown_rows_without_a_grade_label(text: str) -> None:
+    """A dash row whose lead word is not a grade label, or a capitalised row, passes."""
+    assert [s for b in md_blocks(text, LABELS) for s in lowercase_starts(b)] == []
 
 
 def test_markdown_twin_blocks() -> None:

@@ -14,6 +14,7 @@ from sitegen import home as home_mod
 from sitegen import homedata
 from sitegen.__main__ import TEMPLATES
 from sitegen.pageparts import PageError, install_command
+from sitegen.render import sentence_start
 
 ROOT = Path(__file__).resolve().parents[1]
 BANNED = ("Free forever", "pip install chock", "limit-diff-size-rule", "[stars]")
@@ -222,7 +223,8 @@ def test_one_policy_every_surface_uses_the_registry_label_block(
             assert "not graded yet for Devin" in text
             continue
         assert words[label["keyword"]] in text
-        assert label["says"] in text
+        # SITE-CAPS-3: the text after the badge starts its own sentence.
+        assert sentence_start(label["says"]) in text
     assert "plugin repo" not in text
     assert f"{row['eval_executed']} of {row['eval_cases']} test cases pass" in text
 

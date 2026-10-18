@@ -317,8 +317,9 @@ def _policies_list(
         INTRO=Prose(f"{intro} {grades_note(site)}"),
         ROWS="".join(
             f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md) "
-            f"({md_code(policy.id)}, v{md(policy.version)}): {policy.word} — "
-            f"{md(policy.says)}. {md(sentence_start(first_sentence(policy.description)))}\n"
+            f"({md_code(policy.id)}, v{md(policy.version)}): {sentence_start(policy.word)} — "
+            f"{md(sentence_start(policy.says))}. "
+            f"{md(sentence_start(first_sentence(policy.description)))}\n"
             for policy in policies_sorted(site)
         ),
     )
@@ -543,7 +544,7 @@ def _policy_pages(
             SHA256=policy.sha256,
             SOURCE_URL=policy.source_url,
             CATALOG_REF=site.catalog_ref,
-            SAYS=md(policy.says.rstrip(".") + "."),
+            SAYS=md(sentence_start(policy.says.rstrip(".") + ".")),
             LABEL_NOTE=texts["label_box_note"],
             STATUS_MD=(
                 f"Status: {policy.status}."
