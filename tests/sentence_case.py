@@ -150,19 +150,29 @@ class _Blocks(HTMLParser):
         # Open block-level UI labels, and whether the current block has text inside one.
         self._labels: list[str] = []
         self._in_label = False
-        # Open inline UI labels (a pill inside a row): (tag, text so far), each judged alone.
-        self._inline: list[tuple[str, list[str]]] = []
+        # Open inline elements: (tag, text so far) for a UI label (a pill inside a row),
+        # judged alone; (tag, None) for any other, so a nested span does not close a label.
+        self._inline: list[tuple[str, list[str] | None]] = []
+        # SITE-CAPS-3: the text after each closed inline label, up to the block's end.
+        self._after: list[list[str]] = []
 
     def _flush(self) -> None:
         text = "".join(self._cur).strip()
         if text:
             self.blocks.append(Label(text) if self._in_label else text)
+        self.blocks += [
+            rest for rest in ("".join(p).strip() for p in self._after) if rest
+        ]
         self._cur = []
+        self._after = []
         self._in_label = False
 
     def _add(self, text: str) -> None:
         self._cur.append(text)
         for _, parts in self._inline:
+            if parts is not None:
+                parts.append(text)
+        for parts in self._after:
             parts.append(text)
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
@@ -178,12 +188,13 @@ class _Blocks(HTMLParser):
                 self._flush()
             elif tag in APART:
                 self._add(" ")
-            if tag in VOID or not (tag in LABEL_TAGS or LABEL_CLASSES & set(classes)):
+            if tag in VOID:
                 return
-            if tag in BLOCKS:
+            label = tag in LABEL_TAGS or bool(LABEL_CLASSES & set(classes))
+            if tag not in BLOCKS:
+                self._inline.append((tag, [] if label else None))
+            elif label:
                 self._labels.append(tag)
-            else:
-                self._inline.append((tag, []))
 
     def handle_endtag(self, tag: str) -> None:
         if tag in SKIP_TAGS:
@@ -201,10 +212,13 @@ class _Blocks(HTMLParser):
             tags = [t for t, _ in self._inline]
             if tag in tags:
                 at = len(tags) - 1 - tags[::-1].index(tag)
-                text = "".join(self._inline[at][1]).strip()
+                parts = self._inline[at][1]
                 del self._inline[at:]
-                if text:
-                    self.blocks.append(Label(text))
+                if parts is not None:
+                    text = "".join(parts).strip()
+                    if text:
+                        self.blocks.append(Label(text))
+                    self._after.append([])
             if tag in APART:
                 self._add(" ")
 
@@ -238,9 +252,12 @@ MD_NEW_BLOCK = re.compile(r"^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?|\|)")
 MD_HEADING = re.compile(r"^\s*#{1,6}\s")
 MD_LIST = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s")
 MD_MARKER = re.compile(r"^\s*(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|>\s?)")
+# SITE-CAPS-3: a label row, "blocks — blocks on writes", at a block's start or after a colon:
+# when the word is a grade label, it and the text after the dash are each judged as a sentence.
+MD_LABEL_ROW = re.compile(r"(?:^|:\s)([A-Za-z]+) — (.+)")
 
 
-def md_blocks(text: str) -> list[str]:
+def md_blocks(text: str, labels: frozenset[str] = frozenset()) -> list[str]:
     """The prose blocks of one Markdown twin: paragraphs, list items, headings, table cells."""
     blocks: list[str] = []
     cur: list[str] = []
@@ -251,7 +268,11 @@ def md_blocks(text: str) -> list[str]:
 
     def flush() -> None:
         if cur:
-            blocks.append(" ".join(cur))
+            block = " ".join(cur)
+            blocks.append(block)
+            row = MD_LABEL_ROW.search(block)
+            if row and row[1].lower() in labels:
+                blocks.extend([Label(row[1]), row[2]])
             cur.clear()
 
     lines = text.splitlines()

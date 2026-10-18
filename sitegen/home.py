@@ -282,7 +282,7 @@ def _surface(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> S
             "CHIP": Safe("")
             if row["keyword"] is None
             else keyword_chip(site, templates, row["keyword"], COUNTED),
-            "SAYS": row["says"],
+            "SAYS": sentence_start(row["says"]),
         }
         for row in _surface_rows(site, policy)
     ]
@@ -670,9 +670,10 @@ def _twin(
     surfaces = "".join(
         f"- {row['name']} ({row['state_word']}): "
         + (
-            md(row["says"])
+            md(sentence_start(row["says"]))
             if row["keyword"] is None
-            else f"{site.label_words[COUNTED][row['keyword']]} — {md(row['says'])}"
+            else f"{sentence_start(site.label_words[COUNTED][row['keyword']])} — "
+            f"{md(sentence_start(row['says']))}"
         )
         + "\n"
         for row in _surface_rows(site, policy)
