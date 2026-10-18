@@ -36,6 +36,11 @@ def md_code(value: object) -> str:
     return f"{fence}{pad}{text}{pad}{fence}"
 
 
+def sentence_start(text: str) -> str:
+    """Display only: the text with its first character uppercased; the source keeps its spelling."""
+    return text[:1].upper() + text[1:]
+
+
 def _prose(value: object) -> str:
     escaped = html.escape(str(value), quote=True)
     return CODE_SPAN_RE.sub(r"<code>\1</code>", escaped)

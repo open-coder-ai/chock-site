@@ -146,7 +146,7 @@ def test_cli_page_has_every_command(built) -> None:
     twin = _page(built, "agentseam-cli", "index.md")
     for node in engine.agentseam_cli():
         name = " ".join(["agentseam", *node["path"]])
-        assert f"## {name}\n" in twin, name
+        assert f"## `{name}`\n" in twin, name
         for argument in node["arguments"]:
             assert f"`{argument['name']}" in twin, (name, argument["name"])
 

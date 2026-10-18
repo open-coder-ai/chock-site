@@ -3,7 +3,7 @@
   "order": 1,
   "title": "The whole train",
   "summary": "Every repository in the chock train and how a policy travels from chock-catalog through chock to the hook your agent's client runs.",
-  "intro": "chock-catalog holds the policies. chock compiles them and wires them into a repository or a plugin. agentseam's adapters speak each agent's hook dialect. Around them, the threat ledger, context-report, this site and the release check each read the train at a pinned commit.",
+  "intro": "The chock-catalog repository holds the policies. Chock compiles them and wires them into a repository or a plugin. Agentseam's adapters speak each agent's hook dialect. Around them, the threat ledger, context-report, this site and the release check each read the train at a pinned commit.",
   "pins": {
     "chock": "39df00bbf7646a08481247f31d5091d09850f96f",
     "agentseam": "dd4f0a485a36313328d381305cf09658d3c36fb4",
@@ -19,7 +19,7 @@
   },
   "boundaries": [
     {
-      "label": "chock, the engine",
+      "label": "Chock, the engine",
       "x": 5,
       "y": 120,
       "w": 790,
@@ -59,7 +59,7 @@
       "x": 415,
       "y": 40,
       "source": "chock-site/sitegen/__main__.py",
-      "card": "This site. sitegen builds every page from the catalog at .catalog-ref and the engine at .framework-ref, and refuses a catalog checked out at another commit."
+      "card": "This site. The sitegen package builds every page from the catalog at .catalog-ref and the engine at .framework-ref, and refuses a catalog checked out at another commit."
     },
     {
       "id": "release",
@@ -73,15 +73,17 @@
     {
       "id": "eval",
       "label": "chock eval export",
+      "code": true,
       "kind": "code",
       "x": 15,
       "y": 150,
       "source": "chock/src/chock/eval/context_report.py",
-      "card": "Exports chock policies to context-report's run/v0.1 case format. chock writes the format; it never imports context-report."
+      "card": "Exports chock policies to context-report's run/v0.1 case format. Chock writes the format; it never imports context-report."
     },
     {
       "id": "compile",
       "label": "chock compile",
+      "code": true,
       "kind": "code",
       "x": 215,
       "y": 150,
@@ -91,6 +93,7 @@
     {
       "id": "sync",
       "label": "chock sync",
+      "code": true,
       "kind": "code",
       "x": 415,
       "y": 150,
@@ -109,6 +112,7 @@
     {
       "id": "context-report",
       "label": "context-report",
+      "code": true,
       "kind": "repo",
       "x": 15,
       "y": 290,
@@ -153,7 +157,7 @@
     },
     {
       "id": "githooks",
-      "label": "git hooks",
+      "label": "Git hooks",
       "kind": "artifact",
       "x": 215,
       "y": 410,
@@ -162,7 +166,7 @@
     },
     {
       "id": "adapters",
-      "label": "agentseam adapters",
+      "label": "Agentseam adapters",
       "kind": "code",
       "x": 415,
       "y": 410,
@@ -184,7 +188,7 @@
     {
       "from": "threat-intel",
       "to": "catalog",
-      "label": "scores",
+      "label": "Scores",
       "label_at": [
         200,
         32
@@ -193,12 +197,12 @@
     {
       "from": "catalog",
       "to": "compile",
-      "label": "policy folders"
+      "label": "Policy folders"
     },
     {
       "from": "catalog",
       "to": "site",
-      "label": "pinned",
+      "label": "Pinned",
       "label_at": [
         400,
         32
@@ -207,7 +211,7 @@
     {
       "from": "release",
       "to": "site",
-      "label": "checks pins",
+      "label": "Checks pins",
       "label_at": [
         600,
         32
@@ -216,22 +220,24 @@
     {
       "from": "eval",
       "to": "context-report",
-      "label": "run/v0.1 cases"
+      "label": "run/v0.1 cases",
+      "code": true
     },
     {
       "from": "compile",
       "to": "compiled",
-      "label": "writes"
+      "label": "Writes"
     },
     {
       "from": "sync",
       "to": "runtime",
-      "label": "writes"
+      "label": "Writes"
     },
     {
       "from": "compiled",
       "to": "runtime",
       "label": "gate.json",
+      "code": true,
       "label_at": [
         400,
         283
@@ -240,17 +246,18 @@
     {
       "from": "compiled",
       "to": "githooks",
-      "label": "entry points"
+      "label": "Entry points"
     },
     {
       "from": "compiled",
       "to": "ci",
-      "label": "step.yaml"
+      "label": "step.yaml",
+      "code": true
     },
     {
       "from": "runtime",
       "to": "adapters",
-      "label": "bundles"
+      "label": "Bundles"
     },
     {
       "from": "adapters",
@@ -260,12 +267,12 @@
     {
       "from": "install",
       "to": "plugin",
-      "label": "builds"
+      "label": "Builds"
     },
     {
       "from": "plugin",
       "to": "client",
-      "label": "hooks"
+      "label": "Hooks"
     }
   ],
   "path": [

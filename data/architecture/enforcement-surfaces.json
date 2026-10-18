@@ -2,8 +2,8 @@
   "id": "enforcement-surfaces",
   "order": 4,
   "title": "Enforcement surfaces",
-  "summary": "chock compile and its emitters: which emitter writes each surface, and the file chock sync installs for it.",
-  "intro": "A surface is where a compiled control runs. chock compile hands each policy to one emitter per surface; chock sync then installs what the emitters wrote. Each arrow out of chock compile names the surfaces that emitter writes, as the engine's compiler maps them.",
+  "summary": "The emitters of chock compile: which emitter writes each surface, and the file chock sync installs for it.",
+  "intro": "A surface is where a compiled control runs. The chock compile command hands each policy to one emitter per surface; chock sync then installs what the emitters wrote. Each arrow out of chock compile names the surfaces that emitter writes, as the engine's compiler maps them.",
   "pins": {
     "chock": "d2e701aebd4b922f7238822c6981872f9c0a7bb5"
   },
@@ -31,6 +31,7 @@
     {
       "id": "compile",
       "label": "chock compile",
+      "code": true,
       "kind": "code",
       "x": 415,
       "y": 50,
@@ -65,7 +66,7 @@
       "y": 170,
       "w": 150,
       "source": "chock/src/chock/compile/emitters/in_agent.py",
-      "card": "Hook fragments for every wired vendor. pre-tool-use refuses a call before it runs. stop reads what the turn left in the worktree and earns no coverage word. agent-hooks is the same deny for Copilot CLI and VS Code agent mode."
+      "card": "Hook fragments for every wired vendor. The pre-tool-use surface refuses a call before it runs. The stop surface reads what the turn left in the worktree and earns no coverage word. The agent-hooks surface is the same deny for Copilot CLI and VS Code agent mode."
     },
     {
       "id": "managed",
@@ -105,7 +106,7 @@
       "y": 300,
       "w": 150,
       "source": "chock/src/chock/hooks/data/dispatcher.sh",
-      "card": "chock sync installs a dispatcher in .git/hooks. It runs every executable script for the event."
+      "card": "The chock sync command installs a dispatcher in .git/hooks. It runs every executable script for the event."
     },
     {
       "id": "ciwf",
@@ -115,7 +116,7 @@
       "y": 300,
       "w": 150,
       "source": "chock/src/chock/scaffold/install_ci.py",
-      "card": "chock sync --ci writes .github/workflows/chock.yml. Until then ci-gate is compiled and inert, and the coverage report says so."
+      "card": "With --ci, chock sync writes .github/workflows/chock.yml. Until then ci-gate is compiled and inert, and the coverage report says so."
     },
     {
       "id": "agenthooks",
@@ -125,7 +126,7 @@
       "y": 300,
       "w": 150,
       "source": "chock/src/chock/hooks/in_agent_install.py",
-      "card": "chock sync writes each wired agent's hook file, in that agent's own format. What happens when a hook cannot run is agentseam's data, listed below.",
+      "card": "The chock sync command writes each wired agent's hook file, in that agent's own format. What happens when a hook cannot run is agentseam's data, listed below.",
       "facts": "tiers"
     },
     {
@@ -136,7 +137,7 @@
       "y": 300,
       "w": 150,
       "source": "chock/src/chock/index/builder.py",
-      "card": "chock sync compiles every active rule into .agents/policies/INDEX.md. AGENTS.md holds one pointer to it."
+      "card": "The chock sync command compiles every active rule into .agents/policies/INDEX.md. AGENTS.md holds one pointer to it."
     },
     {
       "id": "proxy",
@@ -154,6 +155,7 @@
       "from": "compile",
       "to": "git-hook",
       "label": "git-hook",
+      "code": true,
       "label_at": [
         85,
         160
@@ -163,6 +165,7 @@
       "from": "compile",
       "to": "ci",
       "label": "ci-gate",
+      "code": true,
       "label_at": [
         250,
         160
@@ -172,6 +175,7 @@
       "from": "compile",
       "to": "in-agent",
       "label": "pre-tool-use, stop, agent-hooks",
+      "code": true,
       "label_at": [
         415,
         160
@@ -181,6 +185,7 @@
       "from": "compile",
       "to": "managed",
       "label": "managed-setting",
+      "code": true,
       "label_at": [
         580,
         160
@@ -190,6 +195,7 @@
       "from": "compile",
       "to": "ambient",
       "label": "ambient-rule",
+      "code": true,
       "label_at": [
         745,
         160
@@ -199,6 +205,7 @@
       "from": "compile",
       "to": "mcp",
       "label": "mcp-gateway",
+      "code": true,
       "label_at": [
         910,
         160
@@ -207,27 +214,32 @@
     {
       "from": "git-hook",
       "to": "githooks",
-      "label": "chock sync"
+      "label": "chock sync",
+      "code": true
     },
     {
       "from": "ci",
       "to": "ciwf",
-      "label": "chock sync --ci"
+      "label": "chock sync --ci",
+      "code": true
     },
     {
       "from": "in-agent",
       "to": "agenthooks",
-      "label": "chock sync"
+      "label": "chock sync",
+      "code": true
     },
     {
       "from": "ambient",
       "to": "index",
-      "label": "chock sync"
+      "label": "chock sync",
+      "code": true
     },
     {
       "from": "mcp",
       "to": "proxy",
-      "label": "gateway run"
+      "label": "gateway run",
+      "code": true
     }
   ],
   "path": [

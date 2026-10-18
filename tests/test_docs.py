@@ -81,7 +81,7 @@ def test_repo_quickstart_lists_every_agent_sync_wires(built) -> None:
 def test_cli_reference_has_every_engine_command(built) -> None:
     text = _page(built, DOCS["pages"]["cli"]["path"])
     for command in engine.cli_commands():
-        assert f"chock {command['name']}</h3>" in text, command["name"]
+        assert f"<code>chock {command['name']}</code></h3>" in text, command["name"]
 
 
 def test_docs_nav_is_in_the_header_and_marks_the_page(built) -> None:

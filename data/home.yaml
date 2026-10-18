@@ -59,11 +59,11 @@ landing:
   how_apply_note: "For an agent marked tested, the command adds --apply and installs the plugin too; for the others you apply it yourself."
   how:
     - {title: "Pick your guardrails", body: "Tick policies one by one, or start from a preset such as Git hygiene or Secrets."}
-    - {title: "Run one command", body: "Read it first. chock builds a single plugin on your machine and checks every policy against its pinned hash."}
+    - {title: "Run one command", body: "Read it first. Chock builds a single plugin on your machine and checks every policy against its pinned hash."}
     - {title: "Keep working", body: "Your agent now checks each risky action. Change your picks any time and run the command again."}
   surface_eyebrow: "ONE POLICY, EVERY SURFACE"
-  surface_heading: "Write the rule once. chock puts it where each agent can enforce it."
-  surface_body: "Every agent has its own hook system. chock compiles each policy for the agent it runs in, and the label on each surface says how far it goes there. This is __POLICY__, with the label the catalog gives it on each agent."
+  surface_heading: "Write the rule once. Chock puts it where each agent can enforce it."
+  surface_body: "Every agent has its own hook system. Chock compiles each policy for the agent it runs in, and the label on each surface says how far it goes there. This is __POLICY__, with the label the catalog gives it on each agent."
   surface_policy: "scan-secrets"
   surface_tests: "__TESTED__ of __TOTAL__ test cases pass"
   usecases_eyebrow: "USE CASES"
@@ -99,15 +99,15 @@ landing:
       policies: ["owasp-asi01-agent-goal-hijack", "owasp-asi02-tool-misuse", "owasp-asi03-identity-privilege-abuse", "owasp-asi04-agentic-supply-chain"]
   honest_eyebrow: "HONEST BY DESIGN"
   honest_heading: "Every policy tells you exactly how far it goes."
-  honest_body: "chock labels each policy as blocks, asks, warns or advisory, and says what it misses."
+  honest_body: "Chock labels each policy as blocks, asks, warns or advisory, and says what it misses."
   honest_link: "See all __COUNT__ policies"
   honest_note: "Counts are computed from the catalog at each build."
   honest_friction: "Friction, not a security boundary."
-  honest_friction_body: "chock stops common mistakes and makes risky actions visible. Pair it with your existing controls."
+  honest_friction_body: "Chock stops common mistakes and makes risky actions visible. Pair it with your existing controls."
   honest_friction_link: "Why we say this"
   nomodel_eyebrow: "NO MODEL, NO TOKENS"
   nomodel_heading: "A check is a script, not a model."
-  nomodel_body: "chock does not ask a model whether your code is safe. Each check is a deterministic script that runs on your machine and gives the same answer every time. A passing check adds nothing to the agent's context; a refusal adds one short reason."
+  nomodel_body: "Chock does not ask a model whether your code is safe. Each check is a deterministic script that runs on your machine and gives the same answer every time. A passing check adds nothing to the agent's context; a refusal adds one short reason."
   shift_eyebrow: "SHIFT LEFT"
   shift_heading: "What a late finding costs"
   shift_intro: "Most security review happens after the code exists. A finding that arrives late costs a round trip. A finding the agent fixes in its own turn does not."
@@ -116,7 +116,7 @@ landing:
   shift_today: ["Agent writes", "Human review", "SAST in CI", "Security review", "Release"]
   shift_with_title: "With chock"
   shift_with_note: "The known classes are fixed in the agent's own turn."
-  shift_with: ["Agent writes", "chock refuses a known class", "Agent fixes it in the same turn", "The rest go to review as before"]
+  shift_with: ["Agent writes", "Chock refuses a known class", "Agent fixes it in the same turn", "The rest go to review as before"]
   calc_heading: "What does a late finding cost you?"
   calc_example_label: "Example values, not measurements. Change them to your own."
   calc_inputs:
@@ -137,7 +137,7 @@ landing:
   calc_invalid: "Enter numbers of zero or more; the share is 0 to 100."
   local_eyebrow: "YOUR CODE STAYS PUT"
   local_heading: "Your code stays where the agent writes it."
-  local_body: "chock checks code on the laptop, in the dev container or inside the cloud agent's pod. There's no upload to a scanning service and no new vendor holding your source."
+  local_body: "Chock checks code on the laptop, in the dev container or inside the cloud agent's pod. There's no upload to a scanning service and no new vendor holding your source."
   local_caveat: "Your agent still sends context to its own model provider; chock adds no additional destination. Installing fetches the policies once."
   presets_eyebrow: "__PRESETS__ PRESETS"
   presets_heading: "Start from a preset. Tune it in seconds."
@@ -174,7 +174,7 @@ landing:
   cta_github: "View on GitHub"
 coding:
   h1: "Guardrails for AI coding agents"
-  intro: "Pick the rules you want and your agent. chock turns them into one plugin that blocks, asks or warns before a risky move happens."
+  intro: "Pick the rules you want and your agent. Chock turns them into one plugin that blocks, asks or warns before a risky move happens."
   glance_heading: "The catalog at a glance"
   glance_link: "See every policy"
   presets_heading: "Start from a preset"

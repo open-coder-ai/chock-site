@@ -12,9 +12,11 @@ commit_url: "__URL__/commit/__SHA__"
 api_dir: /api/docs/architecture
 
 # Node size when a node gives none, and the average glyph widths the build uses to refuse a
-# label or repo name too long for its box (13px sans label, 11px mono repo line).
+# label or repo name too long for its box (13px sans label, 11px mono repo line). A label
+# marked "code": true is set in the 13px mono face, whose glyphs are 0.6em wide.
 node: {w: 170, h: 56}
 label_char_px: 7.4
+code_char_px: 7.8
 repo_char_px: 6.7
 node_pad_px: 12
 
@@ -27,11 +29,11 @@ kinds:
 
 # Fail modes as agentseam's tier table names them; an unknown one fails the build.
 fail_modes:
-  open: "fails open"
-  closed: "fails closed"
-  configurable: "fail mode configurable"
-  n/a: "no adapted pre-tool hook"
-tiers_intro: "agentseam's tier table at the release the engine pins, by fail mode:"
+  open: "Fails open"
+  closed: "Fails closed"
+  configurable: "Fail mode configurable"
+  n/a: "No adapted pre-tool hook"
+tiers_intro: "Agentseam's tier table at the release the engine pins, by fail mode:"
 tiers_row: "__MODE__ (__COUNT__): __AGENTS__"
 tiers_agent: "__NAME__ (__TIER__)"
 

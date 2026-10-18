@@ -18,9 +18,12 @@ export function sectionConfig(site, section = "coding") {
   }
   const byId = new Map(site.policies.map((p) => [p.id, p]));
   const clients = site.builder_clients;
+  // The mix line uses the words mid-line ("2 blocks · 1 not graded"): lowercase, like the label words.
+  const ungradedWord = clients.texts.ungraded_word;
+  const ungradedMid = ungradedWord.charAt(0).toLowerCase() + ungradedWord.slice(1);
   return {
     quiz: site.quiz,
-    words: { ...site.label_words.coding, [clients.ungraded]: clients.texts.ungraded_word },
+    words: { ...site.label_words.coding, [clients.ungraded]: ungradedMid },
     order: LABEL_ORDER,
     ungraded: clients.ungraded,
     keywordOf: (id) => byId.get(id).keyword,
