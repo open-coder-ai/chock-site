@@ -5,6 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from combo import pick_start
 from conftest import CATALOG, assert_clean, collect, screenshot
 
 from sitegen import engine
@@ -50,7 +51,7 @@ def _picked_ids(page) -> list[str]:
 
 def test_preset_gives_command_share_link_and_valid_selection(page, site_url) -> None:
     _open(page, site_url)
-    page.select_option("#builder-start", "git-hygiene")
+    pick_start(page, "git-hygiene")
     members = _members("git-hygiene")
     assert _count(page) == f"{len(members)} policies"
     assert "--selection '" in page.locator("[data-selection-code]").inner_text()
@@ -68,7 +69,7 @@ def test_preset_gives_command_share_link_and_valid_selection(page, site_url) -> 
 
 def test_share_link_restores_the_picks_in_a_new_page(page, site_url) -> None:
     _open(page, site_url)
-    page.select_option("#builder-start", "git-hygiene")
+    pick_start(page, "git-hygiene")
     share = _share(page)
     other = page.context.new_page()
     collect(other, site_url)
@@ -83,7 +84,7 @@ def test_share_link_restores_the_picks_in_a_new_page(page, site_url) -> None:
 
 def test_download_is_a_valid_selection(page, site_url, tmp_path: Path) -> None:
     _open(page, site_url)
-    page.select_option("#builder-start", "secrets")
+    pick_start(page, "secrets")
     page.get_by_role("tab", name="Selection file").click()
     with page.expect_download() as info:
         page.get_by_role("button", name="Download chock.selection.json").click()
@@ -124,7 +125,7 @@ def test_removing_every_pick_disables_outputs_and_clears_the_fragment(
     page, site_url
 ) -> None:
     _open(page, site_url)
-    page.select_option("#builder-start", "test-integrity")
+    pick_start(page, "test-integrity")
     assert page.evaluate("location.hash").startswith("#s=")
     while page.locator(".sel-item .remove").count():
         page.locator(".sel-item .remove").first.click()
@@ -146,7 +147,7 @@ def test_unreadable_link_says_so_and_starts_empty(page, site_url) -> None:
 
 def test_other_catalog_ref_shows_notice_and_can_be_used_anyway(page, site_url) -> None:
     _open(page, site_url)
-    page.select_option("#builder-start", "git-hygiene")
+    pick_start(page, "git-hygiene")
     selection = engine.load_selection(_code(page))
     selection["catalog"]["ref"] = "0" * 40
     _open(page, site_url, "#s=" + engine.encode_selection(selection))
@@ -161,7 +162,7 @@ def test_other_catalog_ref_shows_notice_and_can_be_used_anyway(page, site_url) -
 
 def test_unknown_id_is_listed_not_dropped_silently(page, site_url) -> None:
     _open(page, site_url)
-    page.select_option("#builder-start", "test-integrity")
+    pick_start(page, "test-integrity")
     selection = engine.load_selection(_code(page))
     selection["policies"].append(
         {
@@ -189,7 +190,7 @@ def test_preset_and_add_fragments(page, site_url) -> None:
 
 def test_command_installs_end_to_end(page, site_url, tmp_path: Path) -> None:
     _open(page, site_url)
-    page.select_option("#builder-start", "git-hygiene")
+    pick_start(page, "git-hygiene")
     code = _code(page)
     # chock reads the source's main branch; CI checks .catalog out detached at the
     # pin, so install from a throwaway clone whose main sits at that same commit.
@@ -260,7 +261,7 @@ def test_picks_never_leave_the_browser(page, site_url) -> None:
     requests: list[str] = []
     page.on("request", lambda req: requests.append(req.url))
     _open(page, site_url)
-    page.select_option("#builder-start", "git-hygiene")
+    pick_start(page, "git-hygiene")
     code = _code(page)
     page.evaluate(
         "document.fonts.ready.then(() => true)"
@@ -294,7 +295,7 @@ def test_builder_screenshots(browser, site_url) -> None:
         collect(page, site_url)
         _open(page, site_url)
         screenshot(page, "builder_empty")
-        page.select_option("#builder-start", "git-hygiene")
+        pick_start(page, "git-hygiene")
         assert page.locator(".notes .note-card").count() >= 1
         screenshot(page, "builder_git_hygiene_with_note")
         assert_clean(page)
@@ -345,7 +346,7 @@ def test_phone_bar_and_chips(browser, site_url) -> None:
         _open(page, site_url)
         bar = page.locator("#mobile-bar")
         assert not bar.is_visible()
-        page.select_option("#builder-start", "git-hygiene")
+        pick_start(page, "git-hygiene")
         assert bar.is_visible()
         assert "6 policies" in bar.inner_text()
         assert "note" in bar.inner_text()
