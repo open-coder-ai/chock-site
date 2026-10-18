@@ -1,4 +1,4 @@
-/* Architecture diagrams (ARCH-1): the dusk palette by default, a light theme on request and in print. */
+/* Architecture diagrams (ARCH-1): the site palette by default, a cool light theme on request and in print. */
 
 .arch-figure,
 .arch-cards {
@@ -8,8 +8,8 @@
   --arch-text: var(--text);
   --arch-muted: var(--muted);
   --arch-edge: var(--dash);
-  --arch-path: var(--accent);
-  --arch-repo: var(--accent);
+  --arch-path: var(--highlight-text);
+  --arch-repo: var(--highlight-text);
   --arch-code: var(--info);
   --arch-artifact: var(--muted);
   --arch-client: var(--ok);
