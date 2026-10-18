@@ -1670,7 +1670,8 @@ body { overflow-x: clip; }
 .pipeline h3 { margin-bottom: 14px; }
 .pipeline-steps { list-style: none; counter-reset: pipe; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
 .pipeline-steps li { counter-increment: pipe; display: flex; gap: 10px; align-items: baseline; color: var(--text); }
-.pipeline-steps li::before { content: counter(pipe); flex: none; width: 24px; height: 24px; line-height: 24px; text-align: center; border-radius: 50%; border: 1px solid var(--line-2); color: var(--muted); font: 600 12px var(--mono); }
+/* The font shorthand comes first so it does not reset line-height; text-box trims the line to the digit's height. */
+.pipeline-steps li::before { content: counter(pipe); flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1px solid var(--line-2); color: var(--muted); font: 600 12px var(--mono); line-height: 1; text-box: trim-both cap alphabetic; }
 .pipeline-chock .pipeline-steps li::before { border-color: var(--accent); color: var(--accent); }
 .pipeline-note { color: var(--body); font-size: 14px; margin: 0; }
 
