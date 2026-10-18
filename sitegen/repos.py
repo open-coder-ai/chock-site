@@ -16,15 +16,7 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import (
-    Prose,
-    Safe,
-    md,
-    md_code,
-    render_file,
-    render_text_file,
-    sentence_start,
-)
+from .render import Prose, Safe, md, md_code, render_file, render_text_file
 
 MD = "md"
 SECTION = "repos"
@@ -85,7 +77,7 @@ def _home(site: Site, track: Track, out_dir: Path, templates: Path) -> tuple[str
         render_file(
             templates / PARTIALS / "repos-group.html",
             KEY=tier["key"],
-            CHIP=_chip(site, templates, tier["key"]),
+            HEADING=tier["heading"],
             NUM=str(numbers[tier["key"]]),
             ITEMS=Safe(
                 "".join(
@@ -160,7 +152,7 @@ def _home(site: Site, track: Track, out_dir: Path, templates: Path) -> tuple[str
         LIST_HEADING=home["list_heading"],
         LIST_INTRO=home["list_intro"],
         GROUP_LINES="".join(
-            f"### {sentence_start(t['word'])}\n\n"
+            f"### {t['heading']} ({numbers[t['key']]})\n\n"
             + "".join(
                 f"- [{md(p.name)}](/coding/policies/{p.id}/index.md) ({md_code(p.id)})\n"
                 for p in policies_sorted(site)
