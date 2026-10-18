@@ -196,18 +196,14 @@ def test_home_fits_a_phone(browser, site_url) -> None:
         context.close()
 
 
+# VID-OFF: the voiced promos are gone; only the silent recording is on the home page.
 MEDIA = (
-    ("/video/chock-promo-v9b.mp4", "/video/chock-promo-v9b-poster.jpg"),
-    (
-        "/video/chock-promo-v8-explainer.mp4",
-        "/video/chock-promo-v8-explainer-poster.jpg",
-    ),
     # DOCS-6: the own-policy VHS recording; its poster is the PNG VHS writes.
     ("/video/own-policy.mp4", "/video/own-policy.png"),
 )
 
 
-def test_promo_videos_sit_below_the_hero(browser, site_url) -> None:
+def test_videos_sit_below_the_hero(browser, site_url) -> None:
     for viewport in (MOBILE, {"width": 1280, "height": 800}):
         context = browser.new_context(viewport=viewport)
         try:
@@ -224,25 +220,13 @@ def test_promo_videos_sit_below_the_hero(browser, site_url) -> None:
                 box = video.bounding_box()
                 assert box["y"] >= hero["y"] + hero["height"]
                 assert abs(box["width"] / box["height"] - 16 / 9) < 0.02
-            first, second, third = videos.evaluate_all(
-                "els => els.map(el => { const r = el.getBoundingClientRect();"
-                " return {top: r.top + scrollY, bottom: r.bottom + scrollY,"
-                " left: r.left, right: r.right}; })"
-            )
-            if viewport["width"] >= 1280:
-                assert first["top"] == second["top"]
-                assert first["right"] <= second["left"]
-                assert third["top"] >= first["bottom"]
-            else:
-                assert second["top"] >= first["bottom"]
-                assert third["top"] >= second["bottom"]
             page.wait_for_load_state("networkidle")
             assert_clean(page)
         finally:
             context.close()
 
 
-def test_promo_media_served_and_mp4_waits_for_play(page, site_url) -> None:
+def test_video_media_served_and_mp4_waits_for_play(page, site_url) -> None:
     requested: list[str] = []
     page.on("request", lambda req: requested.append(req.url))
     page.goto(site_url + "/")
@@ -257,6 +241,8 @@ def test_promo_media_served_and_mp4_waits_for_play(page, site_url) -> None:
             response = page.request.head(site_url + path)
             assert response.status == 200, path
             assert response.headers["content-type"] == kind
+    for gone in ("/video/chock-promo-v9b.mp4", "/video/chock-promo-v8-explainer.mp4"):
+        assert page.request.get(site_url + gone).status == 404, gone
     assert_clean(page)
 
 
