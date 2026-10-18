@@ -112,7 +112,14 @@ def test_markdown_twin_blocks() -> None:
         "# chock.sh\n\nchock blocks it. `chock install` builds it.\n\n"
         "```bash\nchock sync\n```\n\n- not graded yet\n- `pre_tool` runs first\n\n"
         "| Agent | State |\n|---|---|\n| Claude Code | not graded |\n\n"
-        "A paragraph that wraps\nonto a second line.\n"
+        "A paragraph that wraps\nonto a second line.\n\n    pip install chock\n\n"
+        "- an item\n\n    with a lowercase second paragraph\n"
     )
     found = [s for b in md_blocks(text) for s in lowercase_starts(b)]
-    assert found == ["chock blocks it.", "not graded yet", "not graded"]
+    assert found == [
+        "chock blocks it.",
+        "not graded yet",
+        "not graded",
+        "an item",
+        "with a lowercase second paragraph",
+    ]

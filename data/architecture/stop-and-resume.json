@@ -38,6 +38,7 @@
     {
       "id": "stop",
       "label": "chock stop",
+      "code": true,
       "kind": "code",
       "x": 15,
       "y": 70,
@@ -47,20 +48,22 @@
     {
       "id": "everywhere",
       "label": "stop --everywhere",
+      "code": true,
       "kind": "code",
       "x": 215,
       "y": 70,
       "source": "chock/src/chock/stop_everywhere.py",
-      "card": "A person stops every agent on the machine: it writes ~/.chock/stops/_everywhere.json. --agent is refused with it: the scope is every agent."
+      "card": "A person stops every agent on the machine: it writes ~/.chock/stops/_everywhere.json. The --agent flag is refused with it: the scope is every agent."
     },
     {
       "id": "resume",
       "label": "chock resume",
+      "code": true,
       "kind": "code",
       "x": 615,
       "y": 70,
       "source": "chock/src/chock/stop.py",
-      "card": "Person-only: it refuses an agent's shell, needs stdin and stdout to be a TTY, and asks for the repository's name to be typed. --everywhere asks for the word everywhere and lifts only the machine-wide stop."
+      "card": "Person-only: it refuses an agent's shell, needs stdin and stdout to be a TTY, and asks for the repository's name to be typed. With --everywhere it asks for the word everywhere and lifts only the machine-wide stop."
     },
     {
       "id": "stopjson",
@@ -105,7 +108,7 @@
       "x": 15,
       "y": 460,
       "source": "chock/src/chock/gate/repo_stop.py",
-      "card": "chock sync wires one --stop-check entry per client, with no matcher, so the stop sees every tool call, reads included. A refused call reads stopped: <reason>. What happens when a hook cannot run is agentseam's data, listed below.",
+      "card": "The chock sync command wires one --stop-check entry per client, with no matcher, so the stop sees every tool call, reads included. A refused call reads stopped: <reason>. What happens when a hook cannot run is agentseam's data, listed below.",
       "facts": "tiers"
     },
     {
@@ -133,19 +136,19 @@
       "x": 615,
       "y": 460,
       "source": "chock/src/chock/gate/decision_log.py",
-      "card": "Each refused call is a block line with reason stopped. chock stop and chock resume each write one chock-stop line: event repo_stop or repo_resume, with scope, who and when."
+      "card": "Each refused call is a block line with reason stopped. The chock stop and chock resume commands each write one chock-stop line: event repo_stop or repo_resume, with scope, who and when."
     }
   ],
   "edges": [
     {
       "from": "stop",
       "to": "stopjson",
-      "label": "writes"
+      "label": "Writes"
     },
     {
       "from": "stop",
       "to": "registry",
-      "label": "registers",
+      "label": "Registers",
       "label_at": [
         165,
         150
@@ -154,7 +157,7 @@
     {
       "from": "everywhere",
       "to": "everyfile",
-      "label": "writes",
+      "label": "Writes",
       "label_at": [
         365,
         150
@@ -163,7 +166,7 @@
     {
       "from": "resume",
       "to": "stopjson",
-      "label": "removes",
+      "label": "Removes",
       "label_at": [
         560,
         150
@@ -173,6 +176,7 @@
       "from": "resume",
       "to": "everyfile",
       "label": "--everywhere",
+      "code": true,
       "label_at": [
         600,
         185
@@ -181,37 +185,38 @@
     {
       "from": "stopjson",
       "to": "halt",
-      "label": "reads"
+      "label": "Reads"
     },
     {
       "from": "registry",
       "to": "halt",
-      "label": "reads"
+      "label": "Reads"
     },
     {
       "from": "everyfile",
       "to": "halt",
-      "label": "reads"
+      "label": "Reads"
     },
     {
       "from": "halt",
       "to": "prehook",
-      "label": "tool call"
+      "label": "Tool call"
     },
     {
       "from": "halt",
       "to": "githook",
-      "label": "commit, push"
+      "label": "Commit, push"
     },
     {
       "from": "halt",
       "to": "gateway",
-      "label": "tools/call"
+      "label": "tools/call",
+      "code": true
     },
     {
       "from": "gateway",
       "to": "log",
-      "label": "refusal",
+      "label": "Refusal",
       "label_at": [
         600,
         452
@@ -220,7 +225,7 @@
     {
       "from": "prehook",
       "to": "log",
-      "label": "refusal",
+      "label": "Refusal",
       "via": [
         [
           100,

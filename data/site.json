@@ -2,7 +2,7 @@
   "launched": false,
   "released": false,
   "site_url": "https://chock.sh",
-  "wordmark": "chock.sh",
+  "wordmark": "Chock.sh",
   "og_image": "/img/og-card.png",
   "section_nav": [
     {"key": "overview", "label": "Overview"},
@@ -78,10 +78,10 @@
     "advise": "○"
   },
   "where_names": {
-    "command": "shell command",
-    "write": "file write",
-    "turn-end": "turn end",
-    "text": "agent instructions"
+    "command": "Shell command",
+    "write": "File write",
+    "turn-end": "Turn end",
+    "text": "Agent instructions"
   },
   "when_names": {
     "command": "before the command runs",
@@ -106,7 +106,7 @@
     "install_command_released": "pipx install chock",
     "install_note": "Python 3.11 or newer. The engine is the only install; the plugin is generated from the pinned catalog.",
     "run_heading": "Run the command",
-    "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. --client names the agent. For an agent marked tested, --apply also runs that agent's own install steps; for an untested agent the command only builds the plugin, and you run the steps yourself.",
+    "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. `--client` names the agent. For an agent marked tested, `--apply` also runs that agent's own install steps; for an untested agent the command only builds the plugin, and you run the steps yourself.",
     "agents_heading": "Each agent",
     "agent_command": "The command:",
     "agent_remove": "To remove it:",
@@ -118,13 +118,13 @@
     "file_body": "A selection is a small JSON or YAML file naming the agent, the pinned catalog commit and the policies you picked. The builder writes one for you; the install command reads the same file. These are the fields it checks:",
     "file_fields": [
       {"field": "schema", "meaning": "__SCHEMA__ — the selection format version."},
-      {"field": "client", "meaning": "the agent the plugin is built for: __CLIENTS__. --client on the command line overrides it."},
-      {"field": "bundle.version", "meaning": "the plugin's version, __BUNDLE_VERSION__ from this site."},
-      {"field": "catalog.source", "meaning": "the chock-catalog repository."},
-      {"field": "catalog.ref", "meaning": "the pinned catalog commit; the plugin builds only from it."},
-      {"field": "catalog.release", "meaning": "optional — a named catalog release over the commit."},
-      {"field": "preset", "meaning": "optional — the preset the picks started from."},
-      {"field": "policies", "meaning": "one entry per picked policy: from (catalog), id, version and sha256."}
+      {"field": "client", "meaning": "The agent the plugin is built for: __CLIENTS__; --client on the command line overrides it."},
+      {"field": "bundle.version", "meaning": "The plugin's version, __BUNDLE_VERSION__ from this site."},
+      {"field": "catalog.source", "meaning": "The chock-catalog repository."},
+      {"field": "catalog.ref", "meaning": "The pinned catalog commit; the plugin builds only from it."},
+      {"field": "catalog.release", "meaning": "Optional — a named catalog release over the commit."},
+      {"field": "preset", "meaning": "Optional — the preset the picks started from."},
+      {"field": "policies", "meaning": "One entry per picked policy: from (catalog), id, version and sha256."}
     ]
   },
   "warning_texts": {

@@ -23,7 +23,15 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, md, md_code, render_file, render_text_file
+from .render import (
+    Prose,
+    Safe,
+    md,
+    md_code,
+    render_file,
+    render_text_file,
+    sentence_start,
+)
 from .sitedata import site_dict
 
 MD = "md"
@@ -171,14 +179,12 @@ def grades_note(site: Site) -> str:
 
 def _where_text(site: Site, policy: Policy) -> str:
     """'Shell command · file write' — the policy's where tags as one line."""
-    text = " · ".join(site.data["where_names"][tag] for tag in policy.where)
-    return text[:1].upper() + text[1:]
+    return sentence_start(" · ".join(site.data["where_names"][tag] for tag in policy.where))
 
 
 def _when_text(site: Site, policy: Policy) -> str:
     """'Before the command runs' — when the policy fires, from its where tags."""
-    text = " · ".join(site.data["when_names"][tag] for tag in policy.where)
-    return text[:1].upper() + text[1:]
+    return sentence_start(" · ".join(site.data["when_names"][tag] for tag in policy.where))
 
 
 def _dist_bar(
@@ -191,7 +197,7 @@ def _dist_bar(
             templates / PARTIALS / "dist-seg.html",
             KEY=key,
             NUM=str(counts_["label"][key]),
-            WORD=words[key],
+            WORD=sentence_start(words[key]),
         )
         for key in words
     )
@@ -219,7 +225,7 @@ def _policies_list(
                 NAME=policy.name,
                 CHIP=chip(site, templates, policy, track.id),
                 STATUS=status_badge(site, templates, policy),
-                DESC=Prose(first_sentence(policy.description)),
+                DESC=Prose(sentence_start(first_sentence(policy.description))),
                 WHERE_TEXT=_where_text(site, policy),
                 VERSION=policy.version,
             )
@@ -231,7 +237,7 @@ def _policies_list(
             VALUE=tag,
             GLYPH_KEY="none",
             GLYPH="",
-            WORD=site.data["where_names"][tag],
+            WORD=sentence_start(site.data["where_names"][tag]),
             COUNT=str(counts_["where"][tag]),
         )
         for tag in site.data["where_names"]
@@ -351,7 +357,7 @@ def _agent_rows(site: Site, templates: Path, policy: Policy) -> Safe:
                 CHIP=Safe("")
                 if row["keyword"] is None
                 else keyword_chip(site, templates, row["keyword"], "coding"),
-                SAYS=row["says"],
+                SAYS=sentence_start(row["says"]),
                 CLIENT=row["client"],
                 ID=policy.id,
                 BUILD=row["build"],
@@ -458,9 +464,9 @@ def _policy_pages(
                 CHIP=chip(site, templates, policy, track.id),
                 STATUS=status_badge(site, templates, policy),
                 PRESET_CHIP=Safe(preset_chip),
-                SAYS=Prose(policy.says.rstrip(".") + "."),
+                SAYS=Prose(sentence_start(policy.says.rstrip(".") + ".")),
                 TIER=policy.tier,
-                TIER_WORD=site.label_words["repos"][policy.tier],
+                TIER_WORD=sentence_start(site.label_words["repos"][policy.tier]),
                 ACTS_ON=_where_text(site, policy),
                 WHEN=_when_text(site, policy),
                 LABEL_NOTE=Prose(texts["label_box_note"]),
@@ -468,12 +474,12 @@ def _policy_pages(
                 BY_AGENT_HEADING=texts["by_agent_heading"],
                 BY_AGENT_INTRO=texts["by_agent_intro"],
                 AGENT_ROWS=_agent_rows(site, templates, policy),
-                DESCRIPTION=Prose(policy.description),
-                MISSES=Prose(policy.misses or texts["misses_empty"]),
+                DESCRIPTION=Prose(sentence_start(policy.description)),
+                MISSES=Prose(sentence_start(policy.misses or texts["misses_empty"])),
                 EXAMPLES_SECTION=Safe(examples),
                 LATEST_VERSION=policy.latest.version,
                 LATEST_DATE=policy.latest.date,
-                LATEST_CHANGE=Prose(policy.latest.change),
+                LATEST_CHANGE=Prose(sentence_start(policy.latest.change)),
                 EVAL_EXECUTED=str(policy.eval_executed),
                 EVAL_CASES=str(policy.eval_cases),
                 SHA256=policy.sha256,
@@ -521,7 +527,7 @@ def _policy_pages(
             TRACK=policy.track,
             NAME=md(policy.name),
             VERSION=md(policy.version),
-            WORD=policy.word,
+            WORD=sentence_start(policy.word),
             TIER_WORD=site.label_words["repos"][policy.tier],
             TIER_MEANING=site.data["label_meanings"][
                 site.label_words["repos"][policy.tier]
@@ -541,17 +547,19 @@ def _policy_pages(
             BY_AGENT_HEADING=texts["by_agent_heading"],
             AGENT_LINES="".join(
                 f"- {row['name']} ({row['state_word']}): "
-                + (f"{row['word']} — " if row["word"] else "")
-                + f"{md(row['says'])}. Builder: /coding/builder/#client={row['client']}&p={policy.id}\n"
+                + (f"{sentence_start(row['word'])} — " if row["word"] else "")
+                + f"{md(sentence_start(row['says']))}. Builder: /coding/builder/#client={row['client']}&p={policy.id}\n"
                 for row in _agent_labels(site, policy)
             ),
             PLUGIN_NOTE=(" " + texts["plugin_repo_note"] if plugin_note else ""),
-            DESCRIPTION=md(policy.description),
-            MISSES=md(policy.misses) if policy.misses else texts["misses_empty"],
+            DESCRIPTION=md(sentence_start(policy.description)),
+            MISSES=md(sentence_start(policy.misses))
+            if policy.misses
+            else texts["misses_empty"],
             EXAMPLES_MD=examples_md,
             LATEST_VERSION=md(policy.latest.version),
             LATEST_DATE=md(policy.latest.date),
-            LATEST_CHANGE=md(policy.latest.change),
+            LATEST_CHANGE=md(sentence_start(policy.latest.change)),
             EVAL_EXECUTED=str(policy.eval_executed),
             EVAL_CASES=str(policy.eval_cases),
             CATALOG_COMMIT_URL=site.data["links"]["catalog_commit"] + site.catalog_ref,

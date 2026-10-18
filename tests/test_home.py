@@ -114,7 +114,7 @@ def test_incident_copy_never_claims_prevention(built) -> None:
     assert "OWASP ASI01–10 (every mapping partial)" in text
     assert "CISA Secure by Design and NIST SSDF" in text
     assert (
-        "chock doesn't stop every attack. It closes common, known entry points." in text
+        "Chock doesn't stop every attack. It closes common, known entry points." in text
     )
     for phrase in ("would have prevented", "mapped to", "would have stopped"):
         assert phrase not in text

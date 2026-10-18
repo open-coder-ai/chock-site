@@ -32,7 +32,14 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, md_code, render_file, render_text_file
+from .render import (
+    Prose,
+    Safe,
+    md_code,
+    render_file,
+    render_text_file,
+    sentence_start,
+)
 from .render import md as md_escape
 
 DOCS = "docs"
@@ -1481,8 +1488,8 @@ def _policy_body(ctx: Ctx, body: Body, policy: Policy) -> None:
         ctx,
         body,
         texts["policy_what_heading"],
-        _para(ctx, policy.description),
-        md_escape(policy.description),
+        _para(ctx, sentence_start(policy.description)),
+        md_escape(sentence_start(policy.description)),
     )
     rows = []
     for client in clients["order"]:
@@ -1494,7 +1501,7 @@ def _policy_body(ctx: Ctx, body: Body, policy: Policy) -> None:
             if graded
             else clients["texts"]["ungraded_word"]
         )
-        rows.append([about["name"], word, label["says"]])
+        rows.append([about["name"], sentence_start(word), sentence_start(label["says"])])
     cols = texts["policy_agent_columns"]
     _section(
         ctx,
@@ -1503,7 +1510,7 @@ def _policy_body(ctx: Ctx, body: Body, policy: Policy) -> None:
         _table(ctx, cols, rows),
         _md_table(cols, [[md_escape(cell) for cell in row] for row in rows]),
     )
-    misses = policy.misses or ctx.site.data["texts"]["misses_empty"]
+    misses = sentence_start(policy.misses or ctx.site.data["texts"]["misses_empty"])
     _section(
         ctx, body, texts["policy_misses_heading"], _para(ctx, misses), md_escape(misses)
     )
@@ -2943,6 +2950,9 @@ def _writing_rows(ctx: Ctx, rows: list[dict[str, Any]]) -> tuple[str, str]:
     for row in rows:
         required = yes if row["required"] else no
         allowed = row["allowed"]
+        # A JSON type name stays as the schema spells it; a phrase ("array of string") is prose.
+        kind = sentence_start(row["type"]) if " " in row["type"] else row["type"]
+        description = sentence_start(row["description"])
         if row["pattern"]:
             # The dist check reads a backslash between name characters as a Windows path.
             shown = (
@@ -2951,22 +2961,23 @@ def _writing_rows(ctx: Ctx, rows: list[dict[str, Any]]) -> tuple[str, str]:
                 else data_fill(texts["schema_pattern"], {"__PATTERN__": row["pattern"]})
             )
             allowed = "; ".join(p for p in (allowed, shown) if p)
+        allowed = sentence_start(allowed)
         html_rows.append(
             [
                 Safe(ctx.t("cli-code", TEXT=row["field"])),
-                row["type"],
+                kind,
                 required,
                 Prose(allowed),
-                _agentseam_breakable(ctx, row["description"]),
+                _agentseam_breakable(ctx, description),
             ]
         )
         md_rows.append(
             [
                 md_code(row["field"]),
-                md_escape(row["type"]),
+                md_escape(kind),
                 required,
                 md_escape(allowed),
-                md_escape(row["description"]),
+                md_escape(description),
             ]
         )
     return _table(ctx, head, html_rows), _md_table(head, md_rows)

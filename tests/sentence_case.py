@@ -178,6 +178,7 @@ INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)+?\1")
 MD_LINK = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
 AUTOLINK = re.compile(r"<(?:https?://|mailto:)[^>]*>")
 MD_NEW_BLOCK = re.compile(r"^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?|\|)")
+MD_LIST = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s")
 MD_MARKER = re.compile(r"^\s*(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|>\s?)")
 
 
@@ -186,6 +187,9 @@ def md_blocks(text: str) -> list[str]:
     blocks: list[str] = []
     cur: list[str] = []
     fenced = False
+    # An indented code block: four spaces after a blank line, outside a list.
+    indented = in_list = False
+    blank = True
 
     def flush() -> None:
         if cur:
@@ -201,7 +205,16 @@ def md_blocks(text: str) -> list[str]:
             continue
         if not line.strip():
             flush()
+            blank = True
             continue
+        was_blank, blank = blank, False
+        if line.startswith("    ") and (indented or (was_blank and not in_list)):
+            flush()
+            indented = True
+            continue
+        indented = False
+        if was_blank and not line.startswith(" "):
+            in_list = bool(MD_LIST.match(line))
         line = INLINE_CODE.sub(CODE, line)
         line = AUTOLINK.sub(CODE, line)
         line = MD_LINK.sub(r"\1", line)

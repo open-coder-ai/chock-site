@@ -118,7 +118,7 @@ def _rel(built, path: Path) -> str:
 def test_llms_txt_follows_llmstxt_org_shape(built) -> None:
     text = (built.out / "llms.txt").read_text(encoding="utf-8")
     tagline = built.site.data["pages"]["home"]["title"]
-    assert text.startswith(f"# chock.sh\n\n> {tagline}\n\n")
+    assert text.startswith(f"# Chock.sh\n\n> {tagline}\n\n")
     assert re.search(r"^## Docs\n\n- \[", text, re.MULTILINE)
 
 
