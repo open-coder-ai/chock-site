@@ -143,7 +143,7 @@ def test_chip_title_format(built) -> None:
     )
     for title in re.findall(r'class="label label-\w+" title="([^"]+)"', text):
         word, _, _meaning = title.partition(": ")
-        assert word in ("blocks", "asks", "warns", "advisory")
+        assert word in ("Blocks", "Asks", "Warns", "Advisory")
 
 
 def _agent_files(built) -> list[Path]:

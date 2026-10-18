@@ -281,11 +281,15 @@ def _count(values: list[str]) -> list[tuple[str, int]]:
 
 def _grades(ctx: Ctx, body: Body) -> None:
     grades = [
-        data_fill(ctx.texts["grade_row"], {"__GRADE__": g, "__COUNT__": str(n)})
+        sentence_start(
+            data_fill(ctx.texts["grade_row"], {"__GRADE__": g, "__COUNT__": str(n)})
+        )
         for g, n in _count([a["grade"] for a in ctx.agents])
     ]
     bases = [
-        data_fill(ctx.texts["basis_row"], {"__BASIS__": b, "__COUNT__": str(n)})
+        sentence_start(
+            data_fill(ctx.texts["basis_row"], {"__BASIS__": b, "__COUNT__": str(n)})
+        )
         for b, n in _count([a["basis"] for a in ctx.agents])
     ]
     html = (
@@ -383,7 +387,10 @@ def _client_block(
     )
     html = [
         _h3(ctx, body, heading),
-        ctx.t("para", TEXT=Safe(ctx.t("state", STATE=state, WORD=word) + link)),
+        ctx.t(
+            "para",
+            TEXT=Safe(ctx.t("state", STATE=state, WORD=sentence_start(word)) + link),
+        ),
     ]
     md = [f"### {heading}\n\n", f"State: {word}.\n\n"]
     if notice := about["evidence"]:
@@ -473,7 +480,7 @@ def _agent_table(ctx: Ctx, body: Body) -> None:
     rows = [
         [
             Safe(ctx.t("link", HREF=f"/docs/agents/{a['slug']}/", TEXT=a["name"])),
-            _route_words(ctx, a),
+            sentence_start(_route_words(ctx, a)),
             a["tier"],
             a["grade"],
             a["basis"],
@@ -484,7 +491,7 @@ def _agent_table(ctx: Ctx, body: Body) -> None:
     md_rows = [
         [
             f"[{a['name']}]({site_url}/docs/agents/{a['slug']}/index.md)",
-            _route_words(ctx, a),
+            sentence_start(_route_words(ctx, a)),
             a["tier"],
             a["grade"],
             a["basis"],
@@ -785,7 +792,9 @@ def _no_hook_table(ctx: Ctx) -> tuple[str, str]:
     """Agents with no route, or missing one, and the engine's reason why."""
     texts = ctx.texts["bypass"]
     picked = [
-        (a, [_route_words(ctx, a), a["reason"]]) for a in ctx.agents if a["reason"]
+        (a, [sentence_start(_route_words(ctx, a)), sentence_start(a["reason"])])
+        for a in ctx.agents
+        if a["reason"]
     ]
     return _agent_rows(ctx, texts["no_hook_columns"], picked)
 
@@ -794,7 +803,7 @@ def _fail_open_table(ctx: Ctx) -> tuple[str, str]:
     """Agents whose agentseam fail mode before a tool runs is open."""
     texts = ctx.texts["bypass"]
     picked = [
-        (a, [_route_words(ctx, a), a["tier"]])
+        (a, [sentence_start(_route_words(ctx, a)), a["tier"]])
         for a in ctx.agents
         if a["fail_mode"] == texts["fail_open"]
     ]
@@ -1505,7 +1514,9 @@ def _policy_body(ctx: Ctx, body: Body, policy: Policy) -> None:
             if graded
             else clients["texts"]["ungraded_word"]
         )
-        rows.append([about["name"], sentence_start(word), sentence_start(label["says"])])
+        rows.append(
+            [about["name"], sentence_start(word), sentence_start(label["says"])]
+        )
     cols = texts["policy_agent_columns"]
     _section(
         ctx,
@@ -2076,7 +2087,7 @@ def _how_steps(ctx: Ctx, body: Body) -> None:
         render_file(
             ctx.templates / architecture.FOLDER / "index-item.html",
             HREF=url,
-            TITLE=node["label"],
+            TITLE=architecture.label_prose(node),
             SUMMARY=node["card"],
         )
         for node, url in steps
@@ -2088,7 +2099,7 @@ def _how_steps(ctx: Ctx, body: Body) -> None:
         _para(ctx, how["steps_intro"]) + ctx.t("list", ITEMS=Safe(items)),
         f"{how['steps_intro']}\n\n"
         + "".join(
-            f"- [{md_escape(node['label'])}]({url}): {md_escape(node['card'])}\n"
+            f"- [{architecture.label_md(node)}]({url}): {md_escape(node['card'])}\n"
             for node, url in steps
         ),
     )
@@ -2182,7 +2193,12 @@ def _surfaces(ctx: Ctx, body: Body) -> None:
     html_rows: list[list[str | Safe]] = []
     md_rows: list[list[str]] = []
     for row in rows:
-        agents = ", ".join(row["agents"]) or how["no_agents"]
+        # Agent ids are identifiers: each is set as code.
+        agents: str | Safe = how["no_agents"]
+        agents_md = how["no_agents"]
+        if row["agents"]:
+            agents = Safe(", ".join(ctx.t("cli-code", TEXT=a) for a in row["agents"]))
+            agents_md = ", ".join(md_code(a) for a in row["agents"])
         held = how["held_out"] if not row["credited"] else how["counted"]
         if row["emitter"]:
             emitter_url = _engine_url(ctx, row["emitter"])
@@ -2195,7 +2211,7 @@ def _surfaces(ctx: Ctx, body: Body) -> None:
         html_rows.append(
             [Safe(ctx.t("code", TEXT=row["surface"])), emitter, agents, held]
         )
-        md_rows.append([f"`{row['surface']}`", emitter_md, agents, held])
+        md_rows.append([f"`{row['surface']}`", emitter_md, agents_md, held])
     _section(
         ctx,
         body,
@@ -2502,9 +2518,11 @@ def _api_groups(
 
 def _api_value(texts: dict[str, Any], entry: dict[str, Any]) -> str:
     if entry["size"] is not None:
-        return data_fill(
-            texts["api_size"],
-            {"__KIND__": entry["kind"], "__COUNT__": str(entry["size"])},
+        return sentence_start(
+            data_fill(
+                texts["api_size"],
+                {"__KIND__": entry["kind"], "__COUNT__": str(entry["size"])},
+            )
         )
     return entry["value"]
 

@@ -277,7 +277,7 @@ def test_notice_shown_for_an_untested_agent(built_untested) -> None:
     notice = _site(built)["builder_clients"]["clients"][CLIENT]["evidence"]
     assert notice["url"] == URL
     assert notice["link"] == LINK
-    assert f"chock has not seen {NAME} run the plugin yet" in notice["line"]
+    assert f"Chock has not seen {NAME} run the plugin yet" in notice["line"]
     assert "The command still builds the plugin" in notice["line"]
     builder = (built.out / "coding" / "builder" / "index.html").read_text(
         encoding="utf-8"

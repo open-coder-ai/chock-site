@@ -179,12 +179,16 @@ def grades_note(site: Site) -> str:
 
 def _where_text(site: Site, policy: Policy) -> str:
     """'Shell command · file write' — the policy's where tags as one line."""
-    return sentence_start(" · ".join(site.data["where_names"][tag] for tag in policy.where))
+    return sentence_start(
+        " · ".join(site.data["where_names"][tag] for tag in policy.where)
+    )
 
 
 def _when_text(site: Site, policy: Policy) -> str:
     """'Before the command runs' — when the policy fires, from its where tags."""
-    return sentence_start(" · ".join(site.data["when_names"][tag] for tag in policy.where))
+    return sentence_start(
+        " · ".join(site.data["when_names"][tag] for tag in policy.where)
+    )
 
 
 def _dist_bar(
@@ -314,7 +318,7 @@ def _policies_list(
         ROWS="".join(
             f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md) "
             f"({md_code(policy.id)}, v{md(policy.version)}): {policy.word} — "
-            f"{md(policy.says)}. {md(first_sentence(policy.description))}\n"
+            f"{md(policy.says)}. {md(sentence_start(first_sentence(policy.description)))}\n"
             for policy in policies_sorted(site)
         ),
     )
@@ -588,7 +592,7 @@ def _member_rows(
             NAME=p.name,
             CHIP=chip(site, templates, p, track.id),
             STATUS=status_badge(site, templates, p),
-            SAYS=Prose(p.says),
+            SAYS=Prose(sentence_start(p.says)),
         )
         for p in members
     )

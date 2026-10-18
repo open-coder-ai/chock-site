@@ -5,9 +5,16 @@ document.documentElement.classList.add("js");
 
 const GLYPHS = { block: "■", ask: "◆", warn: "▲", advise: "○", commit: "■", agent: "◆" };
 
+// Display only: the text with its first character uppercased; the source keeps its spelling.
+export function sentenceStart(text) {
+  const s = String(text ?? "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function labelChip(keyword, word, meaning) {
   const chip = document.createElement("span");
   chip.className = `label label-${keyword}`;
+  word = sentenceStart(word);
   chip.title = `${word}: ${meaning}`;
   const glyph = document.createElement("span");
   glyph.className = "glyph";

@@ -20,7 +20,15 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, md, md_code, render_file, render_text_file
+from .render import (
+    Prose,
+    Safe,
+    md,
+    md_code,
+    render_file,
+    render_text_file,
+    sentence_start,
+)
 
 HOME = "home"
 MD = "md"
@@ -148,7 +156,7 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
         stats = "".join(
             render_file(
                 templates / PARTIALS / "track-stat.html",
-                LABEL=labels[key],
+                LABEL=sentence_start(labels[key]),
                 NUM=f"{numbers[key]:,}",
             )
             for key in conf.get("stats", [])
