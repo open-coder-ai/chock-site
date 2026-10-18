@@ -1,8 +1,0 @@
-# Windows-style paths the built site shows on purpose: another repository's text quotes them.
-# sitegen/distcheck.py ignores exactly these strings, nothing near them; each entry names its
-# source so the fix lands there. tests/test_dist_paths.py fails when an entry no longer
-# appears, so the list only shrinks.
-upstream:
-  - source: agentseam src/agentseam/data/matrix.json (goose notes, agentseam 683f95b)
-    texts:
-      - Git\bin (sh.exe) put on PATH

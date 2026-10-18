@@ -38,7 +38,7 @@ def test_built_site_passes_the_dist_check(built) -> None:
 
 
 def test_allowed_strings_still_appear(built) -> None:
-    """Each data/dist-paths.yaml entry is still on the site, so a fix upstream shortens the list."""
+    """Each data/dist-paths.json entry is still on the site, so a fix upstream shortens the list."""
     pages = [
         path.read_text(encoding="utf-8")
         for path in built.out.rglob("*")
@@ -46,7 +46,7 @@ def test_allowed_strings_still_appear(built) -> None:
     ]
     stale = [text for text in distcheck.allowed() if not any(text in p for p in pages)]
     assert not stale, (
-        f"no longer on the site, remove from data/dist-paths.yaml: {stale}"
+        f"no longer on the site, remove from data/dist-paths.json: {stale}"
     )
 
 
