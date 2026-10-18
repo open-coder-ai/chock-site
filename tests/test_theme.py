@@ -1,4 +1,4 @@
-"""Theme checks: WCAG AA contrast of the light theme tokens and self-hosted fonts."""
+"""Theme checks: WCAG AA contrast of the light and dark tokens, and self-hosted fonts."""
 
 import re
 from pathlib import Path
@@ -56,9 +56,19 @@ UI_PAIRS = [
 ]
 
 
-def _tokens(built) -> dict[str, str]:
+def _block(css: str, selector: str) -> str:
+    """The body of the first rule that opens with `selector {`."""
+    start = css.index(selector + " {") + len(selector) + 2
+    return css[start : css.index("}", start)]
+
+
+def _palettes(built) -> dict[str, dict[str, str]]:
+    """The light tokens on :root and the dark set: :root overlaid by the dark rule."""
     css = (built.out / "css" / "site.css").read_text(encoding="utf-8")
-    return {name: value.upper() for name, value in TOKEN_RE.findall(css)}
+    light = {n: v.upper() for n, v in TOKEN_RE.findall(_block(css, ":root"))}
+    dark_rule = _block(css, ':root[data-theme="dark"]')
+    dark = light | {n: v.upper() for n, v in TOKEN_RE.findall(dark_rule)}
+    return {"light": light, "dark": dark}
 
 
 def _luminance(hexcolor: str) -> float:
@@ -75,23 +85,28 @@ def _ratio(foreground: str, background: str) -> float:
     return (high + 0.05) / (low + 0.05)
 
 
-def test_theme_is_light(built) -> None:
-    """The site declares a light colour scheme on :root."""
+def test_light_is_default_and_dark_rules_agree(built) -> None:
+    """:root is light; the system-dark rule and the data-theme rule hold the same dark set."""
     css = (built.out / "css" / "site.css").read_text(encoding="utf-8")
-    root = css[css.index(":root {") :]
-    root = root[: root.index("}")]
-    assert "color-scheme: light;" in root
+    assert "color-scheme: light;" in _block(css, ":root")
+    dark_rule = _block(css, ':root[data-theme="dark"]')
+    system_rule = _block(css, ":root:not([data-theme])")
+    assert "color-scheme: dark;" in dark_rule
+    assert TOKEN_RE.findall(system_rule) == TOKEN_RE.findall(dark_rule)
+    assert set(dict(TOKEN_RE.findall(dark_rule))) == set(_palettes(built)["light"])
 
 
 def test_tokens_meet_contrast(built) -> None:
-    """Every text pair passes 4.5:1 and every UI pair passes 3:1."""
-    tokens = _tokens(built)
-    for pairs, minimum in ((CONTRAST_PAIRS, 4.5), (UI_PAIRS, 3.0)):
-        for foreground, background in pairs:
-            assert foreground in tokens, f"--{foreground} missing"
-            assert background in tokens, f"--{background} missing"
-            ratio = _ratio(tokens[foreground], tokens[background])
-            assert ratio >= minimum, f"{foreground} on {background}: {ratio:.2f}:1"
+    """In both themes every text pair passes 4.5:1 and every UI pair passes 3:1."""
+    for theme, tokens in _palettes(built).items():
+        for pairs, minimum in ((CONTRAST_PAIRS, 4.5), (UI_PAIRS, 3.0)):
+            for foreground, background in pairs:
+                assert foreground in tokens, f"--{foreground} missing"
+                assert background in tokens, f"--{background} missing"
+                ratio = _ratio(tokens[foreground], tokens[background])
+                assert ratio >= minimum, (
+                    f"{theme}: {foreground} on {background}: {ratio:.2f}:1"
+                )
 
 
 def test_font_faces_resolve_to_self_hosted_woff2(built) -> None:
@@ -106,3 +121,14 @@ def test_font_faces_resolve_to_self_hosted_woff2(built) -> None:
         assert path.read_bytes()[:4] == b"wOF2", url
     licenses = {p.name for p in Path(built.out / "fonts").glob("OFL-*.txt")}
     assert licenses == {"OFL-InstrumentSans.txt", "OFL-JetBrainsMono.txt"}
+
+
+def test_theme_script_runs_before_the_stylesheet(built) -> None:
+    """Every page loads theme.js as a classic script ahead of site.css, so nothing flashes."""
+    tag = '<script src="/js/theme.js"></script>'
+    for page in built.out.rglob("*.html"):
+        head = page.read_text(encoding="utf-8").split("</head>", 1)[0]
+        if "/css/site.css" not in head:
+            continue
+        assert tag in head, page
+        assert head.index(tag) < head.index('href="/css/site.css"'), page

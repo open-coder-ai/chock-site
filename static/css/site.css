@@ -1,4 +1,4 @@
-/* chock.sh — calm, warm light theme (LIGHT-1). Self-hosted fonts. */
+/* chock.sh — warm light theme and dusk dark theme (LIGHT-1). Self-hosted fonts. */
 
 @font-face {
   font-family: "Instrument Sans";
@@ -89,6 +89,64 @@
      measured header height; this fallback is the static 1280px value. */
   --sticky-top: 117px;
   color-scheme: light;
+}
+
+/* Dark: the dusk palette. theme.js sets data-theme on <html> before paint (the visitor's
+   choice, else their system setting); without JS the system setting picks the palette. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #222C44;
+    --bg-2: #242F4B;
+    --panel: #263251;
+    --panel-2: #283453;
+    --pill: #34405E;
+    --line: #3D4B6A;
+    --line-2: #76849F;
+    --text: #EEF1F6;
+    --body: #C4CAD6;
+    --muted: #A8AFBB;
+    --accent: #F0B53C;
+    --on-accent: #1A1203;
+    --primary: #F0B53C;
+    --on-primary: #1A1203;
+    --highlight: #F0B53C;
+    --on-highlight: #1A1203;
+    --highlight-text: #F0B53C;
+    --warn-bg: #4A3C1C;
+    --warn-fg: #E8C77A;
+    --ok: #5FD3A0;
+    --info: #8DB8F2;
+    --dash: #7A88A8;
+    --dots: #34405E;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #222C44;
+  --bg-2: #242F4B;
+  --panel: #263251;
+  --panel-2: #283453;
+  --pill: #34405E;
+  --line: #3D4B6A;
+  --line-2: #76849F;
+  --text: #EEF1F6;
+  --body: #C4CAD6;
+  --muted: #A8AFBB;
+  --accent: #F0B53C;
+  --on-accent: #1A1203;
+  --primary: #F0B53C;
+  --on-primary: #1A1203;
+  --highlight: #F0B53C;
+  --on-highlight: #1A1203;
+  --highlight-text: #F0B53C;
+  --warn-bg: #4A3C1C;
+  --warn-fg: #E8C77A;
+  --ok: #5FD3A0;
+  --info: #8DB8F2;
+  --dash: #7A88A8;
+  --dots: #34405E;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -265,6 +323,27 @@ header {
 
 #nav-links a:hover { color: var(--text); text-decoration: none; }
 #nav-links a[aria-current="page"] { color: var(--text); background: var(--pill); }
+
+/* Theme toggle: shown only once theme.js has run, since it needs JS to work. */
+.theme-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--text);
+  cursor: pointer;
+  flex: none;
+}
+
+html[data-theme] .theme-toggle { display: inline-flex; }
+.theme-toggle:hover { background: var(--pill); }
+.theme-toggle .icon-sun, :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
 
 .nav-toggle {
   display: none;
@@ -1816,10 +1895,11 @@ body { overflow-x: clip; }
   .header-inner .button-small { margin-left: auto; }
 
   /* One row of section links keeps the sticky header short on a phone. */
-  .header-inner { padding: 8px 16px; }
+  .header-inner { padding: 8px 16px; gap: 8px; }
+  .theme-toggle { width: 34px; height: 34px; }
   .section-nav-inner { gap: 0 14px; padding: 0 16px; scrollbar-width: none; }
-  .section-nav nav { gap: 14px; }
-  .section-nav a { font-size: 13px; padding: 8px 0; }
+  .section-nav nav { gap: 4px; }
+  .section-nav a { font-size: 13px; padding: 4px 10px; }
   .section-nav-title { display: none; }
 
   .hero-band { padding: 44px 0 36px; }
@@ -2091,4 +2171,10 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
 @media (max-width: 760px) {
   html:not(.js) body > header { position: static; }
   html:not(.js) #nav-links { flex-wrap: wrap; gap: 6px 18px; }
+}
+
+/* Small phones: the header row (wordmark, button, theme, menu) still fits on one line. */
+@media (max-width: 380px) {
+  .header-inner { gap: 6px; }
+  .header-inner .button-small { padding: 9px 10px; font-size: 13px; }
 }
