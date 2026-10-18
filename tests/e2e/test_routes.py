@@ -31,10 +31,10 @@ def test_every_agent_has_a_row_with_its_routes(page, site_url) -> None:
         if row["plugin"]:
             link = cells.nth(0).locator("a")
             assert link.get_attribute("href") == f"#agent-{row['plugin']['client']}"
-            assert row["plugin"]["word"] in cells.nth(0).inner_text()
+            assert sentence_start(row["plugin"]["word"]) in cells.nth(0).inner_text()
         if row["sync"]:
             assert row["sync"]["command"] in cells.nth(1).inner_text()
-            assert row["sync"]["word"] in cells.nth(1).inner_text()
+            assert sentence_start(row["sync"]["word"]) in cells.nth(1).inner_text()
         else:
             assert row["reason"] in cells.nth(1).inner_text()
         assert sentence_start(row["record"]) in cells.nth(2).inner_text()
