@@ -37,6 +37,50 @@ def test_built_site_passes_the_dist_check(built) -> None:
     assert distcheck.find(built.out) == []
 
 
+def test_allowed_strings_still_appear(built) -> None:
+    """Each data/dist-paths.yaml entry is still on the site, so a fix upstream shortens the list."""
+    pages = [
+        path.read_text(encoding="utf-8")
+        for path in built.out.rglob("*")
+        if path.suffix in distcheck.PAGE_SUFFIXES
+    ]
+    stale = [text for text in distcheck.allowed() if not any(text in p for p in pages)]
+    assert not stale, (
+        f"no longer on the site, remove from data/dist-paths.yaml: {stale}"
+    )
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Git\\bin (sh.exe) put on PATH, then C:\\Users\\me\\x",
+        "Git\\bin (sh.exe) put on the PATH",
+        "Git\\binaries (sh.exe) put on PATH",
+        "Git\\bin\\sh.exe put on PATH",
+    ],
+)
+def test_dist_check_allows_only_the_exact_listed_string(tmp_path, text) -> None:
+    """A path next to a listed string, or any variation of one, still fails the check."""
+    assert "Git\\bin (sh.exe) put on PATH" in distcheck.allowed()
+    (tmp_path / "index.md").write_text(text, encoding="utf-8")
+    assert len(distcheck.find(tmp_path)) == 1
+
+
+def test_dist_check_passes_the_exact_listed_string(tmp_path) -> None:
+    (tmp_path / "index.md").write_text(
+        "with Git\\bin (sh.exe) put on PATH, the call ran", encoding="utf-8"
+    )
+    assert distcheck.find(tmp_path) == []
+
+
+def test_claude_plugin_tokens_are_posix_on_windows(monkeypatch) -> None:
+    monkeypatch.setattr(engine, "Path", PureWindowsPath)
+    tokens = engine.claude_plugin_tokens()
+    for key in ("__DEST__", "__PLUGIN_DIR__"):
+        assert "\\" not in tokens[key], (key, tokens[key])
+        assert tokens[key].startswith("~/"), (key, tokens[key])
+
+
 @pytest.mark.parametrize(
     ("name", "text"),
     [
