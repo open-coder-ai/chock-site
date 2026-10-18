@@ -738,7 +738,8 @@ def _twin(
             for p in site.presets
         ),
         FIT_LINES="".join(
-            f"- {r['row']}: {land['fit_cols'][0]}: {r['a']} {land['fit_cols'][1]}: {r['b']}\n"
+            f"- {r['row']}: {sentence_start(land['fit_cols'][0])}: {r['a']} "
+            f"{sentence_start(land['fit_cols'][1])}: {r['b']}\n"
             for r in land["fit_rows"]
         ),
         OPEN_BODY=land["open_body"],

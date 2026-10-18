@@ -2,7 +2,7 @@
 id: __ID__
 track: __TRACK__
 version: __VERSION__
-label: __WORD__
+label: __LABEL__
 keyword: __KEYWORD__
 where: __WHERE__
 sha256: __SHA256__

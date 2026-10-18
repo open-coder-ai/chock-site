@@ -184,6 +184,7 @@
       "untested_line": "Nobody has seen these policies fire in __NAME__ yet, so the command builds the plugin without --apply. Apply the steps below yourself, check that a refusal fires, and",
       "page_intro": "Pick an agent in the builder and the command builds one plugin for it. Tested means a person has seen chock's refusals fire in that agent, and the command installs the plugin too; untested means the command builds it and you apply the steps yourself.",
       "build_link": "Build for __NAME__",
+      "build_short": "Build",
       "card_witnessed": "Tested: one command builds the plugin and installs it.",
       "card_untested": "Untested: the command builds the plugin, and you apply the steps in __NAME__ yourself.",
       "repo_line": "A second route: single-policy plugins in",

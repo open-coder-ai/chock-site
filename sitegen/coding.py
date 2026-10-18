@@ -364,7 +364,8 @@ def _agent_rows(site: Site, templates: Path, policy: Policy) -> Safe:
                 SAYS=sentence_start(row["says"]),
                 CLIENT=row["client"],
                 ID=policy.id,
-                BUILD=row["build"],
+                BUILD=site.data["builder_clients"]["texts"]["build_short"],
+                BUILD_LABEL=row["build"],
             )
             for row in _agent_labels(site, policy)
         )
@@ -531,6 +532,7 @@ def _policy_pages(
             TRACK=policy.track,
             NAME=md(policy.name),
             VERSION=md(policy.version),
+            LABEL=policy.word,
             WORD=sentence_start(policy.word),
             TIER_WORD=site.label_words["repos"][policy.tier],
             TIER_MEANING=site.data["label_meanings"][

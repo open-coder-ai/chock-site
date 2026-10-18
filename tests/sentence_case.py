@@ -196,7 +196,10 @@ def md_blocks(text: str) -> list[str]:
             blocks.append(" ".join(cur))
             cur.clear()
 
-    for line in text.splitlines():
+    lines = text.splitlines()
+    if lines[:1] == ["---"] and "---" in lines[1:]:
+        lines = lines[lines.index("---", 1) + 1 :]  # YAML front matter is data
+    for line in lines:
         if FENCE.match(line):
             flush()
             fenced = not fenced
@@ -220,7 +223,7 @@ def md_blocks(text: str) -> list[str]:
         line = MD_LINK.sub(r"\1", line)
         if line.lstrip().startswith("|"):
             flush()
-            for cell in line.strip().strip("|").split("|"):
+            for cell in re.split(r"(?<!\\)\|", line.strip().strip("|")):
                 if cell.strip() and not re.fullmatch(r"\s*:?-+:?\s*", cell):
                     blocks.append(cell.strip())
             continue

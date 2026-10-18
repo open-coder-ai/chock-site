@@ -2362,7 +2362,7 @@ def _agentseam_release(ctx: Ctx, body: Body) -> None:
     commit_url = _agentseam_url(ctx)
     pyproject = _engine_url(ctx, "pyproject.toml")
     rows: list[tuple[str, str, str | Safe]] = [
-        ("package", f"agentseam {meta['version']}", ""),
+        ("package", f"`agentseam {meta['version']}`", ""),
         ("commit", ref, Safe(ctx.t("link", HREF=commit_url, TEXT=ref))),
         ("python", meta["requires_python"], ""),
         ("license", meta["license"], ""),

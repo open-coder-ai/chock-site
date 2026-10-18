@@ -109,9 +109,10 @@ def test_ignores_code_urls_names_and_mid_sentence(page: str) -> None:
 def test_markdown_twin_blocks() -> None:
     """Markdown: fenced code and backticks are skipped; items, headings and cells are judged."""
     text = (
-        "# chock.sh\n\nchock blocks it. `chock install` builds it.\n\n"
+        "---\nlabel: blocks\n---\n\n# chock.sh\n\nchock blocks it. `chock install` builds it.\n\n"
         "```bash\nchock sync\n```\n\n- not graded yet\n- `pre_tool` runs first\n\n"
-        "| Agent | State |\n|---|---|\n| Claude Code | not graded |\n\n"
+        "| Agent | State |\n|---|---|\n| Claude Code | not graded |\n"
+        "| Flags | Use a \\| b in one cell |\n\n"
         "A paragraph that wraps\nonto a second line.\n\n    pip install chock\n\n"
         "- an item\n\n    with a lowercase second paragraph\n"
     )
