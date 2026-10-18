@@ -174,7 +174,9 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
     for client, data in block["clients"].items():
         assert bool(data["remove"]) != bool(data["remove_unverified"]), client
         if data["remove_unverified"]:
-            assert data["remove_unverified"]["url"] == data["evidence"]["url"], client
+            link = data["report"] if data["witness"] == "witnessed" else None
+            url = link or data["evidence"]["url"]
+            assert data["remove_unverified"]["url"] == url, client
             assert data["remove_unverified"]["text"].startswith(
                 f"Removal steps not verified for {data['name']} yet."
             )
@@ -183,6 +185,39 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
         assert "__" not in json.dumps(data["remove"]), client
     with_repo = {c for c, d in block["clients"].items() if d["plugin_repo"]}
     assert with_repo == {"claude-code", "cursor", "codex", "copilot", "devin"}
+
+
+def test_a_tested_client_without_remove_steps_links_its_witness_report(built) -> None:
+    """SITE-UPDATE-1: goose and Antigravity are tested, with no verified remove steps yet."""
+    block = _site(built)["builder_clients"]
+    for client in ("goose", "antigravity"):
+        data = block["clients"][client]
+        assert data["witness"] == "witnessed", client
+        assert data["remove"] == [], client
+        assert data["remove_unverified"]["url"] == data["report"], client
+        assert data["report"].endswith(f"Witness%20report:%20{client}"), client
+        assert data["remove_unverified"]["link"] == "a witness report", client
+
+
+def test_a_tested_client_without_steps_or_report_link_fails() -> None:
+    texts = {
+        "remove_unverified": "Removal steps not verified for __NAME__ yet.",
+        "remove_report_link": "a witness report",
+    }
+    evidence = {"issues": {}, "texts": {}, "issue_url": ""}
+    with pytest.raises(PageError, match="goose has no steps"):
+        clientdata._remove_unverified(None, texts, "goose", "goose", evidence, "")
+    with pytest.raises(PageError, match="goose has no steps"):
+        clientdata._remove_unverified(None, texts, "goose", "goose", evidence, None)
+    shown = clientdata._remove_unverified(None, texts, "goose", "goose", evidence, "u")
+    assert shown == {
+        "text": "Removal steps not verified for goose yet.",
+        "url": "u",
+        "link": "a witness report",
+    }
+    assert (
+        clientdata._remove_unverified([], texts, "goose", "goose", evidence, "") is None
+    )
 
 
 def test_site_json_carries_each_client(built) -> None:
