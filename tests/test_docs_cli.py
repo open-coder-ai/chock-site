@@ -64,8 +64,8 @@ def test_every_node_has_a_page_twin_and_index_link(built) -> None:
         href = f"{CLI}{'/'.join(node['path'])}/"
         name = " ".join(["chock", *node["path"]])
         page = _page(built, node)
-        assert f"<h1>{html.escape(name)}</h1>" in page or f">{name}</h1>" in page, href
-        assert _page(built, node, "index.md").startswith(f"# {name}\n"), href
+        assert f"><code>{html.escape(name)}</code></h1>" in page, href
+        assert _page(built, node, "index.md").startswith(f"# `{name}`\n"), href
         assert f'href="{href}"' in index, href
         assert f"{href}index.md)" in twin, href
 

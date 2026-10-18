@@ -179,7 +179,10 @@ def test_twin_matches_the_page_prose(built) -> None:
     for page in _docs_pages(built):
         article = _article(page)
         twin = (page.parent / "index.md").read_text(encoding="utf-8")
-        headings = [(n, _md_unescape(t)) for n, t in _md_headings(twin)]
+        # A code span in a heading (a command name) is <code> on the page: compare its text.
+        headings = [
+            (n, _md_unescape(t).replace("`", "")) for n, t in _md_headings(twin)
+        ]
         assert article.headings == headings, page
         for block in article.code:
             lines = [ln for ln in block.strip("\n").splitlines() if ln.strip()]

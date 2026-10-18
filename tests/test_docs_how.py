@@ -95,8 +95,13 @@ def test_how_it_works_lists_the_lifecycle_steps_and_the_diagrams(built) -> None:
     lifecycle = _diagram("lifecycle")
     nodes = {n["id"]: n for n in lifecycle.nodes}
     for step in lifecycle.path:
-        assert f">{html.escape(nodes[step]['label'])}</a>" in page, step
-        assert f"[{nodes[step]['label']}](" in twin, step
+        label = nodes[step]["label"]
+        if nodes[step].get("code"):
+            assert f"><code>{html.escape(label)}</code></a>" in page, step
+            assert f"[`{label}`](" in twin, step
+        else:
+            assert f">{html.escape(label)}</a>" in page, step
+            assert f"[{label}](" in twin, step
     for diagram_id in HOW["diagrams"]:
         assert f'href="/docs/architecture/{diagram_id}/"' in page
         assert f"/docs/architecture/{diagram_id}/index.md)" in twin

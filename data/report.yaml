@@ -19,9 +19,9 @@ security:
       url: https://github.com/open-coder-ai/chock-catalog/security/advisories/new
     - label: "Report privately: chock-site (this site)"
       url: https://github.com/open-coder-ai/chock-site/security/advisories/new
-    - label: "SECURITY.md in chock"
+    - label: "`chock` SECURITY.md"
       url: https://github.com/open-coder-ai/chock/blob/main/SECURITY.md
-    - label: "SECURITY.md in chock-catalog"
+    - label: "`chock-catalog` SECURITY.md"
       url: https://github.com/open-coder-ai/chock-catalog/blob/main/SECURITY.md
 include_heading: What to include
 kinds:

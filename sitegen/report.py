@@ -132,7 +132,7 @@ def build(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             render_file(
                 templates / PARTIALS / "report-link.html",
                 URL=link["url"],
-                LABEL=link["label"],
+                LABEL=Prose(link["label"]),
             )
             for link in security["links"]
         )
@@ -204,7 +204,7 @@ def build(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
         SEC_HEADING=security["heading"],
         SEC_BODY=security["body"],
         SEC_LINKS="".join(
-            f"- [{md(link['label'])}]({link['url']})\n" for link in security["links"]
+            f"- [{link['label']}]({link['url']})\n" for link in security["links"]
         ),
         KINDS="".join(
             f"## {md(kind['heading'])}\n\n{kind['body']}\n\n"
