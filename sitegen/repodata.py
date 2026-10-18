@@ -6,7 +6,7 @@ from typing import Any
 from .model import Policy
 from .pageparts import PageError
 
-TIER_FIELDS = ("key", "word", "glyph", "meaning")
+TIER_FIELDS = ("key", "word", "heading", "glyph", "meaning")
 PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 

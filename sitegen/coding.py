@@ -803,6 +803,7 @@ def _author(
                 SAVED_NOTE=texts["saved_note"],
                 CLEAR_LABEL=texts["clear_label"],
                 CLEAR_DONE=texts["clear_done"],
+                UNDO_LABEL=texts["undo_label"],
                 ADVANCED_HEADING=texts["advanced_heading"],
                 REPORT_HREF=report.report_link(page=path),
                 REPORT_TEXT=report.link_text(site, "author"),

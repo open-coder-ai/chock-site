@@ -85,6 +85,7 @@ def test_home_counts_are_computed_from_the_registry(built, catalog_path) -> None
     registry = _registry(catalog_path)
     visible = {p.id for p in built.site.policies}
     html = (built.out / "repos" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "repos" / "index.md").read_text(encoding="utf-8")
     for tier in TIERS:
         n = sum(
             1
@@ -100,6 +101,8 @@ def test_home_counts_are_computed_from_the_registry(built, catalog_path) -> None
             rf'data-tier="{tier["key"]}".*?</section>', html, re.DOTALL
         ).group(0)
         assert group.count("<li>") == n
+        assert f'{tier["heading"]} <span class="repos-count">({n})</span></h3>' in group
+        assert f"\n### {tier['heading']} ({n})\n" in twin
     for pid in visible:
         assert f'href="/coding/policies/{pid}/"' in html
 

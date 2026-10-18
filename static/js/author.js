@@ -536,15 +536,31 @@ async function main() {
 
   // ----- draft -----
 
+  const clearBtn = $("#author-clear");
+  const clearedBox = $("#author-cleared");
+  const undoBtn = $("#author-undo");
+
+  // A draft exists once the visitor has changed anything Clear draft resets.
+  const hasDraft = () =>
+    kind !== Object.keys(kinds)[0] ||
+    name !== "" ||
+    Object.values(answers).some((value) => value) ||
+    picked.size > 0 ||
+    Object.keys(overrides).length > 0;
+
   let draftTimer = 0;
   function saveDraft() {
     window.clearTimeout(draftTimer);
     draftTimer = window.setTimeout(() => {
       try {
-        localStorage.setItem(
-          DRAFT_KEY,
-          JSON.stringify({ kind, name, answers, picked: [...picked], client, overrides }),
-        );
+        if (hasDraft()) {
+          localStorage.setItem(
+            DRAFT_KEY,
+            JSON.stringify({ kind, name, answers, picked: [...picked], client, overrides }),
+          );
+        } else {
+          localStorage.removeItem(DRAFT_KEY);
+        }
       } catch {
         // A full or blocked localStorage is not an error worth showing.
       }
@@ -746,6 +762,7 @@ async function main() {
   let running = false;
   let queuedFresh = null;
   function schedule(freshFiles) {
+    clearBtn.hidden = !hasDraft();
     queuedFresh = freshFiles || queuedFresh;
     if (running) return;
     running = true;
@@ -823,25 +840,66 @@ async function main() {
     copyText(event.currentTarget, shareUrl.value, shareUrl);
   });
 
-  $("#author-clear").addEventListener("click", () => {
+  // Puts a draft's parts into the page and redraws it.
+  function applyDraft(next) {
+    kind = next.kind;
+    name = next.name;
+    answers = next.answers;
+    picked = next.picked;
+    overrides = next.overrides;
+    nameInput.value = name;
+    for (const radio of $$("input[name='author-kind']")) radio.checked = radio.value === kind;
+    renderFields();
+    renderCatalog();
+    writeShare();
+    schedule(true);
+  }
+
+  // Clear sits at the top where it is easy to hit, so it can be undone for 10 seconds.
+  let undoDraft = null;
+  let undoTimer = 0;
+  function endUndo() {
+    window.clearTimeout(undoTimer);
+    undoDraft = null;
+    const hadFocus = document.activeElement === undoBtn;
+    clearedBox.hidden = true;
+    if (hadFocus) nameInput.focus();
+  }
+
+  clearBtn.addEventListener("click", () => {
+    undoDraft = {
+      kind,
+      name,
+      answers: { ...answers },
+      picked: new Set(picked),
+      overrides: { ...overrides },
+    };
     try {
       localStorage.removeItem(DRAFT_KEY);
     } catch {
       // Nothing stored: still reset the page.
     }
-    kind = Object.keys(kinds)[0];
-    name = "";
-    answers = {};
-    picked = new Set();
-    overrides = {};
-    nameInput.value = "";
-    for (const radio of $$("input[name='author-kind']")) radio.checked = radio.value === kind;
-    renderFields();
-    renderCatalog();
-    writeShare();
-    $("#author-clear-done").hidden = false;
+    applyDraft({
+      kind: Object.keys(kinds)[0],
+      name: "",
+      answers: {},
+      picked: new Set(),
+      overrides: {},
+    });
+    clearedBox.hidden = false;
+    undoBtn.focus();
     announce(T.clear_done);
-    schedule(true);
+    window.clearTimeout(undoTimer);
+    undoTimer = window.setTimeout(endUndo, 10000);
+  });
+
+  undoBtn.addEventListener("click", () => {
+    const previous = undoDraft;
+    endUndo();
+    if (!previous) return;
+    applyDraft(previous);
+    clearBtn.focus();
+    announce(T.undo_done);
   });
 
   // ----- first paint -----

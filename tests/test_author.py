@@ -45,6 +45,8 @@ TEXT_KEYS = {
     "share_hint",
     "clear_label",
     "clear_done",
+    "undo_label",
+    "undo_done",
     "saved_note",
     "errors_title",
     "required",
