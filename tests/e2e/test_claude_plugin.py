@@ -49,3 +49,27 @@ def test_the_option_follows_the_picked_agent(page, site_url, client) -> None:
         ]
     )
     assert_clean(page)
+
+
+def test_build_line_carries_the_selection_code(page, site_url) -> None:
+    """With policies picked, the Claude Code build line holds the native command's code, no "…"."""
+    collect(page, site_url)
+    _pick(page, site_url, "grok")
+    code = page.locator("[data-selection-code]").get_attribute("data-selection-code")
+    assert code
+    build = page.locator(".client-steps:not([hidden]) .claude-build")
+    assert build.count() == 1
+    assert build.locator("[data-selection-arg]").inner_text() == code
+    text = build.inner_text()
+    assert f"chock install --selection {code} --client claude-code" in text
+    assert "…" not in text
+    native = page.locator("[data-selection-code]").inner_text()
+    assert code in native
+    # A different selection rewrites the code in both lines.
+    page.locator(
+        ".bmember:not(.hidden) input[type='checkbox']:not(:checked)"
+    ).first.check()
+    changed = page.locator("[data-selection-code]").get_attribute("data-selection-code")
+    assert changed != code
+    assert build.locator("[data-selection-arg]").inner_text() == changed
+    assert_clean(page)

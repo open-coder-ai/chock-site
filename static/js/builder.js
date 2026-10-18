@@ -72,6 +72,8 @@ async function main() {
   const tabs = $$("[role='tab']");
   const panels = $$("[role='tabpanel']");
   const codeEl = $("[data-selection-code]");
+  // The Claude Code build line in each agent's panel takes the same selection code.
+  const argEls = $$("[data-selection-arg]");
   const shareEl = $("#share-url");
   const bar = $("#mobile-bar");
   const clientInputs = $$("#client-picker input[name='client']");
@@ -250,6 +252,7 @@ async function main() {
     if (!active) {
       codeEl.textContent = "";
       codeEl.removeAttribute("data-selection-code");
+      for (const el of argEls) el.textContent = el.dataset.placeholder;
       shareEl.value = "";
       shareEl.removeAttribute("data-selection-url");
       showTab(activeTab);
@@ -259,6 +262,7 @@ async function main() {
     const url = `${location.origin}${location.pathname}${shareFragment(client, picked)}`;
     codeEl.textContent = command;
     codeEl.dataset.selectionCode = code;
+    for (const el of argEls) el.textContent = code;
     shareEl.value = url;
     shareEl.setAttribute("data-selection-url", url);
     showTab(activeTab);

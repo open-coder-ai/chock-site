@@ -108,7 +108,8 @@ def test_twin_carries_every_line_chock_prints(built) -> None:
             re.MULTILINE | re.DOTALL,
         )
     )
-    filled = engine.claude_plugin_tokens() | {"__SELECTION__": "…"}
+    code = _site(built)["builder_clients"]["texts"]["claude_plugin_code"]
+    filled = engine.claude_plugin_tokens() | {"__SELECTION__": f"`{code}`"}
     for client in _chock_offers():
         body = sections[client]
         for line in chock_offer.lines(client, filled):
@@ -146,3 +147,18 @@ def test_clients_chock_is_silent_on_show_nothing(built) -> None:
             _site(built)["builder_clients"]["clients"][client]["claude_plugin"] is None
         )
         assert 'class="claude-plugin"' not in sections[client]
+
+
+def test_no_page_shows_an_ellipsis_for_the_selection_code(built) -> None:
+    """Without a selection, the build line shows the site's placeholder, never a literal "…"."""
+    code = _site(built)["builder_clients"]["texts"]["claude_plugin_code"]
+    for page in ("install", "builder"):
+        for name in ("index.html", "index.md"):
+            text = (built.out / "coding" / page / name).read_text(encoding="utf-8")
+            builds = [
+                line for line in text.splitlines() if "Build it: chock install" in line
+            ]
+            assert builds, (page, name)
+            for line in builds:
+                assert "…" not in line, (page, name, line)
+                assert code in line or "&lt;code&gt;" in line, (page, name, line)

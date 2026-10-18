@@ -12,8 +12,6 @@ STEP_KINDS = ("command", "note", "settings")
 # A sentence and its closing punctuation, for the agent-facing ask in Markdown notes.
 SENTENCE_RE = re.compile(r".+?(?:[.!?]+(?=\s|$)|$)", re.DOTALL)
 INSTALL_WORDS = "chock install"
-# The selection code in the Claude Code build line, which is prose on every page.
-CODE_SHOWN = "…"
 
 
 def agent_note(text: str, ask: str) -> str:
@@ -179,7 +177,15 @@ def claude_plugin(block: dict[str, Any], templates: Path, client: str) -> str:
             templates / "claude-plugin-route.html",
             WHERE=route["where"],
             LABEL=route["label"],
-            STEPS=Safe(step_blocks(templates, claude_route_steps(route, CODE_SHOWN))),
+            LEAD=Safe(
+                step_blocks(templates, [{"note": route["prefer_native"]}])
+                if route["prefer_native"]
+                else ""
+            ),
+            BUILD=Safe(
+                _build_line(templates, route["build"], texts["claude_plugin_code"])
+            ),
+            STEPS=Safe(step_blocks(templates, route["steps"])),
         )
         for route in offer["routes"]
     )
@@ -197,6 +203,20 @@ def claude_plugin(block: dict[str, Any], templates: Path, client: str) -> str:
         INTRO=Prose(offer["heading"]),
         ROUTES=Safe(routes),
         WARNINGS=Safe(warnings),
+    )
+
+
+def _build_line(templates: Path, build: str, placeholder: str) -> str:
+    """chock's build line with a slot builder.js fills with the selection code; elsewhere the placeholder."""
+    parts = build.split(engine.SELECTION_TOKEN)
+    if len(parts) != 2:
+        raise ValueError(f"build line needs one {engine.SELECTION_TOKEN}: {build!r}")
+    before, after = parts
+    return render_file(
+        templates / "claude-plugin-build.html",
+        BEFORE=before,
+        CODE=placeholder,
+        AFTER=after,
     )
 
 
@@ -277,7 +297,10 @@ def _md_claude_plugin(block: dict[str, Any], offer: dict[str, Any] | None) -> st
     for route in offer["routes"]:
         lines.append(f"{route['where']}: {route['label']}\n\n")
         lines.append(
-            _md_steps(claude_route_steps(route, CODE_SHOWN), texts["ask_inline"])
+            _md_steps(
+                claude_route_steps(route, f"`{texts['claude_plugin_code']}`"),
+                texts["ask_inline"],
+            )
         )
     lines.extend(
         f"{texts['claude_plugin_warning']} {warning}\n\n"
