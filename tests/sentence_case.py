@@ -61,6 +61,26 @@ CODE_TAGS = frozenset({"code", "pre", "kbd", "samp"})
 CODE_CLASS = "mono"
 # <title> is page metadata that cannot hold <code>; the page's h1 carries the same name.
 SKIP_TAGS = frozenset({"script", "style", "template", "noscript", "title"})
+# SITE-CAPS-2: a one-word UI label (heading, button, fact term, badge, pill, chip, nav
+# group, stat label) is judged too; a one-word data value (a cell's "yes") is not.
+LABEL_TAGS = frozenset(
+    {"button", "caption", "dt", "h1", "h2", "h3", "h4", "h5", "h6", "legend", "summary"}
+)
+LABEL_CLASSES = frozenset(
+    {
+        "badge",
+        "chip",
+        "client-state",
+        "docs-nav-group",
+        "docs-state",
+        "label",
+        "pill",
+        "stat-label",
+        "status-badge",
+        "track-badge",
+    }
+)
+VOID = frozenset({"area", "br", "col", "embed", "hr", "img", "input", "source", "wbr"})
 # Inline boxes the stylesheet lays out apart: their text never runs into its neighbour's.
 APART = frozenset({"span"})
 # Abbreviations whose full stop does not end a sentence.
@@ -72,6 +92,10 @@ IDENT = re.compile(
     re.IGNORECASE,
 )
 LEAD = "\"'“‘([—–-•·*_ "
+
+
+class Label(str):
+    """A block whose text is a UI label: judged even when it is one word."""
 
 
 def sentences(text: str) -> list[str]:
@@ -99,10 +123,12 @@ def is_prose(word: str, names: frozenset[str] = frozenset()) -> bool:
 def lowercase_starts(text: str, names: frozenset[str] = frozenset()) -> list[str]:
     """The sentences in one block that start with a lowercase prose word.
 
-    A block of one word is a value (a cell's "yes", a type's "string"), not a sentence.
+    A block of one word is a value (a cell's "yes", a type's "string"), not a sentence,
+    unless it is a Label.
     """
+    label = isinstance(text, Label)
     text = " ".join(text.split())
-    if " " not in text:
+    if not text or (" " not in text and not label):
         return []
     bad = []
     for sentence in sentences(text):
@@ -121,12 +147,23 @@ class _Blocks(HTMLParser):
         self._cur: list[str] = []
         self._code: list[str] = []
         self._skip = 0
+        # Open block-level UI labels, and whether the current block has text inside one.
+        self._labels: list[str] = []
+        self._in_label = False
+        # Open inline UI labels (a pill inside a row): (tag, text so far), each judged alone.
+        self._inline: list[tuple[str, list[str]]] = []
 
     def _flush(self) -> None:
         text = "".join(self._cur).strip()
         if text:
-            self.blocks.append(text)
+            self.blocks.append(Label(text) if self._in_label else text)
         self._cur = []
+        self._in_label = False
+
+    def _add(self, text: str) -> None:
+        self._cur.append(text)
+        for _, parts in self._inline:
+            parts.append(text)
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         classes = (dict(attrs).get("class") or "").split()
@@ -134,12 +171,19 @@ class _Blocks(HTMLParser):
             self._skip += 1
         elif self._code or tag in CODE_TAGS or CODE_CLASS in classes:
             if not self._code:
-                self._cur.append(CODE)
+                self._add(CODE)
             self._code.append(tag)
-        elif tag in BLOCKS:
-            self._flush()
-        elif tag in APART:
-            self._cur.append(" ")
+        else:
+            if tag in BLOCKS:
+                self._flush()
+            elif tag in APART:
+                self._add(" ")
+            if tag in VOID or not (tag in LABEL_TAGS or LABEL_CLASSES & set(classes)):
+                return
+            if tag in BLOCKS:
+                self._labels.append(tag)
+            else:
+                self._inline.append((tag, []))
 
     def handle_endtag(self, tag: str) -> None:
         if tag in SKIP_TAGS:
@@ -149,8 +193,20 @@ class _Blocks(HTMLParser):
                 del self._code[len(self._code) - 1 - self._code[::-1].index(tag) :]
         elif tag in BLOCKS:
             self._flush()
-        elif tag in APART:
-            self._cur.append(" ")
+            if tag in self._labels:
+                del self._labels[
+                    len(self._labels) - 1 - self._labels[::-1].index(tag) :
+                ]
+        else:
+            tags = [t for t, _ in self._inline]
+            if tag in tags:
+                at = len(tags) - 1 - tags[::-1].index(tag)
+                text = "".join(self._inline[at][1]).strip()
+                del self._inline[at:]
+                if text:
+                    self.blocks.append(Label(text))
+            if tag in APART:
+                self._add(" ")
 
     def handle_startendtag(self, tag: str, attrs: list) -> None:
         if tag in BLOCKS and not self._code:
@@ -158,7 +214,8 @@ class _Blocks(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if not self._skip and not self._code:
-            self._cur.append(data)
+            self._add(data)
+            self._in_label = self._in_label or bool(self._labels and data.strip())
 
     def close(self) -> None:
         super().close()
@@ -178,6 +235,7 @@ INLINE_CODE = re.compile(r"(`+)(?:(?!\1).)+?\1")
 MD_LINK = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
 AUTOLINK = re.compile(r"<(?:https?://|mailto:)[^>]*>")
 MD_NEW_BLOCK = re.compile(r"^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?|\|)")
+MD_HEADING = re.compile(r"^\s*#{1,6}\s")
 MD_LIST = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s")
 MD_MARKER = re.compile(r"^\s*(?:#{1,6}\s+|[-*+]\s+(?:\[[ xX]\]\s+)?|\d+[.)]\s+|>\s?)")
 
@@ -229,6 +287,9 @@ def md_blocks(text: str) -> list[str]:
             continue
         if MD_NEW_BLOCK.match(line):
             flush()
+            if MD_HEADING.match(line):
+                blocks.append(Label(MD_MARKER.sub("", line, count=1).strip()))
+                continue
             line = MD_MARKER.sub("", line, count=1)
         cur.append(line.strip())
     flush()

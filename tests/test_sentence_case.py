@@ -106,6 +106,50 @@ def test_ignores_code_urls_names_and_mid_sentence(page: str) -> None:
     assert [s for b in html_blocks(page) for s in lowercase_starts(b, names)] == []
 
 
+@pytest.mark.parametrize(
+    "page, expected",
+    [
+        ('<td><span class="docs-state">untested</span></td>', ["untested"]),
+        ('<p class="stat-label">presets</p>', ["presets"]),
+        ('<p class="docs-nav-group">agentseam</p>', ["agentseam"]),
+        ('<span class="chip">blocks</span>', ["blocks"]),
+        ('<div class="pill"><p>tested</p></div>', ["tested"]),
+        ("<h3>run</h3>", ["run"]),
+        ("<dt>sha256</dt>", ["sha256"]),
+        ("<button>copy</button>", ["copy"]),
+        (
+            '<li>Claude Code <span class="client-state">untested</span></li>',
+            ["untested"],
+        ),
+    ],
+)
+def test_finds_lowercase_one_word_label(page: str, expected: list[str]) -> None:
+    """SITE-CAPS-2: a one-word heading, button, fact term, badge, pill, chip or label is judged."""
+    assert [s for b in html_blocks(page) for s in lowercase_starts(b)] == expected
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        '<td><span class="docs-state">Untested</span></td>',
+        "<h3><code>run</code></h3>",
+        "<dt><code>sha256</code></dt>",
+        "<h1>goose</h1>",
+        "<td>yes</td><td>string</td>",
+        "<dl><dt>Engine</dt><dd>open</dd></dl>",
+        "<th>dco</th>",
+        '<p class="stat-label">Policies</p><p>presets</p>',
+        '<td><span class="docs-state">Tested</span></td><td>yes</td>',
+        '<li>Claude Code <span class="client-state">Tested</span></li>',
+        '<p class="docs-nav-group">Guides</p><ul><li>overview</li></ul>',
+    ],
+)
+def test_ignores_one_word_data_values(page: str) -> None:
+    """One-word data values (cells, fact values), code labels and names stay unjudged."""
+    names = frozenset({"goose"})
+    assert [s for b in html_blocks(page) for s in lowercase_starts(b, names)] == []
+
+
 def test_markdown_twin_blocks() -> None:
     """Markdown: fenced code and backticks are skipped; items, headings and cells are judged."""
     text = (
@@ -124,3 +168,9 @@ def test_markdown_twin_blocks() -> None:
         "an item",
         "with a lowercase second paragraph",
     ]
+
+
+def test_markdown_one_word_heading() -> None:
+    """SITE-CAPS-2: a one-word Markdown heading is judged; as code, or a cell, it is not."""
+    text = "### run\n\n### `handle`\n\n## Dispatch\n\n| Field | Type |\n|---|---|\n| `a` | string |\n"
+    assert [s for b in md_blocks(text) for s in lowercase_starts(b)] == ["run"]

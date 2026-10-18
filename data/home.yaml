@@ -177,6 +177,8 @@ coding:
   intro: "Pick the rules you want and your agent. Chock turns them into one plugin that blocks, asks or warns before a risky move happens."
   glance_heading: "The catalog at a glance"
   glance_link: "See every policy"
+  glance_policies: "Policies"
+  glance_presets: "Presets"
   presets_heading: "Start from a preset"
   presets_intro: "A preset fills the builder with a group of policies. You can remove any of them before you install."
   clients_heading: "Every agent builds here"

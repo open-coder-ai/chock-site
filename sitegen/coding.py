@@ -52,7 +52,7 @@ def _home(
                 templates / PARTIALS / "home-stat.html",
                 EXTRA="",
                 NUM=str(counts_["total"]),
-                LABEL="policies",
+                LABEL=home["glance_policies"],
             )
         ]
         + [
@@ -60,7 +60,7 @@ def _home(
                 templates / PARTIALS / "home-stat.html",
                 EXTRA=" stat-block" if key == "block" else "",
                 NUM=str(counts_["label"][key]),
-                LABEL=f"{site.data['glyphs'][key]} {site.label_words[track.id][key]}",
+                LABEL=f"{site.data['glyphs'][key]} {sentence_start(site.label_words[track.id][key])}",
             )
             for key in site.label_words[track.id]
         ]
@@ -69,7 +69,7 @@ def _home(
                 templates / PARTIALS / "home-stat.html",
                 EXTRA="",
                 NUM=str(counts_["presets"]),
-                LABEL="presets",
+                LABEL=home["glance_presets"],
             )
         ]
     )
@@ -357,7 +357,7 @@ def _agent_rows(site: Site, templates: Path, policy: Policy) -> Safe:
                 templates / PARTIALS / "agent-label-row.html",
                 NAME=row["name"],
                 STATE=row["state"],
-                STATE_WORD=row["state_word"],
+                STATE_WORD=sentence_start(row["state_word"]),
                 CHIP=Safe("")
                 if row["keyword"] is None
                 else keyword_chip(site, templates, row["keyword"], "coding"),
@@ -908,7 +908,7 @@ def _install(
             ID=client,
             NAME=about["name"],
             STATE=about["witness"],
-            STATE_WORD=clients["texts"][about["witness"]],
+            STATE_WORD=sentence_start(clients["texts"][about["witness"]]),
             EVIDENCE=Safe(
                 clientpage.evidence_line(clients, templates / track.slug, client)
             ),
@@ -1036,7 +1036,7 @@ def _clients(
             ID=client,
             NAME=about["name"],
             STATE=about["witness"],
-            STATE_WORD=texts[about["witness"]],
+            STATE_WORD=sentence_start(texts[about["witness"]]),
             NOTE=Prose(_client_notes(site, clients, client)),
             BUILD=about["build_link"],
             REPO=Safe(_repo_line(templates, texts, about["plugin_repo"])),

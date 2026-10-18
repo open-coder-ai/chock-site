@@ -278,7 +278,7 @@ def _surface(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> S
         {
             "NAME": row["name"],
             "STATE": row["state"],
-            "STATE_WORD": row["state_word"],
+            "STATE_WORD": sentence_start(row["state_word"]),
             "CHIP": Safe("")
             if row["keyword"] is None
             else keyword_chip(site, templates, row["keyword"], COUNTED),
@@ -383,7 +383,7 @@ def _honest(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> Sa
         [
             {
                 "CHIP": keyword_chip(site, templates, key, COUNTED),
-                "WORD": words[key],
+                "WORD": sentence_start(words[key]),
                 "MEANING": site.data["label_meanings"][words[key]],
             }
             for key in words

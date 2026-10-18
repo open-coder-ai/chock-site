@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from .pageparts import data_fill
-from .render import Prose, Safe, render_file
+from .render import Prose, Safe, render_file, sentence_start
 
 STEP_KINDS = ("command", "note", "settings")
 # A sentence and its closing punctuation, for the agent-facing ask in Markdown notes.
@@ -41,7 +41,7 @@ def picker(block: dict[str, Any], templates: Path) -> str:
             CHECKED=Safe(" checked" if client == block["default"] else ""),
             NAME=block["clients"][client]["name"],
             STATE=block["clients"][client]["witness"],
-            STATE_WORD=texts[block["clients"][client]["witness"]],
+            STATE_WORD=sentence_start(texts[block["clients"][client]["witness"]]),
         )
         for client in block["order"]
     )
