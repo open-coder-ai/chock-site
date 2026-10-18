@@ -45,7 +45,7 @@ def test_build_refuses_another_installed_agentseam(monkeypatch) -> None:
 
 
 def test_every_page_is_in_nav_with_a_twin(built) -> None:
-    group = next(g for g in DOCS["nav"] if g["group"] == "agentseam")
+    group = next(g for g in DOCS["nav"] if g["group"] == "Agentseam")
     assert group["pages"] == KEYS
     for key in KEYS:
         assert DOCS["pages"][key]["path"].startswith("/docs/agentseam/")
@@ -111,7 +111,7 @@ def test_direct_page_shows_every_recorded_step(built) -> None:
 def test_api_page_has_every_exported_name(built) -> None:
     twin = _page(built, "agentseam-api", "index.md")
     for name in agentseam.__all__:
-        assert f"### {name}\n" in twin or f"| `{name}` |" in twin, name
+        assert f"### `{name}`\n" in twin or f"| `{name}` |" in twin, name
 
 
 def test_api_groups_must_cover_all_exactly_once() -> None:

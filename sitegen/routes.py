@@ -154,7 +154,7 @@ def _plugin_cell(templates: Path, row: dict[str, Any], texts: dict[str, str]) ->
         CLIENT=plugin["client"],
         LINK=plugin["link"],
         STATE=plugin["witness"],
-        WORD=plugin["word"],
+        WORD=sentence_start(plugin["word"]),
     )
 
 
@@ -167,7 +167,7 @@ def _sync_cell(templates: Path, row: dict[str, Any]) -> str:
         templates / "route-sync.html",
         COMMAND=sync["command"],
         STATE=sync["witness"],
-        WORD=sync["word"],
+        WORD=sentence_start(sync["word"]),
     )
 
 

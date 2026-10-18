@@ -446,7 +446,7 @@ def _sync(ctx: Ctx, body: Body) -> None:
             a["sync"]["agents"],
             a["config"] or "",
             ctx.texts["sync_turn_end"] if a["turn_end"] else "",
-            a["sync"]["word"],
+            sentence_start(a["sync"]["word"]),
         ]
         for a in wired
     ]
@@ -456,7 +456,13 @@ def _sync(ctx: Ctx, body: Body) -> None:
             Safe(ctx.t("code", TEXT=a["sync"]["agents"])),
             Safe(ctx.t("code", TEXT=a["config"] or "")),
             ctx.texts["sync_turn_end"] if a["turn_end"] else "",
-            Safe(ctx.t("state", STATE=a["sync"]["witness"], WORD=a["sync"]["word"])),
+            Safe(
+                ctx.t(
+                    "state",
+                    STATE=a["sync"]["witness"],
+                    WORD=sentence_start(a["sync"]["word"]),
+                )
+            ),
         ]
         for a in wired
     ]
@@ -2582,8 +2588,9 @@ def _api_entry_html(ctx: Ctx, body: Body, entry: dict[str, Any]) -> tuple[str, s
     """One exported class, function or module: heading, signature, summary, source, members."""
     texts = _agentseam_texts(ctx)
     name = entry["name"]
-    html = [_h3(ctx, body, name)]
-    md = [f"### {name}\n\n"]
+    # An exported name is an identifier: its heading renders as code.
+    html = [_h3(ctx, body, md_code(name))]
+    md = [f"### {md_code(name)}\n\n"]
     if entry["signature"]:
         line = f"{name}{entry['signature']}"
         html.append(_code(ctx, line, "python"))
@@ -3042,8 +3049,10 @@ def _writing_schema(ctx: Ctx, body: Body, part: dict[str, Any]) -> None:
         if not under:
             continue
         h, m = _writing_rows(ctx, under)
-        html += [_h3(ctx, body, parent["field"]), h]
-        md.append(f"### {parent['field']}\n\n{m}\n")
+        # A schema field is an identifier: its heading renders as code.
+        heading = md_code(parent["field"])
+        html += [_h3(ctx, body, heading), h]
+        md.append(f"### {heading}\n\n{m}\n")
     _section(ctx, body, part["heading"], "".join(html), "".join(md))
 
 

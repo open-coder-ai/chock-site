@@ -24,7 +24,7 @@ nav:
   - group: How Chock works
     pages: [how-it-works, surfaces, stop, architecture]
   # DOCS-3: agentseam, the library under chock.
-  - group: agentseam
+  - group: Agentseam
     pages: [agentseam, agentseam-direct, agentseam-api, agentseam-cli]
   # DOCS-4
   - group: Catalog
