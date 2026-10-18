@@ -58,6 +58,7 @@ The parser walk in section 3 measured 45 parser nodes at 39df00b and 48 at fd376
   - `static/video/` holds 2 promo films, listed in `data/home.yaml` `videos:` and rendered by `sitegen/home.py` (`_videos`, with `templates/home/videos.html`, `video-item.html` and `video-track.html` for captions):
     - `chock-promo-v9b.mp4`: 7,172,058 B, 1280x720, 1:02;
     - `chock-promo-v8-explainer.mp4`: 10,008,393 B, 1280x720, 1:57.
+  - Later (VID-OFF, 2026-10-18): both promo films and their posters were taken off the site because their voice did not sync; the home page keeps the silent `own-policy` recording.
   - Docs pages have no video block today.
   - There are no terminal recordings on the site.
 - **Author page:** `/author/` already fills chock policy templates in the browser. It uses `data/kinds/<kind>/**.tmpl`, which mirrors the engine; `data/kinds/engine-commit.txt` follows `.framework-ref`.
