@@ -1,4 +1,4 @@
-"""ARCH-1: architecture diagrams: a box shows its card, the path toggle, the theme, and no JS."""
+"""ARCH-1: architecture diagrams: a box shows its card, the path toggle, both site themes, no JS."""
 
 import json
 from pathlib import Path
@@ -95,20 +95,62 @@ def test_path_toggle_highlights_only_the_main_path(
     assert_clean(page)
 
 
-def test_theme_toggle_switches_the_figure_to_light(page, site_url) -> None:
+# Text in a figure and the colour it sits on, read from the computed styles: the selector of
+# the text, the property holding its colour, and the selector whose colour is its background.
+TEXT_ON_SURFACE = [
+    (".arch-node-label", "fill", ".arch-node rect", "fill"),
+    (".arch-node-repo", "fill", ".arch-node rect", "fill"),
+    (".arch-boundary-label", "fill", ".arch-figure", "backgroundColor"),
+    (".arch-edge-label", "fill", ".arch-figure", "backgroundColor"),
+    (".arch-legend", "color", ".arch-figure", "backgroundColor"),
+    (".arch-hint-js", "color", ".arch-figure", "backgroundColor"),
+    (".arch-path-toggle", "color", ".arch-path-toggle", "backgroundColor"),
+    (
+        "ol.arch-cards .arch-card-text",
+        "color",
+        "ol.arch-cards .arch-card",
+        "backgroundColor",
+    ),
+    (
+        "ol.arch-cards .arch-card-kind",
+        "color",
+        "ol.arch-cards .arch-card",
+        "backgroundColor",
+    ),
+]
+CONTRAST_JS = """([fg, fgProp, bg, bgProp]) => {
+  const rgb = (s) => s.match(/\\d+/g).slice(0, 3).map(Number);
+  const lum = (c) => {
+    const l = c.map((v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2];
+  };
+  const a = lum(rgb(getComputedStyle(document.querySelector(fg))[fgProp]));
+  const b = lum(rgb(getComputedStyle(document.querySelector(bg))[bgProp]));
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}"""
+
+
+@pytest.mark.parametrize(
+    ("scheme", "page_bg"),
+    [("light", "rgb(244, 242, 237)"), ("dark", "rgb(36, 47, 75)")],
+)
+def test_figures_follow_the_site_theme_with_aa_text(
+    page, site_url, scheme: str, page_bg: str
+) -> None:
+    """No per-figure theme button: each figure takes the site theme and its text passes AA."""
+    page.emulate_media(color_scheme=scheme)
     page.set_viewport_size(DESKTOP)
-    page.goto(_url(site_url, "whole-train"))
-    figure = page.locator(".arch-figure")
-    dark = figure.evaluate("e => getComputedStyle(e).backgroundColor")
-    page.locator(".arch-theme-toggle").click()
-    assert figure.get_attribute("data-theme") == "light"
-    assert (
-        figure.evaluate("e => getComputedStyle(e).backgroundColor")
-        == "rgb(244, 246, 250)"
-    )
-    assert dark != "rgb(244, 246, 250)"
-    page.locator(".arch-theme-toggle").click()
-    assert figure.get_attribute("data-theme") is None
+    for diagram_id in IDS:
+        page.goto(_url(site_url, diagram_id))
+        assert page.evaluate("document.documentElement.dataset.theme") == scheme
+        figure = page.locator(".arch-figure")
+        assert figure.get_attribute("data-theme") is None
+        assert page.locator(".arch-theme-toggle").count() == 0
+        assert page.locator(".arch-toolbar button").count() == 1
+        assert figure.evaluate("e => getComputedStyle(e).backgroundColor") == page_bg
+        for pair in TEXT_ON_SURFACE:
+            ratio = page.evaluate(CONTRAST_JS, list(pair))
+            assert ratio >= 4.5, f"{scheme} {diagram_id}: {pair[0]}: {ratio:.2f}:1"
     assert_clean(page)
 
 

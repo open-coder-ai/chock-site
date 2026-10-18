@@ -415,7 +415,6 @@ class Renderer:
             "figure",
             ID=f"arch-{diagram.id}",
             PATH_BUTTON=texts["path_button"],
-            THEME_BUTTON=texts["theme_button"],
             SCROLL_LABEL=data_fill(texts["scroll_label"], title),
             SVG=Safe(self.svg(diagram)),
             LEGEND=Safe(legend),

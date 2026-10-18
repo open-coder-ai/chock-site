@@ -1,6 +1,6 @@
-// Architecture diagrams: select a box to show its card under the picture, highlight the
-// main path, or switch the figure to its light theme. Without JS each box links to its
-// card in the list below the diagram, and the toolbar and panel stay hidden.
+// Architecture diagrams: select a box to show its card under the picture, or highlight the
+// main path. Without JS each box links to its card in the list below the diagram, and the
+// toolbar and panel stay hidden.
 import { announce } from "./common.js";
 
 function initFigure(figure) {
@@ -46,14 +46,6 @@ function initFigure(figure) {
     const on = pathButton.getAttribute("aria-pressed") !== "true";
     pathButton.setAttribute("aria-pressed", String(on));
     figure.classList.toggle("show-path", on);
-  });
-
-  const themeButton = figure.querySelector(".arch-theme-toggle");
-  themeButton.addEventListener("click", () => {
-    const on = themeButton.getAttribute("aria-pressed") !== "true";
-    themeButton.setAttribute("aria-pressed", String(on));
-    if (on) figure.dataset.theme = "light";
-    else delete figure.dataset.theme;
   });
 
   figure.querySelector(".arch-toolbar").hidden = false;

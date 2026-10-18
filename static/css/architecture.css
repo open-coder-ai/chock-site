@@ -1,4 +1,4 @@
-/* Architecture diagrams (ARCH-1): the site palette by default, a cool light theme on request and in print. */
+/* Architecture diagrams (ARCH-1): the site palette in both site themes, a light palette in print. */
 
 .arch-figure,
 .arch-cards {
@@ -14,22 +14,6 @@
   --arch-artifact: var(--muted);
   --arch-client: var(--ok);
   --arch-log: var(--warn-fg);
-}
-
-.arch-figure[data-theme="light"],
-.arch-figure[data-theme="light"] .arch-cards {
-  --arch-bg: #F4F6FA;
-  --arch-box: #FFFFFF;
-  --arch-line: #B9C2D0;
-  --arch-text: #1B2235;
-  --arch-muted: #4A5568;
-  --arch-edge: #6B778C;
-  --arch-path: #9A5B00;
-  --arch-repo: #9A5B00;
-  --arch-code: #1F5FAD;
-  --arch-artifact: #4A5568;
-  --arch-client: #11734B;
-  --arch-log: #7A4F00;
 }
 
 .arch-kind-repo { --arch-kind: var(--arch-repo); }
@@ -62,7 +46,6 @@
 }
 .arch-button:hover { border-color: var(--arch-path); }
 .arch-button[aria-pressed="true"] { color: var(--on-accent); background: var(--arch-path); border-color: var(--arch-path); }
-.arch-figure[data-theme="light"] .arch-button[aria-pressed="true"] { color: #FFFFFF; }
 
 .arch-scroll { overflow-x: auto; }
 .arch-svg { display: block; width: 100%; min-width: 560px; height: auto; font-family: var(--sans); }
