@@ -190,7 +190,7 @@ def markdown(block: dict[str, Any]) -> str:
             (kind, text), *_ = item.items()
             if kind == "command":
                 number += 1
-                lines.append(f"{number}. (command)\n\n       {text}\n\n")
+                lines.append(f"{number}. (command)\n\n   ```sh\n   {text}\n   ```\n\n")
             elif kind == "note":
                 lines.append(f"{agent_note(text, block['texts']['ask_inline'])}\n\n")
             else:

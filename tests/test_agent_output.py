@@ -54,7 +54,7 @@ def test_policy_twin_front_matter_matches_api(built) -> None:
 
 def test_llms_txt_structure(built) -> None:
     text = (built.out / "llms.txt").read_text(encoding="utf-8")
-    assert text.startswith(("# chock.sh\n\n> ", "# chock.sh\n> "))
+    assert text.startswith(("# Chock.sh\n\n> ", "# Chock.sh\n> "))
     # Plan 6.8 freezes these headings, in this order.
     headings = re.findall(r"^## .+$", text, re.MULTILINE)
     assert headings == [
@@ -143,7 +143,7 @@ def test_chip_title_format(built) -> None:
     )
     for title in re.findall(r'class="label label-\w+" title="([^"]+)"', text):
         word, _, _meaning = title.partition(": ")
-        assert word in ("blocks", "asks", "warns", "advisory")
+        assert word in ("Blocks", "Asks", "Warns", "Advisory")
 
 
 def _agent_files(built) -> list[Path]:

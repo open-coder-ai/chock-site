@@ -67,7 +67,8 @@ def test_every_policy_tier_matches_its_registry_enforces(built, catalog_path) ->
         )
         tile = re.search(r'id="repo-tier".*?</div>', page, re.DOTALL).group(0)
         assert "In a git repo" in tile
-        assert f">{words[expected]}<" in tile, policy.id
+        word = words[expected]
+        assert f">{word[:1].upper() + word[1:]}<" in tile, policy.id
         twin = (built.out / "coding" / "policies" / policy.id / "index.md").read_text(
             encoding="utf-8"
         )

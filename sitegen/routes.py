@@ -7,7 +7,7 @@ import yaml
 
 from . import engine
 from .pageparts import PageError, data_fill
-from .render import Prose, Safe, render_file
+from .render import Prose, Safe, render_file, sentence_start
 
 ROUTES_YAML = "routes.yaml"
 REASONS = (
@@ -187,7 +187,9 @@ def _record_cell(templates: Path, row: dict[str, Any]) -> str:
             SOURCE=row["note"]["source"],
         )
     return render_file(
-        templates / "route-record.html", RECORD=row["record"], EXTRA=Safe(extra)
+        templates / "route-record.html",
+        RECORD=sentence_start(row["record"]),
+        EXTRA=Safe(extra),
     )
 
 
@@ -248,9 +250,10 @@ def markdown(block: dict[str, Any]) -> str:
             lines.append(f"- {texts['md_sync']} {row['reason']}\n")
         else:
             lines.append(f"- {texts['md_sync']} `{sync['command']}`, {sync['word']}.\n")
-        lines.append(f"- {texts['md_record']} {row['record']}\n")
+        lines.append(f"- {texts['md_record']} {sentence_start(row['record'])}\n")
         if row["evidence"]:
-            lines.append(f"- [{row['evidence']['link']}]({row['evidence']['url']})\n")
+            link = sentence_start(row["evidence"]["link"])
+            lines.append(f"- [{link}]({row['evidence']['url']})\n")
         if row["note"]:
             lines.append(
                 f"- {row['note']['text']} ({texts['md_source']} {row['note']['source']})\n"

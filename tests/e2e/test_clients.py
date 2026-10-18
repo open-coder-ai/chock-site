@@ -10,6 +10,7 @@ from conftest import CATALOG, SCREENSHOTS, assert_clean, collect
 
 from sitegen import clientdata, engine
 from sitegen.presets import load_presets
+from sitegen.render import sentence_start
 from tests.fixtures.untested import CLIENT, ISSUE
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -105,7 +106,10 @@ def test_each_agent_gets_its_command_steps_and_labels(page, site_url, client) ->
     labels = {p["id"]: p["agent_labels"][client] for p in site["policies"]}
     for policy_id, keyword, says in rows:
         label = labels[policy_id]
-        assert (keyword, says) == (label["keyword"], label["says"]), policy_id
+        assert (keyword, says) == (
+            label["keyword"],
+            sentence_start(label["says"]),
+        ), policy_id
     assert page.locator(".sel-item").count() == len(PRESETS[PRESET].members)
     assert_clean(page)
 
@@ -195,7 +199,7 @@ def test_notice_shown_for_an_untested_agent(page, untested_url) -> None:
     box = page.locator(f".client-evidence[data-client='{CLIENT}']")
     assert box.is_visible()
     name = engine.client_name(CLIENT)
-    assert f"chock has not seen {name} run the plugin yet" in box.inner_text()
+    assert f"Chock has not seen {name} run the plugin yet" in box.inner_text()
     assert "The command still builds the plugin" in box.inner_text()
     link = box.locator("a")
     assert link.get_attribute("href") == notice["url"]

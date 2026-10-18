@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .model import Policy, Site, Track
-from .render import Prose, Safe, render_file
+from .render import Prose, Safe, render_file, sentence_start
 
 PARTIALS = "partials"
 BASE = "base.html"
@@ -49,7 +49,7 @@ def keyword_chip(site: Site, templates: Path, keyword: str, section: str) -> Saf
         render_file(
             templates / PARTIALS / "label-chip.html",
             KEYWORD=keyword,
-            WORD=word,
+            WORD=sentence_start(word),
             MEANING=site.data["label_meanings"][word],
             GLYPH=site.data["glyphs"][keyword],
         )
@@ -68,7 +68,9 @@ def status_badge(site: Site, templates: Path, policy: Policy) -> Safe:
         return Safe("")
     return Safe(
         render_file(
-            templates / PARTIALS / "status-badge.html", STATUS=policy.status, WORD=word
+            templates / PARTIALS / "status-badge.html",
+            STATUS=policy.status,
+            WORD=sentence_start(word),
         )
     )
 
@@ -93,7 +95,7 @@ def label_chips(
             VALUE=key,
             GLYPH_KEY=key,
             GLYPH=site.data["glyphs"][key],
-            WORD=words[key],
+            WORD=sentence_start(words[key]),
             COUNT=str(counts["label"][key]),
         )
         for key in words

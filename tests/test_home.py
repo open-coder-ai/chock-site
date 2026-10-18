@@ -114,7 +114,7 @@ def test_incident_copy_never_claims_prevention(built) -> None:
     assert "OWASP ASI01–10 (every mapping partial)" in text
     assert "CISA Secure by Design and NIST SSDF" in text
     assert (
-        "chock doesn't stop every attack. It closes common, known entry points." in text
+        "Chock doesn't stop every attack. It closes common, known entry points." in text
     )
     for phrase in ("would have prevented", "mapped to", "would have stopped"):
         assert phrase not in text
@@ -162,13 +162,13 @@ def test_two_pipelines_are_real_html(built) -> None:
 def test_no_model_and_local_copy(built) -> None:
     text = _main_text(_home(built))
     assert (
-        "chock does not ask a model whether your code is safe. Each check is a "
+        "Chock does not ask a model whether your code is safe. Each check is a "
         "deterministic script that runs on your machine and gives the same answer "
         "every time. A passing check adds nothing to the agent's context; a refusal "
         "adds one short reason." in text
     )
     assert (
-        "chock checks code on the laptop, in the dev container or inside the cloud "
+        "Chock checks code on the laptop, in the dev container or inside the cloud "
         "agent's pod. There's no upload to a scanning service and no new vendor "
         "holding your source." in text
     )

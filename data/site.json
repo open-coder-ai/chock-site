@@ -2,7 +2,7 @@
   "launched": false,
   "released": false,
   "site_url": "https://chock.sh",
-  "wordmark": "chock.sh",
+  "wordmark": "Chock.sh",
   "og_image": "/img/og-card.png",
   "section_nav": [
     {"key": "overview", "label": "Overview"},
@@ -78,10 +78,10 @@
     "advise": "○"
   },
   "where_names": {
-    "command": "shell command",
-    "write": "file write",
-    "turn-end": "turn end",
-    "text": "agent instructions"
+    "command": "Shell command",
+    "write": "File write",
+    "turn-end": "Turn end",
+    "text": "Agent instructions"
   },
   "when_names": {
     "command": "before the command runs",
@@ -106,7 +106,7 @@
     "install_command_released": "pipx install chock",
     "install_note": "Python 3.11 or newer. The engine is the only install; the plugin is generated from the pinned catalog.",
     "run_heading": "Run the command",
-    "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. --client names the agent. For an agent marked tested, --apply also runs that agent's own install steps; for an untested agent the command only builds the plugin, and you run the steps yourself.",
+    "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. `--client` names the agent. For an agent marked tested, `--apply` also runs that agent's own install steps; for an untested agent the command only builds the plugin, and you run the steps yourself.",
     "agents_heading": "Each agent",
     "agent_command": "The command:",
     "agent_remove": "To remove it:",
@@ -118,13 +118,13 @@
     "file_body": "A selection is a small JSON or YAML file naming the agent, the pinned catalog commit and the policies you picked. The builder writes one for you; the install command reads the same file. These are the fields it checks:",
     "file_fields": [
       {"field": "schema", "meaning": "__SCHEMA__ — the selection format version."},
-      {"field": "client", "meaning": "the agent the plugin is built for: __CLIENTS__. --client on the command line overrides it."},
-      {"field": "bundle.version", "meaning": "the plugin's version, __BUNDLE_VERSION__ from this site."},
-      {"field": "catalog.source", "meaning": "the chock-catalog repository."},
-      {"field": "catalog.ref", "meaning": "the pinned catalog commit; the plugin builds only from it."},
-      {"field": "catalog.release", "meaning": "optional — a named catalog release over the commit."},
-      {"field": "preset", "meaning": "optional — the preset the picks started from."},
-      {"field": "policies", "meaning": "one entry per picked policy: from (catalog), id, version and sha256."}
+      {"field": "client", "meaning": "The agent the plugin is built for: __CLIENTS__; --client on the command line overrides it."},
+      {"field": "bundle.version", "meaning": "The plugin's version, __BUNDLE_VERSION__ from this site."},
+      {"field": "catalog.source", "meaning": "The chock-catalog repository."},
+      {"field": "catalog.ref", "meaning": "The pinned catalog commit; the plugin builds only from it."},
+      {"field": "catalog.release", "meaning": "Optional — a named catalog release over the commit."},
+      {"field": "preset", "meaning": "Optional — the preset the picks started from."},
+      {"field": "policies", "meaning": "One entry per picked policy: from (catalog), id, version and sha256."}
     ]
   },
   "warning_texts": {
@@ -184,6 +184,7 @@
       "untested_line": "Nobody has seen these policies fire in __NAME__ yet, so the command builds the plugin without --apply. Apply the steps below yourself, check that a refusal fires, and",
       "page_intro": "Pick an agent in the builder and the command builds one plugin for it. Tested means a person has seen chock's refusals fire in that agent, and the command installs the plugin too; untested means the command builds it and you apply the steps yourself.",
       "build_link": "Build for __NAME__",
+      "build_short": "Build",
       "card_witnessed": "Tested: one command builds the plugin and installs it.",
       "card_untested": "Untested: the command builds the plugin, and you apply the steps in __NAME__ yourself.",
       "repo_line": "A second route: single-policy plugins in",
@@ -194,10 +195,10 @@
       "ask_inline": " (ask the user before running it)",
       "steps_witnessed": "With --apply, chock runs these steps for __NAME__:",
       "steps_untested": "Then, in __NAME__:",
-      "ungraded_word": "not graded",
-      "ungraded_says": "not graded yet for __NAME__",
+      "ungraded_word": "Not graded",
+      "ungraded_says": "Not graded yet for __NAME__",
       "ungraded_meaning": "The catalog does not grade this policy on __NAME__ yet, so how far it goes there is unknown.",
-      "ungraded_note": "The pinned catalog has no grades for __NAME__ yet: a policy without one says \"not graded yet\"."
+      "ungraded_note": "The pinned catalog has no grades for __NAME__ yet: a policy without one says \"Not graded yet\"."
     }
   },
   "builder_texts": {

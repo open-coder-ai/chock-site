@@ -2,7 +2,7 @@
 id: __ID__
 track: __TRACK__
 version: __VERSION__
-label: __WORD__
+label: __LABEL__
 keyword: __KEYWORD__
 where: __WHERE__
 sha256: __SHA256__
@@ -38,7 +38,7 @@ __LATEST_VERSION__ · __LATEST_DATE__ — __LATEST_CHANGE__
 ## Provenance
 
 - Tested by __EVAL_EXECUTED__ of __EVAL_CASES__ cases run automatically
-- sha256: `__SHA256__`
+- SHA-256: `__SHA256__`
 - Catalog commit: __CATALOG_COMMIT_URL__
 - Source: __SOURCE_URL__ (catalog path `__PATH__`)
 - Presets: __GROUPS_MD__

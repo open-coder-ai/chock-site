@@ -1,0 +1,164 @@
+# SITE-CAPS: a sentence on chock.sh starts with a capital letter unless it starts with code.
+# tests/test_sentence_case.py checks every built page and Markdown twin against this file.
+
+# Names whose own spelling is lowercase, kept at a sentence start. Policy ids are added
+# from the catalog.
+names:
+  - goose  # the agent's own spelling (Block's goose)
+  - tj-actions  # a GitHub organisation name, an identifier
+
+# Sentences the site shows but another repository writes. The site does not edit them;
+# each entry names its source so the fix lands there. The test fails when an entry no
+# longer appears, so the list only shrinks.
+upstream:
+  - source: agentseam README.md (quoted in data/agentseam-source)
+    starts:
+    - it blocks and *can* be told to fail closed,
+    - it blocks and can be told to fail closed,
+    - it blocks, but fails *open* (a crashed hook
+    - it blocks, but fails open (a crashed hook
+    - 'nothing agentseam can gate: no hook surface,'
+    - observable after the fact only; prevention
+    - the agent blocks, and fails closed if the
+  - source: agentseam docs/design.md (quoted in data/agentseam-source)
+    starts:
+    - stdlib only.
+    - stdlib only.** No dependencies, ever, in
+  - source: agentseam src/agentseam/data/matrix-notes.json
+    starts:
+    - afterFileEdit still accepts nothing back,
+    - ask is likewise unsupported and degrades
+    - exit 2 is honoured at both too and is deliberately
+    - 'hookEventName is echoed rather than hardcoded:'
+  - source: agentseam src/agentseam/data/matrix.json
+    starts:
+    - agentseam speaks that cancel object (grammar
+    - dsh also speaks ACP (dsh-acp), a client-agent
+    - 'dsh is not a supported target: do not point'
+    - dsh's own tools are lowercase read, write
+    - stdout is the decision channel, so a handler
+  - source: agentseam src/agentseam/probe/recorded_driver.py
+    starts:
+    - reference', 'recorded', 'harness' (the invocation
+  - source: chock docs/adopting.md (quoted in data/docs-source)
+    starts:
+    - deleting the policy folder
+    - editing an unrelated policy
+    - generated adapter files
+    - the installed policy manifest
+  - source: chock docs/custom-policies.md (quoted in data/docs-source)
+    starts:
+    - writes `…`, a `…` pinning generated scripts
+  - source: chock docs/decision-log.md (quoted in data/docs-source)
+    starts:
+    - every hook call (one allow line per policy
+    - 'one line each time a policy fires: block,'
+    - 'the default: `…`, `…` 1048576 (1 MiB).'
+    - 'the environment: `…` in the shell the agent'
+    - 'the repository: `…`;'
+    - 'the user: `…`;'
+  - source: chock docs/enforcement-surfaces.md (quoted in data/docs-source)
+    starts:
+    - deny.
+    - deny.** Codex's own parser rejects `…` as
+    - 'no key**: its documented hook entry takes'
+    - 'no key: its documented hook entry takes'
+    - not checked
+    - the guard's own verdict
+    - yes, every hook entry
+  - source: chock docs/getting-started.md (quoted in data/docs-source)
+    starts:
+    - creates `…` (config, `…`, `…`, the vendored
+    - installs the four authoring skills (`…`,
+    - installs the git hook dispatchers.
+  - source: chock src/chock/data/witnesses.json
+    starts:
+    - live probe of a chock plugin installed with
+    - live probe of the chock plugin, every other
+    - 'live probe of the chock plugin: pin-github-actions'
+    - 'live probe: a hook-JSON deny blocked a matched'
+    - 'live probe: a stdout deny blocked a matched'
+    - 'live probe: an exit-2 deny blocked a matched'
+    - 'live probe: both variables were in the environment'
+  - source: chock src/chock/packs/_skills/policy-init/SKILL.md (quoted in data/docs-source)
+    starts:
+    - 'classify(request) using `…`; present user_facing_class:'
+    - clean temporaries; verify only deliverable
+    - default SKILL.md `…` starts with a YAGNI
+    - 'draft evals FIRST: trigger + negative_trigger;'
+    - generate using `…`; construct paths with
+    - 'hand off: report folder, wiring, smoke test,'
+    - 'if any effect ∈ {writes_external, irreversible}:'
+    - 'if code referenced: mine 3–5 call sites into'
+    - 'if stakes ∈ {security, compliance}: enforce'
+    - 'interview(`…`, target); default target: `…`;'
+    - 'self-check: run `…` and `…`; fix failures.'
+    - 'set status: draft, trust_tier: sandbox; body'
+    - 'wire: install hooks for block gates, add'
+  - source: chock src/chock/validation/engine.py
+    starts:
+    - commit' scopes drift severity to the staged
+  - source: chock src/chock/validation/schemas/eval.schema.json
+    starts:
+    - 'ask: exit 3 of a guard, script or agent-event'
+    - pre-commit, pre-push and commit-msg run the
+    - 'warn: exit 4 of a script or agent-event gate,'
+  - source: chock src/chock/validation/schemas/manifest.hook.json
+    starts:
+    - 'on'' is authoritative: the compiler wires'
+  - source: chock-catalog CONTRIBUTING.md (quoted in data/catalog-source)
+    starts:
+    - and commit `…` in the same PR.
+  - source: chock-catalog CONTRIBUTING.md CI gates (quoted in data/catalog-source/ci-gates.json)
+    starts:
+    - always() && github.event_name == 'push' &&
+  - source: chock-catalog agentic-security/agentic-code-security/manifest.yaml
+    starts:
+    - 'avoid: code execution on the host, unpinned'
+    - provenance-marker-removed compares with HEAD
+  - source: chock-catalog base/agent-discipline/manifest.yaml
+    starts:
+    - 'avoid: skipping verification, deleting assertions,'
+  - source: chock-catalog base/agent-permissions-scan/manifest.yaml
+    starts:
+    - 'ap-endpoint-override: a non-empty top-level'
+    - 'ap-mcp-enable-all: enableAllProjectMcpServers'
+  - source: chock-catalog base/block-fetch-exec-in-files/manifest.yaml
+    starts:
+    - iex matching is now linear on long runs of
+  - source: chock-catalog base/block-no-verify/plugin.json
+    starts:
+    - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/re
+  - source: chock-catalog base/chock-mise/manifest.yaml
+    starts:
+    - 'avoid: inferring personal identity or employer-confidential'
+  - source: chock-catalog base/chock-mise/plugin.json
+    starts:
+    - 'apply: the owner''s chock-mise profile where'
+  - source: chock-catalog base/code-safety/plugin.json
+    starts:
+    - 'avoid: committing credentials, adding unverified'
+  - source: chock-catalog base/context-hygiene/manifest.yaml
+    starts:
+    - 'avoid: context rot and lost-in-the-middle'
+  - source: chock-catalog base/firecrawl-fallback-only/manifest.yaml
+    starts:
+    - 'avoid: reaching for the Firecrawl connector'
+  - source: chock-catalog base/git-safety/manifest.yaml
+    starts:
+    - 'avoid: rewriting remote history, discarding'
+  - source: chock-catalog base/java-security/manifest.yaml
+    starts:
+    - 'avoid: injection, XXE, SSRF, unsafe deserialization,'
+  - source: chock-catalog base/limit-diff-size/manifest.yaml
+    starts:
+    - 'avoid: one commit carrying hundreds of hand-written'
+  - source: chock-catalog base/memory-discipline/manifest.yaml
+    starts:
+    - 'avoid: persisting file contents, git history,'
+  - source: chock-catalog base/no-a11y-regression/manifest.yaml
+    starts:
+    - 'avoid: breaking a requirement the previous'
+  - source: chock-catalog base/token-efficiency/manifest.yaml
+    starts:
+    - 'avoid: wasting context window on low-signal'

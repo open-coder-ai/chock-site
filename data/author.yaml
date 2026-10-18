@@ -24,7 +24,7 @@ texts:
   selection_hint: "Written as <folder>/chock.selection.yaml. The script asks for the agent again when it runs and writes that agent into the file."
   script_heading: "The setup script"
   script_hint: "Download, read, then run: it writes the files, checks them with chock, and builds the plugin; install mode also applies it where witnessed. It never pipes anything from the network into a shell."
-  sha_label: "sha256"
+  sha_label: "SHA-256"
   download_label: "Download chock-setup.sh"
   copy_label: "Copy script"
   share_label: "Share the catalog picks"

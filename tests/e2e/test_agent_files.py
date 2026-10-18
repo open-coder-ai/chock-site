@@ -14,7 +14,7 @@ def _get(site_url: str, path: str) -> str:
 
 def test_llms_txt_lists_block_no_verify(site_url) -> None:
     text = _get(site_url, "/llms.txt")
-    assert "# chock.sh" in text
+    assert "# Chock.sh" in text
     assert "/coding/policies/block-no-verify/index.md" in text
     for heading in (
         "## Docs",

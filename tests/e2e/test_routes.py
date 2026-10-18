@@ -5,6 +5,8 @@ import json
 import pytest
 from conftest import SCREENSHOTS, assert_clean
 
+from sitegen.render import sentence_start
+
 INSTALL = "/coding/install/"
 ISSUES = "https://github.com/open-coder-ai/agentseam/issues/"
 
@@ -35,7 +37,7 @@ def test_every_agent_has_a_row_with_its_routes(page, site_url) -> None:
             assert row["sync"]["word"] in cells.nth(1).inner_text()
         else:
             assert row["reason"] in cells.nth(1).inner_text()
-        assert row["record"] in cells.nth(2).inner_text()
+        assert sentence_start(row["record"]) in cells.nth(2).inner_text()
         evidence = cells.nth(2).locator("a.route-evidence")
         if row["evidence"]:
             assert evidence.get_attribute("href") == row["evidence"]["url"]
