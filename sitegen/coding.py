@@ -918,6 +918,9 @@ def _install(
             STEPS=_step_items(templates / track.slug, about["steps"]),
             REMOVE_LABEL=inst["agent_remove"],
             REMOVE=_remove_items(templates / track.slug, about),
+            CLAUDE_PLUGIN=Safe(
+                clientpage.claude_plugin(clients, templates / track.slug, client)
+            ),
             REPORT_HREF=report.report_link(
                 agent=client, page=f"/{track.slug}/install/"
             ),

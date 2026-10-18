@@ -10,6 +10,7 @@ from typing import Any
 
 import chock.evidence
 import chock.hooks.sync_notes
+import chock.install.claude_plugin
 import chock.install.package
 import chock.install.place
 import chock.install.resolve
@@ -27,6 +28,8 @@ SelectionError = chock.install.selection.SelectionError
 SCHEMA2 = chock.install.selection.SCHEMA2
 CATALOG_ENTRY = chock.install.selection.CATALOG
 BUNDLE_NAME = chock.install.selection.DEFAULT_BUNDLE
+# The selection argument in the Claude Code build line, which the site fills per page.
+SELECTION_TOKEN = "__CODE__"
 # Why `chock sync` does not wire an agent, keyed as data/routes.yaml words it (S-ALL).
 UNWIRED_HOOK_DIR = "hook_dir"
 UNWIRED_HOME_CONFIG = "home_config"
@@ -160,13 +163,71 @@ def client_steps(client: str) -> list[dict[str, str]]:
     Each step is {"command": a line to type}, {"note": text to read} or {"settings": JSON to paste}.
     """
     raw = chock.install.package.client(client)["steps"]
-    rendered = chock.install.steps.render(client, client_tokens(client))
+    return _site_steps(raw, chock.install.steps.render(client, client_tokens(client)))
+
+
+def _site_steps(
+    raw: list[dict[str, Any]], rendered: list[chock.install.steps.Step]
+) -> list[dict[str, str]]:
+    """Rendered engine steps as the site's {"command"|"note"|"settings": text} records."""
     return [
         {"command": _shell_line(step.command)}
         if step.command
         else {("settings" if "settings" in source else "note"): step.text}
         for source, step in zip(raw, rendered, strict=True)
     ]
+
+
+def claude_plugin_tokens() -> dict[str, str]:
+    """The tokens `chock install` fills in the Claude Code build's steps for another agent."""
+    build = chock.install.claude_plugin.settings()["build_client"]
+    dest = Path(chock.install.package.client(build)["dest"])
+    tokens = chock.install.claude_plugin.tokens(dest, BUNDLE_NAME, SELECTION_TOKEN)
+    return tokens | {
+        "__DEST__": dest.as_posix(),
+        "__PLUGIN_DIR__": Path(tokens["__PLUGIN_DIR__"]).as_posix(),
+    }
+
+
+def claude_plugin_offer(client: str) -> dict[str, Any] | None:
+    """What `chock install --client <client>` adds about the Claude Code build, or None.
+
+    An offer is {"heading", "routes", "warnings"}: each route has chock's `where`, `label`,
+    optional `prefer_native`, the `build` line and its steps. Where chock offers none but says
+    why, it is {"not_offered": text}.
+    """
+    plugin = chock.install.claude_plugin
+    data = plugin.settings()
+    if client == data["build_client"]:
+        return None
+    entry = data["clients"].get(client, {})
+    offered = plugin.routes(client, data)
+    if not offered:
+        return {"not_offered": entry["not_offered"]} if "not_offered" in entry else None
+    tokens = claude_plugin_tokens()
+    render = chock.install.steps.render_steps
+    return {
+        "heading": data["heading"],
+        "routes": [
+            {
+                "where": route["where"],
+                "label": route["label"],
+                "prefer_native": route.get("prefer_native"),
+                "build": render(
+                    [{"note": data["build"]}], tokens | {"__WHERE__": route["where"]}
+                )[0].text,
+                "steps": _site_steps(route["steps"], render(route["steps"], tokens)),
+            }
+            for route in offered
+        ],
+        "warnings": list(data["warnings"]),
+    }
+
+
+def claude_plugin_clients() -> list[str]:
+    """The install clients chock offers the Claude Code build to, in chock's data order."""
+    plugin = chock.install.claude_plugin
+    return [client for client in plugin.settings()["clients"] if plugin.routes(client)]
 
 
 def check_selection(obj: dict[str, Any]) -> dict[str, Any]:
