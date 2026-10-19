@@ -163,9 +163,15 @@
       "codex": [{"note": "Uninstall __PLUGIN__ in /plugins, then delete the folder __PLUGIN_DIR__."}],
       "copilot": [{"note": "Uninstall __PLUGIN__ from the __MARKETPLACE__ marketplace in Copilot, then delete the folder __PLUGIN_DIR__."}],
       "devin": [{"note": "Remove __PLUGIN__ from Devin's plugins, then delete the folder __PLUGIN_DIR__."}],
-      "goose": null,
+      "goose": [
+        {"note": "Delete the folder __PLUGIN_DIR__. Checked on Windows."},
+        {"note": "Optional tidy-up: delete the __PLUGIN__ entry in the plugins list of goose's config.yaml. goose works without this step."}
+      ],
       "grok": [{"note": "Run \"grok plugin list\" and find the name grok gave __PLUGIN__, run \"grok plugin uninstall\" with that name, then delete the folder __PLUGIN_DIR__."}],
-      "antigravity": null,
+      "antigravity": [
+        {"note": "Close Antigravity, delete the folder ~/.gemini/config/plugins/__PLUGIN__, then reopen Antigravity. Checked on Windows."},
+        {"note": "Optional tidy-up: delete the build copy __PLUGIN_DIR__. Antigravity does not read it."}
+      ],
       "openhands": null,
       "kimi-code": null,
       "factory-droid": null

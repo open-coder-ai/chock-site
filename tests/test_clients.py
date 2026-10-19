@@ -187,16 +187,37 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
     assert with_repo == {"claude-code", "cursor", "codex", "copilot", "devin"}
 
 
-def test_a_tested_client_without_remove_steps_links_its_witness_report(built) -> None:
-    """SITE-UPDATE-1: goose and Antigravity are tested, with no verified remove steps yet."""
+def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
+    """The owner's Windows run of 2026-10-19 verified these steps; the tidy-up steps are optional."""
     block = _site(built)["builder_clients"]
-    for client in ("goose", "antigravity"):
+    expected = {
+        "goose": [
+            {
+                "note": "Delete the folder ~/.agents/plugins/chock-guardrails. Checked on Windows."
+            },
+            {
+                "note": "Optional tidy-up: delete the chock-guardrails entry in the plugins list "
+                "of goose's config.yaml. goose works without this step."
+            },
+        ],
+        "antigravity": [
+            {
+                "note": "Close Antigravity, delete the folder "
+                "~/.gemini/config/plugins/chock-guardrails, then reopen Antigravity. "
+                "Checked on Windows."
+            },
+            {
+                "note": "Optional tidy-up: delete the build copy "
+                "~/.chock/marketplace/antigravity/chock-guardrails. Antigravity does not read it."
+            },
+        ],
+    }
+    for client, steps in expected.items():
         data = block["clients"][client]
         assert data["witness"] == "witnessed", client
-        assert data["remove"] == [], client
-        assert data["remove_unverified"]["url"] == data["report"], client
+        assert data["remove"] == steps, client
+        assert data["remove_unverified"] is None, client
         assert data["report"].endswith(f"Witness%20report:%20{client}"), client
-        assert data["remove_unverified"]["link"] == "a witness report", client
 
 
 def test_a_tested_client_without_steps_or_report_link_fails() -> None:
