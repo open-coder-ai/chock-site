@@ -156,7 +156,7 @@ def test_faq_opens_with_the_keyboard(page, site_url) -> None:
     page.keyboard.press("Enter")
     details = page.locator(".faq-details", has_text="What are general agents?")
     assert details.get_attribute("open") is not None
-    assert "there is nothing to install yet" in details.inner_text()
+    assert "There is nothing to install yet" in details.inner_text()
 
 
 def test_home_fits_a_phone(browser, site_url) -> None:

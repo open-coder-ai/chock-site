@@ -2,8 +2,8 @@
   "id": "lifecycle",
   "order": 3,
   "title": "Lifecycle in a repository",
-  "summary": "The repo path from end to end: author a policy, check it, sync it into hook files, then each tool call, commit, push and CI run through the hook to a verdict and one log line.",
-  "intro": "A person authors and syncs once; after that every agent tool call, every commit and push, and every CI run goes through the files chock sync wrote. The agent's hooks and the git hooks reach the same gate runner, so a policy means the same thing in the session and at commit.",
+  "summary": "The repo path from end to end. You author a policy, check it and sync it into hook files. Then each tool call, commit, push and CI run goes through the hook to a verdict and one log line.",
+  "intro": "A person authors and syncs once. After that, every agent tool call, every commit and push, and every CI run goes through the files chock sync wrote. The agent's hooks and the git hooks reach the same gate runner, so a policy means the same thing in the session and at commit.",
   "pins": {
     "chock": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
     "agentseam": "683f95b5f2784dc3446acb1c91636ebc5ee7bee6"
@@ -53,7 +53,7 @@
       "x": 215,
       "y": 70,
       "source": "chock/src/chock/lifecycle.py",
-      "card": "Runs the repository's checks in order: validate, verify, evals, matrix, mechanisms, index, conflicts, baseline. The --only flag picks a subset."
+      "card": "Runs the repository's checks in order (validate, verify, evals, matrix, mechanisms, index, conflicts, baseline). The --only flag picks a subset."
     },
     {
       "id": "sync",
@@ -73,7 +73,7 @@
       "x": 615,
       "y": 70,
       "source": "chock/src/chock/compile/compiler.py",
-      "card": "Runs each surface's emitter on the policy and writes what it emits to .chock/compiled/<id>/<surface>/; a surface that emits nothing gets no folder. It also writes a coverage report."
+      "card": "Runs the emitter for each hook point on the policy and writes the output to `.chock/compiled/<id>/<surface>/`. A hook point with no output gets no folder. It also writes a coverage report."
     },
     {
       "id": "agenthooks",
@@ -109,7 +109,7 @@
       "x": 615,
       "y": 220,
       "source": "chock/src/chock/gate/build.py",
-      "card": "Loads hook.gate from manifest.yaml and bakes one gate.json per surface."
+      "card": "Loads hook.gate from manifest.yaml and bakes one gate.json per hook point."
     },
     {
       "id": "toolcall",
@@ -137,7 +137,7 @@
       "x": 415,
       "y": 370,
       "source": "chock/src/chock/gate/runtime_bundle.py",
-      "card": ".chock/bin/<agent>.py: agentseam's bundle plus chock's handler. A --guard call runs the policy's script; a --gate call asks the vendored gate runner."
+      "card": "The file `.chock/bin/<agent>.py` holds agentseam's bundle plus chock's handler. A `--guard` call runs the policy's script. A `--gate` call asks the vendored gate runner."
     },
     {
       "id": "runner",
@@ -155,7 +155,7 @@
       "x": 615,
       "y": 480,
       "source": "chock/src/chock/gate/decision_log.py",
-      "card": "One line per hook decision. Sync route: <repo>/.chock/log/gate-events.jsonl. Plugin route: ~/.chock/log/<agent>/events.jsonl. It never raises, never changes the decision and never logs contents."
+      "card": "One line per hook decision. With repo hooks it is `<repo>/.chock/log/gate-events.jsonl`. With the plugin it is `~/.chock/log/<agent>/events.jsonl`. It never raises, never changes the decision and never logs contents."
     }
   ],
   "edges": [

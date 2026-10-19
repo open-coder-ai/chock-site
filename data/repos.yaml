@@ -13,13 +13,13 @@ tiers:
     word: "in agent"
     heading: "Checks in the agent"
     glyph: "◆"
-    meaning: "Checked by the agent's hooks once chock sync wires them; fails open if the hook crashes."
+    meaning: "The agent's hooks check this once chock sync sets them up. If the hook crashes, the action goes through."
     starts_with: "best-effort"
   - key: advise
     word: "advisory"
     heading: "Advisory"
     glyph: "○"
-    meaning: "Text the agent reads; nothing stops a violation."
+    meaning: "The agent reads the text, and nothing stops a violation."
     equals: "advisory"
 
 commands:
@@ -59,7 +59,7 @@ builder:
   h1: "Set up your repository"
   noscript: "The repository builder needs JavaScript. You can still read every policy and its tier on the Git repositories page, and write the commands by hand from the command template below."
   template_heading: "The command template"
-  template_note: "One line per policy, sorted by id. The builder fills in the catalog commit and each policy's sha256; they come from this site's build and never from a link."
+  template_note: "One line per policy, sorted by id. The builder fills in the catalog commit and each policy's sha256. They come from this site's build and never from a link."
   install_heading: "Before you run it"
   install_note: "You need chock on your machine. Read the commands first: they change files in your repository."
   install_link: "More on the Install page"

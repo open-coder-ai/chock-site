@@ -9,7 +9,7 @@ videos:
     width: 1200
     height: 640
     duration: "0:35"
-    description: "A silent terminal recording: chock new scaffolds a policy and chock sync wires it. The commit with the marked line is refused; the clean one lands."
+    description: "A silent terminal recording: chock new scaffolds a policy and chock sync wires it. Chock refuses the commit with the marked line. The clean commit lands."
 primary_cta: "Build your plugin"
 secondary_cta: "Browse the policies"
 steps_heading: "How it works"
@@ -22,7 +22,7 @@ landing:
   stats_line: "__COUNT__ POLICIES · __TESTED__ TESTS"
   headline_lead: "Blocks your coding agent's"
   headline_accent: "wrong moves before they land."
-  sub: "You decide what it must never do. Chock blocks that action — nothing else. No suggestions, no rewrites; the agent keeps working."
+  sub: "You decide what it must never do. Chock blocks that action and nothing else. It makes no suggestions and no rewrites. The agent keeps working."
   primary_cta: "Build your plugin"
   secondary_cta: "See how it works"
   copy_label: "Copy"
@@ -56,14 +56,14 @@ landing:
   stat_labels: {policies: "policies", presets: "presets", agents: "agents"}
   how_eyebrow: "HOW IT WORKS FOR CODING AGENTS"
   how_heading: "Ready in a minute. Three steps, one command."
-  how_apply_note: "For an agent marked tested, the command adds --apply and installs the plugin too; for the others you apply it yourself."
+  how_apply_note: "For an agent marked tested, the command adds --apply and installs the plugin too. For the others, you install it yourself."
   how:
     - {title: "Pick your guardrails", body: "Tick policies one by one, or start from a preset such as Git hygiene or Secrets."}
     - {title: "Run one command", body: "Read it first. Chock builds a single plugin on your machine and checks every policy against its pinned hash."}
     - {title: "Keep working", body: "Your agent now checks each risky action. Change your picks any time and run the command again."}
-  surface_eyebrow: "ONE POLICY, EVERY SURFACE"
+  surface_eyebrow: "ONE POLICY, EVERY AGENT"
   surface_heading: "Write the rule once. Chock puts it where each agent can enforce it."
-  surface_body: "Every agent has its own hook system. Chock compiles each policy for the agent it runs in, and the label on each surface says how far it goes there. This is __POLICY__, with the label the catalog gives it on each agent."
+  surface_body: "Every agent has its own hook system. Chock builds each policy for the agent it runs in. The label shown for each agent says how much the policy can do there. This is __POLICY__, with the label the catalog gives it on each agent."
   surface_policy: "scan-secrets"
   surface_tests: "__TESTED__ of __TOTAL__ test cases pass"
   usecases_eyebrow: "USE CASES"
@@ -97,7 +97,7 @@ landing:
       body: "The OWASP agentic top 10 preset is advisory text the agent reads: a starting point you can read line by line, not enforcement. Every policy page states its reach."
       points: ["Ten policies, one for each OWASP agentic risk", "Every label says whether a policy blocks or only advises", "Each page lists what the policy misses"]
       policies: ["owasp-asi01-agent-goal-hijack", "owasp-asi02-tool-misuse", "owasp-asi03-identity-privilege-abuse", "owasp-asi04-agentic-supply-chain"]
-  honest_eyebrow: "HONEST BY DESIGN"
+  honest_eyebrow: "PLAIN LABELS"
   honest_heading: "Every policy tells you exactly how far it goes."
   honest_body: "Chock labels each policy as blocks, asks, warns or advisory, and says what it misses."
   honest_link: "See all __COUNT__ policies"
@@ -107,7 +107,7 @@ landing:
   honest_friction_link: "Why we say this"
   nomodel_eyebrow: "NO MODEL, NO TOKENS"
   nomodel_heading: "A check is a script, not a model."
-  nomodel_body: "Chock does not ask a model whether your code is safe. Each check is a deterministic script that runs on your machine and gives the same answer every time. A passing check adds nothing to the agent's context; a refusal adds one short reason."
+  nomodel_body: "Chock does not ask a model whether your code is safe. Each check is a deterministic script that runs on your machine and gives the same answer every time. When a check passes, nothing is added to the agent's context. When it refuses, the agent gets one short reason."
   shift_eyebrow: "SHIFT LEFT"
   shift_heading: "What a late finding costs"
   shift_intro: "Most security review happens after the code exists. A finding that arrives late costs a round trip. A finding the agent fixes in its own turn does not."
@@ -134,11 +134,11 @@ landing:
   calc_out_hours: "Estimated hours saved per release"
   calc_out_money: "Estimated money saved per release"
   calc_out_days: "Estimated days saved in the security loop"
-  calc_invalid: "Enter numbers of zero or more; the share is 0 to 100."
+  calc_invalid: "Enter numbers of zero or more. The share is from 0 to 100."
   local_eyebrow: "YOUR CODE STAYS PUT"
   local_heading: "Your code stays where the agent writes it."
   local_body: "Chock checks code on the laptop, in the dev container or inside the cloud agent's pod. There's no upload to a scanning service and no new vendor holding your source."
-  local_caveat: "Your agent still sends context to its own model provider; chock adds no additional destination. Installing fetches the policies once."
+  local_caveat: "Your agent still sends context to its own model provider. Chock does not send it anywhere else. Installing fetches the policies once."
   presets_eyebrow: "__PRESETS__ PRESETS"
   presets_heading: "Start from a preset. Tune it in seconds."
   presets_link: "Open the builder"
@@ -146,7 +146,7 @@ landing:
   fit_heading: "More than a prompt file."
   fit_cols: ["Rules in a prompt file", "chock"]
   fit_rows:
-    - {row: "Stops the action before it runs", a: "No. The agent may ignore it.", b: "Yes for blocking policies; each label says how far it goes."}
+    - {row: "Stops the action before it runs", a: "No. The agent may ignore it.", b: "Yes for blocking policies. Each label says how far it goes."}
     - {row: "Says what it cannot enforce", a: "No", b: "Yes, on every policy"}
     - {row: "Tested rules", a: "No", b: "Test cases per policy, run against the catalog"}
     - {row: "Account or sign-up", a: "None", b: "None"}
@@ -182,5 +182,5 @@ coding:
   presets_heading: "Start from a preset"
   presets_intro: "A preset fills the builder with a group of policies. You can remove any of them before you install."
   clients_heading: "Every agent builds here"
-  clients_line: "The builder makes one plugin for each of these agents. A tested agent installs with one command; for an untested one, the command builds the plugin and you apply it."
+  clients_line: "The builder makes one plugin for each of these agents. A tested agent installs with one command. For an untested one, the command builds the plugin and you install it yourself."
   clients_link: "See every agent"

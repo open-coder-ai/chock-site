@@ -76,7 +76,9 @@ def test_a_quote_chock_does_not_say_fails_the_build() -> None:
 
 
 def test_fail_open_hosts_come_from_agentseam_tier_data(built) -> None:
-    section = _section(_page(built), "Hosts whose hook fails open")
+    section = _section(
+        _page(built), "Agents that let the action through when a hook fails"
+    )
     for agent in engine.matrix_agents():
         shown = f'href="/docs/agents/{agent.replace("_", "-")}/"' in section
         fails_open = engine.tier_row(agent)["fail_mode"] == TEXTS["fail_open"]
@@ -94,7 +96,7 @@ def test_agents_without_a_route_show_the_engines_reason(built) -> None:
 
 
 def test_turn_end_counts_come_from_each_agents_labels(built) -> None:
-    section = _section(_page(built), "Writes judged only at turn end")
+    section = _section(_page(built), "Writes checked only at turn end")
     clients = built.site.data["builder_clients"]
     seen = 0
     for client in clients["order"]:

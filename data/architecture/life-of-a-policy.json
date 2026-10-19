@@ -3,7 +3,7 @@
   "order": 2,
   "title": "The life of a policy",
   "summary": "One policy from its manifest in chock-catalog, through chock compile and an install, to a tool call, its verdict and the decision log.",
-  "intro": "A policy is written once, compiled into the files each surface runs, and installed per agent. After that, every tool call the agent makes runs through the hook, gets a verdict, and leaves one line in a local log.",
+  "intro": "A policy is written once, compiled into the files each hook point runs, and installed per agent. After that, every tool call the agent makes runs through the hook, gets a verdict, and leaves one line in a local log.",
   "pins": {
     "chock": "39df00bbf7646a08481247f31d5091d09850f96f",
     "agentseam": "dd4f0a485a36313328d381305cf09658d3c36fb4",
@@ -47,7 +47,7 @@
       "x": 215,
       "y": 70,
       "source": "chock/src/chock/compile/compiler.py",
-      "card": "Reads a policy folder and runs one emitter per surface: the ambient rule, agent hooks, git hook, CI step, Claude managed settings and the MCP gateway. The output lands in .chock/compiled/<policy>/."
+      "card": "Reads a policy folder and runs one emitter per hook point: the ambient rule, agent hooks, git hook, CI step, Claude managed settings and the MCP gateway. The output lands in .chock/compiled/<policy>/."
     },
     {
       "id": "gate",
@@ -56,7 +56,7 @@
       "x": 415,
       "y": 70,
       "source": "chock/src/chock/gate/build.py",
-      "card": "The manifest's hook.gate, resolved into one gate.json per surface: before a tool runs, at the turn's end, in the git hook and in CI."
+      "card": "The manifest's hook.gate, resolved into one gate.json per hook point: before a tool runs, at the turn's end, in the git hook and in CI."
     },
     {
       "id": "guard",
@@ -74,7 +74,7 @@
       "x": 415,
       "y": 270,
       "source": "chock/src/chock/compile/emitters/ambient.py",
-      "card": "Text the agent reads, as an AGENTS.md block. It blocks nothing on its own; the gate and the guard do."
+      "card": "Text the agent reads, as an AGENTS.md block. It blocks nothing on its own. The gate and the guard do."
     },
     {
       "id": "install",
@@ -120,7 +120,7 @@
       "x": 215,
       "y": 420,
       "source": "chock/src/chock/gate/decision_log.py",
-      "card": "One line per hook call, in a local file: <repo>/.chock/log/gate-events.jsonl on the repo route, ~/.chock/log/<agent>/events.jsonl on the plugin route. Writing it never changes the decision, and the hook sends nothing over the network."
+      "card": "One line per hook call, in a local file. With repo hooks it is `<repo>/.chock/log/gate-events.jsonl`. With the plugin it is `~/.chock/log/<agent>/events.jsonl`. Writing it never changes the decision, and the hook sends nothing over the network."
     }
   ],
   "edges": [

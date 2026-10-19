@@ -360,6 +360,20 @@ def text_sections(site: Site, templates: Path, sections: list[dict[str, Any]]) -
                 URL=site.data["links"][section["link"]],
                 LABEL=section["link_label"],
             )
+        items = ""
+        if section.get("items"):
+            items = render_file(
+                templates / PARTIALS / "text-items.html",
+                ITEMS=Safe(
+                    "".join(
+                        render_file(
+                            templates / PARTIALS / "plain-li.html", TEXT=Prose(t)
+                        )
+                        for t in section["items"]
+                    )
+                ),
+                AFTER=Prose(section["after"]),
+            )
         code = ""
         if section.get("code_label"):
             code = render_file(
@@ -380,6 +394,7 @@ def text_sections(site: Site, templates: Path, sections: list[dict[str, Any]]) -
                 ID=slug(section["heading"]),
                 HEADING=section["heading"],
                 BODY=Prose(section["body"]),
+                ITEMS=Safe(items),
                 CODE=Safe(code),
                 LINK=Safe(link),
             )
@@ -392,6 +407,9 @@ def md_sections(sections: list[dict[str, Any]], links: dict[str, str]) -> str:
     out = []
     for s in sections:
         out.append(f"## {s['heading']}\n\n{s['body']}\n")
+        if s.get("items"):
+            out.append("\n" + "".join(f"- {t}\n" for t in s["items"]))
+            out.append(f"\n{s['after']}\n")
         if s.get("code_label"):
             out.append(f"\n{s['code_label']}\n")
             for key, lang in CODE_KEYS:

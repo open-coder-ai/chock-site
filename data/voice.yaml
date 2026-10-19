@@ -1,0 +1,845 @@
+# VOICE-2: the mechanical voice tells tests/test_voice.py looks for in every built page.
+# Rules from org-plan discovery/2026-10-18-site-voice-audit.md: a semicolon, two or more
+# colons, a dash aside, a jargon word or a hedge word in a sentence's prose. Code, quoted
+# text and the names below are not judged.
+
+jargon:
+- surfaces?
+- fails? open
+- fails? closed
+- fail-open
+- fail-closed
+- judged
+- judges?
+- ledger
+- witnessed
+- unwitnessed
+- unbacked
+- ungraded
+- routes?
+hedges:
+- honest
+- honestly
+- deliberately
+- genuinely
+names:
+- 'EU AI Act — '
+- 'OWASP ASI01 — '
+- 'OWASP ASI02 — '
+- 'OWASP ASI03 — '
+- 'OWASP ASI04 — '
+- 'OWASP ASI05 — '
+- 'OWASP ASI06 — '
+- 'OWASP ASI07 — '
+- 'OWASP ASI08 — '
+- 'OWASP ASI09 — '
+- 'OWASP ASI10 — '
+
+# Sentences the site shows but another repository writes. The site does not edit them;
+# each group names its source so the fix lands there (VOICE-3). The test fails when a
+# listed sentence is no longer flagged on the site, so the list only shrinks.
+upstream:
+- source: agentseam README.md (from data/agentseam-source)
+  sentences:
+  - '10: aider and Zed (no hook surface); Amp, Copilot CLI, DeepSeek Harness, Kilo Code, Kiro, OpenCode, Replit, Roo Code (`unadapted`)'
+  - it blocks and can be told to fail closed, but doesn't by default
+  - it blocks, but fails open (a crashed hook allows)
+  - 'nothing agentseam can gate: no hook surface, or no adapter yet (`unadapted`)'
+  - observable after the fact only; prevention is not available
+  - the agent blocks, and fails closed if the hook dies
+- source: agentseam docs/design.md (from data/agentseam-source)
+  sentences:
+  - Adding an agent in an existing family is a config entry plus a matrix row; no consumer changes.
+  - No dependencies, ever, in the adapter path — adapters must stay copy-portable into other projects that vendor single files.
+- source: agentseam src/agentseam/adapters/__init__.py
+  sentences:
+  - 'Per-agent adapters: parse a vendor payload -> Event; speak a Decision in vendor dialect.'
+- source: agentseam src/agentseam/cli.py
+  sentences:
+  - Each agent's permission surface; render a policy into it
+  - Instruction text; omit to read stdin
+  - What is wired here; flag stale capability claims
+- source: agentseam src/agentseam/contract.py
+  sentences:
+  - Deprecated alias of escalate() -- kept so existing callers keep constructing.
+  - Deprecated alias of transform() -- kept so existing callers keep constructing.
+- source: agentseam src/agentseam/data/matrix-notes.json
+  sentences:
+  - A bare allow is silence everywhere -- permissionDecision:allow is rejected unless it carries updatedInput, and a rejected response fails OPEN.
+  - A consumer should still gate shell on pre_tool -- it covers every tool and is the only one that can rewrite -- but not because the dedicated event is absent.
+  - A hook agentseam wires here must still answer in-dialect, and now for a proven reason -- these gates install fail-closed by DEFAULT, so a silent adapter would refuse every allowed tool call.
+  - A hook that ships inside a copilot-format bundle is dispatched through the vscode_copilot adapter at runtime; 'copilot' exists only as packaging_data.PACKAGING's identity for the Agent Plugins 1.0 marketplace bundle FORMAT, a genuinely different artifact from vscode_copilot's repo-local .github/hooks/agentseam.json (own manifest, own namespaced paths, published to a marketplace rather than committed to a repo).
+  - Accepts Claude Code's hookSpecificOutput.permissionDecision shape, and exit 2 blocks too -- but the JSON form carries the reason back into the model's context.
+  - Also parses Claude settings.json via hookClaudeCompat, and ignores `matcher` -- it is read and thrown away, so there is no tool filtering and the guard must check event.tool itself.
+  - Blocks via exit 2 or hookSpecificOutput.permissionDecision; rewrite via updatedInput (pre_tool only).
+  - Both may be true -- the CLI runtime and VS Code's own engine may differ -- but until a hook that runs and exits 1 is tried on each, `open` stays and a consumer must not rely on either behaviour.
+  - Claude-family decision shape (hookSpecificOutput.permissionDecision) and Claude-family PascalCase event names (verified against hook_config.rs/schema.rs; an earlier version of this note wrongly said camelCase, sourced from the App Server's separate IDE-facing protocol rather than the CLI hook dialect this adapter speaks).
+  - Config is TOML ([[hooks]] in config.toml, four fields only; a fifth makes the whole file fail to load), so installation appends a marker-delimited block rather than rewriting the user's settings.
+  - Copilot CLI's own camelCase preToolUse (docs.github.com/en/copilot/reference/hooks-configuration, read 2026-09-27; vendor docs, not yet witnessed live) sends no event name at all -- {sessionId, timestamp, cwd, toolName, toolArgs} -- so it is claimed by toolArgs and answered with a top-level {permissionDecision, permissionDecisionReason}; it has no input rewrite, so a transform there blocks.
+  - Critically there is NO file-write event -- prompt, terminal and MCP hooks only -- so a write to a memory file is invisible to a hook on this agent.
+  - 'Cursor also loads Claude Code-format hooks -- confirmed live (2026-08-27): with both `.cursor/hooks.json` and `.claude/settings.json` carrying the same probe, every event fired twice, once per config.'
+  - Deliberately not installable on its own -- it shares canonical pre_tool with PreToolUse, and install('junie', ['pre_tool']) wires only PreToolUse, since bundling the two would hand a consumer an approve-by-default gate they did not ask for.
+  - Eleven events, six of which can block -- including AfterTool, which most agents treat as observation only.
+  - Event names are Gemini CLI's exactly; the only documented separator is `timestamp` in Tabnine's base schema, which identifies Tabnine but cannot exclude Gemini, so detect() declines these payloads and the agent must be named explicitly.
+  - External agents connect over ACP, where the agent MAY ask the client for permission; that is a protocol the agent drives, not a hook an external handler can rely on.
+  - Fail mode is not documented anywhere in this project (notes, docstring, evidence, CHANGELOG) for pre_tool or prompt_submit, so the weaker claim (FAIL_OPEN) is recorded rather than a guess in our own favour -- pre_tool and prompt_submit had rested on FAIL_CLOSED with no basis, the strongest claim in the whole vocabulary, and the only one of its kind unsupported here.
+  - Fails OPEN -- timeouts, crashes and malformed output are recorded and the call proceeds.
+  - Fails OPEN by default; failClosed:true per hook definition makes it fail closed, and agentseam sets it on every gate it installs.
+  - 'Fails OPEN unusually broadly: any exit code other than 0 or 2 proceeds, AND stdout that is not valid JSON is treated as a systemMessage and the action is ALLOWED -- so a chatty or crashed hook is a permitted action.'
+  - Fails OPEN, and the vendor says outright that hooks here are not a sole security barrier.
+  - 'Fails OPEN, not closed as this row claimed for two weeks: exit 2 blocks, but any other non-zero exit is a NonBlockingError that warns the user and lets the call proceed.'
+  - 'Four response dialects, because the consumer reads a different shape at each: PreToolUse takes hookSpecificOutput.permissionDecision (ask and updatedInput both native, and updatedInput is validated against the tool''s schema and silently discarded if it fails), UserPromptSubmit and PostToolUse take a top-level {decision: block, reason}, Stop and SubagentStop take those two fields nested in hookSpecificOutput and drop the block if the reason is missing, and SessionStart/SubagentStart run under ignoreErrors:true where even exit 2 is swallowed.'
+  - 'Grok Build (2026-10-11): this row IS xAI''s Grok Build (the grok binary, https://github.com/xai-org/grok-build), not a separate product; its hooks page https://docs.x.ai/build/features/hooks (last updated 2026-07-02) matches this row''s contract, xAI names no rename, and grok_build therefore gets no row of its own.'
+  - 'Install writes hooks.json to the docs'' schema (https://antigravity.google/docs/hooks, read 2026-10-17: "The `hooks.json` file maps hook names to their event configurations"): one named hook `agentseam` whose PreToolUse/PostToolUse hold {matcher, hooks} groups (matcher "*", documented to match all tools, when none is given) and whose Stop lists its handler bare, as the docs'' example lists the matcher-ignored events.'
+  - 'Install''s file was checked against source (google-gemini/gemini-cli@51617c1, read 2026-10-13): hookRegistry.ts reads settings `hooks` as event -> [{matcher, hooks: [{type, command}]}], the shape hook_config() writes, and settingsSchema.ts gives those objects no additionalProperties: false, so settings validation passes the `_agentseam` marker through.'
+  - 'Instruction files reach it through AGENTS.md (D2a, 2026-10-11): xAI''s project-rules page (https://docs.x.ai/build/features/project-rules, titled AGENTS.md, last updated 2026-07-04, read 2026-10-11) says Grok Build reads AGENTS.md, Agents.md, AGENT.md, CLAUDE.md, Claude.md and CLAUDE.local.md in every directory from the repo root down, plus .grok/rules/*.md; the .grok/GROK.md file agentseam used to write came from the community superagent-ai/grok-cli and is not on that list.'
+  - 'Its `matcher` also does not mean the same thing at every event: under beforeShellExecution it is a regex over the COMMAND TEXT, not a tool name, so the "Bash" a caller would reasonably pass matches almost nothing and quietly disables the guard -- the one hook field whose wrong value fails silently, since the install still reports success.'
+  - Its documented answers are that approval and a block (decision block/deny, or exit 2); no ask and no updatedInput are documented there (junie.jetbrains.com/docs/junie-cli-hooks.html, read 2026-10-13), so an escalate or a transform at PermissionRequest is answered as a block, never as an approval.
+  - Its event names and field names are Claude Code's by design; project_path is what separates the two payloads.
+  - 'Its only policy surface is the declarative agent.tool_permissions in settings.json: a per-tool default of confirm, allow or deny plus always_allow, always_deny and always_confirm regex lists (https://zed.dev/docs/ai/tool-permissions).'
+  - 'Live capture 2026-08-28 (36 payloads) settled the write vocabulary: Codex sends exactly two tool names, Bash and apply_patch, and BOTH carry only tool_input.command -- apply_patch is the file-writing tool and the patch rides in that string, so event.path and event.content are None on a real write and a content policy has to gate on event.command.'
+  - No hook surface found in the vendor documentation.
+  - 'No rewrite: the vocabulary is {decision: deny, reason} and nothing more.'
+  - Non-zero exit codes other than 2 are logged without blocking, so this fails OPEN.
+  - Non-zero exits other than 2 are warnings and execution proceeds, so this fails OPEN.
+  - 'Not confirmed on a live build, and not widened here: grok''s own tool names (run_terminal_command, search_replace) are in no tool list, so shell and write policies do not see those calls as shell or write; ask, defer and updatedInput stay unclaimed; PostToolUse output arrives as toolResult, which the adapter does not read.'
+  - Payloads name their event in agent_action_name and carry the command, prompt and MCP fields inside tool_info (docs.devin.ai/desktop/cascade/hooks, read 2026-10-13, where the product is now Devin Desktop); the event is inferred from shape only when no name is present.
+  - PreCompact's block=True was similarly unsupported and is now detect-only; the hooks reference at the time this adapter was written suggests PreCompact's exit 2 writes to stderr without blocking anything.
+  - 'PreToolUse can rewrite: its documented `overwrite` object is merged into toolCall.args (shallow, top level) before the tool runs, so a transform is {"decision": "allow", "overwrite": ...} -- a key the replacement input leaves out is kept, not removed.'
+  - PreToolUse is the ONLY blocking event; everywhere else stdout is ignored.
+  - 'Project hooks load only in a trusted folder (hookRegistry.ts: ''Project hooks disabled because the folder is not trusted''); folder trust is off by default, and where a user turns it on the folder is trusted from Gemini''s trust dialog or /permissions (geminicli.com/docs/cli/trusted-folders).'
+  - Project-local hooks in <project>/.junie/config.json are IGNORED by default for safety, so a guardrail committed to a repo does not run for a teammate who clones it -- the user file is the only location that takes effect without --config-location.
+  - Reads .claude/settings.json, .claude/settings.local.json and .cursor/hooks.json too, by default, and runs their hooks as its own, collapsing only a hook identical in event, command and matcher (xai-org/grok-build@2bdd1d6 discovery.rs, read 2026-10-13); so `uninstall grok` leaves agentseam hooks those files carry, and `doctor` names each one that does.
+  - Rewrite is advertised in the vendor overview, and the event reference read 2026-10-13 documents BeforeTool's hookSpecificOutput.tool_input as replacing the model's arguments ("Must include all required tool parameters"), so a transform at BeforeTool is emitted there, whole; a transform with no replacement input blocks.
+  - Richest decision vocabulary here -- allow, auto_approve, deny, ask, force_ask and deny_unless_prior_grant (https://antigravity.google/docs/hooks, read 2026-10-13).
+  - Richest surface (~30 events).
+  - Silence here is a hook ERROR -- not a refusal, not an abstention.
+  - 'Since value-based detection (D1) it detects as grok and parses to pre_tool: hookEventName being the snake_case twin of hook_event_name is what separates it, and grok''s adapter reads the event from hook_event_name, so the {decision: deny, reason} answer this row records reaches a current build''s PreToolUse.'
+  - Speaks Claude Code's hook format almost exactly, and reads .claude/settings.json for hooks by default -- so a repo with Claude Code hooks is already running them under Devin.
+  - 'Stop''s `decision: "continue"` keeps the agent going; any other value allows the stop.'
+  - 'TIER_UNADAPTED and events={} are deliberate, not a placeholder for an adapter that has not been written yet: a real adapter under this name would claim every payload vscode_copilot already claims (the wire dialect is documented as identical), and adapters.detect() treats a payload two adapters both claim as unidentified -- registering one here would silently stop dispatch working for every existing VS Code/Copilot CLI user.'
+  - 'That same PowerShell wrapper will not RUN a command line beginning with a quoted path -- it parses as a string expression, not an invocation -- so installs emit Codex''s own commandWindows override carrying the `&` call operator (witnessed live 2026-08-28: without it every hook failed with exit 1 and never executed).'
+  - The CLI still ships (npm @google/gemini-cli 0.63.0, 2026-10-06, not npm-deprecated), so this row stays for paid and enterprise users; new work should target the antigravity row.
+  - 'The claim rests on the docs alone: not tested against a live Tabnine, not witnessed.'
+  - 'The honest capability answer is NOT ''none'': see EVIDENCE[''copilot''] for what was found -- VS Code documents plugin hooks as firing alongside workspace hooks, and documents Copilot CLI and the Copilot app as reading the same com.github.copilot namespace; Copilot CLI''s own hooks-reference.md separately lists installed-plugin hooks as one of its combined, executed sources.'
+  - 'The hook file install writes is the object keyed by event that both products document for .github/hooks/*.json, and VS Code''s own schema tolerates the _agentseam marker (microsoft/vscode@d93a384 hookSchema.ts: additionalProperties true on the file, the hooks map and each command; read 2026-10-13); whether the Copilot CLI tolerates it, or a file with no version, its docs do not say and its source is not public.'
+  - The payload carries NO event name, so the event is inferred from shape, and PreToolUse/PostToolUse differ only by an `error` field documented as empty rather than absent; ties go to PreToolUse because the opposite guess would skip the gate.
+  - 'The row predates Grok Build 1.0.13 and is stale against the vendor''s newer user guide (https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-pager/docs/user-guide/10-hooks.md, read 2026-10-11 against changelog v1.0.50 of 2026-10-06, https://x.ai/changelog/build): hookEventName now carries snake_case values (pre_tool_use) beside a hook_event_name key with the PascalCase name, payloads add timestamp, permissionMode, promptId and toolUseId, tool names are grok''s own (run_terminal_command, search_replace), PreToolUse also takes ask, defer and hookSpecificOutput.updatedInput, and UserPromptSubmit, Stop and SubagentStop accept decision: block.'
+  - 'The same run recorded two facts nothing here had: the gate fires TWICE for one command (sandbox:true, then sandbox:false on Cursor''s own retry), so a policy with side effects double-counts and a deny must hold on both passes; and beforeShellExecution DOES fire when it is wired.'
+  - 'The stop hook honours `{followup_message}`: the message is posted as the next turn and the agent acts on it, so a refusal at stop is delivered the way Claude Code''s Stop block is; silence there ends the turn, so stop fails open.'
+  - This adapter claimed camelCase only until 2026-08-28, so it never claimed a real VS Code payload at all -- those went to claude_code alone and were answered in its dialect, which is right at PreToolUse and wrong everywhere else.
+  - 'Three response dialects, one per event group, because every per-event output struct is deny_unknown_fields and rejects the whole response over a foreign key: pre_tool takes hookSpecificOutput.permissionDecision, prompt_submit and stop take a top-level {decision: block, reason}, and the observation-only events accept no verdict at all and get silence.'
+  - 'Told apart from Claude Code by turn_id: permission_mode and model were also believed exclusive to Codex and turned out not to be -- a real live-captured Claude Code payload carries permission_mode too, and model cannot discriminate either since Cursor''s base hook schema also sends it on every event -- so turn_id is the only one of the three still unrefuted by a real payload.'
+  - 'Top-level `decision: allow|deny|ask` + `reason` (not nested); rewrite merges via hookSpecificOutput.tool_input; exit 2 also blocks.'
+  - 'Until 2026-10-17 Stop was written as a {hooks} group; a maintainer''s Antigravity IDE log (2026-10-17) rejected that file, `invalid hook "agentseam": command hook must specify ''command''`, so no hook loaded.'
+  - 'WITNESSED 2026-09-23 (3.21.18, Windows): the generic preToolUse gate DOES honour deny for a file write -- `Write` arrives with file_path and the full content, a `{permission: deny}` left the file unwritten -- so the write path is gateable here after all, and `Write` is recorded as the write vocabulary.'
+  - 'Zed documents no command-hook surface for its agent (https://zed.dev/docs/llms.txt has no hooks page; issue #52688 asking for tool-use hooks was converted to a discussion without being built).'
+  - '`ask` IS honoured, at BeforeTool only: hook-utils routes isAskDecision() to PolicyDecision.ASK_USER and calls resolveConfirmation with forcedDecision:''ask_user'', which prompts even where the user''s own policy rule would have auto-allowed -- a stronger ask than most vendors here can express, and this adapter was degrading it to a deny.'
+  - '`ask` is accepted by the preToolUse schema but not enforced today, so the adapter denies instead of returning a prompt that would behave as a pass; beforeShellExecution and beforeMCPExecution do honour ask.'
+  - '`timestamp`, which chatHookService merges into every payload, is what separates the two; Tabnine sends it too, so SessionStart -- the one event name Tabnine and VS Code share -- is left ambiguous rather than guessed.'
+  - 'exit 2 is honoured at both too and is deliberately not used: it collapses to 1 under the PowerShell wrapper some vendors apply, and it leaks the hook''s command line into the UI.'
+  - pre_tool keeps permissionDecision, which was not part of that experiment; the observation-only events now get silence.
+  - 'prompt_submit and stop read a TOP-LEVEL {decision: block, reason} and ignore hookSpecificOutput.permissionDecision outright -- the shape this adapter emitted at every event, so every prompt_submit and stop deny it ever produced was silently discarded while the dispatcher reported a block.'
+- source: agentseam src/agentseam/data/matrix.json
+  sentences:
+  - A deny at pre_tool refuses the call and its reason becomes the tool error; at post_agent (the stop-like event) it asks the agent to retry, capped by Vibe at 3 retries per hook per user turn.
+  - 'A deny is hookSpecificOutput.permissionDecision: deny at PreToolUse and decision: block at UserPromptSubmit and Stop.'
+  - A transform at pre_tool is written as hook_specific_output.tool_input, which Vibe documents as a full replacement of the tool's arguments, re-validated against the tool's schema (a replacement that fails validation is denied); at post_agent a transform degrades to a block.
+  - 'Adapted (D2a): Vibe''s payload is unambiguous (its snake_case hook types pre_tool, post_tool and post_agent are mapped by no other adapter, so the event name alone separates it), and its verdict is the flat_decision family''s {decision: deny, reason}.'
+  - 'Adapted (D2b): Cline runs one executable per event from .clinerules/hooks/, named exactly after the event, and reads {"cancel": true, "errorMessage"} on stdout as a block.'
+  - 'D2a (2026-10-11) re-checked this and kept the row unadapted: D1''s detection covers only part of Kiro''s documented events (the alias and mcp_<server>_<tool> tool calls), not the V3 primary-tool or tool-less payloads, and an adapter cannot claim those without making Claude Code payloads ambiguous; the exit-code-only verdict and the versioned hook file would also need a new family.'
+  - 'Every plugin hook is spawned as `sh -c <command>` on every platform, Windows included: hook_command() calls Command::new("sh") with no Windows branch (its only cfg branch swaps in flatpak-spawn on Linux), and the hooks module never reads GOOSE_SHELL, which selects only the developer shell tool''s shell (vendor-source: aaif-goose/goose v1.55.0 = 2bcb858, crates/goose/src/hooks/mod.rs:1093-1098; read 2026-10-18).'
+  - 'Fail mode is configurable and only at PreToolUse: a failed hook is fail-open by default, and on_failure: block makes it fail closed -- agentseam''s install writes on_failure: block on every hook entry it writes (goose reads it at PreToolUse only).'
+  - Fail mode is documented only for non-2 exits (fail-open); timeout and malformed-output behaviour are not documented.
+  - 'Fail-open on both hosts: a hook that times out, crashes or prints something other than JSON is logged and the tool runs.'
+  - 'Fail-open: the docs say any exit code other than 0 and 2 is an error and the operation proceeds.'
+  - Install writes .factory/hooks.json keyed directly by event name, the documented project file; Droid snapshots hooks at startup, so a new hook applies to the next session.
+  - Its final docs document no hook surface; a user report against 3.47.0 (RooCodeInc/Roo-Code#10834) describes undocumented PreToolUse/PostToolUse hooks in the code, so this row records not-found rather than absent.
+  - 'Known limit: file_editor''s own sub-command (view, create, str_replace, insert, undo_edit) arrives in tool_input.command, the same key as terminal''s shell command, so Event.command carries it for file_editor calls; a shell policy should check event.tool.'
+  - No adapter is built for an archived agent on an undocumented surface.
+  - 'On Windows it runs a hook `command` through cmd.exe, so quoting inside the command does not reach git.exe: with an argument single-quoted, git split it (`unknown option: -f`) and cmd.exe ran the rest, `''{'' is not recognized as an internal or external command, operable program or batch file.`; with the quotes changed to `\"`, git still failed with `unknown option: -f` (exit 129).'
+  - One naming a V3 primary tool (read, write, shell), or carrying no tool (SessionStart, UserPromptSubmit, Stop), has nothing that separates it and is still recognised as Claude Code, whose deny is a JSON body with exit 0; Kiro reads only the exit code, so that deny would not block.
+  - 'One run: no claim above changes and nothing is marked witnessed.'
+  - 'Owner witness run, 2026-10-18, chock''s own goose plugin (not a Claude Code plugin), goose 1.55.0 on Windows 11: with no sh on PATH, the guard, the gate and a benign `git status` were all denied with that hook-failure message, and setting GOOSE_SHELL=powershell changed nothing; with Git for Windows'' Git\bin (sh.exe) put on PATH, the benign call ran, the guard (`git commit --no-verify`) was refused before it ran and the gate (a write of an unpinned GitHub Action) was refused at write (org-plan witness/results/witness-goose-2026-10-18.md at 6316fd3).'
+  - PreToolUse and Stop are the only events that can block; a block from any other event is ignored.
+  - PreToolUse, UserPromptSubmit and Stop can block; a block at Stop keeps the conversation going.
+  - PreToolUseResult, BeforeReadFile, BeforeShellExecution and AfterShellExecution are observation-only and parse as unknown; AfterFileEdit is wired as file_changed.
+  - 'Security caveat: CVE-2026-82533 (CNA VulnCheck, published 2026-09-08, CVSS 4.0 9.4): before 0.1.2-alpha.1, the loopback control API at 127.0.0.1:3080 trusted a client-supplied loopback Host header instead of the real connection origin, so a sandboxed tool process could call it to switch itself to danger-full-access with approvals off; fixed in 0.1.2-alpha.1.'
+  - Shell policies see Execute; write policies see Create, Edit, MultiEdit and ApplyPatch, whose patch text is read as content but whose target path lives inside the patch and is not extracted.
+  - Stop stays fail-open whatever on_failure says, and goose caps consecutive Stop blocks (GOOSE_STOP_HOOK_BLOCK_CAP).
+  - 'The config is a versioned list of named hooks with a trigger and an action object, which no install wrapper writes; the verdict is an exit code only, and the IDE and CLI read it differently (IDE: any non-zero exit blocks Pre Tool Use; CLI: only exit 2 blocks, other codes fail open); and the payload is Claude-shaped (hook_event_name, cwd, session_id, tool_name, tool_input) with no key that separates it from a Claude Code payload.'
+  - The docs document only the project file; a user-level ~/.openhands/hooks.json exists in the SDK source, and a project file shadows it rather than merging.
+  - 'The one external-process decision point is the legacy permission rule action delegate: an exit-code helper (0 allow, 1 ask, 2 reject) that receives only the tool''s parameters and $AGENT_TOOL_NAME, no event name, runs only when the user''s settings already opt into the old permissions system, and has no documented timeout or failure behaviour; it is not a lifecycle hook surface and is not claimed as one.'
+  - The standalone OpenHands-CLI repository says it is no longer actively maintained; the hooks docs still list the CLI.
+  - 'The two hosts name the same file differently in the payload: the VS Code extension sends hookName PreToolUse, the CLI/SDK sends its own event name tool_call; both are mapped, and every payload carries clineVersion, which no other vendor sends.'
+  - 'Unadapted, not none: Amp''s hook surface is an in-process TypeScript plugin API (tool.call can reject or modify a call), which no agentseam family speaks and which the plan keeps on watch.'
+  - 'Unadapted, not none: DeepSeek Harness has no hook surface of its own.'
+  - 'Unadapted, not none: Kilo Code has a real interception surface, but it is the OpenCode-derived in-process JS/TS plugin API (tool.execute.before), not a command hook that hands a JSON payload to an external process.'
+  - 'Unadapted, not none: Kiro has a real command-hook surface, but its dialect is one no agentseam family speaks.'
+  - 'Unadapted, not none: OpenCode has a real interception surface, but it is an in-process JS/TS plugin API (tool.execute.before), not a command hook that hands a JSON payload to an external process.'
+  - Value-based detection (D1) now declines a Kiro payload naming an MCP tool as mcp_<server>_<tool> (Claude Code spells it mcp__<server>__<tool>) or a tool alias Claude Code never sends (fs_read, fsRead, fs_write, fsWrite, execute_bash, execute_cmd, use_aws; kiro.dev/docs/reference/built-in-tools, updated 2026-10-10), so it detects as no agent.
+  - Vibe also speaks ACP (vibe-acp), a client-agent protocol, not a hook surface; it is not claimed as one.
+  - dsh also speaks ACP (dsh-acp), a client-agent protocol, not a hook surface.
+  - 'post_agent stays fail-open: Vibe rejects strict there.'
+  - run_commands' command list arrives as JSON text in preToolUse.parameters and is read as one command per line; apply_patch's target path lives inside the patch text and is not extracted.
+- source: agentseam src/agentseam/dispatch.py
+  sentences:
+  - Reduce a decision to what the agent can actually honor, honestly.
+- source: agentseam src/agentseam/instructions.py
+  sentences:
+  - 'Primitive 2: instruction files -- where each agent reads its standing instructions.'
+- source: agentseam src/agentseam/matrix.py
+  sentences:
+  - ACS-named alias of can_rewrite() -- same capability, same value.
+  - The honest word for what a consumer may claim at this surface.
+- source: agentseam src/agentseam/matrix_gaps.py
+  sentences:
+  - Observation possible via git hooks; no interception.
+- source: agentseam src/agentseam/packaging.py
+  sentences:
+  - 'Primitive 3: packaging -- describe a bundle once, lay it out for every agent that has one.'
+- source: agentseam src/agentseam/permissions.py
+  sentences:
+  - A deny on CONTENT matching a regex -- what bytes a file or a piece of text contain,
+  - 'Primitive 4: config and permissions -- one policy, spelled in each agent''s own dialect.'
+- source: agentseam src/agentseam/probe/cli.py
+  sentences:
+  - Compare the recorded agents; exit non-zero on a seam gap
+  - Repeatable; default is all
+  - Run trials against --driver; a table, or --report for submission
+- source: agentseam src/agentseam/probe/recorded_driver.py
+  sentences:
+  - 'reference'', ''recorded'', ''harness'' (the invocation agentseam.harness records for --agent), or a shell template containing {prompt}; default: ''recorded'' if a recording covers --agent at --event, else ''reference'''
+- source: chock CHANGELOG.md (from data/docs-source)
+  sentences:
+  - 0.14.0 — Gates on any tool call that can ask or warn, agent commits detected, and guards that run on any command
+  - 0.15.0 — Script gates judge only the findings a change introduces
+  - 0.15.1 — Plugins ship their guard's shared packages
+  - 0.15.2 — Script hashes skip Python bytecode
+  - A 40-hex ref (upper case is lowered) is now fetched by id into an empty repo, must resolve to a commit, and `HEAD` must equal it before any catalog file is read; otherwise `add` exits 2 and installs nothing.
+  - 'A `kind: script` gate that prints `{"findings": [{"key", "path", "line", "message"}]}` on stdout is run again on the baseline text (`"baseline": true`; HEAD at commit and Stop, the range base at push and ci, the disk before the write at PreToolUse), and only findings whose key the baseline lacks count, including a violation created by deleting a line.'
+  - A `script` gate chooses its own verdict by exit code (0 allow, 1 block, 3 ask, 4 warn) under its declared action; an exit 1 with no words or a crash signature is undecided and takes the declared action.
+  - A bundle writes its own `LICENSE`, and only when every member shares one licence and holder (dated from the oldest member); a member's notice is never carried over to cover the others.
+  - A config that does not parse (JSONC comments included), a `chock` server chock did not write or edited (extra args, env), forged TOML markers, a symlink on the path, a non-regular file or one over 1 MiB is refused with an error and never overwritten, deleted or followed; with the opt-in off, such files are left alone without error.
+  - A gate can judge any tool call by its name.
+  - 'A gate declaring `outside_repo: [<glob>]` (absolute, or starting with `~`, expanded per machine; Windows paths compare the Windows way) receives writes to matching absolute paths, e.g. `~/.claude/memory/*`; every other outside write is still ignored.'
+  - A git hook that runs only at push (`block-destructive-commands`' pre-push script) no longer earns `enforced-at-commit`, so those cells read `advisory`; no other `level` changes.
+  - 'A ledger that is missing, damaged or unwritable never allows silently: it refuses again, or ends the turn with the warning.'
+  - 'A local pack is now always `"source": "local"` with no `source_commit`; an old lockfile converges on its next `sync` and is then stable.'
+  - 'A per-repository ledger in the state directory under `.chock/` now counts refusals in a 600 second window: 3 refusals, then the turn ends with a warning (`systemMessage` where the vendor documents one; Cursor and Devin get stderr only, Devin with an `approve` answer) and a held `would_block` record (`reentry_verdict: unreadable`), never silently.'
+  - A pin that looked like a SHA was first tried as a branch or tag name (`git clone --branch`), so anyone able to create a branch or tag with that name in the catalog remote could substitute different content under the pin; `--verify-sha` is a content hash and did not catch it.
+  - A policy with an `implementations/<id>.sh|.py` guard and a `hook.gate` whose `"on"` includes `tool_use` used to get only the guard at the write path; the gate was dropped.
+  - A policy with any compiled surface is now left alone; a true drop-in still compiles.
+  - A remote that will not serve the commit by id is refused rather than retried as a branch; over git protocol v2 a remote may serve an unreachable commit, and whatever is served must still be exactly the pinned commit.
+  - 'A run that judges a call (`--guard`, a blocking `--gate` or `--tool-call`) now refuses in the deny its client reads at the pre-tool event (Claude Code and Codex `permissionDecision: deny`, Copilot both the nested and the top-level CLI form, Cursor `{"permission": "deny"}`, Devin `{"decision": "block"}`, Gemini, Tabnine and Grok `{"decision": "deny"}`, Windsurf exit 2 on `pre_run_command`), a stop gate in its stop grammar, and exit 2 wherever that answer would not refuse; the reason goes to stderr.'
+  - A stop ledger that is not a plain file keeps refusing.
+  - At `tool_use` (PreToolUse and Stop) a waiver already in HEAD is now honoured, so a line a human waived and committed no longer blocks the agent forever; a waiver the edit or turn adds is still ignored.
+  - At `tool_use` and an agent's commit the `allowlist_pragma` was ignored outright; now a waiver counts only when that line is already in HEAD, and a waiver the agent adds still does not.
+  - 'At adoption, secrets committed before chock was installed were invisible: the gates judge a diff, so only new commits were ever read.'
+  - At the agent events (`tool_use`, `stop`) the gate runner's exit 3 replays as `ask` and 4 as `warn` (a Stop `ask` warns, as it does live); at `commit` and `push` an `ask` gate's refusal reads as `ask`, not `block`, and a `warn` gate as `warn`; a `pre-commit`, `pre-push` or `commit-msg` script's exit 3 is `ask` and 4 is `warn`.
+  - At the base commit, a selection path that is a symlink, a directory or a submodule, or a `.chock` that is not a directory, is an error naming the object (it was read as absent or as text); a regular file at `.chock` in the worktree is a named error too.
+  - 'At tool use and for an agent''s commit, a sentence telling the reader to write `chock: allow` is replaced by "ask a person to review it; an agent cannot add the waiver", since an agent''s waiver is never honoured; a person''s commit and CI keep the sentence.'
+  - Both now compile, on the pre-tool-use surface for claude_code, cursor, codex and the other vendors with a recorded write vocabulary, and in the Copilot hooks file, each in its own fragment so neither overwrites the other.
+  - 'Both stop ledgers (the per-session `<session>.stop.jsonl` and the unreadable-stop one) are lstat-checked before they are opened: a symlink, FIFO, socket, device or directory in the ledger, the state directory under `.chock/` or `.chock` is never opened (a FIFO would hang the hook until a client''s timeout, which it may read as an allow) and nothing is written through it.'
+  - Catalog provenance (`source`, `source_commit`, `source_ref`) is kept across `sync` while the pack still hashes to what was fetched; an edited pack is local again.
+  - Content is judged only at an in-scope path, `forbidden_path_regex` applies to that path, and a path-bounded gate does not judge a call that names no path.
+  - 'Coverage gaps, stated in the output: binary and oversize blobs and submodule pointers are not scanned (counted in the text, JSON and stderr); script, ref, dependency and test-integrity gates are not applied; only the newest N commits are scanned.'
+  - Each re-entry is logged there under the `stop-reentry` surface with `verdict` `block`, `allow` or `warn` and a `reentry_verdict`.
+  - Entries for unreleased changes now live in `changelog.d/` (one file per change); see `changelog.d/README.md`.
+  - Eval cases are judged as a person's commit whoever runs them.
+  - Exit 2 applies to SHA pins and invalid refs; a branch or tag that cannot be fetched still exits 1.
+  - 'Exit codes: 0 clean (or an unborn HEAD), 1 findings (`--report-only` makes this 0, for history that predates adoption), 2 the scan could not decide: not a git repository or git missing, a missing or corrupt blob, a shallow clone (unless `--allow-shallow`), no installed content gate, an unreadable or non-object gate document, a gate pattern that does not compile or runs over 10 seconds on one blob (POSIX), the time budget, or any unexpected error.'
+  - GitHub shows 10 errors and 10 warnings per step and one step runs every gate, so the gates of a step share that budget (a file under `$RUNNER_TEMP` keyed by run, attempt, job and step); every new finding not annotated is listed in the summary.
+  - In-agent gates judge what changed, and honour committed waivers.
+  - Input is capped (plan 4000 characters, 50 paths of 512, 1 MiB per request line, counted in bytes); absolute, `..` and control-character paths are refused, and paths are only matched, never opened; a symlinked, oversize, too deeply nested or unreadable contract, selection or config is reported as an error, never as "no rules", and the server answers every request (an unexpected failure is a JSON-RPC internal error) and keeps serving.
+  - It is emitted for Claude Code, Codex CLI, Cursor, Gemini CLI and Copilot, the vendors whose vendor facts record a tool vocabulary; Antigravity, Devin, Grok, Tabnine and Windsurf get no entry and coverage credits them nothing for it.
+  - It maps a plan's words and the paths to be touched to the rules of the repo's installed `java-security` (read from its shipped `setup-contract.json`), keeps the ones the repo's `.chock/security.json` sets to deny or ask (absent = deny; a user-level `~/.chock/security.json` or a version-1 selection is not read), and returns at most 12 of them, deny before ask, then by match score, then id, each with its verdict, pack, CWE ids and the rule's own constraint text, in a response line of at most 4000 bytes.
+  - 'It may also set `event: pre-commit`, `pre-push` or `commit-msg` to run the policy''s event script in a staged throwaway repo (`files`, `message`, `stdin`); exit 0 allows, a refusal blocks, a crash is an error.'
+  - It now runs the real installers on a scratch copy of each wired vendor's committed config and reports `differs` where chock's own entries disagree; foreign entries and list order are ignored.
+  - 'Judged at PreToolUse only: Stop reads the worktree through git and cannot see them.'
+  - No new findings allows; otherwise the change-run's exit code decides and the reason lists just the new findings.
+  - Nothing leaves the machine; the format is in `spec/session-log.md`.
+  - 'Nothing the judged actor can edit lowers the level: an agent (a tool call, the turn''s end, an agent''s commit) is held to the stricter of HEAD''s committed level and the working tree''s; at CI the base''s committed level caps the head''s, so a pull request cannot lower its own gates; `CHOCK_ROLLOUT` counts only for a person''s own commit or push.'
+  - 'One `run` (driver `chock`, version, `informationUri`) with a rule per policy rule of each gated policy''s shipped setup contract (`<policy>/<rule>`, title, constraint, first https reference as `helpUri`, CWE ids as `external/cwe/cwe-NNN` tags) and a result per finding: `block` is `error`, `ask` `warning`, `warn` `note`; repo-relative POSIX `artifactLocation.uri` (a path outside the repo falls back to the policy''s manifest), `startLine` when known, a `partialFingerprints` entry that ignores the line, text with no control or invisible character.'
+  - 'Read-only: `git log --raw` and `cat-file --batch` (list argv, never a checkout, a hook or a history rewrite; signature verification, textconv, external diff and the repo''s gpg programs are switched off), each distinct blob read once, output streamed.'
+  - Rule ids are one safe line of at most 200 characters; `helpUri` must be an https URL with a host.
+  - Run `chock sync` to pick it up; vendored runtimes resynced.
+  - Script gates judge only the findings a change introduces.
+  - Text from a finding, path or rule is escaped so it cannot inject a workflow command, and at ci no line of the refusal on stderr can start one either; summary cells cannot render a link, image or mention.
+  - That was already true of hook artifacts; since a rule's hook is now hashed too, a catalog validating its own source policies (which have no registry entry) was refused.
+  - The MCP gateway judges a `content_regex` gate inside its scope.
+  - The count is kept in `.chock/state/<session>.stop.jsonl` (digests of each flagged file's path and content, never the text), keyed on Codex's `turn_id` and Cursor's `generation_id` where sent; Cursor's own `loop_count` is believed over it.
+  - The enum now lists it; the gateway-only rule (no `commit`/`push` in `on`) and its closed `params` still apply, and `outside_repo` is now refused on any kind that never judges a write (it was accepted and ignored).
+  - 'The footer now keeps "advisory" for the skill alone and names what `chock` compiles from the manifest: a guard or git script can refuse, a gate blocks, asks or warns, at the surfaces it declares.'
+  - 'The gate is the same control on a second surface, as `hook.script` already was: the rule text stays the ambient line and the INDEX entry, and the gate compiles to the git-hook, pre-tool-use, stop and ci surfaces as an `artifact: hook` gate does.'
+  - 'The guard now always runs: argv is a whitespace split when `shlex` fails (`CHOCK_ARGV_FALLBACK=1` says so; the POSIX split is unchanged when it succeeds) and `CHOCK_RAW_COMMAND` is the exact command.'
+  - The ledger sits under the state directory under `.chock/`, which protect-agent-config's shell guard covers; an agent that could edit it could pre-seed it, the same trust the per-session ledger places in its own for clients that send no count.
+  - The runner gains `judge()` (exit code and verdict); `run()` and every exit code are unchanged.
+  - The runner records `agent` (the `agent_signal` marker, when one is set) on every git and script-hook outcome, and `rules` (rule id to count of new findings) when a script finding names its optional `rule`; older records group under "unknown".
+  - The schema now takes at least one; the git-hook emitter compiles both (the script's event shims plus the gate's `gate.json` and shims), the tool_use surfaces compile the gate, and coverage is credited per surface as before.
+  - The turn's end is re-judged when the client re-enters the Stop hook.
+  - Vendored runner resynced; run `chock sync`.
+  - Vendored runtimes and runner resynced; run `chock sync`.
+  - Vendored runtimes resynced; the contract is in `spec/script-backed-gates.md`.
+  - 'While findings remain, every re-entry is now refused, up to 3 per turn; the next one ends the turn with a warning that the findings are still on disk and a commit will refuse them: `systemMessage` for Claude Code, Codex and VS Code Copilot, stderr for every vendor, and a held `warn` record (`would_block: true`) in `.chock/log/gate-events.jsonl`.'
+  - With nothing countable the Stop is refused, as it is when the ledger cannot be written.
+  - Without a readable payload there is no session id, so the per-session re-entry ledger could not count it and the turn was refused every time.
+  - Writes go through a same-directory temp file and an atomic rename, with every directory opened by file descriptor (so swapping one for a symlink mid-run cannot redirect the write; where the platform lacks directory fds the path-based fallback runs); every client is planned before any is written, and an I/O error is a clean refusal; a UTF-8 BOM, CRLF line endings, key order and non-ASCII text are kept; duplicate JSON keys are refused; only lowercase `true` opts in.
+  - '`"on": [tool_call]` with `params.tools` (globs such as `mcp__Firecrawl__*`, `WebFetch`, `mcp__*`) runs a `content_regex` (over the JSON-serialised tool input) or `script` gate at PreToolUse; a script gets `{"event": "tool_call", "repo_root", "tool", "input", "session"}` and answers by exit code, allow or block.'
+  - '`--by policy|rule|agent|event` counts blocked, asked, warned, `would_block` (its own column once a record carries it), new against baseline findings, agents and the top three files per group; `--format md` prints a paste-able markdown summary.'
+  - '`--by rule` credited each rule with the record''s total new findings, so two rules in one refusal were each shown every finding; each rule now counts its own.'
+  - '`--output <file>` writes it to a file; the exit code is the gates'' own (1 on a block, 2 when a gate cannot judge), never the format''s.'
+  - '`CLAUDECODE=1`, a non-empty `AI_AGENT` (both set by Claude Code''s Bash tool and witnessed reaching a git hook), or any variable named under `agent_commit_env:` in `.chock/config.yaml` now marks a commit as an agent''s, as `CHOCK_AGENT_COMMIT` always did.'
+  - '`ask` asks the person in the agent (`permissionDecision: ask` where the vendor honours one, a deny elsewhere); at commit and push it refuses unless `CHOCK_ALLOW=<policy-id>[,...]` is set on that command and it is not an agent commit; in CI and at Stop it is a warning; the mcp-gateway blocks it.'
+  - '`chock check --history [--since <rev>] [--max-commits N] [--max-blob-bytes N] [--time-budget S] [--allow-shallow] [--json] [--report-only]` applies the `content_regex` commit gates installed in the working tree''s `.chock/compiled` (scan-secrets, block-invisible-unicode and any other gate of that kind) to every blob the newest N commits introduced (default 5000; blobs up to 1 MiB) and reports commit, path, line, policy and rule, oldest commit first; a line that persists across edits is reported once, where it entered.'
+  - '`chock sync` installs a `commit-msg` dispatcher beside `pre-commit` and `pre-push`; git''s message-file path arrives as `argv[1]` and the exit code is the verdict.'
+  - '`paths=<applies_to globs>` follows the gate kind; a regex param (`*_regex`, `*_pattern`, `*_pragma`) longer than 60 characters renders as `<name>(regex)`, shorter ones in full.'
+  - '`warn` never blocks: at commit, push and ci the reason is printed (a `::warning::` annotation in CI) and the exit is 0; in the agent Claude Code gets it as PreToolUse `additionalContext` (no `permissionDecision`, so its permission prompt is untouched), other vendors get stderr and the gate log, and at Stop it is a message, never a block.'
+- source: chock README.md (quoted from data/docs-source)
+  sentences:
+  - '`in-agent` is the agent''s pre-tool hook: best-effort, and it fails open.'
+- source: chock docs/adopting.md (from data/docs-source)
+  sentences:
+  - 'After `git clone` in a fresh directory, the committed artifacts are present but the git hooks are not — `.git/hooks/` is never cloned, so the repo enforces nothing until the hooks are reinstalled:'
+- source: chock docs/agentic-risk-coverage.md (a section heading, from data/docs-source)
+  sentences:
+  - 'Chock''s docs, docs/agentic-risk-coverage.md: What Chock does not do — stated plainly'
+  - What Chock does not do — stated plainly
+- source: chock docs/agentic-risk-coverage.md (from data/docs-source)
+  sentences:
+  - If a row here ever disagrees with what the compiler reports for your repo, the compiler is right and this page has drifted — please open an issue.
+  - Judging message intent mid-loop puts a model in the enforcement path; Chock's position is deterministic checks or honest `advisory`, never probabilistic "enforcement."
+  - Watching an agent after the fact is an EDR product's job; Chock's value is the deterministic slice before commit, push, or execution.
+- source: chock docs/agentic-risk-coverage.md (quoted from data/docs-source)
+  sentences:
+  - Chock's `gateway` surface is reserved for repo-scoped budget/egress backstops and claims nothing today.
+- source: chock docs/architecture.md (from data/docs-source)
+  sentences:
+  - Installed from a catalog; owned by the adopter, never shipped
+  - One entry point; dispatches to each activity
+  - See Core Concepts for the vocabulary and Enforcement Surfaces for the coverage model in detail.
+  - Surfaces + per-surface emitters + coverage
+  - The generative parts — authoring a bespoke policy from an interview — live in skills that the CLI installs into your own agent and that your agent runs.
+  - '`INDEX.md` is the ambient attention surface for the agent; git hooks remain the guaranteed enforcement floor.'
+- source: chock docs/baseline-policies.md (from data/docs-source)
+  sentences:
+  - 'A policy marked `mandatory: true` cannot be disabled; the CLI and `chock check` both refuse.'
+  - Re-copying from the catalog is an explicit act; nothing does it behind your back.
+  - See Authoring Policies to write your own and Enforcement Surfaces for where each guard actually holds.
+  - Some values are reachable from config without editing the manifest — `protect-main-branch` reads `chock.defaults.protected_branches` via its `config_key`.
+- source: chock docs/concepts.md (a section heading, from data/docs-source)
+  sentences:
+  - 'Chock''s docs, docs/concepts.md: Enforcement surface'
+  - Enforcement surface
+- source: chock docs/concepts.md (from data/docs-source)
+  sentences:
+  - Different agents support different surfaces, `gateway` is modeled but not emitted yet, and some surfaces need an explicit installer before they enforce anything — see Enforcement Surfaces.
+  - Every policy has a `manifest.yaml` manifest; depending on its type it also carries a script, a gate, and evals.
+- source: chock docs/coverage-levels.md (from data/docs-source)
+  sentences:
+  - An installed, hard, pre-execution in-agent control that fails CLOSED — a crashed hook still blocks.
+  - Chock does not earn this level today; see below.
+  - Installed and blocks, and CAN be told to fail closed, but does not by default — what an adopter may claim depends on how the hook was installed.
+  - Installed and blocks, and when the control itself cannot decide the action does not proceed unattended — it is put to a human.
+  - Installed and blocks, but fails OPEN — a crashed hook silently allows.
+  - Only the ambient rule applies — compiled prose the agent is asked to follow.
+  - 'The first four come from the in-agent ladder — agentseam''s own honest, per-agent vocabulary (`agentseam.matrix.enforcement_level`, owner decision #9) for an installed, in-agent pre-execution control, plus one level of chock''s own — because a hook that fails OPEN on a crash is a materially weaker promise than one that fails closed, and an adopter deciding on trust needs to see the difference.'
+  - The host may still fail open if the hook never runs at all, which is why this sits below `enforceable`.
+  - The policy emitted a git-hook (installed automatically) or a CI gate whose workflow `install-ci` has actually written — hard at commit time or over the PR's commit range, advisory in-agent.
+- source: chock docs/custom-policies.md (from data/docs-source)
+  sentences:
+  - 'Each template validates and passes its own evals as written; edit it, then check it:'
+  - Runs your script on the files a commit or write changes; its exit code decides
+  - Text the agent reads in its context; nothing enforces it
+  - '`sha256` is optional on a local entry; when present, the folder must hash to it.'
+- source: chock docs/decision-log.md (from data/docs-source)
+  sentences:
+  - A pre-tool refusal names the hook's policy; a commit or push refused at the git dispatcher names `chock-stop`.
+  - An intact chain needs every runtime regenerated (`chock sync`, or reinstalling the plugin) once this version is installed; until then, lines from older runtimes break it.
+  - Deleting the newest lines, or the oldest lines of the oldest file, leaves no break; only a kept head shows the first.
+  - 'Every route writes through the same journal: runtime hooks, git hooks, the MCP gateway, `chock stop` and `chock resume`, and overrides.'
+  - 'However many policy hooks judge that call, its allow is one line, written at once by the first hook to run and naming no policy (no `policy_id`, `plugin` or match fields): an allowed call is the call''s, not any one policy''s.'
+  - 'Most clients fail open when a hook crashes or never loads, so a session with no heartbeat is the sign of a hook that did not run: `chock doctor` reports it.'
+  - On the sync route a compiled gate's line is written by `gate.py` and keeps its own fields (`kind`, `match_count`, `matches`, `rules`), plus `actor`, and `session_id` and `target` from the hook that ran it.
+  - The hook never refuses and never blocks the session; a heartbeat that cannot be written is dropped.
+  - 'The plugin route adds `plugin` and `plugin_version` instead, never `chock_version`: a plugin runs its own bundled Python, not chock.'
+  - The plugin route's line carries `plugin` and `plugin_version` instead of `chock_version`.
+  - The sync route adds `chock_version` (left out when the hook's Python has no chock installed).
+  - 'Where the client documents a session-start event, chock wires one more hook there (the runtime, with no flags) on both routes, and it writes one line per session at `info`:'
+  - '`max_bytes` must be a whole number from 65536 (64 KiB) to 1073741824 (1 GiB); a value outside that range, an unknown level or key, or unreadable JSON is ignored and named by `chock status --only log`.'
+  - 'one line each time a policy fires: block, ask, warn, a guard fault, or an override or rollout level that let a finding through; and one line per allowed agent tool call, carrying only its `target` fingerprint.'
+  - 'the environment: `CHOCK_LOG_LEVEL=off|info|debug` in the shell the agent client was started from;'
+  - 'the repository: `<repo>/.chock/chock-log.json`;'
+  - 'the user: `~/.chock/chock-log.json`;'
+- source: chock docs/enforcement-surfaces.md (a section heading, from data/docs-source)
+  sentences:
+  - How a policy picks its surfaces
+- source: chock docs/enforcement-surfaces.md (from data/docs-source)
+  sentences:
+  - A `script` gate on `tool_call` also keeps a local per-session tool-call log under `.chock/state/` that its script can read; see `spec/session-log.md`.
+  - A client's hook timeout fails open (the command runs); the engine's own limits ask a person or deny.
+  - 'A compiled gate never judges chock''s generated tree (`.chock/`) or its own policy''s folder (`.agents/policies/<id>/`): that folder''s evals and references show the very content the gate refuses, so judging them refused the policy''s own adoption commit.'
+  - A control is only as strong as its worst degradation, and the empty command above still allows — so chock's in-agent controls stay at the level the ladder gives a control that degrades to allowing until that grade is re-derived deliberately.
+  - A guard that fails refuses or asks; it never reports an allow it never established.
+  - A hook whose `on:` includes `tool_call` (a `content_regex` or `script` gate with `params.tools`, globs over tool names such as `mcp__Firecrawl__*` or `WebFetch`) gates PreToolUse for any tool by name, on the nine agents whose vendor facts record a tool vocabulary (Claude Code, Codex CLI, Cursor, Gemini CLI, Factory Droid, goose, Mistral Vibe, OpenHands, and Copilot via `agent-hooks`); the others get no `tool_call` entry and are credited nothing for it.
+  - A hook whose `on:` includes `tool_use` is compiled to the `pre-tool-use` surface on agents that support it (thirteen of them, Claude Code and Cursor among them; Copilot CLI and VS Code get the same guard via `agent-hooks`, and a content gate's write check as a `PreToolUse` entry over `Edit|Write` there).
+  - A stdio proxy the client launches instead of the real MCP server; refuses matching `tools/call` payloads.
+  - Blocks a command before the agent runs it, in each client's own deny dialect — every matrix-blocking vendor with a repo-level config (see the Cursor caveat)
+  - Budget/egress backstop — modeled now, emitted later
+  - 'Claude Code — `code.claude.com/docs/en/hooks`, read 2026-08-31, `PreToolUse` `hookSpecificOutput` field table: "`"ask"` prompts the user to confirm."'
+  - Codex 600 s; Devin 600 s (command hooks); Antigravity 30 s; Grok 5 s; Kimi Code 30 s; Factory Droid 60 s
+  - Codex CLI — `openai/codex` at `32f48598a0609a882e5847f0d3e35d6d67f375bc`.
+  - Codex's own parser rejects `ask` as unsupported and then fails open on the response it rejected, so agentseam's adapter degrades it to a deny rather than emit a value that would silently permit the call.
+  - Credited with no coverage word -- see the backstop note below
+  - Cursor — not verified from a vendor artifact.
+  - Emitted today; credits no agent until the per-client config witness ships
+  - Every other path, another policy's folder included, is judged as before.
+  - In CI range mode, a base ref that cannot be resolved fails closed — the gate exits 2 rather than passing an unscanned range.
+  - No, but it fires after the tool calls it judges
+  - 'No, once marked a required status check -- see the branch-protection gap: the workflow file itself is tracked content a PR can delete, so `ci-gate`''s un-bypassable claim rests on a server-side branch-protection setting nothing in this repository can edit'
+  - The compiler always pairs a control with the strongest available backstop — e.g. a git hook plus a CI gate, because a git hook alone can be skipped with `--no-verify`.
+  - The same exit-2 deny for Copilot CLI + VS Code agent mode, from `.github/hooks/chock.json` (witnessed blocking on both, 2026-08-23).
+  - There is an inner one too — what the hook says when it did run and could not reach a verdict — and the two answers are not the same.
+  - VS Code agent mode — `microsoft/vscode` at `718038e170df9c66a15087cebda424d9c7f051ff`, `src/vs/workbench/contrib/chat/browser/tools/languageModelToolsService.ts`.
+  - '`codex-rs/hooks/src/engine/output_parser.rs:458-460` returns "PreToolUse hook returned unsupported permissionDecision:ask"; `:144` computes a block reason only when nothing was rejected, and `codex-rs/hooks/src/events/pre_tool_use.rs:234-244` sets `should_block` in the non-rejected arm alone — so a literal `ask` there would let the call through.'
+  - '`permissionDecision: "ask"` — forces a confirmation, and overrides the client''s own auto-approve'
+  - '`permissionDecision: "ask"` — prompts the user to confirm'
+  - '`resolveAutoConfirmFromHook` (`:877-930`) synthesises a confirmation and sets `allowAutoConfirm: false`; `:622-627` carries the comment "A preToolUse hook that returned `ask` explicitly forces a confirmation, so never let `preApproved` override it."'
+  - '`{"permission": "ask"}` — honoured at this gate.'
+- source: chock docs/evals.md (from data/docs-source)
+  sentences:
+  - A compiled gate that cannot be parsed is a broken installed control; falling back would turn that into a passing suite.
+  - Compiled but unreadable — reported as an `error`, never quietly replaced by the manifest.
+  - Does it resist obvious bypasses — or honestly document the gap?
+  - Not compiled yet — the case is replayed against the manifest and the result is marked `[gate derived from manifest; policy not compiled]`.
+  - '`chock check --only evals` runs each case against the compiled gate in `.chock/compiled/<id>/git-hook/gate.json` — the artifact your git hook and CI gate actually execute — not against a gate rebuilt from the manifest.'
+- source: chock docs/getting-started.md (from data/docs-source)
+  sentences:
+  - A shell with bash available for git hooks (Linux/macOS have it; on Windows, Git for Windows provides it)
+  - It installs no policies, and tells you so — a freshly initialised repo enforces nothing yet.
+  - Once installed, the policy is yours — edit it freely.
+  - Point it elsewhere with `--from <url-or-path>`; transport is `git clone`, so a private catalog works with the credentials you already have.
+  - 'This policy''s gate declares `on: [commit, push]`, so it compiles to the git hook, the CI gate and the ambient rule — not to a pre-tool hook.'
+  - Use `--force` when you genuinely want them overwritten.
+  - '`init` is fully deterministic — no AI agent required.'
+  - '`init` writes a `chock.lock` with an empty packs list; `sync` and `add` populate it, pinning each installed pack by content hash.'
+  - writes `AGENTS.md`, a `.gitattributes` pinning generated scripts to LF, `.gitignore` rules that ignore the per-machine gate log (`.chock/log/`) and keep the gate runtime and compiled gates (`.chock/bin/`, `.chock/compiled/`) tracked even where a global `bin/` rule would ignore them, a wrapper file for each agent that does not read `AGENTS.md` natively (root `CLAUDE.md` for Claude Code, and by default nothing else — Cursor, Copilot, Codex, Gemini, VS Code and Windsurf all read `AGENTS.md` directly), and the guardrail pairs `.agents/policies/{AGENTS.md,CLAUDE.md}` and `.agents/skills/{AGENTS.md,CLAUDE.md}`,
+- source: chock src/chock/compile/compiler.py
+  sentences:
+  - 'Agents to include in coverage report (comma- or space-separated; default: the repo''s supported_agents, else all)'
+  - 'Surfaces to emit (default: all)'
+- source: chock src/chock/data/claims.json
+  sentences:
+  - 'Honours ask: no. Evidence: tested (tests/test_guard_fail_to_ask.py::test_a_crashed_guard_asks_rather_than_allowing).'
+- source: chock src/chock/data/commands.json
+  sentences:
+  - 'Check each client''s hooks on each route: present, current, and seen running (--client X)'
+  - Install bundled authoring skills into agent skill dirs (write mode; check via CI)
+  - 'Lift a stop: agents are judged by the policies again'
+  - 'Run every truth check: validate, verify, evals, matrix (--only to narrow; --history scans past commits)'
+  - Scaffold a consumer repo (wiring only -- no policies)
+- source: chock src/chock/data/witnesses.json
+  sentences:
+  - 'live probe of a chock plugin auto-discovered from ~/.agents/plugins/chock-witness, with Git for Windows'' sh on PATH (goose runs every hook with `sh -c`; without sh every tool call, a benign `git status` too, was denied with "the hook command failed to run", on_failure: block): block-no-verify refused a `git commit --no-verify` shell command before it ran ("Tool call denied by policy hook `chock-witness`: Blocked by chock policy: block-no-verify") and pin-github-actions refused a write to .github/workflows/witness.yml at the write ("Unpinned GitHub Action detected"); a benign `git status` ran (org-plan witness/results/witness-goose-2026-10-18.md, 6316fd3)'
+  - 'live probe of a chock plugin installed with `devin plugins install --local`: block-no-verify and chock-guardrails-protect refused a shell command before it ran; pin-github-actions did not refuse the write, only at turn end (stop); self-protection held (org-plan witness/results/witness-devin-2026-10-08.md, 0f06113)'
+  - 'live probe of a chock plugin installed with `grok plugin install --trust` (no hook trust prompt) and enabled under Grok''s generated name c--users-<user>--chock-marketplace-grok-chock-witness-481da8d4 (username redacted as <user>), not chock-witness: block-no-verify refused a `git commit --no-verify` shell command before it ran ("`run_terminal_command` blocked by plugin/c--users-<user>--chock-marketplace-grok-chock-witness-481da8d4/hooks: Blocked by chock policy: block-no-verify"); pin-github-actions is advisory on Grok and the workflow write landed, as labelled, so no gate refusal is claimed (org-plan witness/results/witness-grok-2026-10-17.md, f52c055)'
+  - 'live probe of chock''s shipped plugin built on Windows (store windows_hook_command: quote_free, so the hooks.json command carries no quotes), copied to ~/.gemini/config/plugins/chock-witness, no hand edits: block-no-verify refused the witness kit''s GUARD shell command before it ran ("tool call denied by pre-tool hook: Blocked by chock policy: block-no-verify"; `git status` then showed "No commits yet"); pin-github-actions let a write of .github/workflows/witness.yml with actions/checkout@v4 land and refused at turn end ("Stop hook blocked termination: Unpinned GitHub Action det…"), not at the write, and the agent then pinned the action by commit SHA; a benign `git status` ran.'
+  - 'live probe of the chock plugin, every other chock plugin disabled: block-no-verify refused a Bash call and pin-github-actions refused a Write at PreToolUse, before either ran; Stop not exercised (org-plan witness/results/witness-claude-code-2026-10-12.md, 198694b)'
+  - 'live probe of the chock plugin: pin-github-actions refused a create write at preToolUse, before the file landed, and chock-guardrails-protect refused a shell write to .chock/guardrails.json at preToolUse; VS Code agent mode, a toggle-file write through the edit tool and a delete-only apply_patch not covered (org-plan witness/results/witness-copilot-2026-10-11.md, 83f636d)'
+- source: chock src/chock/doctor/cli.py
+  sentences:
+  - The client's version, compared with what agentseam witnessed
+- source: chock src/chock/gatelog.py
+  sentences:
+  - 'Info: only decisions a policy made; debug: allows too'
+  - Only records from this plugin (plugin route)
+  - Only the sync route (this repo) or the plugin route (~/.chock)
+- source: chock src/chock/gateway/__main__.py
+  sentences:
+  - The real MCP server command, after `--` (e.g. -- npx some-mcp-server)
+- source: chock src/chock/guardrails/cli.py
+  sentences:
+  - Bundle.name; needed when the policy is in several bundles
+- source: chock src/chock/incident.py
+  sentences:
+  - 'Repository root whose sync-route log is read (default: cwd)'
+- source: chock src/chock/index/cli.py
+  sentences:
+  - Exit non-zero if the on-disk files differ from generated; do not write
+- source: chock src/chock/install/data/claude_plugin.json
+  sentences:
+  - 'Also works: the Claude Code plugin (agentseam loads_claude_plugins, witnessed):'
+  - 'Devin: turn end only; the shell guard and the write gate did not run'
+  - It loads live from ~/.chock/marketplace/claude-code/claude/chock-guardrails (nothing is copied); `copilot plugin uninstall` only disables it.
+  - 'Not offered for Cursor: with Include Third-Party Plugins on, Cursor imports an enabled Claude Code plugin and calls its hooks, but in the witness run chock never ran and nothing was refused; do not rely on that import to enforce chock''s policies.'
+  - 'VS Code: Chat panel only; an Agents-window repo session ran no hooks'
+  - 'Warning: Install one build per agent, not both: the agent''s own chock plugin and the Claude Code plugin would each check every action.'
+- source: chock src/chock/install/data/install.json
+  sentences:
+  - Droid names a local marketplace from its source; if `droid plugin marketplace list` shows a name other than chock-local (a --dest folder named otherwise), install chock-guardrails@<that name>.
+  - Its hooks name ~/.chock/marketplace/antigravity/chock-guardrails by absolute path (Antigravity documents no plugin-root variable), so keep that folder where it is; re-run the install command after a rebuild.
+  - Its hooks name ~/.chock/marketplace/openhands/chock-guardrails by absolute path (OpenHands documents no plugin-root variable), so keep that folder where it is; a rebuild applies from the next start.
+  - 'On Windows, `devin plugins install --local` creates a symbolic link, so it needs Developer Mode (Settings > System > For developers) or an elevated shell; otherwise it fails with "os error 1314: A required privilege is not held by the client".'
+  - 'Plugins are off in grok until enabled, and chock does not edit grok''s config: run `grok plugin list` for the name grok gave this plugin (chock expects chock-guardrails, its folder name; the docs do not say how a plugin with no plugin.json is named), then `grok plugin enable <name>`, or add it to `enabled` under [plugins] in ~/.grok/config.toml, or press Space on it in the Plugins tab.'
+  - The marketplace is local to this machine; chock publishes nothing.
+  - The plugin applies to every project you open (Kimi has no project-level plugin scope); `/plugins disable chock-guardrails` turns it off.
+- source: chock src/chock/install/data/warnings.json
+  sentences:
+  - A gate judges the write before it lands in Copilot CLI (witnessed 2026-10-11, CLI 1.0.94 on Windows); in VS Code agent mode that is unmeasured.
+  - 'Antigravity documents no fail mode for a hook and no plugin-root variable: the hooks name the plugin folder by absolute path, and a gate judges what a turn wrote only at turn end.'
+  - 'Devin runs plugin hooks best-effort and fails open: a hook that errors or times out lets the action through.'
+  - 'Grok''s hooks fail open: a timeout, a crash or malformed output lets the action through, only an explicit deny blocks, and an allowManagedHooksOnly policy skips plugin hooks.'
+  - Kimi Code lets a call through when a hook errors, times out or exits with any code other than 2, cannot prompt (an ask is not enforced there), and applies a plugin to every project you open; it installs from its TUI only, and runs a copy, so reinstall after a rebuild.
+  - 'On Windows, goose runs every hook with `sh -c`, so Git for Windows'' sh must be on PATH; without it every tool call is denied, a harmless one too, because the hook cannot start (on_failure: block).'
+  - On Windows, the shell Kimi Code runs hook commands with is unmeasured, and the hooks read ${KIMI_PLUGIN_ROOT}; this path is not tested there.
+  - This client names no file-write tool a hook can match, so a gate judges what a turn wrote only at turn end; the write itself is not held.
+  - 'goose denies a PreToolUse call whose hook fails, because every entry sets on_failure: block; its Stop hooks stay fail-open, so a gate that fails at turn end lets the turn finish.'
+- source: chock src/chock/lifecycle.py
+  sentences:
+  - 'Log: info shows policy decisions only; debug adds allows'
+  - 'Log: only records from this plugin (plugin route)'
+  - 'Log: only the sync route (this repo) or the plugin route'
+  - Report drift and exit non-zero; write nothing
+  - Walk each decision log's hash chain; exit 1 at its first break
+- source: chock src/chock/packs/_skills/policy-init/SKILL.md
+  sentences:
+  - For multi-agent workflow / orchestrator, default the display name to `Orchestrator / <Pattern Name>`; invoked skills retain regular names.
+  - Multi-agent workflows also follow `references/multi-agent-scaffold.md`; advanced patterns (failure handling, checkpoint/resume, dry-run, rollback) in `references/orchestration-patterns.md`.
+  - 'Scaffold the full folder structure per `references/scaffold-layout.md`; placeholder files are required during scaffolding and must be marked with `<!-- SCAFFOLD: replace or delete before review -->`.'
+  - 'classify(request) using `references/taxonomy.md`; present user_facing_class: hook, rule, skill (single-purpose capability), subagent, multi-agent workflow / orchestrator.'
+  - clean temporaries; verify only deliverable + wiring remain.
+  - 'determinism_scan: split deterministic_parts from judgment_parts; route mechanical parts to a code/hybrid skill with a committed script, never bury them in prose inside an NL skill.'
+  - 'draft evals FIRST: trigger + negative_trigger; add adversarial case for stakes or processes_external_content; add behavior case for non-none effects (enforce ≥ verify + approval).'
+  - generate using `assets/templates/`; construct paths with OS separators (never concatenate raw strings).
+  - 'hand off: report folder, wiring, smoke test, promotion via PR; suggest `validate` after edits.'
+  - 'if code referenced: mine 3–5 call sites into `examples/`; convert prompts per `references/authoring-techniques.md` §D; set `security.processes_external_content: true` when the skill processes external/repo/user content.'
+  - 'interview(`references/interview.md`, target); default target: `<repo_root>/generated/`; never generate inside the invoking framework''s own `.agents/` or `subagents/` folders; skip answered questions.'
+  - 'self-check: run `chock check --repo <repo_root>` and `npx skills-ref validate <folder>`; fix failures.'
+  - 'set status: draft, trust_tier: sandbox; body = activation surface; depth → `references/`'
+  - 'wire: install hooks for block gates, add ambient lines for rules, optional AGENTS.md fallback section; comment `compiled by chock`.'
+- source: chock src/chock/plugin/cli.py
+  sentences:
+  - Package only this policy (manifest id or directory name); repeat for more than one
+- source: chock src/chock/plugin/marketplace.py
+  sentences:
+  - Required for --tree devin's root meta-plugin; chock does not read `git remote` for this.
+  - 'Which format tree to index; each vendor repo indexes only its own (default: claude)'
+- source: chock src/chock/scaffold/add.py
+  sentences:
+  - Copy only; do not compile or install hooks
+- source: chock src/chock/validation/schemas/eval.schema.json
+  sentences:
+  - 'Tool_use and stop only: each file as the agent would leave it, path -> content; not staged.'
+  - 'Tool_use and stop only: the text an edit introduces, path -> text, for a gate that judges an edit''s own lines.'
+  - 'warn: exit 4 of a script or agent-event gate, or a warn gate at any event; at stop an ask gate warns.'
+- source: chock src/chock/validation/schemas/manifest.hook.json
+  sentences:
+  - 'A script and a shell guard (implementations/<policy_id>.{sh,py}, found by name) never see an Edit/Write; their write-path door is a hook.gate whose ''on'' includes tool_use: kind script for logic, or a path gate (content_regex, forbidden_path_regex, content_pattern ''(?!)'').'
+  - 'Git events only: a script never runs at tool_use, tool_call, stop or in CI; declare the write path as a hook.gate (DET-6).'
+  - Globs (absolute or starting with ~) of files outside the repository whose writes this gate may judge, at PreToolUse only.
+  - No message either -- the script prints its own refusal, with the detail only it has.
+  - 'V3 hook payload: the compiled gate DSL under ''hook.gate'', the event declaration under ''hook.script'' for a check no declarative kind can express, or both -- the same control on its git events and its tool_use surface.'
+- source: chock src/chock/validation/schemas/manifest.provenance.json
+  sentences:
+  - Optional -- but when present every field is required, so an empty or partial object is a schema error rather than a way to look validated without being validated.
+- source: chock src/chock/witness_export.py
+  sentences:
+  - 'A new .json file to write; an existing file is refused (default: ./chock-witness-<client>-<date>.json)'
+  - Write one client's redacted log records to a local file; never uploads
+- source: chock-catalog .chock/registry.json
+  sentences:
+  - 'Advisory: eval/exec and SQL guidance; a gate decides only the non-literal slice (agentic-code-security code pack: Python eval/exec, SQL built from strings in Python and JS).'
+  - 'Agent: only if already in HEAD; MCP gateway: never.'
+  - 'Agent: only if in HEAD; MCP gateway: never.'
+  - Allowlist gate for new dependencies; no registry lookup is made.
+  - Any file is judged.
+  - 'Blocks credentials: vendor tokens (AWS, GitHub, GitLab, Slack, OpenAI, HF, ...), JWTs, private-key and PGP blocks, named key/token/secret/password values (JSON, YAML, env, HCL, code), URI creds, Authorization literals, CLI password flags; files by path (.env*, keys).'
+  - 'Blocks uses: of an action/reusable workflow at a movable ref (not a lowercase 40-hex SHA) and a docker:// image without @sha256, quoted, JSON or flow; an alias, escape or value off the uses line is refused.'
+  - Guard refuses `git commit` and `gh pr create|edit` whose message or body (inline -m/-b, -F/--file/--body-file, heredoc on -F -) holds a process-leak marker (session link, 'user asked', ...); commands behind cd, sh -c, sudo, env are read.
+  - Install scan-secrets (commit, agent write) for secrets and verify-dependency-exists (opt-in; needs an allowlist) for dependencies.
+  - 'No waiver: a legitimate phrase needs a person to remove it from MARKERS in the guard; an agent asks the person.'
+  - 'Pragma same line; agent: only if in HEAD; MCP gateway: never.'
+  - 'Waiver: ''pragma: allowlist invisible-unicode'' same line; agent: HEAD only.'
+- source: chock-catalog CONTRIBUTING.md
+  sentences:
+  - Derived cases alone are not enough — attestation needs at least one authored case that could have failed.
+  - Pull requests change sources; docs and images lag until the release.
+  - The compliance and agentic-security packs stay uninstalled — by their own doctrine they only earn their place where they apply.
+  - The tool adopts your policy into an empty repository — init, copy, recompile, install-hooks, validate, eval — and records what the tools printed.
+  - 'What this repo runs — the subset of `base/` that applies to this repository, installed in `.agents/policies/` to govern the catalog itself (four do not apply here: `chock-mise`, `java-security`, `no-a11y-regression` and `rtk-dangerous-actions-blocker`): the repo protects itself the same way it asks adopters to.'
+  - What this repo ships — every published policy, staged into a throwaway repo the way an adopter installs them (where CI also re-derives the README's OWASP coverage claim).
+  - '`docs/<id>/README.md` is generated — edit `manifest.yaml` and `docs/policy-prose.yaml`, then run `python tools/gen_policy_docs.py`.'
+- source: chock-catalog README.md (from data/catalog-source)
+  sentences:
+  - A declarative policy compiles to a git hook that runs on every commit in your repository; a policy shipping an `implementations/` guard becomes a guard script consulted before your agent runs a command; `java-security` and `no-a11y-regression` run their own program at commit and when the agent writes; `firecrawl-fallback-only` and `token-efficiency` run theirs before a matching tool call.
+  - '`--ref` refuses a commit that is on no branch or tag of the catalog; `--verify-sha` refuses the install unless the fetched pack hashes to the value you name.'
+- source: chock-catalog agentic-security/agentic-code-security/evals/suite.yaml
+  sentences:
+  - A file `agents/proxy.py` runs AutoGen code with use_docker False, judged at commit.
+  - A file `agents/proxy.py` runs code in Docker, or not at all, judged at commit.
+  - 'Allowed: A file `agents/proxy.py` runs code in Docker, or not at all, judged at commit.'
+  - 'Refused: A file `agents/proxy.py` runs AutoGen code with use_docker False, judged at commit.'
+- source: chock-catalog agentic-security/agentic-code-security/manifest.yaml
+  sentences:
+  - 29 rules in 10 packs -- exec, supply, tools, approval, identity, comms, bounds, prompt-memory, code, provenance -- each pack or rule allow|deny in .chock/agentic-security.json; bounds, prompt-memory and one supply rule start as allow.
+  - 'A key is the rule id, the dotted enclosing class and function names from the syntax tree (empty outside Python) and the flagged line with its whitespace collapsed -- no line number, so a violation that only moves is old, a second copy is new, and a deleted line can make a finding new: a `cur.execute(` whose first argument was a fixed SQL string becomes a finding when that line is deleted and an f-string moves into first place.'
+  - 'On stdout it prints {"findings": [{key, path, line, message, new?}]}; the runner runs it again on the baseline text -- HEAD at commit and at the turn''s end, the file on disk before the write at PreToolUse -- and blocks only a (path, key) the change holds more of than the baseline.'
+  - 'Trigger: writing agent code or agent config -- Python or TypeScript using AutoGen, CrewAI, LangChain, LangGraph, mem0, the OpenAI Agents or Claude Agent SDK, an MCP server or client (.mcp.json, .cursor/mcp.json, .vscode/mcp.json, claude_desktop_config.json, .codex/config.toml, .gemini/settings.json), docker-compose files for agents.'
+- source: chock-catalog agentic-security/block-unpinned-agent-components/manifest.yaml
+  sentences:
+  - 'Blocks dist-tags (latest, next, canary, beta, rc, nightly) on npx/uvx/bunx, dlx, add/install and pipx run; FROM at latest or an untagged registry path; floating docker run/pull and docker:// refs; pip --pre; go install at latest; unversioned cargo installs; git+ installs and requirements, and github: dependencies, with no commit SHA.'
+- source: chock-catalog agentic-security/block-unsafe-code-execution/manifest.yaml
+  sentences:
+  - 'Waiver ''pragma: allowlist exec'' on the line; in the agent only if already committed in HEAD.'
+  - '`0.0.2` · `2026-08-16` · Add compliance claims (mitre_atlas); no mechanism change.'
+- source: chock-catalog agentic-security/block-wildcard-iam/manifest.yaml
+  sentences:
+  - 'Escape: ''pragma: allowlist broad-privilege'' on the same line, honoured at commit; at agent tool-use only when that exact line is already committed in HEAD.'
+  - 'Friction, not a security boundary: grants split across lines (iam-policy-scan reads those), partial wildcards, unlisted services and roles, YAML aliases or tags and runtime-built grants pass; other Deny forms and admission-webhook wildcards are refused.'
+- source: chock-catalog agentic-security/iam-policy-scan/manifest.yaml
+  sentences:
+  - '`0.1.1` · `2026-10-02` · Final verification, fixed: a wildcard-principal Condition value that leaves the account open (`arn:aws:iam::*:role/*`, `arn:aws:iam::*:root`, `*iam*`, `aws:SourceArn` with a wildcard account, a wildcard in an account-id key) no longer counts as narrowing, so the policy is still refused as public; `jsonencode(...)` is read wherever it sits in an expression (a map or list element, a `replace()` or `trimspace()` argument, a conditional, a `"${...}"` template, another jsonencode), not only as a whole attribute; a quoted JSON policy string with a `${}` interpolation is read with the interpolation as a placeholder; `sts:Assume*` counts as an assume action for the cross-account ask; the embedded-JSON test no longer backtracks quadratically (a 300 KB string of backslashes stalled the gate past its time limit).'
+- source: chock-catalog agentic-security/owasp-asi01-agent-goal-hijack/manifest.yaml
+  sentences:
+  - Do NOT use for the coding agent's own session hygiene — that is `injection-defense`.
+- source: chock-catalog agentic-security/owasp-asi02-tool-misuse/manifest.yaml
+  sentences:
+  - Do NOT use for the credentials the tool authenticates with — that is `owasp-asi03-identity-privilege-abuse`.
+- source: chock-catalog agentic-security/owasp-asi03-identity-privilege-abuse/manifest.yaml
+  sentences:
+  - Do NOT use for keeping secrets out of the repository — that is `code-safety` and `scan-secrets`.
+- source: chock-catalog agentic-security/owasp-asi05-unexpected-code-execution/manifest.yaml
+  sentences:
+  - Do NOT use for eval/exec appearing in ordinary application code — that is `code-safety`.
+- source: chock-catalog agentic-security/owasp-asi06-memory-context-poisoning/manifest.yaml
+  sentences:
+  - Do NOT use for the coding agent's own memory files — that is `memory-discipline`.
+- source: chock-catalog agentic-security/owasp-asi07-insecure-inter-agent-communication/manifest.yaml
+  sentences:
+  - Do NOT use for a single agent calling ordinary tools — that is `owasp-asi02-tool-misuse`.
+- source: chock-catalog agentic-security/owasp-asi08-cascading-failures/manifest.yaml
+  sentences:
+  - Do NOT use for the transport security of those handoffs — that is `owasp-asi07-insecure-inter-agent-communication`.
+- source: chock-catalog agentic-security/owasp-asi09-human-agent-trust/manifest.yaml
+  sentences:
+  - Do NOT use for what the agent is permitted to do once approved — that is `owasp-asi02-tool-misuse`.
+- source: chock-catalog agentic-security/owasp-asi10-rogue-agents/manifest.yaml
+  sentences:
+  - Do NOT use for a single hijacked request within a supervised session — that is `owasp-asi01-agent-goal-hijack`.
+- source: chock-catalog base/agent-devenv-autoexec/manifest.yaml
+  sentences:
+  - Commit, agent write, turn's end; additions only; unreadable configs refused.
+  - 'It judges only what a change adds: each finding is keyed by rule, place (file and key path) and normalized value, and the engine runs it again on the baseline text.'
+  - JSONC is read with chock_scan.jsonc and YAML with chock_scan.yamlpath; a config either cannot read with certainty (bad syntax, duplicate keys, YAML aliases or merge keys, malformed git config) is reported as dev-unparseable, keyed by a digest, never passed.
+  - 'Warns only (observe): flags files that make a dev tool run code on open, clone or shell entry -- agent hooks, helpers, env/BASE_URL overrides, auto-approve; VS Code folderOpen tasks, trust off, repo executables; devcontainer initializeCommand; .envrc, mise, husky, lefthook, pre-commit; gitconfig exec keys, gitattributes drivers, unsafe .gitmodules.'
+- source: chock-catalog base/agent-permissions-scan/manifest.yaml
+  sentences:
+  - 'Hook commands are not judged: chock sync writes them, and agent-devenv-autoexec warns on risky ones.'
+  - 'Misses: user-level and managed settings (the hook never passes a write outside the repository to this gate); endpoint keys of other agents (Codex model_providers base_url, Gemini .env files) and any other env name that redirects traffic (proxies, CA bundles: agent-devenv-autoexec warns); an env set in .mcp.json server entries; named enabledMcpjsonServers entries: verify-mcp-allowlist decides which servers may run.'
+- source: chock-catalog base/ask-credential-switching/manifest.yaml
+  sentences:
+  - 'Asks a person before a shell command switches the identity later commands act as: aws --profile, AWS_PROFILE= or AWS keys (also $env:), sts assume-role, configure set of a key; gcloud account, configuration, login or impersonation; az account set, az login as a principal or identity; kubectl use-context or set-credentials; writes to ~/.aws, ~/.config/gcloud, ~/.azure.'
+  - The engine (chock a2dd3de) sets CHOCK_CAN_ASK per wire event; where it is "0" (the client cannot show an ask as a prompt there) a found switch exits 0 and prints one stderr note naming what was let through, instead of the refusal the client made of an ask.
+  - 'The registry label reads the event the guard is wired at per client: asks on Claude Code and Cursor (beforeShellExecution); on Copilot, asks in VS Code and is not enforced in Copilot CLI; not enforced on Codex and Devin.'
+- source: chock-catalog base/block-destructive-commands/manifest.yaml
+  sentences:
+  - Best-effort, on parsed commands (echo ignored); verdicts come from the chock_destructive table shared with rtk-dangerous-actions-blocker.
+  - Blocks recursive deletes of root, home or abs paths; mv/chmod/chown -R of system dirs; dd to devices, mkfs; account lockouts; force, delete and mirror pushes; history rewrites; IaC destroy; listed cloud and platform deletes; DB drops.
+- source: chock-catalog base/block-fetch-exec-in-files/manifest.yaml
+  sentences:
+  - 'Fixed: an echo/printf/Write-Host line was skipped wholesale, so an echo followed by && and a piped download went unseen (now skipped only when the line is the echo and nothing chains after it; make''s @echo and -echo included); a ''#'' inside a word before the downloader hid the line; the here-string/substitution runners now see ''/dev/stdin <<<'', ''command curl'', ''env curl'' and ''/usr/bin/curl''; the pipe form sees a a DownloadString call piped to iex, a piped ''sudo -u root sh'', ''/usr/bin/env bash'', ''source /dev/stdin'', and python with flags before stdin (''python3 -u -'', ''python3 -I''); PowerShell iex of ''$(irm ...)'', ''& { $(irm ...) }'' and curl aliases; Dockerfile exec-form ''ADD ["URL", "/dst"]''.'
+  - 'Known limits named in the description: continuation lines, variables ($(CURL), $SHELL, x=$(curl ..); eval $x), unicode-escaped JSON, split or quoted command names (c""url), download-to-file then run, fetchers and interpreters outside the lists (http, fetch, nc, deno, Rscript, tclsh, su -c, ssh, docker run -i), quoted echo arguments containing $(download piped to sh), extensionless scripts, and a line with thousands of repeated downloader words takes seconds to judge.'
+  - 'Warns (observe rollout) when a line added to a script, Dockerfile, Makefile, CI workflow or package.json wires a download into a code runner: curl/wget/aria2c/lynx/iwr/irm piped into a shell, python/perl/ruby/node/php/lua on stdin, pwsh or iex; bash -c, eval, source or a here-string of a $(...) or <(...) download; Dockerfile ADD of a URL without --checksum.'
+- source: chock-catalog base/block-hook-bypass-in-files/manifest.yaml
+  sentences:
+  - 'Friction, not a security boundary: flags lines added to hook launchers and scripts that switch git hooks off -- the hook-skip option on a git commit/push/merge/am/rebase/pull, core.hooksPath set by git config or GIT_CONFIG_*, the husky, lefthook and pre-commit off-switch variables, a pre-commit, lefthook or husky (v8 and older) uninstall -- in .husky/, .githooks/, lefthook, package.json, Makefile, justfile, .envrc, *.sh.'
+  - 'Friction, not a security boundary: flags lines added to hook launchers and scripts that switch git hooks off -- the hook-skip option on a git…'
+- source: chock-catalog base/block-no-verify/manifest.yaml
+  sentences:
+  - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/revert, -n on commit/am; core.hooksPath set by -c, git config or GIT_CONFIG_*; HUSKY=0, SKIP=, LEFTHOOK=0 and kin; hook manager uninstall; aliases and rebase --exec defined in the command.
+- source: chock-catalog base/block-persistence-shapes/manifest.yaml
+  sentences:
+  - 'Best-effort guard against shell commands that publish or keep access after the session: npm/pnpm/yarn/twine/ poetry/uv/cargo/gem publish, docker/podman push and login, npm token and registry edits, repos made public; user services, launch agents, cron/at/schtasks, Run keys, authorized_keys, runner registration, sudoers, setuid bits, detached downloads.'
+- source: chock-catalog base/block-secret-store-reads/manifest.yaml
+  sentences:
+  - 'Best-effort guard against an agent reading credentials from the shell: cat, cp, tar, source or < on ~/.ssh (not .pub), ~/.aws, ~/.npmrc, agent CLI dirs, browser DBs, wallets, .env, *.tfstate; interpreter one-liners naming them; token printers (gh auth token, aws sts); curl, wget or iwr to cloud metadata credential paths (169.254.169.254, 169.254.170.2, GCE).'
+  - 'Every path is refused except a short list that holds no credential: AWS placement/region, availability-zone, instance-id, instance-type, ami-id, hostnames, local-ipv4, the unsigned identity document and the IMDSv2 session token (bound to the instance); GCE zone, id, name, hostname, machine-type and project ids; Azure compute location, zone, vmSize, vmId, name, resourceGroupName and osType; OCI region, availability domain, id, shape and display name; ECS task metadata v2/v3/v4.'
+- source: chock-catalog base/block-test-skips/manifest.yaml
+  sentences:
+  - 'Blocks newly added test skips, focus markers and runner options that hide tests: pytest/unittest skips, non-strict xfail, importorskip; JS skip/only/todo/fixme, x/f prefixes; JUnit Disabled/Assume; Go Skip, Short(); Rust ignore; RSpec, PHPUnit, C#, Swift skips; --deselect/-k not, collect_ignore, jest testPathIgnorePatterns.'
+  - 'Blocks newly added test skips, focus markers and runner options that hide tests: pytest/unittest skips, non-strict xfail, importorskip; JS…'
+  - 'Other languages by extension: JS/TS `skip/only/todo/fixme/skipIf/runIf` on any it/describe/test chain (`it.concurrent.skip`, `describe.skip.each`), `.each(table).skip` matched as a group, `it/test.fails`, `x`/`f` prefixes (`xtest`, `fit`, `fdescribe`), mocha `this.skip()`; JVM `@Disabled*`, `@Ignore*`, `@EnabledIf/On/For*`, `Assume*`/`assume*`/`assumingThat`, TestNG `enabled = false`/`SkipException`, Kotest `xtest`/`config(enabled = false)`; Go `.Skip*()` on a testing receiver and `testing.Short()` guards that return or skip; Rust `#[ignore]` and `cfg_attr(..., ignore)` in every .rs file (the attribute only marks tests); Ruby statement-initial `x`/`f` prefixes, `skip`, `pending`, and `:skip`/`skip:`/`focus:` example metadata; PHPUnit `markTestSkipped/Incomplete`; C# `[Fact/Theory(Skip=)]`, `[Ignore]`, `[Explicit]`, `Skip.If`, `Assert.Ignore/Inconclusive`, `Assume.*`; Swift `XCTSkip*`, `XCTExpectFailure`, `.disabled(`.'
+  - 'Runner configs anywhere by base name: pytest.ini, pytest.toml, pyproject.toml, setup.cfg, tox.ini lines (in a pytest section, or running pytest) with `--deselect`, `--ignore`/`--ignore-glob` (not `--ignore-installed`) or `-k ... not`; conftest.py `collect_ignore`/`collect_ignore_glob` entries, `pytest_ignore_collect`, and item removal or `pytest_deselected` in `pytest_collection_modifyitems`; jest.config.* and package.json `testPathIgnorePatterns`, one finding per entry (Jest''s default `/node_modules/` aside), the whole list when an entry is not a string.'
+  - 'Runs: commit, agent write, turn''s end; only additions judged.'
+  - 'Waiver: ''chock: allow test-skip'' same line; agent: only if in HEAD.'
+- source: chock-catalog base/block-unapproved-egress/manifest.yaml
+  sentences:
+  - 'Best-effort guard on the tool channel: blocks sending data to a host outside the allowlist (.chock/egress-allowlist.txt, else a built-in registry list): curl/wget/iwr uploads, nc/socat/telnet, scp/rsync/sftp, ssh commands, aws/gsutil/az uploads, git push|remote add URLs, $(..)/$VAR in a URL or host.'
+- source: chock-catalog base/block-unguarded-agent-spawn/manifest.yaml
+  sentences:
+  - 'Refuses agents with safety off: claude --dangerously-skip-permissions, bypassPermissions, wildcard --allowedTools; codex --full-auto, --yolo, -a never, danger-full-access; gemini --yolo; cursor-agent --force; aider --yes-always; copilot --allow-all-tools; amp, cline, goose, opencode auto-approve; DeepSeek Harness 127.0.0.1:3080/api calls lifting sandbox/approvals (CVE-2026-82533).'
+  - '`0.2.0` · `2026-10-11` · Refuses a shell HTTP request (curl, wget, HTTPie http/https, xh, Invoke-RestMethod/irm, Invoke-WebRequest/iwr) to DeepSeek Harness''s loopback control API -- port 3080, path /api, host localhost, 127.x, 0.0.0.0, [::1] or omitted -- whose arguments or heredoc carry danger-full-access or an approval set to never: the one-command sandbox escape of CVE-2026-82533 (OX Security, https://www.ox.security/blog/cve-2026-82533-deepseek-harness-ai-agent-sandbox-escape/; VulnCheck CNA, https://www.cve.org/CVERecord?id=CVE-2026-82533).'
+- source: chock-catalog base/chock-mise/manifest.yaml
+  sentences:
+  - 'Trigger: personalize the coding agent to its owner -- adopt the owner''s dialect, taste, habits and demeanor so it works like a trained twin of that developer.'
+  - 'apply: the owner''s chock-mise profile where present; defer to committed project standards where it is silent or conflicts.'
+- source: chock-catalog base/ci-github-actions-security/evals/suite.yaml
+  sentences:
+  - 'Allowed: The title is passed through env: and read as a quoted variable.'
+- source: chock-catalog base/ci-github-actions-security/manifest.yaml
+  sentences:
+  - 'Friction, not a security boundary: refuses or asks (each rule''s tier) on GitHub Actions weaknesses a change adds to workflows, composite actions and dependabot.yml: event text in run/script, PR-head checkout under pull_request_target/workflow_run/issue_comment, missing or write-all permissions, secrets inherit or inlined, self-hosted runners on PRs, GITHUB_ENV writes, artifact and cache poisoning, agent steps on untrusted text.'
+  - 'The manifest moves from action: warn / enforcement: advise to action: block / enforcement: block, the ceiling; the script already exits 1 for a block-tier rule and 3 for an ask-tier one, so each rule now lands on its roadmap default (section 6 ci-github-actions-security table).'
+  - The pack cleared D15 with a fire rate of 0.6% over the catalog's full first-parent history (154 commits, chock-catalog#223; one adopter not measured).
+- source: chock-catalog base/code-safety/manifest.yaml
+  sentences:
+  - eval/exec is Python-only; only the SQL rule also covers JS, which the description and rule text now say.
+- source: chock-catalog base/compromised-package-ioc/manifest.yaml
+  sentences:
+  - A snapshot, not a feed; friction, not a boundary.
+- source: chock-catalog base/dockerfile-compose-security/manifest.yaml
+  sentences:
+  - A one-line form is left to block-fetch-exec-in-files, block-unpinned-agent-components or agentic-code-security only where that gate is installed and reads the file; scan-secrets lines always.
+  - 'Blocks (some rules ask) when a change to a Dockerfile, Containerfile or compose file adds: a base image with no tag, latest, an unresolvable ARG or no digest (stage-aware: FROM or COPY --from a stage is not an image); a final stage running as root; TLS or package-signature checks off; secret-named ENV/ARG/environment literals; COPY of key or .env files; remote ADD without checksum; fetch piped to a shell; RUN --security=insecure; chmod 777 or setuid; sudo, sshd, chpasswd; unpinned git clone; ONBUILD RUN; compose privileged, broad cap_add, unconfined profiles, devices, host namespaces, runtime socket or host-root mounts, database ports on every interface, untagged images.'
+- source: chock-catalog base/git-safety/manifest.yaml
+  sentences:
+  - '`0.0.4` · `2026-09-30` · Wording only: limit-diff-size is listed as an enforced counterpart (it asks at commit), not as advisory; protect-main-branch is named as a commit and push gate and block-destructive-commands as a command guard plus pre-push hook.'
+- source: chock-catalog base/guard-deletion/manifest.yaml
+  sentences:
+  - 'A bare `mode` now needs an octal literal with a leading 0 (`mode: 0640`), so a status code on a line with the word mode (`404` to `403`) no longer reads as a file-mode swap; `umask` is no longer read, because its digits mean the reverse of chmod''s.'
+  - 'An agent''s move of a file into a judged path from one outside it (tests, docs, a skipped suffix) now asks: it closed a three-commit self-waiver (plant a pragma on a guard line under tests/, move the file in, then remove the line).'
+  - 'Limits named: authorization wired by dependency injection or a config chain (FastAPI `Depends`, Spring `authorizeRequests`) is not read; a replacement line that only mentions a guard or header in a string (a log message) counts as keeping it; a removed chmod with no weaker mode in its place is not seen; umask is not read; files with CR-only line endings are read as one line; binary files whose suffix is not listed are read as text and ask.'
+  - The trigger text says a file mode is judged on a swap only.
+- source: chock-catalog base/guard-memory-writes/manifest.yaml
+  sentences:
+  - Judges memory files only (MEMORY.md, CLAUDE.local.md, .claude/memory/**, memory/**/*.md, the agent's own stores) and what a change adds.
+- source: chock-catalog base/hardening-flags/manifest.yaml
+  sentences:
+  - 'Limits named that were found missing from the list: Microsoft toolchain switches (`/GS-`, `/DYNAMICBASE:NO`, `/NXCOMPAT:NO`, `/guard:cf-`) in any file; runtime and deployment weakening (sysctl and `sysctl.conf` such as kernel.randomize_va_space=0, kptr_restrict, ptrace_scope, `setenforce 0`, SELinux or AppArmor off, seccomp=unconfined, `--privileged`, `--cap-add=ALL`, compose files and Kubernetes securityContext), none of which this policy reads; `cc::Build::define("_FORTIFY_SOURCE", "0")` in build.rs; a flag whose characters are split by shell quotes (`-fno-stack-pro"tector"`) or built by command substitution; and CI workflow files, `.zsh` and `.ps1` scripts, justfiles and `CMakePresets.json`.'
+  - Not MSVC, sysctl or container settings; misses environment flags, generated files.
+- source: chock-catalog base/java-security/manifest.yaml
+  sentences:
+  - '129 rules, 16 packs, each allow|deny|ask in .chock/security.json; absent = deny (quality: allow).'
+  - A verdict a selection file spells keeps its value; only silence changed meaning.
+  - 'Known limit: an empty catch around a security check (`checkServerTrusted`, `parseClaimsJws`, `verify`) was refused only by the quality rule exceptions-empty-catch, so with no selection it now passes; spell the exceptions pack as deny to keep that refusal.'
+  - The nine security packs (79 rules) still deny; the seven quality packs -- bugs, concurrency, resources, exceptions, performance, style, testing (50 rules) -- now allow, so a legacy file's existing quality findings no longer refuse an edit.
+  - 'Trigger: writing Java or Kotlin (Spring, Jakarta EE, Quarkus, Android), SQL/JPA/MyBatis, templates, application.properties/.yml, web.xml, pom.xml, Gradle; "customize java security" opens the guided page.'
+- source: chock-catalog base/limit-diff-size/manifest.yaml
+  sentences:
+  - 'avoid: one commit carrying hundreds of hand-written lines; lockfile and generated churn is not counted.'
+- source: chock-catalog base/no-a11y-regression/manifest.yaml
+  sentences:
+  - They called it a commit-time guard script, which left out the hook.gate that has judged the agent at tool use since 1.1.0.
+  - 'avoid: breaking a requirement the previous revision met; interrupting a correct fix.'
+  - tools/mechanism.py now names both, `commit-time guard script + tool-use script gate`, and the page says the tool-use point is best-effort (it needs the agent's hook installed and fails open if the hook crashes) while the commit stays the enforced one.
+- source: chock-catalog base/opaque-blob-guard/manifest.yaml
+  sentences:
+  - 'Warns (observe rollout; never refuses yet) when a change adds or edits, in tests/, fixtures/, testdata/, spec/, m4/, vendor/, gradle/wrapper/: a file whose first bytes are an archive, executable, wasm or database signature (any extension), a random-looking non-media file over 100 KB, or a symlink out of the repo; m4/configure/Makefile text that decodes and evaluates; a gradle wrapper jar changed with no new distributionSha256Sum.'
+  - '`0.0.2` · `2026-10-02` · Fix: a path holding a NUL byte or a lone surrogate (an agent write can name one) crashed the script; it is now an unreadable finding.'
+- source: chock-catalog base/package-lifecycle-scripts/manifest.yaml
+  sentences:
+  - 'Blocks fetch-exec class hooks and asks about other new ones when a change adds or edits code that runs at install or build time: npm install/prepare/pack scripts, gypfile without native sources, bin shadowing, unpinned git/URL deps; setup.py cmdclass and import-time calls, .pth imports, conftest, pyproject build hooks; build.rs and build-deps; go:generate; MSBuild Exec; gemspec, extconf, Podfile, Composer, Maven, Gradle exec.'
+  - Judges file text, not what a hook runs.
+- source: chock-catalog base/protect-agent-config/manifest.yaml
+  sentences:
+  - Folders match as a whole path segment in any case; `opencode.json`, `opencode.jsonc`, `kilo.json`, `kilo.jsonc` and `.continuerc.json` match only as a whole file name, at any level, because opencode and Kilo look for them from the working directory up to the git root.
+  - 'Refused as a shell write and as an Edit/Write, each path taken from the vendor''s own docs: Kilo Code `.kilocode/` (rules, workflows, mcp.json, still read for backward compatibility), `.kilo/` and `kilo.json`/`kilo.jsonc` (kilo.ai/docs/automate/mcp/using-in-kilo-code, kilo.ai/docs/customize/custom-rules); opencode `.opencode/` (agents, commands, plugins, which run code) and `opencode.json`/`opencode.jsonc` (opencode.ai/docs/config); Factory Droid `.factory/` (settings.json, hooks.json, mcp.json, droids; docs.factory.com/droid-cli/settings, /harness/hooks, /harness/mcp, /harness/subagents); Amp `.amp/` (settings.json with permissions and MCP servers, skills; ampcode.com/docs/cli/settings); Continue `.continue/` (rules, mcpServers) and the workspace file `.continuerc.json` (docs.continue.dev/customize/deep-dives/configuration, /mcp); Goose `.goosehints`, an instruction file Goose loads at every level up to the repository root (goose-docs.ai/docs/guides/context-engineering/using-goosehints), which below a `docs` folder asks a person like AGENTS.md.'
+  - 'Shell guard refuses writes to AGENTS.md, whole agent folders (.claude/, .cursor/, .codex/, .gemini/, .agents/, .chock/, ...), MCP/hook client configs (.mcp.json, ...), guardrails toggles, plugin install markers, hook files of Cline, Kiro, Augment, Windsurf and Devin (user and machine level too), ~/.claude.json, Claude Code plugin roots, project config of Kilo Code, opencode, Factory, Amp, Continue and Goose, .git/{hooks,config}, policy implementations/: redirect, rm/mv/tee/sed -i, cp into, git checkout/restore, a write through a symlink; CLAUDE_CODE_PLUGIN_DIRS, claude --plugin-dir (best effort).'
+  - '`0.5.0` · `2026-10-10` · Behaviour change, the project config of six more agents (G3; eval cases tc-1463 to tc-1502; tests in test_protect_agent_config_agents.py).'
+- source: chock-catalog base/protect-ci-workflows/manifest.yaml
+  sentences:
+  - 'Not judged: deletions, empty writes, shell writes to non-GitHub CI paths; plugin installs ship no gate.'
+  - Shell guard refuses writes to .github/workflows/, .github/actions/, .github/dependabot.y*ml (redirect, rm/mv/tee/sed -i, cp into, git checkout/restore, cmdlets); reads and `chock sync` pass.
+- source: chock-catalog base/protect-test-integrity/evals/suite.yaml
+  sentences:
+  - 'Allowed: A test is refactored: assertions are reworded and moved into a helper, and none is lost.'
+- source: chock-catalog base/protect-test-integrity/manifest.yaml
+  sentences:
+  - 'Agent: only if already in HEAD; it asks a person.'
+  - 'Runs: commit (incl. an agent''s commit: CHOCK_AGENT_COMMIT, CLAUDECODE=1, AI_AGENT or agent_commit_env), agent write (vs disk), turn''s end (vs HEAD).'
+  - Since chock 0.14.0 a waiver already committed in HEAD counts in the agent (tool use, the turn's end, an agent's commit), the same as block-test-skips; a waiver on a new line does not.
+- source: chock-catalog base/refname-filename-metachar/manifest.yaml
+  sentences:
+  - Paths a change adds or renames into (commit, agent writes), and branches and tags pushed (pre-push), with command substitution, an IFS expansion, a backtick, ; & | < >, a control or bidi character, a base64-decode shape, a leading dash or trailing space or dot in a segment, or a '..' segment; a ref also with a full commit id's shape.
+- source: chock-catalog base/registry-config/manifest.yaml
+  sentences:
+  - From CPython 3.12.15 (gh-155292, CVE-2026-17084) the stdlib IDNA2003 codec keeps those letters while the URL Standard lowercases them, so the two read two different hosts; older interpreters lowercased them and accepted the name.
+  - 'Refuses package-manager config that redirects installs or weakens them: literal tokens, http or unlisted registry hosts (parsed, so lookalike and userinfo spellings fail), TLS or checksum checks off, install scripts on (npm, Yarn, pnpm, Bun, pip, uv, Poetry, conda, Go, Cargo, NuGet, Maven, Bundler, Composer, Hex, Dependabot); asks on extra indexes, replaces, no cooldown.'
+- source: chock-catalog base/review-like-a-red-team/manifest.yaml
+  sentences:
+  - 'Trigger: finishing or committing a diff that touches code, build or CI config, dependencies or agent config; a plan adding a handler, parser, auth path, crypto or sink; an ask-tier gate finding.'
+- source: chock-catalog base/rtk-dangerous-actions-blocker/manifest.yaml
+  sentences:
+  - What this policy refuses is otherwise unchanged; it now also judges the command inside those forms.
+- source: chock-catalog base/scan-instruction-files/manifest.yaml
+  sentences:
+  - 'A script gate over agent instruction files, judged by path, case-insensitively: AGENTS.md (and AGENT.md, AGENTS.override.md), CLAUDE.md, CLAUDE.local.md, GEMINI.md, SKILL.md and MEMORY.md anywhere; .cursorrules, .windsurfrules, .clinerules (file or folder), .roorules; .cursor/rules/, .windsurf/rules/, .roo/rules*/, .kiro/steering/, .continue/{rules,prompts}/, .amazonq/rules/, .augment/rules/, .trae/rules/, .codex/prompts/, .gemini/commands/, .claude/{commands,agents,skills,memory}/; .github/copilot-instructions.md and .github/{instructions,prompts,agents,chatmodes}/; *.instructions.md, *.prompt.md, *.chatmode.md, *.agent.md; .junie/guidelines.md; memory/*.md; and `.agents/policies/INDEX*.md`, which chock''s pointer in AGENTS.md tells every agent to read.'
+  - Added text only; English phrases; friction, not a boundary.
+  - 'Nothing is skipped by location: chock''s installed copies (`.agents/policies/`, `.chock/`) and a catalog''s policy skill pages are judged like any instruction file, because an agent loads them too.'
+  - 'One exception is the engine''s, not this script''s: it never runs a policy''s gate on that policy''s own installed folder (`.agents/policies/scan-instruction-files/`), whose eval suite carries the text it refuses; protect-agent-config guards that folder''s implementations/ only.'
+- source: chock-catalog base/scan-secret-files/manifest.yaml
+  sentences:
+  - Blocks; encrypted keys, notebook outputs and test, fixture, example, doc, lock and eval paths ask.
+  - 'Friction, not a security boundary: flags files that are secrets by name or content -- private keys and key stores, Google service-account/OAuth JSON, kubeconfig users, AWS, npm, PyPI, netrc, git, pgpass, docker, Composer, NuGet, Maven credentials, tfstate/tfvars, non-template .env, framework secret files, browser stores.'
+- source: chock-catalog base/scan-secrets-entropy/manifest.yaml
+  sentences:
+  - 'Friction, not a security boundary: asks a person before a write adds secrets scan-secrets misses -- high-entropy values (16-150 chars) by secret-like keys, GitHub/npm tokens with valid checksums, Stripe test keys, Slack/AWS key-id shapes, Luhn-valid cards.'
+- source: chock-catalog base/scan-suppression-markers/manifest.yaml
+  sentences:
+  - Only added lines; prose skipped.
+  - 'Runs: commit, agent write, turn''s end; CI annotates.'
+  - The script prints a findings document; the engine re-runs it on the baseline and asks only about what the change adds, so a marker line already in HEAD, or one that only moves within its file, is old.
+- source: chock-catalog base/verify-dependency-exists/manifest.yaml
+  sentences:
+  - Reads Python, Node, Rust, Ruby, PHP, JVM, .NET, Go, Elixir, Dart and Swift manifests (read, never run); blocks an added name missing from .chock/dependency-allowlist.txt and asks on a lockfile-only addition.
+- source: chock-catalog base/verify-mcp-allowlist/manifest.yaml
+  sentences:
+  - 'Script gate (commit, tool use, turn end) reads 13 client configs: a server off the list, or with other command, args or url host, refuses; unpinned or shell launchers, http, literal credentials, old versions only warn.'
+- source: chock-catalog ci-gates.json (from data/catalog-source)
+  sentences:
+  - Every test job this run needed passed; Install the coverage tooling; Combine the shards, 100% line and branch coverage
+  - Read the framework pin; Check out the framework; The framework checkout is the pinned commit; Install Chock and the lint tooling; Registry matches the policies on disk; Installed policies trail, never lead, what this catalog publishes; Workflow triggers cannot hand fork code our secrets; Compiled artifacts match their manifests; Published policies are current Agent Plugins packages; Lint (ruff, the framework's rule set); Formatting (ruff format)
+  - Read the framework pin; Check out the framework; The framework checkout is the pinned commit; Install Chock and the test tooling; Changed tests no policy job owns, and repo standards
+  - Read the framework pin; Check out the framework; The framework checkout is the pinned commit; Install Chock and the test tooling; Tests of this policy, its implementations at 100% line and branch coverage
+  - Read the framework pin; Check out the framework; The framework checkout is the pinned commit; Install Chock and the test tooling; Tests, one shard (every policy, every rule)
+  - Read the framework pin; Check out the framework; The framework checkout is the pinned commit; Install Chock; Stage the published policies and skills as an adopter would; Validate the staged policies and replay their evals; OWASP ASI coverage claim holds in the staged adopter
+  - Read the framework pin; Check out the framework; The framework checkout is the pinned commit; Install Chock; This repo is a valid adopter; Declared effects match what the guards actually do; Reviewer evidence, if the PR carries any
+  - Restore the file times main last recorded; Plan this run
+  - Restore the file times main last recorded; Sum the junit times by test file and keep each file's longest test; Slow-test report; Save the file times for the next run; No single test takes longer than the cap
+- source: chock-catalog compliance/eu-ai-act-high-risk-triage/manifest.yaml
+  sentences:
+  - Warns when code puts an AI system into an EU AI Act Annex III high-risk domain — biometrics, critical infrastructure, education, employment, essential services and credit, law enforcement, migration, justice and elections — and asks for an owner of the Article 9-15 obligations before the capability ships.
+- source: chock-catalog compliance/eu-ai-act-transparency/manifest.yaml
+  sentences:
+  - Everything else here stays advisory, and no rule text or claim is raised; the pointer is a see() and a references section.
+  - Use when adding a chatbot or assistant surface, a generation endpoint, or an export path for model output.
+- source: chock-catalog docs/protect-ci-workflows/README.md
+  sentences:
+  - Refuses a matched shell command before it runs; asks on an agent's file writes and at turn end
+  - Refuses a matched shell command before it runs; asks on an agent's file writes and at turn end.
+- source: chock-catalog docs/refname-filename-metachar/README.md
+  sentences:
+  - Refuses a matched shell command before it runs; blocks on an agent's file writes and at turn end
+  - Refuses a matched shell command before it runs; blocks on an agent's file writes and at turn end.
+- source: chock-catalog registry.yaml (label text from chock src/chock/plugin/bundle_grade.py and the catalog's tools/label_honesty.py)
+  sentences:
+  - Asks before a matched shell command runs in VS Code; not enforced in Copilot CLI (it cannot prompt there)
+  - Blocks at turn end only; the write itself is not judged
+  - 'Blocks at turn end only; the write itself is not judged; fails open: a hook error lets the call proceed (vendor docs only, not witnessed)'
+  - Refuses a matched shell command before it runs; blocks at turn end only; the write itself is not judged
+  - 'Refuses a matched shell command before it runs; blocks at turn end only; the write itself is not judged; fails open: a hook error lets the call proceed (vendor docs only, not witnessed)'
+  - 'Refuses a matched shell command before it runs; fails open: a hook error lets the call proceed (vendor docs only, not witnessed)'
+  - Refuses a matched shell command before it runs; refuses an agent's file writes (this client cannot prompt there); refuses at turn end (this client cannot prompt there)
+  - Refuses a matched shell command before it runs; refuses at turn end only (this client cannot prompt there); the write itself is not judged
+  - 'Refuses a matched shell command before it runs; refuses at turn end only (this client cannot prompt there); the write itself is not judged; fails open: a hook error lets the call proceed (vendor docs only, not witnessed)'
+  - Refuses an agent's file writes (this client cannot prompt there); refuses at turn end (this client cannot prompt there)
+  - Refuses at turn end only (this client cannot prompt there); the write itself is not judged
+  - 'Refuses at turn end only (this client cannot prompt there); the write itself is not judged; fails open: a hook error lets the call proceed (vendor docs only, not witnessed)'
+  - Warns at turn end only; the write itself is not judged
+  - 'Warns at turn end only; the write itself is not judged; fails open: a hook error lets the call proceed (vendor docs only, not witnessed)'
+- source: chock-catalog tests/policies/test_guard_memory_writes_engine.py
+  sentences:
+  - Judges what a change adds.
+- source: chock-catalog tools/label_honesty.py
+  sentences:
+  - 'Text only in a plugin: nothing in the plugin stops a violation; the enforcement the manifest declares is not carried by a plugin'

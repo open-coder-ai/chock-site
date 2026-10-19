@@ -619,7 +619,9 @@ def test_install_mode_says_untested_and_skips_apply(
     answers = f"{CLIENT}\n./my-guardrails\ninstall\n"
     result = _run_script(_script(page), tmp_path, answers)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert f"not been witnessed applying to {CLIENT}" in result.stdout
+    assert (
+        f"No one has seen chock install on {CLIENT} in a live run yet" in result.stdout
+    )
     assert "custom, not reviewed" in result.stdout
     assert_clean(page)
 

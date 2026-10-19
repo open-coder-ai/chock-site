@@ -17,7 +17,7 @@
     "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ of them, each labelled blocks, asks, warns or advisory."},
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
-    "author": {"title": "Author a policy", "description": "Describe a safeguard in plain words; the page fills a chock policy template and writes a setup script you read and run yourself. Nothing is compiled or run in the browser."},
+    "author": {"title": "Author a policy", "description": "Describe a safeguard in plain words. The page fills a chock policy template and writes a setup script you read and run yourself. Nothing is compiled or run in the browser."},
     "clients": {"title": "Agents", "description": "chock.sh builds one plugin from your picks for __NAMES__. Where an agent has a plugin repository, it is a second way to get single policies."},
     "security": {"title": "Security", "description": "What chock is and is not: friction, not a security boundary. How the pieces are verified and how to report a bug."},
     "install": {"title": "Install", "description": "Install chock, build a plugin for your agent from a selection code, and update or remove it."},
@@ -29,11 +29,11 @@
   "texts": {
     "footer_line": "Friction, not a security boundary.",
     "builder_empty": "Pick a preset or add policies.",
-    "builder_noscript": "The builder needs JavaScript. You can still browse the policies and write a selection file by hand; see Install.",
+    "builder_noscript": "The builder needs JavaScript. You can still browse the policies and write a selection file by hand. See Install.",
     "builder_no_group": "Policies that no preset lists. Pick them one by one.",
     "the_agent": "The agent",
     "not_shown": "The catalog has __TOTAL__ policies. __HIDDEN_COUNT__ more __HIDDEN_VERB__ deprecated and not shown here: __HIDDEN_IDS__.",
-    "builder_outputs_hint": "You need chock on your machine; see Install. Read the command before you run it: it checks each policy against its hash at catalog __CATALOG_REF_12__.",
+    "builder_outputs_hint": "You need chock on your machine. See Install. Read the command before you run it: it checks each policy against its hash at catalog __CATALOG_REF_12__.",
     "builder_need_one": "Pick at least one policy.",
     "policies_intro": "__COUNT__ guardrails for AI coding agents. Each one is labelled with what it does: it blocks, asks you, warns, or is advice the agent reads.",
     "label_box_note": "Friction, not a security boundary.",
@@ -55,7 +55,7 @@
     "footer_tagline": "Blocks your coding agent's wrong moves before they land. Part of open-coder-ai.",
     "policies_search": "Search __COUNT__ policies: secrets, git, curl…",
     "computed_note": "Counts are computed from the catalog at each build.",
-    "grades_agent_note": "Labels and counts are the catalog's grades on __AGENT__; each policy's page lists its grade on every agent."
+    "grades_agent_note": "Labels and counts are the catalog's grades on __AGENT__. Each policy's page lists its grade on every agent."
   },
   "links": {
     "engine_repo": "https://github.com/open-coder-ai/chock",
@@ -69,7 +69,7 @@
     "blocks": "__AGENT__ refuses the action.",
     "asks": "__AGENT__ stops and asks you.",
     "warns": "The action goes ahead, with a warning.",
-    "advisory": "Text the agent reads; nothing stops a violation."
+    "advisory": "The agent reads the text, and nothing stops a violation."
   },
   "glyphs": {
     "block": "■",
@@ -95,18 +95,18 @@
     "follow_url": "https://github.com/open-coder-ai"
   },
   "security": [
-    {"heading": "What the policies are", "body": "Friction, not a security boundary. A policy makes a risky action refused, asked about, warned on or flagged — not impossible. Advisory text can be ignored, and a block on the shell can be sidestepped by a determined agent. Each label says exactly how far a policy goes."},
-    {"heading": "What the site does", "body": "The site is static files: nothing you pick leaves your machine, and the builder runs in your browser. Your selection lives in the URL fragment after the #, which browsers never send to a server. A policy you draft on the author page is saved only in this browser's localStorage; the page never sends it anywhere, and its share link carries the agent and catalog ids, never your draft. There is no cookie and no account. The site counts page views and a few actions, with no personal data; the list is at the end of this page."},
-    {"heading": "Why the command is safe to read before running", "body": "The command fetches one pinned catalog commit and checks every policy against its sha256 — the same hash shown on the policy's page. If the pack does not match, the install fails and nothing is written. The commit must be on a branch or tag the catalog publishes, so a link cannot point at a fork's code."},
+    {"heading": "What the policies are", "body": "Friction, not a security boundary. A policy makes a risky action refused, asked about, warned on or flagged. It does not make it impossible. Advisory text can be ignored, and a block on the shell can be sidestepped by a determined agent. Each label says exactly how far a policy goes."},
+    {"heading": "What the site does", "body": "The site is static files: nothing you pick leaves your machine, and the builder runs in your browser. Your selection lives in the URL fragment after the #, which browsers never send to a server. A policy you draft on the author page is saved only in this browser's localStorage. The page never sends it anywhere. Its share link holds the agent and catalog ids, and never your draft. There is no cookie and no account. The site counts page views and a few actions, with no personal data. The list is at the end of this page."},
+    {"heading": "Why the command is safe to read before running", "body": "The command fetches one pinned catalog commit and checks every policy against its sha256. That is the same hash shown on the policy's page. If the pack does not match, the install fails and nothing is written. The commit must be on a branch or tag the catalog publishes, so a link cannot point at a fork's code."},
     {"heading": "How to report a problem", "body": "Report it as a security issue in the chock-catalog repository, not as a public issue in the engine or the site.", "link": "security_policy", "link_label": "Report a security issue"}
   ],
   "install": {
     "install_heading": "Install chock",
     "install_command": "pip install \"chock @ git+https://github.com/open-coder-ai/chock@__FRAMEWORK_REF__\"",
     "install_command_released": "pipx install chock",
-    "install_note": "Python 3.11 or newer. The engine is the only install; the plugin is generated from the pinned catalog.",
+    "install_note": "Python 3.11 or newer. The engine is the only install. The plugin is generated from the pinned catalog.",
     "run_heading": "Run the command",
-    "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. `--client` names the agent. For an agent marked tested, `--apply` also runs that agent's own install steps; for an untested agent the command only builds the plugin, and you run the steps yourself.",
+    "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. `--client` names the agent. For an agent marked tested, `--apply` also runs that agent's own install steps. For an untested agent, the command only builds the plugin, and you run the steps yourself.",
     "agents_heading": "Each agent",
     "agent_command": "The command:",
     "agent_remove": "To remove it:",
@@ -115,25 +115,25 @@
     "remove_heading": "Remove",
     "remove_body": "Each agent's section above ends with its remove steps.",
     "file_heading": "The selection file",
-    "file_body": "A selection is a small JSON or YAML file naming the agent, the pinned catalog commit and the policies you picked. The builder writes one for you; the install command reads the same file. These are the fields it checks:",
+    "file_body": "A selection is a small JSON or YAML file naming the agent, the pinned catalog commit and the policies you picked. The builder writes one for you. The install command reads the same file. These are the fields it checks:",
     "file_fields": [
-      {"field": "schema", "meaning": "__SCHEMA__ — the selection format version."},
-      {"field": "client", "meaning": "The agent the plugin is built for: __CLIENTS__; --client on the command line overrides it."},
+      {"field": "schema", "meaning": "__SCHEMA__, the selection format version."},
+      {"field": "client", "meaning": "The agent the plugin is built for: __CLIENTS__. The --client option on the command line overrides it."},
       {"field": "bundle.version", "meaning": "The plugin's version, __BUNDLE_VERSION__ from this site."},
       {"field": "catalog.source", "meaning": "The chock-catalog repository."},
-      {"field": "catalog.ref", "meaning": "The pinned catalog commit; the plugin builds only from it."},
-      {"field": "catalog.release", "meaning": "Optional — a named catalog release over the commit."},
-      {"field": "preset", "meaning": "Optional — the preset the picks started from."},
+      {"field": "catalog.ref", "meaning": "The pinned catalog commit. The plugin builds only from it."},
+      {"field": "catalog.release", "meaning": "Optional. A named catalog release over the commit."},
+      {"field": "preset", "meaning": "Optional. The preset the picks started from."},
       {"field": "policies", "meaning": "One entry per picked policy: from (catalog), id, version and sha256."}
     ]
   },
   "warning_texts": {
-    "missing_partner": "__PRESENT__ is picked without __ABSENT__: the two cover one rule by different means; pick both.",
+    "missing_partner": "__PRESENT__ is picked without __ABSENT__. The two cover one rule by different means, so pick both.",
     "all_present": "__PRESENT__ are all picked and overlap: keep one, or the same action is checked twice.",
     "file_absent": "__PRESENT__ refuses everything until your repo has __FILE__. Create it before you install.",
     "grade:warn": "__PRESENT__ only warns: nothing is refused.",
     "grade:advise": "__PRESENT__ is text only: nothing stops a violation.",
-    "missing_partner:many": "__PRESENT__ are picked without __ABSENT__: they cover one rule by different means; pick them all.",
+    "missing_partner:many": "__PRESENT__ are picked without __ABSENT__. They cover one rule by different means, so pick them all.",
     "file_absent:many": "__PRESENT__ refuse everything until your repo has __FILE__. Create it before you install.",
     "grade:warn:many": "__PRESENT__ only warn: nothing is refused.",
     "grade:advise:many": "__PRESENT__ are text only: nothing stops a violation.",
@@ -180,12 +180,12 @@
       "untested": "untested",
       "untested_label": "Untested in __NAME__.",
       "untested_line": "Nobody has seen these policies fire in __NAME__ yet, so the command builds the plugin without --apply. Apply the steps below yourself, check that a refusal fires, and",
-      "page_intro": "Pick an agent in the builder and the command builds one plugin for it. Tested means a person has seen chock's refusals fire in that agent, and the command installs the plugin too; untested means the command builds it and you apply the steps yourself.",
+      "page_intro": "Pick an agent in the builder and the command builds one plugin for it. Tested means a person has seen chock refuse actions in that agent. For a tested agent, the command also installs the plugin. For an untested agent, the command builds the plugin and you follow the install steps yourself.",
       "build_link": "Build for __NAME__",
       "build_short": "Build",
       "card_witnessed": "Tested: one command builds the plugin and installs it.",
       "card_untested": "Untested: the command builds the plugin, and you apply the steps in __NAME__ yourself.",
-      "repo_line": "A second route: single-policy plugins in",
+      "repo_line": "Another way to install: single-policy plugins in",
       "remove_md": "To remove it:",
       "remove_unverified": "Removal steps not verified for __NAME__ yet. What you see when you remove it is wanted in",
       "remove_report_link": "a witness report",
@@ -211,7 +211,7 @@
     "remove_label": "Remove {name}",
     "confirm_replace": "This replaces your current picks. Continue?",
     "link_unreadable": "This link could not be read.",
-    "ref_mismatch": "This link was made for catalog {theirs}; this site shows {ours}.",
+    "ref_mismatch": "This link was made for catalog {theirs}. This site shows {ours}.",
     "use_same": "Use the same policies here",
     "start_fresh": "Start fresh",
     "not_available": "Not available here: {ids} (retired or not in this catalog).",
@@ -228,6 +228,6 @@
     "grades_for": "Labels and counts are the catalog's grades on {name}.",
     "client_unknown": "This link names an agent this site does not know: {id}.",
     "download_name": "chock.selection.json",
-    "author_link": "Need a rule the catalog does not have? Author one — your picks come along."
+    "author_link": "Need a rule the catalog does not have? Author one, and your picks come along."
   }
 }

@@ -1,9 +1,9 @@
 {
   "id": "enforcement-surfaces",
   "order": 4,
-  "title": "Enforcement surfaces",
-  "summary": "The emitters of chock compile: which emitter writes each surface, and the file chock sync installs for it.",
-  "intro": "A surface is where a compiled control runs. The chock compile command hands each policy to one emitter per surface; chock sync then installs what the emitters wrote. Each arrow out of chock compile names the surfaces that emitter writes, as the engine's compiler maps them.",
+  "title": "Emitters and hook points",
+  "summary": "Which emitter of chock compile writes each hook point, and the file chock sync installs for it.",
+  "intro": "A hook point is where a compiled control runs. The chock compile command hands each policy to one emitter per hook point. Then chock sync installs what the emitters wrote. Each arrow out of chock compile names the hook points that emitter writes, as the engine's compiler maps them.",
   "pins": {
     "chock": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96"
   },
@@ -36,7 +36,7 @@
       "x": 415,
       "y": 50,
       "source": "chock/src/chock/compile/compiler.py",
-      "card": "Runs each surface's emitter on a policy, in the engine's surface order, and writes what it emits to .chock/compiled/<id>/<surface>/. The gateway surface has no emitter: it is modeled for budgets and egress, not emitted."
+      "card": "Runs the emitter for each hook point on a policy, in the engine's order, and writes the output to `.chock/compiled/<id>/<surface>/`. The gateway hook point has no emitter. It is modeled for budgets and egress, and nothing is emitted for it."
     },
     {
       "id": "git-hook",
@@ -46,7 +46,7 @@
       "y": 170,
       "w": 150,
       "source": "chock/src/chock/compile/emitters/git_hook.py",
-      "card": "Emits git-hook entrypoints from the policy's implementations folder: guards at pre-commit, pre-merge-commit and pre-push. Hard at commit and push; git commit --no-verify skips it."
+      "card": "Emits git-hook entrypoints from the policy's implementations folder: guards at pre-commit, pre-merge-commit and pre-push. Hard at commit and push. `git commit --no-verify` skips it."
     },
     {
       "id": "ci",
@@ -66,7 +66,7 @@
       "y": 170,
       "w": 150,
       "source": "chock/src/chock/compile/emitters/in_agent.py",
-      "card": "Hook fragments for every wired vendor. The pre-tool-use surface refuses a call before it runs. The stop surface reads what the turn left in the worktree and earns no coverage word. The agent-hooks surface is the same deny for Copilot CLI and VS Code agent mode."
+      "card": "Hook fragments for every wired vendor. The `pre-tool-use` hook point refuses a call before it runs. The `stop` hook point reads what the turn left in the worktree and earns no coverage word. The `agent-hooks` hook point is the same deny for Copilot CLI and VS Code agent mode."
     },
     {
       "id": "managed",
@@ -147,7 +147,7 @@
       "y": 300,
       "w": 150,
       "source": "chock/src/chock/gateway/proxy.py",
-      "card": "A stdio proxy the client launches instead of the real MCP server; it refuses matching tools/call payloads. One downstream server per gateway process."
+      "card": "A stdio proxy the client launches instead of the real MCP server. It refuses matching `tools/call` payloads. One downstream server per gateway process."
     }
   ],
   "edges": [

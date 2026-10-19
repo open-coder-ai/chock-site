@@ -143,7 +143,7 @@ const DESCRIPTIONS = {
   script: (c) =>
     `Refuses a change that writes a file named ${refuseNames(c).join(", ")}, at commit and ` +
     "when the agent writes a file.",
-  rule: () => "A rule the agent reads in its context; nothing enforces it.",
+  rule: () => "A rule the agent reads in its context. Nothing enforces it.",
   skill: (c) => c.answers.stop,
 };
 
@@ -223,7 +223,7 @@ const BUILDERS = {
       .map((s, i) => `${i + 1}. ${s}`)
       .join("\n")}\n`,
   guard_comment: () =>
-    "#: A command matching BLOCK is refused; spacing differences still match. Built from your answer.",
+    "#: A command matching BLOCK is refused. Spacing differences still match. Built from your answer.",
   block_pattern: (c) => `BLOCK = re.compile(${pyStr(guardRegex(c.answers.stop))})`,
   guard_message: (c) => `        print(${pyStr(`${c.id}: ${c.answers.message}`)}, file=sys.stderr)`,
   script_comment: () => "#: A write whose file name is in REFUSE is refused before it lands.",
@@ -364,15 +364,15 @@ function buildScript(files, selection, hash, ctx, site, client, clients) {
     `# Written by chock.sh/coding/author/ for the policy ${ctx.id}.`,
     "#",
     "# In order, it:",
-    "#   1. asks you for the agent, the folder, and build-only or install;",
+    "#   1. asks you for the agent, the folder, and build-only or install.",
     "#   2. writes chock.selection.yaml and the policy files under that folder",
-    "#      (every file below is a quoted heredoc, readable in full);",
-    "#   3. runs chock check --repo <folder> --only validate,evals and stops on failure;",
+    "#      (every file below is a quoted heredoc, readable in full).",
+    "#   3. runs chock check --repo <folder> --only validate,evals and stops on failure.",
     "#   4. runs chock install --selection <folder>/chock.selection.yaml",
-    "#      --client <agent> --trust-local <id>=<sha256>; the sha256 pins exactly",
-    "#      the policy code in this script, which you accepted by reading it;",
+    "#      --client <agent> --trust-local <id>=<sha256>. The sha256 pins exactly",
+    "#      the policy code in this script, which you accepted by reading it.",
     "#   5. answering install also passes --apply, the agent's own install step,",
-    "#      but only where that step has been witnessed; otherwise it says so.",
+    "#      but only where a person has seen that step work live. Otherwise it says so.",
     "#",
     "# Nothing is fetched from the network except chock's own pinned catalog fetch,",
     "# and only when catalog policies are in the selection. Read it before running.",

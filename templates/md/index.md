@@ -29,7 +29,7 @@ __COMMAND__
 
 __APPLY_NOTE__
 
-## One policy, every surface
+## One policy, every agent
 
 __SURFACE_BODY__
 
