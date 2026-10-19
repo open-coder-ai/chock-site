@@ -1,6 +1,10 @@
+# How the guide names each site section from data/tracks.yaml, by its status.
+track_line:
+  available: "__TITLE__ under __HOME__"
+  in_design: "__TITLE__ under __HOME__ (still in design)"
 sections:
 - heading: "What this site is"
-  body: "This site, chock.sh, is a static catalog of guardrail policies for AI coding agents. The site is built in sections. Today it has one, Coding agents, under /coding/. Every page has a Markdown twin at the same path: fetch index.md inside the page's directory. The catalog is pinned to one chock-catalog commit, shown in the footer of every page."
+  body: "This site, chock.sh, is a static catalog of guardrail policies for AI coding agents. The site has __TRACK_COUNT__ sections: __TRACKS__. Every page has a Markdown twin at the same path: fetch index.md inside the page's directory. The catalog is pinned to one chock-catalog commit, shown in the footer of every page."
 - heading: "Machine-readable data"
   body: "Start at /api/index.json: it lists the site's sections, each with a home path and an api path. For the coding section, read /api/coding/catalog.json. It holds every visible policy and preset, with schema_version 1 and track coding. /api/coding/policies/<id>.json holds one policy record, /api/coding/presets.json the presets, and /api/coding/selection.schema.json the schema a selection file is checked against. The same catalog data is at /data/site.json."
 - heading: "Labels"

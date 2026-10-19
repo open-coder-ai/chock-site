@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 from sitegen import clientdata, engine, routes
-from sitegen.catalog import lead_sentences
+from sitegen.catalog import lead_sentences, prose_lead, trigger_field
 from sitegen.clientpage import agent_note
 from sitegen.pageparts import PageError
 
@@ -245,3 +245,21 @@ def test_lead_sentences_reach_the_length() -> None:
     assert lead_sentences(text, 5) == "Short one."
     assert lead_sentences(text, 20) == "Short one. A second, longer sentence here."
     assert lead_sentences("No stop", 50) == "No stop"
+
+
+def test_prose_lead_skips_leading_fields() -> None:
+    text = (
+        "trigger: a diff. avoid: noise. Reviews the diff in twelve steps. Advisory: x."
+    )
+    assert prose_lead(text, 10) == "Reviews the diff in twelve steps."
+    assert prose_lead("trigger: a. Hunk-local: misses moves. Plain prose.", 10) == ""
+    assert prose_lead("trigger: a. avoid: b.", 10) == ""
+    assert prose_lead("Plain first. Then more.", 5) == "Plain first."
+
+
+def test_trigger_field_text() -> None:
+    assert (
+        trigger_field("trigger: big diffs, long runs. avoid: x.")
+        == "big diffs, long runs."
+    )
+    assert trigger_field("No fields here.") == ""

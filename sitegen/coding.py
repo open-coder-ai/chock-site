@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from . import authordata, clientdata, clientpage, engine, report, routes
-from .catalog import first_sentence, lead_sentences
+from .catalog import first_sentence, lead_sentences, prose_lead, trigger_field
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
     PARTIALS,
@@ -507,6 +507,7 @@ def _policy_pages(
             )
         )
         path = f"/{track.slug}/policies/{policy.id}/"
+        preview = policy_preview(site, policy)
         alt = (
             '<link rel="alternate" type="application/json" '
             f'href="/api/{track.slug}/policies/{policy.id}.json">'
@@ -517,14 +518,14 @@ def _policy_pages(
             templates,
             path=path,
             title=policy_title(policy),
-            description=lead_sentences(policy.description, META_MIN),
+            description=preview,
             content=content,
             jsonld_data={
                 "@context": "https://schema.org",
                 "@type": "SoftwareSourceCode",
                 "name": policy.name,
                 "version": policy.version,
-                "description": lead_sentences(policy.description, META_MIN),
+                "description": preview,
                 "codeRepository": policy.source_url,
                 "license": "Apache-2.0",
                 "programmingLanguage": "Python",
@@ -875,11 +876,23 @@ def _remove_items(templates: Path, about: dict[str, Any]) -> Safe:
     )
 
 
+def policy_preview(site: Site, policy: Policy) -> str:
+    """A policy page's link-preview text: its prose lead, else its trigger field in site wording."""
+    lead = prose_lead(policy.description, META_MIN)
+    if lead:
+        return lead
+    trigger = trigger_field(policy.description)
+    if trigger:
+        return data_fill(site.data["texts"]["preview_trigger"], {"__TEXT__": trigger})
+    return lead_sentences(policy.description, META_MIN)
+
+
 def _client_command(clients: dict[str, Any], client: str) -> str:
-    """The install command form for one agent, with "…" for the selection code."""
+    """The install command form for one agent, with the placeholder for the selection code."""
     state = clients["clients"][client]["witness"]
     return data_fill(
-        clients["commands"][state], {"__CODE__": "…", "__CLIENT__": client}
+        clients["commands"][state],
+        {"__CODE__": clients["texts"]["code_placeholder"], "__CLIENT__": client},
     )
 
 
@@ -922,6 +935,9 @@ def _install(
             ),
             COMMAND_LABEL=inst["agent_command"],
             COMMAND=_client_command(clients, client),
+            CODE_HINT=Prose(clientpage.code_hint(clients)),
+            BUILDER_HREF=f"/{track.slug}/builder/#client={client}",
+            BUILDER_LINK=clients["texts"]["code_hint_link"],
             STEPS_HEADING=about["steps_heading"],
             STEPS=_step_items(templates / track.slug, about["steps"]),
             REMOVE_LABEL=inst["agent_remove"],

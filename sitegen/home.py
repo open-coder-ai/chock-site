@@ -7,7 +7,6 @@ from . import homedata, repodata
 from .catalog import first_sentence
 from .model import Policy, Site
 from .pageparts import (
-    COMMAND_FORM,
     PARTIALS,
     PageError,
     badge,
@@ -217,7 +216,11 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
 
 def how_command(site: Site) -> str:
     """The home page's command form: the untested one, since --apply is only for tested agents."""
-    return data_fill(site.data["builder_clients"]["commands"]["untested"], COMMAND_FORM)
+    clients = site.data["builder_clients"]
+    return data_fill(
+        clients["commands"]["untested"],
+        {"__CODE__": clients["texts"]["code_placeholder"], "__CLIENT__": "<agent>"},
+    )
 
 
 def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:

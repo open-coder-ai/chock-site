@@ -32,8 +32,8 @@ class MetaParser(HTMLParser):
         if tag == "meta":
             if attrs.get("name") == "description":
                 self.description = attrs.get("content", "")
-            prop = attrs.get("property", "")
-            if prop.startswith("og:"):
+            prop = attrs.get("property", "") or attrs.get("name", "")
+            if prop.startswith(("og:", "twitter:")):
                 self.og[prop] = attrs.get("content", "")
 
 
@@ -84,6 +84,31 @@ def test_seo_tags_on_every_page(built) -> None:
         assert len(parser.description) > 30, rel
         for prop in ("og:title", "og:description", "og:type", "og:url", "og:image"):
             assert parser.og.get(prop), f"{rel}: missing {prop}"
+
+
+# A raw catalog field opening a sentence, such as "trigger:" or "avoid:".
+FIELD_LABEL = re.compile(r"[a-z][a-z_-]*:\s")
+JSONLD = re.compile(r'<script type="application/ld\+json">(.*?)</script>', re.DOTALL)
+
+
+def test_no_link_preview_text_starts_with_a_field_label(built) -> None:
+    """Meta, og:/twitter: and JSON-LD descriptions open with prose, never a field like "trigger:"."""
+    checked = 0
+    for page in _pages(built):
+        text = page.read_text(encoding="utf-8")
+        parser = MetaParser()
+        parser.feed(text)
+        previews = [parser.description] + [
+            value for key, value in parser.og.items() if key.endswith("description")
+        ]
+        for block in JSONLD.findall(text):
+            data = json.loads(block)
+            if isinstance(data, dict) and isinstance(data.get("description"), str):
+                previews.append(data["description"])
+        for preview in previews:
+            checked += 1
+            assert not FIELD_LABEL.match(preview), (str(page), preview)
+    assert checked > 500
 
 
 def _has_banned(text: str) -> str | None:
