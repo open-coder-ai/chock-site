@@ -200,6 +200,18 @@ def _worked_example(site: Site, section: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _track_list(site: Site) -> str:
+    """The site's sections as the agent guide lists them: title, home path and status, from tracks.yaml."""
+    lines = site.data["agents"]["track_line"]
+    names = [
+        data_fill(lines[t.status], {"__TITLE__": t.title, "__HOME__": f"/{t.slug}/"})
+        for t in site.tracks
+    ]
+    if len(names) == 1:
+        return names[0]
+    return ", ".join(names[:-1]) + " and " + names[-1]
+
+
 def _guide_subs(site: Site) -> dict[str, str]:
     """The facts the agent guide's texts name: schema, agents and command forms, all from data."""
     clients = site.data["builder_clients"]
@@ -211,6 +223,8 @@ def _guide_subs(site: Site) -> dict[str, str]:
         "__CLIENTS__": ", ".join(clients["order"]),
         "__WITNESSED_CLIENTS__": ", ".join(witnessed),
         "__DEFAULT_CLIENT__": clients["default"],
+        "__TRACK_COUNT__": str(len(site.tracks)),
+        "__TRACKS__": _track_list(site),
         "__BUNDLE_VERSION__": clients["bundle_version"],
         "__COMMAND_WITNESSED__": data_fill(
             clients["commands"]["witnessed"],

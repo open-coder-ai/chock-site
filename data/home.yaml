@@ -15,7 +15,7 @@ secondary_cta: "Browse the policies"
 steps_heading: "How it works"
 steps:
   - {title: "Pick policies", body: "Tick the ones you want, or start from a preset such as Git hygiene or Secrets."}
-  - {title: "Run one command", body: "Ask before running `chock install --selection '…'`: it builds one plugin on your machine and checks every policy against its hash."}
+  - {title: "Run one command", body: "Ask before running `chock install --selection '<code>'`: it builds one plugin on your machine and checks every policy against its hash."}
   - {title: "Keep working", body: "Your agent now checks each risky action. Change your picks any time and run the command again."}
 landing:
   eyebrow: "OPEN SOURCE · POLICY BLOCKS FOR CODING AGENTS"

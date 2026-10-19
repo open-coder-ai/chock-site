@@ -1,7 +1,9 @@
 """CC-4: the builder and install pages offer the Claude Code plugin exactly where chock does."""
 
+import html
 import json
 import re
+from pathlib import Path
 
 import chock.install.claude_plugin as chock_offer
 
@@ -108,7 +110,7 @@ def test_twin_carries_every_line_chock_prints(built) -> None:
             re.MULTILINE | re.DOTALL,
         )
     )
-    code = _site(built)["builder_clients"]["texts"]["claude_plugin_code"]
+    code = _site(built)["builder_clients"]["texts"]["code_placeholder"]
     filled = engine.claude_plugin_tokens() | {"__SELECTION__": f"`{code}`"}
     for client in _chock_offers():
         body = sections[client]
@@ -151,7 +153,7 @@ def test_clients_chock_is_silent_on_show_nothing(built) -> None:
 
 def test_no_page_shows_an_ellipsis_for_the_selection_code(built) -> None:
     """Without a selection, the build line shows the site's placeholder, never a literal "…"."""
-    code = _site(built)["builder_clients"]["texts"]["claude_plugin_code"]
+    code = _site(built)["builder_clients"]["texts"]["code_placeholder"]
     for page in ("install", "builder"):
         for name in ("index.html", "index.md"):
             text = (built.out / "coding" / page / name).read_text(encoding="utf-8")
@@ -162,3 +164,65 @@ def test_no_page_shows_an_ellipsis_for_the_selection_code(built) -> None:
             for line in builds:
                 assert "…" not in line, (page, name, line)
                 assert code in line or "&lt;code&gt;" in line, (page, name, line)
+
+
+def _command_lines(path: Path) -> list[str]:
+    """Every command line on one page: shell code blocks and inline `chock` code, comments left out."""
+    text = path.read_text(encoding="utf-8")
+    if path.suffix == ".html":
+        blocks = [
+            html.unescape(b)
+            for b in re.findall(
+                r'<code class="language-(?:bash|sh|shell)">(.*?)</code>',
+                text,
+                re.DOTALL,
+            )
+        ]
+        blocks += [
+            html.unescape(b)
+            for b in re.findall(r"<code[^>]*>(chock [^<]*)</code>", text)
+        ]
+    else:
+        blocks = re.findall(r"```(?:bash|sh|shell)\n(.*?)```", text, re.DOTALL)
+        blocks += [
+            line.strip() for line in text.splitlines() if line.startswith("    chock ")
+        ]
+        blocks += re.findall(r"`(chock [^`]*)`", text)
+    return [
+        line
+        for block in blocks
+        for line in block.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+
+
+def test_no_command_block_on_any_page_shows_an_ellipsis(built) -> None:
+    """No command a page shows, in HTML or its Markdown twin, has a literal "…" in it."""
+    pages = [p for p in built.out.rglob("*") if p.suffix in (".html", ".md")]
+    checked = 0
+    for path in pages:
+        for line in _command_lines(path):
+            checked += 1
+            assert "…" not in line, (str(path.relative_to(built.out)), line)
+    assert checked > 100
+
+
+def test_install_commands_show_the_placeholder_and_link_the_builder(built) -> None:
+    """Each agent's command on the install page names the placeholder and links the builder."""
+    data = _site(built)["builder_clients"]
+    code = data["texts"]["code_placeholder"]
+    hint = data["texts"]["code_hint"].replace("__CODE__", code)
+    link = data["texts"]["code_hint_link"]
+    page = (built.out / "coding" / "install" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "coding" / "install" / "index.md").read_text(encoding="utf-8")
+    sections = _agent_sections(page)
+    for client in engine.client_ids():
+        assert (
+            f"--selection &#x27;{html.escape(code)}&#x27; --client {client}"
+            in sections[client]
+        ), client
+        assert (
+            f'<a href="/coding/builder/#client={client}">{link}</a>' in sections[client]
+        ), client
+        assert f"--selection '{code}' --client {client}" in twin, client
+        assert f"{hint} [{link}](/coding/builder/#client={client})." in twin, client

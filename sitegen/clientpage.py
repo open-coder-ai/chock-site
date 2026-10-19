@@ -183,7 +183,7 @@ def claude_plugin(block: dict[str, Any], templates: Path, client: str) -> str:
                 else ""
             ),
             BUILD=Safe(
-                _build_line(templates, route["build"], texts["claude_plugin_code"])
+                _build_line(templates, route["build"], texts["code_placeholder"])
             ),
             STEPS=Safe(step_blocks(templates, route["steps"])),
         )
@@ -227,6 +227,12 @@ def claude_route_steps(route: dict[str, Any], code: str) -> list[dict[str, str]]
     return [{"note": text} for text in [*lead, build]] + route["steps"]
 
 
+def code_hint(block: dict[str, Any]) -> str:
+    """The line under a command form that says what replaces the selection code placeholder."""
+    texts = block["texts"]
+    return data_fill(texts["code_hint"], {"__CODE__": texts["code_placeholder"]})
+
+
 def markdown(block: dict[str, Any]) -> str:
     """The agents section of the builder's Markdown twin: command form, state and steps per agent."""
     commands = block["commands"]
@@ -235,7 +241,8 @@ def markdown(block: dict[str, Any]) -> str:
         data = block["clients"][client]
         state = data["witness"]
         command = data_fill(
-            commands[state], {"__CLIENT__": client, "__CODE__": "<code>"}
+            commands[state],
+            {"__CLIENT__": client, "__CODE__": block["texts"]["code_placeholder"]},
         )
         lines.append(f"### {data['name']} (`{client}`, {block['texts'][state]})\n\n")
         if not data["graded"]:
@@ -251,7 +258,9 @@ def markdown(block: dict[str, Any]) -> str:
                 f"[{notice['link']}]({notice['url']}).\n\n"
             )
         lines.append(
-            f"{block['texts']['command_md']}\n\n    {command}\n\n{data['steps_heading']}\n\n"
+            f"{block['texts']['command_md']}\n\n    {command}\n\n"
+            f"{code_hint(block)} [{block['texts']['code_hint_link']}]"
+            f"(/coding/builder/#client={client}).\n\n{data['steps_heading']}\n\n"
         )
         lines.append(_md_steps(data["steps"], block["texts"]["ask_inline"]))
         lines.append(f"\n{block['texts']['remove_md']}\n\n")
@@ -298,7 +307,7 @@ def _md_claude_plugin(block: dict[str, Any], offer: dict[str, Any] | None) -> st
         lines.append(f"{route['where']}: {route['label']}\n\n")
         lines.append(
             _md_steps(
-                claude_route_steps(route, f"`{texts['claude_plugin_code']}`"),
+                claude_route_steps(route, f"`{texts['code_placeholder']}`"),
                 texts["ask_inline"],
             )
         )

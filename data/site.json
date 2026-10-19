@@ -47,6 +47,7 @@
       }
     ],
     "plugin_repo_note": "Advisory inside the agent. In a repo set up with chock init, chock enforces it at commit.",
+    "preview_trigger": "When it applies: __TEXT__",
     "misses_empty": "This policy does not state what it misses.",
     "examples_note": "Both examples are this policy's own test cases.",
     "notfound_sub": "That page is not part of chock.sh.",
@@ -197,7 +198,9 @@
       "remove_report_link": "a witness report",
       "claude_plugin_heading": "Use the Claude Code plugin",
       "claude_plugin_warning": "Warning:",
-      "claude_plugin_code": "<code>",
+      "code_placeholder": "<code>",
+      "code_hint": "Replace `__CODE__` with your selection code.",
+      "code_hint_link": "Get it from the builder",
       "report": "help test it",
       "command_md": "The command (ask the user before running it: it builds a plugin of hooks that change how their agent behaves):",
       "ask_inline": " (ask the user before running it)",

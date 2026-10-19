@@ -12,6 +12,11 @@ REGISTRY = "registry.yaml"
 MANIFEST = "manifest.yaml"
 EVALS = "evals/suite.yaml"
 LIFECYCLE_HIDDEN = {"deprecated", "retired"}
+# A raw catalog field at the start of a sentence: "trigger:", "avoid:", "apply:".
+FIELD_LABEL_RE = re.compile(r"[a-z][a-z_-]*: ")
+# A sentence that opens with a short label, such as "Hunk-local:" or "Enforced counterparts:".
+LABEL_RE = re.compile(r"[A-Za-z][\w-]*(?: [\w-]+){0,2}: ")
+TRIGGER_FIELD = "trigger:"
 MISSES_MARKERS = ("Misses:", "Not caught here:")
 EXPECT_WORDS = {"block": "Refused", "ask": "Asks", "warn": "Warns", "allow": "Allowed"}
 WHERE_MAP = (
@@ -86,6 +91,35 @@ def lead_sentences(text: str, min_chars: int) -> str:
         lead = f"{lead} {sentence}".strip()
         rest = rest[len(sentence) :].lstrip()
     return lead
+
+
+def _sentences(text: str) -> list[str]:
+    """The description split into sentences, the way first_sentence ends one."""
+    sentences = []
+    rest = text
+    while rest:
+        sentence = first_sentence(rest)
+        sentences.append(sentence)
+        rest = rest[len(sentence) :].lstrip()
+    return sentences
+
+
+def prose_lead(text: str, min_chars: int) -> str:
+    """The prose after the description's leading `field:` sentences; "" if the next one is a label too."""
+    sentences = _sentences(text)
+    while sentences and FIELD_LABEL_RE.match(sentences[0]):
+        sentences.pop(0)
+    if not sentences or LABEL_RE.match(sentences[0]):
+        return ""
+    return lead_sentences(" ".join(sentences), min_chars)
+
+
+def trigger_field(text: str) -> str:
+    """The text of the description's `trigger:` field, or "" if it has none."""
+    for sentence in _sentences(text):
+        if sentence.startswith(TRIGGER_FIELD):
+            return sentence[len(TRIGGER_FIELD) :].strip()
+    return ""
 
 
 def _examples(path: Path) -> list[Example]:

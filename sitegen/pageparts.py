@@ -30,10 +30,6 @@ CODE_KEYS = (
 )
 
 
-# The install command as prose shows it: the code elided, the agent named by its placeholder.
-COMMAND_FORM = {"__CODE__": "…", "__CLIENT__": "<agent>"}
-
-
 def data_fill(text: str, subs: dict[str, str]) -> str:
     """Substitute placeholders inside a data string (not an HTML template)."""
     if not subs:
