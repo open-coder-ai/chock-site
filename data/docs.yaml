@@ -67,7 +67,7 @@ pages:
     title: Agents
     nav_label: Agents
     description: "Every agent agentseam records: how chock installs on it, what it can enforce, and what that rests on."
-    intro: "One page per agent. Each fact comes from the agentseam matrix the engine pins and from the engine's own data. Nobody types any of it by hand."
+    intro: "Each agent has its own page. Each fact comes from the agentseam matrix the engine pins and from the engine's own data. Nobody types any of it by hand."
     blocks: [agent_table]
     prose: []
   policies:
@@ -75,7 +75,7 @@ pages:
     title: Policies
     nav_label: Policies
     description: "Every catalog policy: what it does, its grade on each agent, what it misses, and an example."
-    intro: "One page per policy in the pinned catalog. A grade is the catalog's own label for that agent."
+    intro: "Each policy in the pinned catalog has its own page. A grade is the catalog's own label for that agent."
     blocks: [policy_table]
     prose: []
   configure:
@@ -83,7 +83,7 @@ pages:
     title: Configure
     nav_label: Configure
     description: "Selection files, switching plugin members on and off, local policies, and where to customise."
-    intro: "What you can change after an install, and the files it lives in."
+    intro: "This page covers what you can change after an install, and the files that hold it."
     blocks: [selection, toggles]
     prose:
       - {file: docs/custom-policies.md, sections: [2. Add it to a selection]}
@@ -134,7 +134,7 @@ pages:
     title: CLI reference
     nav_label: CLI reference
     description: "Every chock command and its options, generated from the engine's own --help."
-    intro: "Generated from the engine's argument parsers at the pinned commit."
+    intro: "The site generates these pages from the engine's argument parsers at the pinned commit."
     blocks: [cli_index, cli]
     prose:
       - {file: docs/cli-reference.md, sections: [Typical workflows]}
@@ -143,7 +143,7 @@ pages:
     title: Release notes
     nav_label: Release notes
     description: "The newest entries of the engine's changelog at the pinned commit."
-    intro: "The newest sections of chock's CHANGELOG.md at the pinned engine commit."
+    intro: "This page shows the newest sections of chock's CHANGELOG.md at the pinned engine commit."
     blocks: []
     prose:
       - {file: CHANGELOG.md, first: 5}
@@ -225,7 +225,7 @@ pages:
     title: Agentseam Python API
     nav_label: Python API
     description: "Every name agentseam exports, with its signature and docstring, read from the pinned release."
-    intro: "Generated at build time from the installed agentseam: each name in `agentseam.__all__`, its signature from `inspect.signature`, and the first paragraph of its own docstring."
+    intro: "The site generates this page at build time from the installed agentseam: each name in `agentseam.__all__`, its signature from `inspect.signature`, and the first paragraph of its own docstring."
     blocks: [agentseam_api]
     prose: []
   agentseam-cli:
@@ -233,7 +233,7 @@ pages:
     title: Agentseam CLI
     nav_label: Agentseam CLI
     description: "The agentseam command and every subcommand, generated from its argument parser."
-    intro: "Generated at build time from the argparse parser of the installed agentseam."
+    intro: "The site generates this page at build time from the argparse parser of the installed agentseam."
     blocks: [agentseam_cli]
     prose: []
   # DOCS-4: the catalog pages. Their `catalog` parts are built by the `catalog` block from
@@ -555,7 +555,7 @@ texts:
   # block of each named section of that engine doc.
   paths:
     - title: "Plugin path"
-      body: "The install command builds one plugin for one agent from a selection. No repository changes."
+      body: "The install command builds one plugin for one agent from a selection. It changes nothing in your repository."
       page: quickstart-plugin
       tab: [install, pick]
     - title: "Repo path"
@@ -798,14 +798,14 @@ texts:
   cli:
     description: "Ask the user before running __NAME__: what it takes and prints, from the engine at the pinned commit."
     index_heading: "Every command and subcommand"
-    index_intro: "One page per command and per subcommand, generated from the engine's argument parsers at the pinned commit. An alias says which command it stands for."
+    index_intro: "Each command and subcommand has its own page, generated from the engine's argument parsers at the pinned commit. An alias says which command it stands for."
     index_head: [Command, Group, Summary]
     unknown_command: "`chock` exits 2 for a command it does not have, as its dispatcher says:"
     dispatcher_file: src/chock/cli.py
     syntax_heading: Syntax
-    syntax_intro: "The usage line argparse builds from this command's parser."
+    syntax_intro: "This is the usage line argparse builds from this command's parser."
     arguments_heading: "Arguments and options"
-    arguments_intro: "Every argument the parser declares, except `-h, --help`, written as argparse prints it. Default is the value the parser uses when you leave the option out. It is empty for a flag or when the parser sets none."
+    arguments_intro: "The table lists every argument the parser declares, except `-h, --help`, written as argparse prints it. Default is the value the parser uses when you leave the option out. It is empty for a flag or when the parser sets none."
     arguments_md: "Help for each argument is in the table on this page's HTML version and in Help as printed, as the engine words it."
     arguments_head: [Argument, Default, Help]
     choices: "one of: __LIST__"
@@ -823,7 +823,7 @@ texts:
     examples_setup: "Real runs, recorded by `python -m sitegen.cliexamples` with the engine at the pinned commit. The steps of `__SCRIPT__` ran in order, offline, in one fresh git repository at `/work/demo` (made with `git init -b main`), with HOME at `/home/demo`. Those paths stand for the throwaway folders the runs used, and `<time>` stands for a timestamp. Output is stdout and stderr together."
     examples_step: "Step __STEP__ of __OF__, exit code __EXIT__."
     help_heading: "Help as printed"
-    help_parser: "What `--help` prints, from the same parser. The usage line names the program as the engine's parser does."
+    help_parser: "This is what `--help` prints, from the same parser. The usage line names the program as the engine's parser does."
     help_own_parser: "This command reads its arguments itself, without argparse, so this is all the engine says about them: what it prints for `--help`."
   prose_heading: From the engine docs
   ask_code: "Ask the user before running the commands below:"
@@ -846,18 +846,18 @@ texts:
       - "Work on a branch instead."
       - "Stage what chock wrote."
       - "The commit on the branch runs the hooks and lands."
-    trees_intro: "The trees `tools/trees.py` names at the pinned commit, and how many policy folders each holds."
+    trees_intro: "These are the trees `tools/trees.py` names at the pinned commit, and how many policy folders each holds."
     trees_head: [Tree, Policies]
-    gates_intro: "Every job of the catalog's `.github/workflows/ci.yml` at the pinned commit, with its condition and its named steps. A job with no condition runs on every run of the workflow. No job runs `tools/gen_adoption_transcript.py`. The nightly and release workflows do."
+    gates_intro: "This table lists every job of the catalog's `.github/workflows/ci.yml` at the pinned commit, with its condition and its named steps. A job with no condition runs on every run of the workflow. No job runs `tools/gen_adoption_transcript.py`. The nightly and release workflows do."
     gates_head: [Job, Runs when, Steps]
     regen_intro: "The docstring of `tools/regen_all.py` at the pinned commit:"
-    regen_scripts: "The scripts its `regenerate()` runs, in the order they appear in it. It also runs `chock plugin build` for each tree and `chock sync` when the compiled output has drifted."
+    regen_scripts: "These are the scripts its `regenerate()` runs, in the order they appear in it. It also runs `chock plugin build` for each tree and `chock sync` when the compiled output has drifted."
     gates_always: always
   # DOCS-2: How Chock works. Each stop fact quotes chock's docs (from the snapshot) or the engine's
   # source as installed from .framework-ref (`src/chock/...`); the build fails when a quote is gone.
   how:
     steps_heading: "The lifecycle, step by step"
-    steps_intro: "The main path of the lifecycle diagram. Each step links the engine file that does the work, at the pinned commit:"
+    steps_intro: "These steps follow the main path of the lifecycle diagram. Each step links the engine file that does the work, at the pinned commit:"
     steps_diagram: lifecycle
     diagrams_heading: Diagrams
     diagrams_intro: "Each box cites the engine file that does the work, at a pinned commit. Each diagram has a page with a card per box."
@@ -874,7 +874,7 @@ texts:
     held_out: "yes"
     counted: "no"
     help_heading: "The commands: chock stop and chock resume"
-    help_intro: "Both commands, as the engine's parsers print them."
+    help_intro: "Here are both commands, as the engine's parsers print them."
     help_commands: [stop, resume]
     limits_intro: "After it writes a stop, chock stop prints its limits in the engine's own words:"
     stop_source: "The engine's stop docs, in full:"
@@ -1080,7 +1080,7 @@ agentseam:
       9: "Claude Code's settings file after uninstall."
     api_about_heading: "How we build this reference"
     api_heading_source: Source
-    api_intro: "The page lists names as `agentseam` exports them. A summary is the first paragraph of the object's own docstring at the pinned commit. An object without one reads \"No docstring.\" Source links go to the line that defines the object."
+    api_intro: "The page lists names as `agentseam` exports them. A summary is the first paragraph of the object's own docstring at the pinned commit. If an object has no docstring, its summary reads \"No docstring.\" Source links go to the line that defines the object."
     no_doc: "No docstring."
     api_members: "Members"
     api_member_head: [Member, Kind, Signature, Summary]
@@ -1089,7 +1089,7 @@ agentseam:
     api_module: "Module `__MODULE__`. Its public names, from `__all__` where the module sets one, otherwise the functions and classes it defines:"
     api_matrix: "The matrix as data. The site renders it on the Agents pages."
     cli_heading: "Every command and subcommand"
-    cli_intro: "One section per command, from agentseam's own parser at the pinned commit. It writes arguments as argparse prints them and leaves out the `-h, --help` option."
+    cli_intro: "Each command has its own section, from agentseam's own parser at the pinned commit. It writes arguments as argparse prints them and leaves out the `-h, --help` option."
     cli_head: [Command, Summary]
     cli_usage: "Usage"
     cli_arguments_head: [Argument, Help]
@@ -1101,4 +1101,4 @@ agentseam:
       - "2: argparse rejected the arguments. The site's tests run each command and subcommand with an unknown option and check that it exits 2."
       - "This page lists no other codes. The runs on Use agentseam without chock show the code each one returned."
     help_heading: "Help as printed"
-    help_intro: "What `agentseam --help` prints, from the same parser."
+    help_intro: "This is what `agentseam --help` prints, from the same parser."

@@ -18,7 +18,7 @@
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
     "author": {"title": "Author a policy", "description": "Describe a safeguard in plain words. The page fills a chock policy template and writes a setup script you read and run yourself. The browser compiles nothing and runs nothing."},
-    "clients": {"title": "Agents", "description": "chock.sh builds one plugin from your picks for __NAMES__. Where an agent has a plugin repository, it is a second way to get single policies."},
+    "clients": {"title": "Agents", "description": "From your picks, chock.sh builds one plugin for __NAMES__. Where an agent has a plugin repository, it is a second way to get single policies."},
     "security": {"title": "Security", "description": "What chock is and is not. It adds friction, and it is not a security boundary. How chock checks what it installs, and how to report a bug."},
     "install": {"title": "Install", "description": "Install chock, build a plugin for your agent from a selection code, and update or remove it."},
     "faq": {"title": "FAQ", "description": "Answers about chock: what the labels mean, what the command does and what it cannot do."},
@@ -200,7 +200,7 @@
       "ungraded_word": "Not graded",
       "ungraded_says": "Not graded yet for __NAME__",
       "ungraded_meaning": "The catalog does not grade this policy on __NAME__ yet, so we do not know yet what it does there.",
-      "ungraded_note": "The pinned catalog has no grades for __NAME__ yet: a policy without one says \"Not graded yet\"."
+      "ungraded_note": "The pinned catalog has no grades for __NAME__ yet. A policy with no grade there says \"Not graded yet\"."
     }
   },
   "builder_texts": {

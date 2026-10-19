@@ -63,7 +63,7 @@ landing:
     - {title: "Keep working", body: "Your agent now checks each risky action. Change your picks any time and run the command again."}
   surface_eyebrow: "ONE POLICY, EVERY AGENT"
   surface_heading: "Write the rule once. Chock puts it where each agent can enforce it."
-  surface_body: "Every agent has its own hook system, so chock builds each policy for the agent you pick. Here is __POLICY__ on each agent, with the catalog's label for what it can do there."
+  surface_body: "Every agent has its own hook system, so chock builds each policy for the agent you pick. Here is __POLICY__ on each agent, with the catalog's label for what it can do there. Tested means a person has seen chock refuse actions in that agent. Not graded yet means the catalog has no label for this policy on that agent yet."
   surface_policy: "scan-secrets"
   surface_tests: "__TESTED__ of __TOTAL__ test cases pass"
   usecases_eyebrow: "USE CASES"

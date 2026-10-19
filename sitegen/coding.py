@@ -373,6 +373,13 @@ def _agent_rows(site: Site, templates: Path, policy: Policy) -> Safe:
     )
 
 
+def policy_title(policy: Policy) -> str:
+    """The page title: the label word once, whether or not the label text starts with it."""
+    if policy.says.split(" ", 1)[0].lower() == policy.word.lower():
+        return f"{policy.name}: {policy.says}"
+    return f"{policy.name} ({policy.word}): {policy.says}"
+
+
 def _policy_report(policy: Policy, track: Track) -> str:
     """The /report/ link for one policy: its id and version, and its page."""
     return report.report_link(
@@ -509,7 +516,7 @@ def _policy_pages(
             out_dir,
             templates,
             path=path,
-            title=f"{policy.name}: {policy.word} {policy.says}",
+            title=policy_title(policy),
             description=lead_sentences(policy.description, META_MIN),
             content=content,
             jsonld_data={
