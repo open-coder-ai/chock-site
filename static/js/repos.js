@@ -10,6 +10,23 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const fill = (text, values) =>
   text.replace(/\{(\w+)\}/g, (match, key) => (Object.hasOwn(values, key) ? String(values[key]) : match));
 
+// One value as a single POSIX sh argument: Python's shlex.quote rule, the twin of sitegen/repodata.py
+// shell_arg (tests/e2e/test_repos.py pins them equal). Safe characters stay as written; anything else is
+// wrapped in single quotes, with each single quote closed, escaped and reopened.
+export function shellArg(value) {
+  const text = String(value);
+  if (text === "") return "''";
+  if (/^[\w@%+=:,./-]+$/.test(text)) return text;
+  return `'${text.replace(/'/g, `'"'"'`)}'`;
+}
+
+// A command line: `fill` with every value passed through shellArg (sitegen/repodata.py shell_line).
+export function shellLine(template, values) {
+  const quoted = {};
+  for (const [key, value] of Object.entries(values)) quoted[key] = shellArg(value);
+  return fill(template, quoted);
+}
+
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -38,13 +55,14 @@ export function parseShare(hash, known) {
   return { ids, unknown };
 }
 
-// The setup commands for picked ids: init, one add per policy sorted by id, sync, commit.
+// The setup commands for picked ids: init, one add per policy sorted by id, sync, commit. Every value
+// is shell-quoted, so an id, ref or sha256 is one argument whatever characters it carries.
 export function commandLines(site, ids, ci) {
   const byId = new Map(site.policies.map((p) => [p.id, p]));
   const commands = site.repos.commands;
   const lines = [commands.init];
   for (const id of [...ids].sort()) {
-    lines.push(fill(commands.add, { id, ref: site.catalog.ref, sha256: byId.get(id).sha256 }));
+    lines.push(shellLine(commands.add, { id, ref: site.catalog.ref, sha256: byId.get(id).sha256 }));
   }
   lines.push(ci ? commands.sync_ci : commands.sync);
   lines.push(commands.commit);

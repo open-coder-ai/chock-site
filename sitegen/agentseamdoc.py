@@ -21,16 +21,18 @@ from typing import Any
 import yaml
 
 from . import engine
-from .cliexamples import STEP_TIMEOUT, _env, normalise
+from .cliexamples import STEP_TIMEOUT, _env, check_setup, normalise
 from .docsmd import sections
 from .docsource import load_docs
 from .pageparts import PageError
+from .paths import safe_join
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 SOURCE_JSON = "source.json"
 SCHEMA_VERSION = 1
-PROGRAMS = ("agentseam", "python3", "cat")
+# The programs the direct run may execute, in its setup and its shown steps alike.
+PROGRAMS = ("agentseam", "python3", "cat", "git")
 
 
 def config(data_dir: Path) -> dict[str, Any]:
@@ -66,7 +68,7 @@ def snapshot(checkout: Path, cfg: dict[str, Any], ref: str) -> dict[str, str]:
     files: dict[str, str] = {}
     record: dict[str, Any] = {"agentseam_ref": ref, "files": {}}
     for quote in cfg["quotes"]:
-        source = checkout / quote["file"]
+        source = safe_join(checkout, quote["file"], "docs.yaml agentseam quote")
         if not source.is_file():
             raise PageError(f"{quote['file']}: not in the agentseam checkout at {ref}")
         name = snapshot_name(quote["file"])
@@ -88,7 +90,9 @@ def load(data_dir: Path) -> dict[str, str]:
             f"docs.yaml quotes {want}: run python -m sitegen.agentseamdoc snapshot"
         )
     return {
-        path: (folder / entry["snapshot"]).read_text(encoding="utf-8")
+        path: safe_join(folder, entry["snapshot"], f"{SOURCE_JSON} snapshot").read_text(
+            encoding="utf-8"
+        )
         for path, entry in record["files"].items()
     }
 
@@ -105,6 +109,7 @@ def load_script(data_dir: Path) -> dict[str, Any]:
             )
         if step.get("stdin") and step["stdin"] not in script["files"]:
             raise PageError(f"{cfg['run_script']}: stdin {step['stdin']!r} is no file")
+    check_setup(script, PROGRAMS, cfg["run_script"])
     return script
 
 

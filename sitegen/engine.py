@@ -17,10 +17,13 @@ import chock.install.resolve
 import chock.install.selection
 import chock.install.steps
 import chock.lock
+import chock.policy_id
 import chock.vendors
 from agentseam import matrix as agentseam_matrix
 from agentseam import tier_table as agentseam_tiers
 from chock.validation.loading import load_schema
+
+from .paths import safe_join
 
 INSTALL_JSON = "data/install.json"
 WARNINGS_JSON = "data/warnings.json"
@@ -37,6 +40,8 @@ UNWIRED_NO_HOOKS = "no_hooks"
 UNWIRED_UNADAPTED = "unadapted"
 # What agentseam prints where an agent has no hook surface at all.
 NOT_APPLICABLE = agentseam_tiers.NOT_APPLICABLE
+# The engine's one rule for a policy id, which it enforces before an id becomes a path or a command token.
+POLICY_ID_RE = chock.policy_id.POLICY_ID_RE
 # An argument shown as is: shell-safe characters, with a leading ~ kept for the shell to expand.
 PLAIN_ARG = re.compile(r"~?[\w@%+=:,./-]+")
 
@@ -601,10 +606,12 @@ def surface_rows() -> list[dict[str, Any]]:
 def engine_source(path: str) -> str:
     """The text of one engine file, `src/chock/...`, as installed from .framework-ref."""
     prefix = "src/chock/"
-    if not path.startswith(prefix) or ".." in path:
+    if not path.startswith(prefix):
         raise ValueError(f"{path!r} is not a file under {prefix}")
     package = Path(chock.__file__).resolve().parent
-    return (package / path.removeprefix(prefix)).read_text(encoding="utf-8")
+    return safe_join(package, path.removeprefix(prefix), "engine file").read_text(
+        encoding="utf-8"
+    )
 
 
 def stop_facts() -> dict[str, str]:

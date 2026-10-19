@@ -3,8 +3,10 @@
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -290,3 +292,82 @@ def test_fill_is_one_pass() -> None:
     assert repodata.fill("{a}", {"a": "{b}", "b": "X"}) == "{b}"
     with pytest.raises(PageError):
         repodata.fill("{missing}", {})
+
+
+# --- SITE-1: every value in a command line is one shell argument ---------------------------
+
+# Values a catalog could carry: the review's injection, quotes, spaces, globs, unicode, empty.
+TRICKY = [
+    "safe;echo PWNED > pwned",
+    "a'b",
+    "it's",
+    "two words",
+    "$(id)",
+    "`id`",
+    "a&&b",
+    "a|b",
+    "*.py",
+    "~user",
+    "naïve",
+    "",
+    "plain-id-9",
+    "abc123" * 10,
+    "--ref",
+    "{id}",
+    "a\nb",
+    "tab\there",
+    "back\\slash",
+    '"quoted"',
+]
+
+
+def test_shell_arg_is_shlex_quote() -> None:
+    for value in TRICKY:
+        assert repodata.shell_arg(value) == shlex.quote(value), value
+
+
+def test_shell_line_quotes_every_value_in_one_pass() -> None:
+    line = repodata.shell_line(
+        "chock add {id} --ref {ref}", {"id": "safe;echo PWNED > pwned", "ref": "{id}"}
+    )
+    assert line == "chock add 'safe;echo PWNED > pwned' --ref '{id}'"
+    assert shlex.split(line) == [
+        "chock",
+        "add",
+        "safe;echo PWNED > pwned",
+        "--ref",
+        "{id}",
+    ]
+    with pytest.raises(PageError):
+        repodata.shell_line("{missing}", {})
+
+
+def test_command_lines_read_back_as_the_arguments_they_carry(built) -> None:
+    commands = built.site.data["repos"]["commands"]
+    policy = next(p for p in built.site.policies if p.id == "block-no-verify")
+    hostile = replace(policy, id="safe;echo PWNED > pwned", sha256="a'b c")
+    lines = repodata.command_lines(commands, [hostile], "r$(id)", False)
+    assert shlex.split(lines[1]) == [
+        "chock",
+        "add",
+        "safe;echo PWNED > pwned",
+        "--ref",
+        "r$(id)",
+        "--verify-sha",
+        "a'b c",
+        "--skip-compile",
+    ]
+    assert "PWNED > pwned" not in shlex.join(shlex.split(lines[1])[:2])
+
+
+def test_real_values_are_shown_bare(built) -> None:
+    """Every pinned id, the catalog commit and every sha256 are shell-safe, so no line gains quotes."""
+    for policy in built.site.policies:
+        [line] = repodata.command_lines(
+            built.site.data["repos"]["commands"],
+            [policy],
+            built.site.catalog_ref,
+            False,
+        )[1:2]
+        assert "'" not in line, line
+        assert line.split(" ")[2] == policy.id
