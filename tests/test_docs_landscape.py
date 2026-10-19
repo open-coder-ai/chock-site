@@ -87,10 +87,7 @@ def test_page_is_in_the_nav_once_with_one_section_per_layer(built) -> None:
         assert f">{html.escape(heading)}</h2>" in page, heading
         assert f"\n## {heading}\n" in twin, heading
     closing = LANDSCAPE["texts"]["closing"]
-    assert (
-        closing
-        == "Chock is complementary to these layers, not a substitute for any of them."
-    )
+    assert closing == "Chock works alongside these layers. It replaces none of them."
     assert closing in page and closing in twin
 
 

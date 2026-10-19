@@ -140,10 +140,10 @@ def test_calculator_arithmetic_and_example_text(built) -> None:
     }
     text = _main_text(html)
     assert "Hours saved = findings × share covered × minutes per late fix ÷ 60" in text
-    assert "Example values, not measurements." in text
+    assert "These are example values, and we did not measure them." in text
     assert (
         "the formula gives 9 hours, $900 and 1.8 days. That is arithmetic on "
-        "assumptions, not a claim about your team." in text
+        "the values above. It says nothing about your own team." in text
     )
     for name in values:
         assert f'name="{name}"' in html
@@ -163,15 +163,15 @@ def test_two_pipelines_are_real_html(built) -> None:
 def test_no_model_and_local_copy(built) -> None:
     text = _main_text(_home(built))
     assert (
-        "Chock does not ask a model whether your code is safe. Each check is a "
+        "No model decides whether your code is safe. Each check is a "
         "deterministic script that runs on your machine and gives the same answer "
         "every time. When a check passes, nothing is added to the agent's context. "
         "When it refuses, the agent gets one short reason." in text
     )
     assert (
         "Chock checks code on the laptop, in the dev container or inside the cloud "
-        "agent's pod. There's no upload to a scanning service and no new vendor "
-        "holding your source." in text
+        "agent's pod. Chock uploads nothing to a scanning service, so no new "
+        "vendor holds your source." in text
     )
     assert CAVEAT in text
     # No timing is shown: none was measured in this PR.
@@ -279,8 +279,8 @@ def test_faq_adds_general_agents_answer(built) -> None:
     html = _home(built)
     assert "What are general agents?" in html
     assert (
-        "Agents that act for a person or a business. Their guardrails are being "
-        "designed. There is nothing to install yet." in _main_text(html)
+        "Agents that act for a person or a business. We are still designing their "
+        "guardrails, so there is nothing to install yet." in _main_text(html)
     )
     faq = (built.out / "faq" / "index.html").read_text(encoding="utf-8")
     assert "What are general agents?" in faq

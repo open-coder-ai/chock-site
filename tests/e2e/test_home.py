@@ -144,7 +144,7 @@ def test_calculator_text_shows_without_javascript(browser, site_url) -> None:
             "Hours saved = findings × share covered × minutes per late fix ÷ 60" in text
         )
         assert "the formula gives 9 hours, $900 and 1.8 days" in text
-        assert "Example values, not measurements." in text
+        assert "These are example values, and we did not measure them." in text
     finally:
         context.close()
 

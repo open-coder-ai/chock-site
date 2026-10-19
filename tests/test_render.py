@@ -114,7 +114,7 @@ def test_jsonld_escapes_parser_breakouts(built, tmp_path) -> None:
     counter = Count()
     counter.feed(page)
     assert counter.h1 == 1
-    assert "Friction, not a security boundary." in page
+    assert "Chock adds friction. It is not a security boundary." in page
 
 
 def test_data_fill_is_one_pass() -> None:

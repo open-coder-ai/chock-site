@@ -14,7 +14,7 @@ CSP = (
     "data:; connect-src 'self'; font-src 'self'; object-src 'none'; "
     "base-uri 'none'; form-action 'none'"
 )
-FOOTER = "Friction, not a security boundary."
+FOOTER = "Chock adds friction. It is not a security boundary."
 
 
 class PageParser(HTMLParser):
@@ -156,7 +156,7 @@ def test_plugin_note_only_on_advisory_enforced_at_commit(built) -> None:
         built.out / "coding" / "policies" / "protect-main-branch" / "index.html"
     ).read_text(encoding="utf-8")
     assert note in protect
-    assert "enforced at commit" in protect
+    assert "chock enforces it at commit" in protect
     block = (
         built.out / "coding" / "policies" / "block-no-verify" / "index.html"
     ).read_text(encoding="utf-8")

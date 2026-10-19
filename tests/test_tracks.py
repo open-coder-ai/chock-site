@@ -99,7 +99,7 @@ def test_general_page_is_the_fixed_placeholder(built) -> None:
     text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", main)).strip()
     assert text == (
         "DESIGN IN PROGRESS General agents Guardrails for agents that act "
-        "for a person or a business. Design in progress. There is nothing "
+        "for a person or a business. We are still designing them. There is nothing "
         "to install yet. Follow open-coder-ai on GitHub"
     )
     banned = ("deny", "step_up", "modify", "profile", "approval", "specification")

@@ -17,7 +17,7 @@ def test_general_page_is_the_fixed_copy(page, site_url, request) -> None:
         "DESIGN IN PROGRESS",
         (
             "Guardrails for agents that act for a person or a business. "
-            "Design in progress."
+            "We are still designing them."
         ),
         "There is nothing to install yet.",
         "Follow open-coder-ai on GitHub",

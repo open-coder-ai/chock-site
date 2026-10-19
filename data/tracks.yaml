@@ -8,7 +8,7 @@ tracks:
     slug: general
     title: General agents
     status: in_design
-    summary: "Guardrails for agents that act for a person or a business. Design in progress."
+    summary: "Guardrails for agents that act for a person or a business. We are still designing them."
   - id: repos
     slug: repos
     title: Git repositories

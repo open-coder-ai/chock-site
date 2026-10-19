@@ -1,4 +1,4 @@
-"""VOICE-2: find the mechanical voice tells (semicolons, colon chains, dash asides, jargon, hedges) in built HTML."""
+"""VOICE-2: find the mechanical voice tells (semicolons, colon chains, dash asides, jargon, hedges, boasts) in built HTML."""
 
 import re
 from collections import Counter
@@ -164,7 +164,11 @@ def tells(sentence: str, terms: dict) -> list[str]:
         found.append("colon-chain")
     if re.search(r"—|\s–\s|\s--\s", text):
         found.append("dash-aside")
-    for rule, words in (("jargon", terms["jargon"]), ("hedge", terms["hedges"])):
+    for rule, words in (
+        ("jargon", terms["jargon"]),
+        ("hedge", terms["hedges"]),
+        ("boast", terms["boasts"]),
+    ):
         if re.search(r"\b(?:" + "|".join(words) + r")\b", text, re.IGNORECASE):
             found.append(rule)
     return found

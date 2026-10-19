@@ -9,15 +9,15 @@ questions:
 - id: what-is-chock
   group: common
   q: "What is chock?"
-  a: "A catalog of guardrail policies for AI coding agents, and the engine that turns a picked set of them into one plugin for your agent. This site is the catalog's front door: every policy is listed with its label, its hash and its source."
+  a: "A catalog of guardrail policies for AI coding agents, and the engine that turns a picked set of them into one plugin for your agent. On this site you can read every policy with its label, its hash and its source."
 - id: security-boundary
   group: common
   q: "Is this a security boundary?"
-  a: "No. It is friction: it stops common mistakes and makes risky actions visible. Each label says exactly how far a policy goes."
+  a: "No. It adds friction. It stops common mistakes and makes risky actions visible. A policy's label tells you whether it blocks, asks, warns or only advises."
 - id: tracking
   group: common
   q: "Do you collect anything about me?"
-  a: "Nothing personal. Your selection lives in the link after the #, which browsers never send to a server. There is no cookie and no account. The site counts page views and a few actions, such as a command being copied, with no IP address or id stored. The Security page lists them. With Global Privacy Control or Do Not Track on, it counts nothing. The chock command line tool sends nothing."
+  a: "Nothing personal. Your selection lives in the link after the #, which browsers never send to a server. There is no cookie and no account. The site counts page views and a few actions, such as copying a command. It stores no IP address or id with them. The Security page lists them. With Global Privacy Control or Do Not Track on, it counts nothing. The chock command line tool sends nothing."
 - id: free
   group: common
   q: "Is it free?"
@@ -25,7 +25,7 @@ questions:
 - id: general-agents
   group: common
   q: "What are general agents?"
-  a: "Agents that act for a person or a business. Their guardrails are being designed. There is nothing to install yet."
+  a: "Agents that act for a person or a business. We are still designing their guardrails, so there is nothing to install yet."
 - id: which-agents
   group: coding
   q: "Which coding agents does this work with?"

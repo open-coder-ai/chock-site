@@ -1,6 +1,6 @@
 # VOICE-2: the mechanical voice tells tests/test_voice.py looks for in every built page.
 # Rules from org-plan discovery/2026-10-18-site-voice-audit.md: a semicolon, two or more
-# colons, a dash aside, a jargon word or a hedge word in a sentence's prose. Code, quoted
+# colons, a dash aside, a jargon word, a hedge word or a boast in a sentence's prose. Code, quoted
 # text and the names below are not judged.
 
 jargon:
@@ -22,6 +22,14 @@ hedges:
 - honestly
 - deliberately
 - genuinely
+# VOICE-4: copy that praises its own honesty. Measured on the rewritten site: each phrase
+# fires only on upstream sentences already listed below.
+boasts:
+- exactly how far
+- says how far
+- how far (?:it|a policy) goes
+- stated plainly
+- front door
 names:
 - 'EU AI Act — '
 - 'OWASP ASI01 — '
