@@ -58,6 +58,8 @@ def _tells(page: str) -> list[list[str]]:
         ("<p>The plugin route is tested.</p>", [["jargon"]]),
         ("<p>This is honest by design.</p>", [["hedge"]]),
         ("<p>It is deliberately left out.</p>", [["hedge"]]),
+        ("<p>Each label says exactly how far a policy goes.</p>", [["boast"]]),
+        ("<p>This site is the catalog's front door.</p>", [["boast"]]),
         (
             "<p>Hooks judge each call; the gate re-runs it.</p>",
             [["semicolon", "jargon"]],
@@ -83,6 +85,7 @@ def test_finds_each_tell(page: str, expected: list[list[str]]) -> None:
         "<p>Routes</p>",
         "<p>Tested means a person saw it work in a live run.</p>",
         "<p>If the hook crashes, the action goes through.</p>",
+        "<p>Each policy says what it stops and what it misses.</p>",
         "<script>if (a) { b(); } else { c(); }</script>",
     ],
 )

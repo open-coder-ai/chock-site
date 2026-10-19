@@ -1,12 +1,12 @@
 sections:
 - heading: "What this site is"
-  body: "chock.sh is a static catalog of guardrail policies for AI coding agents. The site is built in sections. Today it has one, Coding agents, under /coding/. Every page has a Markdown twin at the same path: fetch index.md inside the page's directory. The catalog is pinned to one chock-catalog commit, shown in the footer of every page."
+  body: "This site, chock.sh, is a static catalog of guardrail policies for AI coding agents. The site is built in sections. Today it has one, Coding agents, under /coding/. Every page has a Markdown twin at the same path: fetch index.md inside the page's directory. The catalog is pinned to one chock-catalog commit, shown in the footer of every page."
 - heading: "Machine-readable data"
   body: "Start at /api/index.json: it lists the site's sections, each with a home path and an api path. For the coding section, read /api/coding/catalog.json. It holds every visible policy and preset, with schema_version 1 and track coding. /api/coding/policies/<id>.json holds one policy record, /api/coding/presets.json the presets, and /api/coding/selection.schema.json the schema a selection file is checked against. The same catalog data is at /data/site.json."
 - heading: "Labels"
   body: "Every policy carries one label per agent: the catalog's grade for it on that agent. Blocks: the agent refuses the action. Asks: the agent stops and asks the user. Warns: the action goes ahead with a warning. Advisory: the agent reads the text, and nothing stops a violation. A policy the catalog does not grade on an agent yet says \"Not graded yet\" there. Never read another agent's grade in its place. Each JSON record has the default agent's label in keyword and says, and every agent's label under agent_labels."
 - heading: "Choosing policies with the user"
-  body: "Pick policy ids with the user, not for them. The presets are named starting points. A policy's page lists the presets it belongs to. An advisory policy adds text the agent reads. It stops nothing on its own."
+  body: "Pick policy ids together with the user. Do not pick them on the user's behalf. The presets are named starting points. A policy's page lists the presets it belongs to. An advisory policy adds text the agent reads. It stops nothing on its own."
 - heading: "Building the selection"
   body: "Build the selection object exactly as the schema describes. It holds:"
   items:
@@ -31,10 +31,10 @@ sections:
       return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
     }
 - heading: "A worked example"
-  body: "The git-hygiene preset for __DEFAULT_CLIENT__, built the way the section above describes. The selection object, its share code and the command are generated from the pinned catalog when the site is built, so they match this catalog commit. Ask the user before running the command."
+  body: "The git-hygiene preset for __DEFAULT_CLIENT__, built the way the section above describes. The site build generates the selection object, its share code and the command from the pinned catalog, so they match this catalog commit. Ask the user before running the command."
   code_label: "The selection object for the git-hygiene preset, then its share code and command:"
   worked_example: git-hygiene
 - heading: "The install command"
   body: "For an agent marked tested (__WITNESSED_CLIENTS__), ask the user before running `__COMMAND_WITNESSED__`: it also runs that agent's own install steps. For the others, ask the user before running `__COMMAND_UNTESTED__`: it only builds the plugin and prints the steps for the user to apply. Both build hooks that change how the user's agent behaves. Show the user the chosen policies, with their labels on their agent, before asking. /coding/install/ lists every agent's steps."
 - heading: "What chock is not"
-  body: "Chock is friction, not a security boundary. Advisory text can be ignored, and a block on the shell can be sidestepped by a determined agent. Say exactly that to the user. Do not call it protection."
+  body: "Chock adds friction. It is not a security boundary. An agent can ignore advisory text, and a determined agent can get around a block on the shell. Tell the user exactly that. Do not call it protection."

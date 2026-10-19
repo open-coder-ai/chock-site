@@ -22,7 +22,7 @@ landing:
   stats_line: "__COUNT__ POLICIES · __TESTED__ TESTS"
   headline_lead: "Blocks your coding agent's"
   headline_accent: "wrong moves before they land."
-  sub: "You decide what it must never do. Chock blocks that action and nothing else. It makes no suggestions and no rewrites. The agent keeps working."
+  sub: "You decide what your agent must never do. Chock blocks that one action and leaves everything else alone. It doesn't suggest changes or rewrite code, so the agent keeps working."
   primary_cta: "Build your plugin"
   secondary_cta: "See how it works"
   copy_label: "Copy"
@@ -38,7 +38,7 @@ landing:
   works_label: "WORKS WITH"
   sections_eyebrow: "THREE PLACES TO USE CHOCK"
   sections_heading: "One idea: name the wrong action, then stop it."
-  sections_intro: "Agents that write code get guardrails today, and so can your own git repository. Guardrails for general agents are being designed."
+  sections_intro: "Agents that write code get guardrails today, and so can your own git repository. We are still designing guardrails for general agents."
   track_cards:
     coding:
       stats: ["policies", "presets", "agents"]
@@ -55,7 +55,7 @@ landing:
         - {label: "Explore git repositories", href: "/repos/"}
   stat_labels: {policies: "policies", presets: "presets", agents: "agents"}
   how_eyebrow: "HOW IT WORKS FOR CODING AGENTS"
-  how_heading: "Ready in a minute. Three steps, one command."
+  how_heading: "From picks to plugin in three steps"
   how_apply_note: "For an agent marked tested, the command adds --apply and installs the plugin too. For the others, you install it yourself."
   how:
     - {title: "Pick your guardrails", body: "Tick policies one by one, or start from a preset such as Git hygiene or Secrets."}
@@ -63,11 +63,11 @@ landing:
     - {title: "Keep working", body: "Your agent now checks each risky action. Change your picks any time and run the command again."}
   surface_eyebrow: "ONE POLICY, EVERY AGENT"
   surface_heading: "Write the rule once. Chock puts it where each agent can enforce it."
-  surface_body: "Every agent has its own hook system. Chock builds each policy for the agent it runs in. The label shown for each agent says how much the policy can do there. This is __POLICY__, with the label the catalog gives it on each agent."
+  surface_body: "Every agent has its own hook system, so chock builds each policy for the agent you pick. Here is __POLICY__ on each agent, with the catalog's label for what it can do there. Tested means a person has seen chock refuse actions in that agent. Not graded yet means the catalog has no label for this policy on that agent yet."
   surface_policy: "scan-secrets"
   surface_tests: "__TESTED__ of __TOTAL__ test cases pass"
   usecases_eyebrow: "USE CASES"
-  usecases_heading: "Built for how you actually work with agents."
+  usecases_heading: "Pick the case closest to yours."
   usecases_label: "Use cases"
   usecases_preset: "Preset"
   usecases_panel: "FROM THE __PRESET__ PRESET"
@@ -77,37 +77,37 @@ landing:
       preset: "git-hygiene"
       headline: "Let the agent run while you get coffee."
       body: "You hand the agent a task and step away. These policies make the usual git shortcuts visible instead of silent."
-      points: ["Skipping hooks is refused", "Direct commits to main are caught", "Your agent conversation stays out of git history"]
+      points: ["Chock refuses a commit that skips hooks", "Chock catches a direct commit to main", "Your agent conversation stays out of git history"]
       policies: ["block-no-verify", "protect-main-branch", "protect-commit-privacy", "block-hook-bypass-in-files"]
     - tab: "Engineering team"
       preset: "test-integrity"
       headline: "One set of rules for every teammate's agent."
       body: "Share a selection link or commit the selection file. Everyone installs the same pinned policies, so review stops catching the same agent mistake twice."
-      points: ["Share your picks as a link or a file in the repo", "Pinned to one catalog commit, so installs match", "Tests cannot be quietly skipped or weakened to get green"]
+      points: ["Share your picks as a link or a file in the repo", "Pinned to one catalog commit, so installs match", "The agent cannot quietly skip or weaken a test to get green"]
       policies: ["block-test-skips", "protect-test-integrity"]
     - tab: "Open-source maintainer"
       preset: "agent-config"
       headline: "Contributors bring agents you never chose."
-      body: "Project rules should travel with the repository, not live in one person's settings. These policies guard the agent's own configuration."
-      points: ["An agent cannot edit its own guardrails", "Wildcard agent permissions are refused", "Floating agent components are refused"]
+      body: "Project rules should live in the repository, so they never depend on one person's settings. These policies guard the agent's own configuration."
+      points: ["An agent cannot edit its own guardrails", "Chock refuses wildcard agent permissions", "Chock refuses agent components at a floating version"]
       policies: ["protect-agent-config", "agent-permissions-scan", "block-wildcard-agent-permissions", "block-unpinned-agent-components"]
     - tab: "Security and compliance"
       preset: "owasp-agentic-top10"
       headline: "Read what each policy does, and what it misses."
-      body: "The OWASP agentic top 10 preset is advisory text the agent reads: a starting point you can read line by line, not enforcement. Every policy page states its reach."
+      body: "The OWASP agentic top 10 preset is advisory text the agent reads. It enforces nothing, but it gives you a starting point to read line by line. Each policy page says what the policy acts on and what it misses."
       points: ["Ten policies, one for each OWASP agentic risk", "Every label says whether a policy blocks or only advises", "Each page lists what the policy misses"]
       policies: ["owasp-asi01-agent-goal-hijack", "owasp-asi02-tool-misuse", "owasp-asi03-identity-privilege-abuse", "owasp-asi04-agentic-supply-chain"]
   honest_eyebrow: "PLAIN LABELS"
-  honest_heading: "Every policy tells you exactly how far it goes."
-  honest_body: "Chock labels each policy as blocks, asks, warns or advisory, and says what it misses."
+  honest_heading: "Each policy says what it stops and what it misses."
+  honest_body: "Every policy carries one of four labels: blocks, asks, warns or advisory."
   honest_link: "See all __COUNT__ policies"
-  honest_note: "Counts are computed from the catalog at each build."
-  honest_friction: "Friction, not a security boundary."
+  honest_note: "Each build counts these from the catalog."
+  honest_friction: "Chock adds friction. It is not a security boundary."
   honest_friction_body: "Chock stops common mistakes and makes risky actions visible. Pair it with your existing controls."
   honest_friction_link: "Why we say this"
   nomodel_eyebrow: "NO MODEL, NO TOKENS"
-  nomodel_heading: "A check is a script, not a model."
-  nomodel_body: "Chock does not ask a model whether your code is safe. Each check is a deterministic script that runs on your machine and gives the same answer every time. When a check passes, nothing is added to the agent's context. When it refuses, the agent gets one short reason."
+  nomodel_heading: "Every check is a plain script."
+  nomodel_body: "No model decides whether your code is safe. Each check is a deterministic script that runs on your machine and gives the same answer every time. When a check passes, nothing is added to the agent's context. When it refuses, the agent gets one short reason."
   shift_eyebrow: "SHIFT LEFT"
   shift_heading: "What a late finding costs"
   shift_intro: "Most security review happens after the code exists. A finding that arrives late costs a round trip. A finding the agent fixes in its own turn does not."
@@ -115,10 +115,10 @@ landing:
   shift_today_note: "Each late finding adds a round trip: triage, a context switch, a re-prompt and a re-review."
   shift_today: ["Agent writes", "Human review", "SAST in CI", "Security review", "Release"]
   shift_with_title: "With chock"
-  shift_with_note: "The known classes are fixed in the agent's own turn."
+  shift_with_note: "The agent fixes the known classes in its own turn."
   shift_with: ["Agent writes", "Chock refuses a known class", "Agent fixes it in the same turn", "The rest go to review as before"]
   calc_heading: "What does a late finding cost you?"
-  calc_example_label: "Example values, not measurements. Change them to your own."
+  calc_example_label: "These are example values, and we did not measure them. Put in your own."
   calc_inputs:
     - {id: "findings", label: "Findings per release", value: 20, min: 0, step: 1}
     - {id: "share", label: "Share chock covers (%)", value: 60, min: 0, max: 100, step: 1}
@@ -130,23 +130,23 @@ landing:
     - "Hours saved = findings × share covered × minutes per late fix ÷ 60"
     - "Money saved = hours saved × hourly cost"
     - "Days saved = days per security loop × share covered"
-  calc_example_text: "With the example values (__FINDINGS__ findings, __SHARE__% covered, __MINUTES__ minutes, $__RATE__ an hour, __DAYS__ days per loop) the formula gives __HOURS__ hours, $__MONEY__ and __SAVED_DAYS__ days. That is arithmetic on assumptions, not a claim about your team."
+  calc_example_text: "With the example values (__FINDINGS__ findings, __SHARE__% covered, __MINUTES__ minutes, $__RATE__ an hour, __DAYS__ days per loop) the formula gives __HOURS__ hours, $__MONEY__ and __SAVED_DAYS__ days. That is arithmetic on the values above. It says nothing about your own team."
   calc_out_hours: "Estimated hours saved per release"
   calc_out_money: "Estimated money saved per release"
   calc_out_days: "Estimated days saved in the security loop"
   calc_invalid: "Enter numbers of zero or more. The share is from 0 to 100."
   local_eyebrow: "YOUR CODE STAYS PUT"
   local_heading: "Your code stays where the agent writes it."
-  local_body: "Chock checks code on the laptop, in the dev container or inside the cloud agent's pod. There's no upload to a scanning service and no new vendor holding your source."
+  local_body: "Chock checks code on the laptop, in the dev container or inside the cloud agent's pod. Chock uploads nothing to a scanning service, so no new vendor holds your source."
   local_caveat: "Your agent still sends context to its own model provider. Chock does not send it anywhere else. Installing fetches the policies once."
   presets_eyebrow: "__PRESETS__ PRESETS"
-  presets_heading: "Start from a preset. Tune it in seconds."
+  presets_heading: "Start from a preset, then change any pick."
   presets_link: "Open the builder"
   fit_eyebrow: "WHERE CHOCK FITS"
   fit_heading: "More than a prompt file."
   fit_cols: ["Rules in a prompt file", "chock"]
   fit_rows:
-    - {row: "Stops the action before it runs", a: "No. The agent may ignore it.", b: "Yes for blocking policies. Each label says how far it goes."}
+    - {row: "Stops the action before it runs", a: "No. The agent may ignore it.", b: "Yes, for policies labelled blocks. The label says what each one does."}
     - {row: "Says what it cannot enforce", a: "No", b: "Yes, on every policy"}
     - {row: "Tested rules", a: "No", b: "Test cases per policy, run against the catalog"}
     - {row: "Account or sign-up", a: "None", b: "None"}
@@ -156,11 +156,11 @@ landing:
   trust_policy: "scan-secrets"
   trust:
     - {title: "Read every rule", body: "Each policy is a file in the catalog: read it on GitHub before you install it.", proof: "Catalog at __CATALOG_REF_12__", href: "__CATALOG_URL__"}
-    - {title: "Pinned and checked", body: "Your install is verified against a sha256 hash of each policy at one catalog commit.", proof: "How the install is verified", href: "/security/#why-the-command-is-safe-to-read-before-running"}
+    - {title: "Pinned and checked", body: "The install checks each policy against its sha256 hash at one catalog commit.", proof: "How the install checks it", href: "/security/#why-the-command-is-safe-to-read-before-running"}
     - {title: "Tests per policy", body: "Each policy ships test cases that run against the catalog.", proof: "__POLICY__: __EXECUTED__ of __TOTAL__ cases pass", href: "/coding/policies/__POLICY__/"}
   open_eyebrow: "OPEN SOURCE"
-  open_heading: "Free, open, and built in public."
-  open_body: "No paid tier, no account, no telemetry. Every policy, test and build step lives on GitHub under Apache-2.0. Tell us what your agent did that a policy should have caught."
+  open_heading: "Free to use, and built in the open."
+  open_body: "You pay nothing and need no account, and there is no telemetry. Every policy, test and build step is on GitHub under Apache-2.0. Tell us what your agent did that a policy should have caught."
   open_github: "View on GitHub"
   open_contribute: "Contribute a policy"
   faq_eyebrow: "QUESTIONS"
@@ -181,6 +181,6 @@ coding:
   glance_presets: "Presets"
   presets_heading: "Start from a preset"
   presets_intro: "A preset fills the builder with a group of policies. You can remove any of them before you install."
-  clients_heading: "Every agent builds here"
+  clients_heading: "Agents you can build for"
   clients_line: "The builder makes one plugin for each of these agents. A tested agent installs with one command. For an untested one, the command builds the plugin and you install it yourself."
   clients_link: "See every agent"

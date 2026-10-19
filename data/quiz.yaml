@@ -27,7 +27,7 @@ questions:
   - id: agent
     kind: single
     title: "Which agent do you use?"
-    hint: "The builder makes one plugin for one agent. The full builder has the same agent picker; change it there at any time."
+    hint: "The builder makes one plugin for one agent. The full builder has the same agent picker, so you can change it there at any time."
     # The options are the agents in witness.yaml, named by the engine; `subs` is the line under each, by witness state.
     subs:
       witnessed: "Tested: one command builds and installs it"

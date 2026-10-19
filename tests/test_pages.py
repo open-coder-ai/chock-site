@@ -1,8 +1,10 @@
 """Per-page structure: one h1, lang, CSP, footer sentence, labels, a11y ids."""
 
+import html
 import json
 import re
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 
 import yaml
@@ -14,7 +16,7 @@ CSP = (
     "data:; connect-src 'self'; font-src 'self'; object-src 'none'; "
     "base-uri 'none'; form-action 'none'"
 )
-FOOTER = "Friction, not a security boundary."
+FOOTER = "Chock adds friction. It is not a security boundary."
 
 
 class PageParser(HTMLParser):
@@ -130,7 +132,7 @@ def test_block_no_verify_page_content(built) -> None:
     html = (
         built.out / "coding" / "policies" / "block-no-verify" / "index.html"
     ).read_text(encoding="utf-8")
-    assert "<title>Block No-Verify: blocks refuses a matched" in html
+    assert "<title>Block No-Verify (blocks): refuses a matched" in html
     assert 'id="what-it-does"' in html
     assert 'id="misses"' in html
     assert 'id="label"' in html
@@ -156,7 +158,7 @@ def test_plugin_note_only_on_advisory_enforced_at_commit(built) -> None:
         built.out / "coding" / "policies" / "protect-main-branch" / "index.html"
     ).read_text(encoding="utf-8")
     assert note in protect
-    assert "enforced at commit" in protect
+    assert "chock enforces it at commit" in protect
     block = (
         built.out / "coding" / "policies" / "block-no-verify" / "index.html"
     ).read_text(encoding="utf-8")
@@ -263,3 +265,19 @@ def test_no_literal_backticks_in_rendered_text(built) -> None:
         parser = _TextOutsideCode()
         parser.feed(page.read_text(encoding="utf-8"))
         assert "`" not in "".join(parser.text), page
+
+
+def test_no_title_repeats_a_word(built) -> None:
+    """No page title says a word twice in a row ("warns warns"); a CLI page's title is the command itself."""
+    suffix = " · chock.sh"
+    repeats = []
+    for page in sorted(built.out.rglob("*.html")):
+        rel = page.relative_to(built.out).as_posix()
+        if rel.startswith("docs/cli/"):
+            continue
+        found = re.search(r"<title>([^<]*)</title>", page.read_text(encoding="utf-8"))
+        title = html.unescape(found.group(1)).removesuffix(suffix)
+        words = re.findall(r"[\w'’-]+", title.lower())
+        if any(a == b for a, b in pairwise(words)):
+            repeats.append(f"{rel}: {title}")
+    assert not repeats, "\n".join(repeats)

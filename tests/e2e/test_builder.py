@@ -139,7 +139,7 @@ def test_removing_every_pick_disables_outputs_and_clears_the_fragment(
 
 def test_unreadable_link_says_so_and_starts_empty(page, site_url) -> None:
     _open(page, site_url, "#s=not-base64!")
-    assert page.get_by_text("This link could not be read.").is_visible()
+    assert page.get_by_text("The site could not read this link.").is_visible()
     assert _count(page) == "0 policies"
     assert page.locator(".bmember input:checked").count() == 0
     assert_clean(page)

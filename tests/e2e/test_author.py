@@ -381,7 +381,7 @@ def test_schema_2_fragment_restores_catalog_picks(page, site_url) -> None:
     second = page.context.new_page()
     collect(second, site_url)
     _open(second, site_url, "#s=not-base64!")
-    assert "could not be read" in second.locator("#link-notice").inner_text()
+    assert "could not read the link" in second.locator("#link-notice").inner_text()
     assert_clean(first)
     assert_clean(second)
 

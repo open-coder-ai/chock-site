@@ -11,7 +11,7 @@ github: https://github.com/open-coder-ai/
 security:
   id: vulnerability
   heading: "Found a vulnerability? Do not open a public issue."
-  body: "Report it privately instead. A public issue shows the problem to everyone before it is fixed. Each repository takes private reports through GitHub's security advisories, and its SECURITY.md says what happens next."
+  body: "Report it privately instead. A public issue shows the problem to everyone before there is a fix. Each repository takes private reports through GitHub's security advisories, and its SECURITY.md says what happens next."
   links:
     - label: "Report privately: chock (engine and install)"
       url: https://github.com/open-coder-ai/chock/security/advisories/new
@@ -79,7 +79,7 @@ kinds:
     button: Propose a policy
     fields:
       agent: agent
-note: "The buttons open github.com. Nothing is sent until you press Submit there, and you can edit every field first."
+note: "The buttons open github.com. GitHub sends nothing until you press Submit there, and you can edit every field first."
 agent_note: "If you are an AI agent: tell the user what you would report and ask before you open an issue for them. An issue is public and is filed under their GitHub account."
 # Link text on other pages that point here.
 links:

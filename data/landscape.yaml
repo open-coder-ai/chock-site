@@ -18,7 +18,7 @@ chock_quotes_sha256: 60b265faa5dc88871f5ea7c29aea4396b1de54476239ac2007cb1d817e4
 
 texts:
   how_heading: How to read this page
-  how: "Each layer below opens with what that class of product controls and what Chock controls. Then come the two directions: what the layer can catch that Chock can't, and what Chock can catch that the layer can't. Last come examples of products in the layer, each quoting one sentence from the vendor's own page, with the date we last found that sentence there. The quotes are the vendors' words: we have not tested any of these products. Chock's claims quote chock's own docs at the pinned engine commit, and those sections are shown in full at the end of the page. What Chock can enforce differs per agent:"
+  how: "Each layer below opens with what that class of product controls and what Chock controls. Then come the two directions: what the layer can catch that Chock can't, and what Chock can catch that the layer can't. Last come examples of products in the layer, each quoting one sentence from the vendor's own page, with the date we last found that sentence there. The quotes are the vendors' words: we have not tested any of these products. Chock's claims quote chock's own docs at the pinned engine commit, and the end of the page shows those sections in full. What Chock can enforce differs per agent:"
   agents_link: each agent's tier and grade
   controls_heading: What this layer controls
   layer_catches: What this layer catches that Chock can't
@@ -28,8 +28,8 @@ texts:
   as_of: "as of __DATE__"
   stale: "May be out of date: last checked __DATE__."
   quote: "Chock's docs, __FILE__:"
-  closing_heading: Complementary, not a substitute
-  closing: "Chock is complementary to these layers, not a substitute for any of them."
+  closing_heading: Use chock alongside these layers
+  closing: "Chock works alongside these layers. It replaces none of them."
 
 layers:
   - heading: Agent identity
@@ -63,7 +63,7 @@ layers:
       - file: README.md
         section: "Guardrails, not guarantees"
         quote: "`in-agent` is the agent's pre-tool hook: best-effort, and it fails open."
-    chock: "A wrong move inside the boundary. A coding agent is usually given read and write access to its repository. Inside that access, Chock's policies check each commit, and at the commit tier the gate refuses one that breaks a policy."
+    chock: "A wrong move inside the boundary. A coding agent usually has read and write access to its repository. Inside that access, Chock's policies check each commit, and at the commit tier the gate refuses one that breaks a policy."
     chock_quotes:
       - file: README.md
         section: "Guardrails, not guarantees"
@@ -79,7 +79,7 @@ layers:
       - file: docs/agentic-risk-coverage.md
         section: "What Chock does not do — stated plainly"
         quote: "Identity platforms and gateways own runtime credentials and quotas."
-    chock: "Actions that never pass a gateway. Chock's controls are compiled into the agent's own hooks, git hooks and a CI gate in the repository, so a commit is checked at the git hook or in CI whether or not the agent's traffic went through a gateway."
+    chock: "Actions that never pass a gateway. Chock compiles its controls into the agent's own hooks, git hooks and a CI gate in the repository. So the git hook or CI checks a commit whether or not the agent's traffic went through a gateway."
     chock_quotes:
       - file: docs/concepts.md
         section: "Enforcement surface"

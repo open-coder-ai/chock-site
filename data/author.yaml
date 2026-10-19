@@ -9,7 +9,7 @@
 # A test fails when an anchor no longer matches the template it edits.
 
 texts:
-  noscript: "The author needs JavaScript: it builds your policy in the browser and writes a setup script you read and run yourself. Nothing is compiled here."
+  noscript: "The author needs JavaScript: it builds your policy in the browser and writes a setup script you read and run yourself. The page compiles nothing."
   kind_legend: "What should this policy do?"
   name_label: "What should this policy be called?"
   name_hint: "Short lowercase words or hyphens. It becomes the policy id, shown here."
@@ -47,7 +47,7 @@ texts:
   rule_too_long: "The rule text is over 500 characters. Shorten the answers."
   not_ready: "Answer the questions above."
   unknown_catalog: "The link names catalog policies this site does not have: {ids}."
-  link_unreadable: "The link could not be read, so the page starts empty."
+  link_unreadable: "The page could not read the link, so it starts empty."
   ids_hidden_one: "1 id not shown"
   ids_hidden_many: "{n} ids not shown"
   untested_note: "No one has seen chock install on {agent} in a live run yet, so the script never adds --apply for it."
@@ -71,11 +71,11 @@ script:
 kinds:
   content_regex:
     title: "Refuse a line of text"
-    blurb: "A commit or file write that adds a line matching your text is refused."
+    blurb: "Chock refuses a commit or file write that adds a line matching your text."
     fields:
       - key: stop
         label: "What text must never be written or committed?"
-        hint: "A literal line marker, not a regular expression."
+        hint: "Plain text, matched literally. Regular expressions do not work here."
         example: "DO NOT COMMIT"
       - key: message
         label: "What does the agent see when it is refused?"
@@ -124,7 +124,7 @@ kinds:
 
   guard:
     title: "Refuse a shell command"
-    blurb: "A command matching yours is refused before the agent runs it. Best effort: a renamed binary gets past it."
+    blurb: "Chock refuses a command matching yours before the agent runs it. Best effort: a renamed binary gets past it."
     fields:
       - key: stop
         label: "What command must the agent never run?"
@@ -187,7 +187,7 @@ kinds:
 
   script:
     title: "Refuse a file name"
-    blurb: "A commit or write that adds a file of a refused name is refused."
+    blurb: "Chock refuses a commit or write that adds a file with a name you list."
     fields:
       - key: stop
         label: "Which file names must never be written or committed?"

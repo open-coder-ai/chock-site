@@ -144,7 +144,7 @@ def test_calculator_text_shows_without_javascript(browser, site_url) -> None:
             "Hours saved = findings × share covered × minutes per late fix ÷ 60" in text
         )
         assert "the formula gives 9 hours, $900 and 1.8 days" in text
-        assert "Example values, not measurements." in text
+        assert "These are example values, and we did not measure them." in text
     finally:
         context.close()
 
@@ -156,7 +156,7 @@ def test_faq_opens_with_the_keyboard(page, site_url) -> None:
     page.keyboard.press("Enter")
     details = page.locator(".faq-details", has_text="What are general agents?")
     assert details.get_attribute("open") is not None
-    assert "There is nothing to install yet" in details.inner_text()
+    assert "so there is nothing to install yet" in details.inner_text()
 
 
 def test_home_fits_a_phone(browser, site_url) -> None:

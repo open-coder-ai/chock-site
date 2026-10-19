@@ -7,7 +7,7 @@ tiers:
     word: "at commit"
     heading: "Checks at commit"
     glyph: "■"
-    meaning: "The commit is refused, locally and in CI."
+    meaning: "Chock refuses the commit, locally and in CI."
     equals: "enforced-at-commit"
   - key: agent
     word: "in agent"
@@ -44,7 +44,7 @@ home:
   cta: "Pick your policies"
   tiers_heading: "What each policy does in a git repository"
   list_heading: "Every policy, by what it does in a repository"
-  list_intro: "Each name opens the policy's page. A policy's tier here is read from the catalog, not from how it is graded on any one agent."
+  list_intro: "Each name opens the policy's page. This page reads each tier from the catalog. A policy's grade on one agent does not change its tier."
   steps_heading: "How it works"
   steps:
     - {title: "Pick your policies", body: "Answer three questions, or take a preset. The builder writes one block of commands."}
@@ -53,7 +53,7 @@ home:
   install_heading: "Install chock first"
   install_note: "The commands need chock on your machine. Read the command before you run it."
   install_link: "The Install page has the details and the other ways to install."
-  computed_note: "Counts are computed from the catalog at each build."
+  computed_note: "Each build counts these from the catalog."
 
 builder:
   h1: "Set up your repository"
