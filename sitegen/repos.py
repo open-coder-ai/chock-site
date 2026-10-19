@@ -178,7 +178,7 @@ def _template_block(site: Site) -> str:
                 {"id": "<id>", "ref": site.catalog_ref, "sha256": "<sha256>"},
             ),
             commands["sync"] + "   # or: " + commands["sync_ci"],
-            commands["commit"],
+            commands["review"],
         ]
     )
 

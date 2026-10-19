@@ -8,6 +8,8 @@
 title: Report an issue
 description: "Found something wrong? Each button below opens the right GitHub issue form, already filled in with what this site knows. You need a GitHub account to submit."
 github: https://github.com/open-coder-ai/
+# The agents the issue forms' Agent dropdown lists (besides "other"). Any other agent is sent as "other".
+form_agents: [claude-code, cursor, codex, copilot, devin, other]
 security:
   id: vulnerability
   heading: "Found a vulnerability? Do not open a public issue."

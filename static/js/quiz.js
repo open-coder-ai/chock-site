@@ -47,12 +47,14 @@ export function defaultAnswers(quiz) {
     if (question.kind === "multi") answers[question.id] = [];
     else answers[question.id] = question.options.find((o) => o.default).id;
   }
+  answers.includeUngraded = false;
   return answers;
 }
 
 // The picks for a set of answers: each policy once, with every worry that reached it.
 // Presets are read in the order the worries and their presets are listed in the data. A policy the
-// catalog does not grade on the chosen agent has no strictness to filter on, so it stays in.
+// catalog does not grade on the chosen agent has no strictness to filter on, so every strictness leaves
+// it out, unless the answers include it ("include policies this agent is not graded on").
 export function quizPicks(quiz, site, answers, keywordOf, ungraded = null) {
   const presets = new Map(site.presets.map((p) => [p.id, p]));
   const worries = quiz.questions.find((q) => q.id === "worries");
@@ -64,7 +66,7 @@ export function quizPicks(quiz, site, answers, keywordOf, ungraded = null) {
     for (const presetId of worry.presets) {
       for (const id of presets.get(presetId).members) {
         const keyword = keywordOf(id);
-        if (keyword !== ungraded && !allowed.has(keyword)) continue;
+        if (keyword === ungraded ? !answers.includeUngraded : !allowed.has(keyword)) continue;
         if (!picks.has(id)) picks.set(id, []);
         if (!picks.get(id).includes(worry.label)) picks.get(id).push(worry.label);
       }
@@ -211,6 +213,19 @@ export function initQuiz({
     const hint = element("p", "quiz-need");
     hint.setAttribute("role", "status");
     body.append(note, hint);
+    if (question.id === "strictness" && config.ungraded) {
+      const toggle = element("label", "quiz-ci quiz-ungraded");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.name = "quiz-ungraded";
+      box.checked = answers.includeUngraded;
+      box.addEventListener("change", () => {
+        answers.includeUngraded = box.checked;
+        removed = new Set();
+      });
+      toggle.append(box, element("span", "", T.include_ungraded));
+      body.insertBefore(toggle, note);
+    }
     group.addEventListener("change", (event) => {
       const input = event.target;
       if (!(input instanceof HTMLInputElement)) return;

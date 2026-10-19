@@ -7,7 +7,7 @@ const PAGE = /^\/(?:[a-z0-9][a-z0-9.-]{0,63}\/){0,4}$/;
 const KEYS = ["policy", "version", "agent", "page"];
 const TITLE_KEY = /\{([a-z_]+)\}/g;
 
-export function readContext(search, agents, siteUrl) {
+export function readContext(search, agents, siteUrl, formAgents) {
   const query = new URLSearchParams(search);
   const context = {};
   for (const key of KEYS) {
@@ -16,7 +16,8 @@ export function readContext(search, agents, siteUrl) {
     if (key === "page") {
       if (PAGE.test(value)) context.page = siteUrl + value;
     } else if (ID.test(value) && (key !== "agent" || agents.includes(value))) {
-      context[key] = value;
+      // An agent the issue forms do not offer goes in as "other": the dropdown is never left blank.
+      context[key] = key === "agent" && !formAgents.includes(value) ? "other" : value;
     }
   }
   return context;
@@ -39,7 +40,8 @@ export function fillLink(href, fields, title, context) {
 const cards = document.getElementById("report-cards");
 if (cards) {
   const agents = cards.dataset.agents.split(" ");
-  const context = readContext(location.search, agents, cards.dataset.siteUrl);
+  const formAgents = cards.dataset.formAgents.split(" ");
+  const context = readContext(location.search, agents, cards.dataset.siteUrl, formAgents);
   for (const link of cards.querySelectorAll("a[data-report-kind]")) {
     link.href = fillLink(link.href, link.dataset.fields, link.dataset.title, context);
     link.addEventListener("click", () =>

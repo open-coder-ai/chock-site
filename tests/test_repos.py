@@ -198,7 +198,6 @@ def _run(line: str, repo: Path, check: bool = True) -> subprocess.CompletedProce
     argv = line.split(" ")
     if argv[0] == "chock":
         argv = [*CHOCK, *argv[1:]]
-        # `git add -A && git commit ...` is a shell line; chock lines are plain argv
     result = subprocess.run(
         argv, cwd=repo, env=_env(), capture_output=True, text=True, check=False
     )
@@ -226,7 +225,7 @@ def test_commands_install_git_hygiene_in_a_temp_repo(
     assert _git(repo, "init", "-q", "-b", "work").returncode == 0
     lines = _commands(built, "git-hygiene", True, catalog_path)
     assert lines[0] == "chock init ."
-    assert lines[-1].startswith("git add -A && git commit")
+    assert lines[-1].startswith("# Next: review `git status`")
     for line in lines[:-1]:
         _run(line, repo)
     preset = next(p for p in built.site.presets if p.id == "git-hygiene")
@@ -281,7 +280,9 @@ def test_command_lines_are_sorted_and_end_as_the_plan_says(built) -> None:
         "scan-secrets",
     ]
     assert lines[3] == "chock sync --repo ."
-    assert lines[4] == 'git add -A && git commit -m "Add chock guardrails"'
+    assert lines[4] == commands["review"]
+    assert "git add" not in "\n".join(lines)
+    assert "`git status`" in lines[4] and "commit the files chock wrote" in lines[4]
     assert repodata.command_lines(commands, picks, "r", True)[3].endswith("--ci")
     assert repodata.script_text(commands, lines).startswith(
         "#!/bin/sh\nset -eu\nchock init .\n"

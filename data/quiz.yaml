@@ -8,6 +8,7 @@ texts:
   next: "Next"
   show: "Show my plugin"
   start_over: "Start over"
+  include_ungraded: "Include policies this agent is not graded on"
   need_worry: "Pick at least one worry to continue."
   result_one: "Your plugin: 1 guardrail"
   result_many: "Your plugin: {n} guardrails"

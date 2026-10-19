@@ -86,13 +86,13 @@ def shell_line(template: str, values: dict[str, str]) -> str:
 def command_lines(
     commands: dict[str, Any], picks: list[Policy], ref: str, ci: bool
 ) -> list[str]:
-    """The setup commands: init, one add per policy sorted by id, sync, commit; every value shell-quoted."""
+    """The setup commands: init, one add per policy sorted by id, sync, then the review note; every value shell-quoted."""
     lines = [commands["init"]]
     for policy in sorted(picks, key=lambda p: p.id):
         values = {"id": policy.id, "ref": ref, "sha256": policy.sha256}
         lines.append(shell_line(commands["add"], values))
     lines.append(commands["sync_ci"] if ci else commands["sync"])
-    lines.append(commands["commit"])
+    lines.append(commands["review"])
     return lines
 
 
