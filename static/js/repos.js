@@ -1,6 +1,6 @@
 // The Git repositories builder: the shared start screen (quiz.js, section "repos"), then one block of
 // commands for the picked policies. Everything runs in the browser. The catalog commit and every
-// sha256 come from site.json, which the site build wrote; a share link (#p=) carries policy ids only.
+// sha256 come from site.json, which the site build wrote; a share link (#p=) carries policy ids, the host and the CI choice.
 import { copyText, labelChip } from "./common.js";
 import { initQuiz } from "./quiz.js";
 
@@ -34,10 +34,13 @@ function element(tag, className, text) {
   return node;
 }
 
-// The ids a `#p=a,b,c` fragment names that the catalog has, and the others it names; null without `#p=`.
-export function parseShare(hash, known) {
-  const match = /^#p=(.*)$/.exec(hash);
+// The ids a `#p=a,b,c&host=github&ci=1` fragment names that the catalog has, and the others it names, plus
+// its host (one of `hosts`, else null) and CI choice (true, false or null); null without `#p=`.
+export function parseShare(hash, known, hosts = []) {
+  const match = /^#p=(.*?)(?:&host=([a-z0-9-]+))?(?:&ci=([01]))?$/.exec(hash);
   if (!match) return null;
+  const host = hosts.includes(match[2]) ? match[2] : null;
+  const ci = host && match[3] ? match[3] === "1" : null;
   let raw = match[1];
   try {
     raw = decodeURIComponent(raw);
@@ -52,10 +55,10 @@ export function parseShare(hash, known) {
     const list = known.has(id) ? ids : unknown;
     if (!list.includes(id)) list.push(id);
   }
-  return { ids, unknown };
+  return { ids, unknown, host, ci };
 }
 
-// The setup commands for picked ids: init, one add per policy sorted by id, sync, commit. Every value
+// The setup commands for picked ids: init, one add per policy sorted by id, sync, then the review note. Every value
 // is shell-quoted, so an id, ref or sha256 is one argument whatever characters it carries.
 export function commandLines(site, ids, ci) {
   const byId = new Map(site.policies.map((p) => [p.id, p]));
@@ -65,7 +68,7 @@ export function commandLines(site, ids, ci) {
     lines.push(shellLine(commands.add, { id, ref: site.catalog.ref, sha256: byId.get(id).sha256 }));
   }
   lines.push(ci ? commands.sync_ci : commands.sync);
-  lines.push(commands.commit);
+  lines.push(commands.review);
   return lines;
 }
 
@@ -92,8 +95,13 @@ async function main() {
   const tiers = new Map(repos.tiers.map((tier) => [tier.key, tier]));
   const hostQuestion = repos.quiz.questions.find((q) => q.id === "host");
   const noticeBox = $("#link-notice");
+  const hostIds = hostQuestion.options.map((o) => o.id);
   let host = null;
   let ci = false;
+  let pinned = null;
+  let answeredHost = null;
+
+  const hostCi = (id) => hostQuestion.options.find((o) => o.id === id).ci;
 
   function notify(texts) {
     noticeBox.replaceChildren(
@@ -113,9 +121,14 @@ async function main() {
 
   // The result's output: the commands, Copy, Download and the share link.
   function outputs(ids, { answers }) {
-    if (host !== answers.host) {
-      host = answers.host;
-      ci = hostQuestion.options.find((o) => o.id === host).ci;
+    if (pinned) {
+      ({ host, ci } = pinned);
+      pinned = null;
+      answeredHost = answers.host;
+    } else if (answeredHost !== answers.host) {
+      answeredHost = answers.host;
+      host = answeredHost;
+      ci = hostCi(host);
     }
     const box = element("div", "quiz-command");
     box.appendChild(element("h3", "quiz-command-title", T.command_label));
@@ -141,7 +154,9 @@ async function main() {
     actions.append(copy, download, share);
     box.appendChild(actions);
 
-    const shareUrl = `${location.origin}${location.pathname}#p=${[...ids].sort().join(",")}`;
+    const shareFor = () =>
+      `${location.origin}${location.pathname}#p=${[...ids].sort().join(",")}&host=${host}&ci=${ci ? 1 : 0}`;
+    let shareUrl = shareFor();
     const shareLabel = element("label", "visually-hidden", T.share);
     shareLabel.htmlFor = "quiz-share-url";
     const shareInput = element("input", "share-url");
@@ -154,6 +169,8 @@ async function main() {
     let lines = [];
     const update = () => {
       lines = commandLines(site, ids, ci);
+      shareUrl = shareFor();
+      shareInput.value = shareUrl;
       codeEl.textContent = lines.join("\n");
     };
     check.addEventListener("change", () => {
@@ -176,12 +193,13 @@ async function main() {
 
   // A share link: unknown ids are dropped and named; the known ones open the result directly.
   function readShare() {
-    const share = parseShare(location.hash, known);
+    const share = parseShare(location.hash, known, hostIds);
     if (!share) return null;
     const notes = [];
     if (share.unknown.length) notes.push(unknownText(share.unknown));
     if (share.ids.length) notes.push(T.shared_note);
     notify(notes);
+    if (share.ids.length && share.host) pinned = { host: share.host, ci: share.ci ?? hostCi(share.host) };
     return share.ids.length ? share.ids : null;
   }
 

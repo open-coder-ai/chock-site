@@ -401,3 +401,37 @@ def test_every_quiz_step_has_equal_option_cards(browser, site_url) -> None:
             assert_clean(page)
         finally:
             context.close()
+
+
+def test_every_strictness_leaves_out_ungraded_policies_unless_asked(
+    page, site_url
+) -> None:
+    _start(page, site_url)
+    site = _site(page, site_url)
+    ungraded = site["builder_clients"]["ungraded"]
+    grok = {p["id"]: p["agent_labels"]["grok"]["keyword"] for p in site["policies"]}
+    assert set(grok.values()) == {ungraded}  # the catalog grades nothing on grok yet
+    page.locator("input[name='quiz-agent'][value='grok']").check()
+    _next(page)
+    for worry in ("Leaked secrets", "Skipped checks", "Destructive or risky shell"):
+        _worry(page, worry)
+    _next(page)
+    page.get_by_role("radio", name="Only hard stops").check()
+    _next(page)
+    page.wait_for_selector(".quiz-empty")
+    assert _result_ids(page) == []
+    page.locator("#quiz-back").click()
+    page.get_by_role(
+        "checkbox", name="Include policies this agent is not graded on"
+    ).check()
+    _next(page)
+    page.wait_for_selector(".quiz-pick")
+    assert any(grok[i] == ungraded for i in _result_ids(page))
+    page.locator("#quiz-back").click()
+    page.get_by_role("radio", name="Everything").check()
+    page.get_by_role(
+        "checkbox", name="Include policies this agent is not graded on"
+    ).uncheck()
+    _next(page)
+    page.wait_for_selector(".quiz-empty")
+    assert _result_ids(page) == []

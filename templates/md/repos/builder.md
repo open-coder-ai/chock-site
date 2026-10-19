@@ -9,7 +9,7 @@ __NOSCRIPT__
 __QUIZ_LINES__
 ## Share link
 
-`#p=<comma-separated policy ids>` opens the result for those policies. Only ids from the catalog are read. The catalog commit and every sha256 in the commands come from this site's build, never from the link.
+`#p=<comma-separated policy ids>&host=<github|gitlab|other>&ci=<0|1>` opens the result for those policies, with that host and the CI choice; `host` and `ci` are optional. Only ids from the catalog are read. The catalog commit and every sha256 in the commands come from this site's build, never from the link.
 
 ## __INSTALL_HEADING__
 

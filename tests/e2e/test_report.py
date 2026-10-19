@@ -87,3 +87,10 @@ def test_builder_link_follows_the_picked_agent(page, site_url) -> None:
         == "/report/?agent=cursor&page=%2Fcoding%2Fbuilder%2F"
     )
     assert_clean(page)
+
+
+def test_an_agent_the_forms_do_not_offer_is_sent_as_other(page, site_url) -> None:
+    page.goto(site_url + PAGE + "?agent=grok")
+    assert _links(page)["site-bug"][1]["agent"] == ["other"]
+    page.goto(site_url + PAGE + "?agent=cursor")
+    assert _links(page)["site-bug"][1]["agent"] == ["cursor"]

@@ -63,7 +63,7 @@ def _expected(site: dict, ids: list[str], ci: bool) -> str:
                 },
             )
         )
-    lines += [commands["sync_ci"] if ci else commands["sync"], commands["commit"]]
+    lines += [commands["sync_ci"] if ci else commands["sync"], commands["review"]]
     return "\n".join(lines)
 
 
@@ -150,10 +150,23 @@ def test_share_link_round_trips(page, site_url) -> None:
     _answer(page)
     ids = sorted(_ids(page))
     link = page.locator("#quiz-share-url").input_value()
-    assert link.endswith("#p=" + ",".join(ids))
+    assert link.endswith("#p=" + ",".join(ids) + "&host=github&ci=1")
     _start(page, site_url, "#p=" + ",".join(ids))
     assert sorted(_ids(page)) == ids
     assert "came from a share link" in page.locator("#link-notice").text_content()
+
+
+def test_share_link_carries_host_and_ci(page, site_url) -> None:
+    site = _site(page, site_url)
+    _start(page, site_url, "#p=block-no-verify&host=gitlab&ci=1")
+    assert _command(page) == _expected(site, ["block-no-verify"], True)
+    assert (
+        page.locator("#quiz-share-url")
+        .input_value()
+        .endswith("#p=block-no-verify&host=gitlab&ci=1")
+    )
+    _start(page, site_url, "#p=block-no-verify&host=gitlab&ci=0")
+    assert _command(page) == _expected(site, ["block-no-verify"], False)
 
 
 def test_unknown_ids_are_dropped_and_named(page, site_url) -> None:

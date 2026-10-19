@@ -27,14 +27,14 @@ commands:
   add: "chock add {id} --ref {ref} --verify-sha {sha256} --skip-compile"
   sync: "chock sync --repo ."
   sync_ci: "chock sync --repo . --ci"
-  commit: 'git add -A && git commit -m "Add chock guardrails"'
+  review: "# Next: review `git status`, then commit the files chock wrote."
   script_header: ["#!/bin/sh", "set -eu"]
   script_name: "chock-setup.sh"
 
 pages:
   home:
     title: "Git repositories"
-    description: "Install chock policies into your own git repository: committed with the code, enforced at commit and in CI for every contributor and every agent."
+    description: "Install chock policies into your own git repository: committed with the code, enforced at commit and in CI for contributors who run `chock sync`, and for agents whose hooks are set up."
   builder:
     title: "Set up your repository"
     description: "Answer three questions and get one block of commands that installs the policies into your own git repository."
