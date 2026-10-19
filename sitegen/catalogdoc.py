@@ -25,6 +25,7 @@ import yaml
 from . import cliexamples
 from .docsmd import sections
 from .pageparts import PageError
+from .paths import safe_join
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -40,6 +41,8 @@ CI_FILE = ".github/workflows/ci.yml"
 REGEN_FILE = "tools/regen_all.py"
 MANIFEST = "manifest.yaml"
 CATALOG_REF = "__CATALOG_REF__"
+# The programs the adopt run may execute, in its setup and its shown steps alike.
+PROGRAMS = ("chock", "git")
 COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 SCHEMA_VERSION = 1
 
@@ -142,7 +145,7 @@ def snapshot(catalog: Path, docs: dict[str, Any], ref: str) -> dict[str, str]:
     files: dict[str, str] = {}
     record: dict[str, Any] = {"catalog_ref": ref, "files": {}}
     for path, wants in sorted(quotes(docs).items()):
-        source = catalog / path
+        source = safe_join(catalog, path, "docs.yaml quote")
         if not source.is_file():
             raise PageError(f"{path}: not in the catalog checkout at {ref}")
         name = snapshot_name(path)
@@ -174,7 +177,9 @@ def load(data_dir: Path, ref: str) -> dict[str, Any]:
         )
     return {
         "quotes": {
-            path: (folder / name).read_text(encoding="utf-8")
+            path: safe_join(folder, name, f"{SOURCE_JSON} snapshot").read_text(
+                encoding="utf-8"
+            )
             for path, name in record["files"].items()
         },
         "trees": json.loads((folder / TREES_JSON).read_text(encoding="utf-8")),
@@ -188,9 +193,12 @@ def load_script(data_dir: Path, ref: str) -> dict[str, Any]:
     """data/catalog-adopt.yaml with __CATALOG_REF__ arguments set to .catalog-ref."""
     script = yaml.safe_load((data_dir / ADOPT_YAML).read_text(encoding="utf-8"))
     for step in script["steps"]:
-        if set(step) != {"run"} or step["run"][0] not in ("chock", "git"):
-            raise PageError(f"{ADOPT_YAML}: a step is {{run: [chock|git, ...]}}")
+        if set(step) != {"run"} or step["run"][0] not in PROGRAMS:
+            raise PageError(
+                f"{ADOPT_YAML}: a step is {{run: [{'|'.join(PROGRAMS)}, ...]}}"
+            )
         step["run"] = [ref if arg == CATALOG_REF else arg for arg in step["run"]]
+    cliexamples.check_setup(script, PROGRAMS, ADOPT_YAML)
     return script
 
 

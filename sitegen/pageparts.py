@@ -240,20 +240,23 @@ def write_page(
         ARIA_FAQ=Safe(' aria-current="page"') if nav == "faq" else "",
         ARIA_SECURITY=Safe(' aria-current="page"') if nav == "security" else "",
     )
-    if path.endswith("/"):
-        target = out_dir / path.strip("/") / "index.html"
-    else:
-        target = out_dir / path.lstrip("/")
+    target = page_target(out_dir, path, "index.html")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(html, encoding="utf-8", newline="\n")
 
 
+def page_target(out_dir: Path, path: str, index: str) -> Path:
+    """The file a site route is written to: `index` under a folder route, refused outside out_dir."""
+    # Imported here: paths.py raises this module's PageError.
+    from .paths import safe_join
+
+    relative = path.strip("/") + "/" + index if path.endswith("/") else path.lstrip("/")
+    return safe_join(out_dir, relative.lstrip("/"), f"page route {path!r}")
+
+
 def write_md(out_dir: Path, path: str, text: str) -> Path:
     """Write one Markdown twin next to its page."""
-    if path.endswith("/"):
-        target = out_dir / path.strip("/") / "index.md"
-    else:
-        target = out_dir / path.lstrip("/")
+    target = page_target(out_dir, path, "index.md")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8", newline="\n")
     return target

@@ -179,6 +179,12 @@ def test_stop_facts_must_name_the_engines_files(monkeypatch) -> None:
 
 
 def test_engine_source_refuses_paths_outside_the_engine() -> None:
-    for path in ("README.md", "src/chock/../../etc/passwd"):
+    for path in (
+        "README.md",
+        "src/chock/../../etc/passwd",
+        "src/chock//etc/hostname",
+        "src/chock/",
+    ):
         with pytest.raises(ValueError):
             engine.engine_source(path)
+    assert "def validate_policy_id" in engine.engine_source("src/chock/policy_id.py")

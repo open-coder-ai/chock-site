@@ -1,7 +1,9 @@
 """R-4: the Git repositories section in a browser — quiz, commands, download, share links."""
 
 import json
+import shlex
 from pathlib import Path
+from types import SimpleNamespace
 
 from conftest import assert_clean, collect, screenshot
 
@@ -52,7 +54,7 @@ def _expected(site: dict, ids: list[str], ci: bool) -> str:
     lines = [commands["init"]]
     for pid in sorted(ids):
         lines.append(
-            repodata.fill(
+            repodata.shell_line(
                 commands["add"],
                 {
                     "id": pid,
@@ -239,3 +241,91 @@ def test_policy_tile_and_nav(page, site_url) -> None:
         page.locator("h1").text_content() == "Guardrails that live in your repository"
     )
     assert_clean(page)
+
+
+# --- SITE-1: the browser quotes the way Python does ----------------------------------------
+
+# Values a catalog could carry: the review's injection, quotes, spaces, globs, unicode, empty.
+TRICKY = [
+    "safe;echo PWNED > pwned",
+    "a'b",
+    "it's",
+    "two words",
+    "$(id)",
+    "`id`",
+    "a&&b",
+    "*.py",
+    "~user",
+    "naïve",
+    "",
+    "--ref",
+    "{id}",
+    "a\nb",
+    "back\\slash",
+    '"quoted"',
+]
+IMPORT = "const m = await import('/js/repos.js');"
+
+
+def _js(page, body: str, arg):
+    return page.evaluate(f"async (arg) => {{ {IMPORT} {body} }}", arg)
+
+
+def test_shell_arg_twins_agree_on_the_sites_values_and_on_hostile_ones(
+    page, site_url
+) -> None:
+    site = _site(page, site_url)
+    _start(page, site_url)
+    values = (
+        [p["id"] for p in site["policies"]]
+        + [p["sha256"] for p in site["policies"]]
+        + [site["catalog"]["ref"], *TRICKY]
+    )
+    assert len(values) > len(TRICKY) + 1
+    quoted = _js(page, "return arg.map(m.shellArg);", values)
+    assert quoted == [shlex.quote(v) for v in values]
+    assert_clean(page)
+
+
+def test_command_lines_twins_agree_on_the_sites_data(page, site_url) -> None:
+    site = _site(page, site_url)
+    _start(page, site_url)
+    ids = [p["id"] for p in site["policies"]]
+    picks = [SimpleNamespace(id=p["id"], sha256=p["sha256"]) for p in site["policies"]]
+    for ci in (False, True):
+        lines = _js(
+            page,
+            "const site = await (await fetch('/data/site.json')).json();"
+            " return m.commandLines(site, arg.ids, arg.ci);",
+            {"ids": ids, "ci": ci},
+        )
+        assert lines == repodata.command_lines(
+            site["repos"]["commands"], picks, site["catalog"]["ref"], ci
+        )
+
+
+def test_command_lines_twins_agree_on_a_hostile_catalog(page, site_url) -> None:
+    """A registry the build would refuse: both twins still emit one argument per value."""
+    site = _site(page, site_url)
+    _start(page, site_url)
+    hostile = {
+        "catalog": {"ref": "r$(id)"},
+        "repos": {"commands": site["repos"]["commands"]},
+        "policies": [
+            {"id": value, "sha256": f"{value}'s hash"} for value in TRICKY if value
+        ],
+    }
+    ids = [p["id"] for p in hostile["policies"]]
+    lines = _js(
+        page,
+        "return m.commandLines(arg.site, arg.ids, false);",
+        {"site": hostile, "ids": ids},
+    )
+    picks = [
+        SimpleNamespace(id=p["id"], sha256=p["sha256"]) for p in hostile["policies"]
+    ]
+    assert lines == repodata.command_lines(
+        hostile["repos"]["commands"], picks, "r$(id)", False
+    )
+    for line, pid in zip(lines[1:-2], sorted(ids), strict=True):
+        assert shlex.split(line)[:5] == ["chock", "add", pid, "--ref", "r$(id)"]

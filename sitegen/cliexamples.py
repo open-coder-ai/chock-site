@@ -29,6 +29,8 @@ SCRIPT_YAML = "cli-examples.yaml"
 OUT_DIR = "cli-examples"
 SCHEMA_VERSION = 1
 PROG = "chock"
+# The programs the session may execute: its shown steps run chock, its setup may also run git.
+PROGRAMS = (PROG, "git")
 TIME_RE = re.compile(
     r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})"
 )
@@ -36,9 +38,30 @@ TIME_WORD = "<time>"
 STEP_TIMEOUT = 120
 
 
+def check_setup(script: dict[str, Any], programs: tuple[str, ...], where: str) -> None:
+    """Refuse a `setup` that is not a list of argv lists running one of `programs`; `{sh: ...}` is refused."""
+    setup = script.get("setup")
+    if not isinstance(setup, list):
+        raise PageError(f"{where}: setup is a list of argv lists")
+    for argv in setup:
+        if (
+            not isinstance(argv, list)
+            or not argv
+            or not all(isinstance(arg, str) for arg in argv)
+        ):
+            raise PageError(
+                f"{where}: a setup step is an argv list [{'|'.join(programs)}, ...], not {argv!r}"
+            )
+        if argv[0] not in programs:
+            raise PageError(
+                f"{where}: setup runs {argv[0]!r}, which is not one of {', '.join(programs)}"
+            )
+
+
 def load_script(data_dir: Path) -> dict[str, Any]:
-    """data/cli-examples.yaml, refused unless every step runs chock and names a page."""
+    """data/cli-examples.yaml, refused unless every step runs chock and names a page, and setup is allowlisted."""
     script = yaml.safe_load((data_dir / SCRIPT_YAML).read_text(encoding="utf-8"))
+    check_setup(script, PROGRAMS, SCRIPT_YAML)
     for step in script["steps"]:
         if set(step) != {"page", "run"} or step["run"][0] != PROG:
             raise PageError(f"{SCRIPT_YAML}: a step is {{page, run: [chock, ...]}}")

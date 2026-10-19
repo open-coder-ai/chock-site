@@ -3,6 +3,7 @@
 import html
 import json
 import re
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -156,3 +157,55 @@ def test_cli_page_has_every_command(built) -> None:
 )
 def test_every_agentseam_command_exits_2_on_an_unknown_option(path) -> None:
     assert engine.agentseam_exit([*path, NO_SUCH_OPTION]) == 2
+
+
+# --- SITE-1: snapshot names, quoted paths and setup steps are checked -------------------
+
+
+def test_a_snapshot_name_that_leaves_the_folder_is_refused(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    shutil.copytree(DATA, data)
+    source = data / CFG["source_dir"] / agentseamdoc.SOURCE_JSON
+    record = json.loads(source.read_text(encoding="utf-8"))
+    (tmp_path / "escaped").write_text("outside", encoding="utf-8")
+    first = next(iter(record["files"]))
+    record["files"][first] = {"snapshot": "../../../escaped"}
+    source.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(PageError, match="'../../../escaped'"):
+        agentseamdoc.load(data)
+
+
+def test_a_quoted_path_that_leaves_the_checkout_is_refused(tmp_path: Path) -> None:
+    checkout = tmp_path / "agentseam"
+    checkout.mkdir()
+    (tmp_path / "escaped.md").write_text("## A\n\noutside\n", encoding="utf-8")
+    cfg = json.loads(json.dumps(CFG))
+    cfg["quotes"] = [{"file": "../escaped.md", "sections": ["A"]}]
+    with pytest.raises(PageError, match="'../escaped.md'"):
+        agentseamdoc.snapshot(checkout, cfg, "r")
+
+
+def _run_with_setup(tmp_path: Path, setup: object) -> Path:
+    data = tmp_path / "data"
+    shutil.copytree(DATA, data)
+    path = data / CFG["run_script"]
+    script = yaml.safe_load(path.read_text(encoding="utf-8"))
+    script["setup"] = setup
+    path.write_text(yaml.safe_dump(script), encoding="utf-8")
+    return data
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [[["touch", "pwned"]], [{"sh": "touch pwned"}], ["git init"], [["git", 1]]],
+)
+def test_a_setup_step_outside_the_allowlist_is_refused(
+    tmp_path: Path, setup: object
+) -> None:
+    with pytest.raises(PageError, match="setup"):
+        agentseamdoc.load_script(_run_with_setup(tmp_path, setup))
+
+
+def test_the_committed_setup_is_allowlisted() -> None:
+    script = agentseamdoc.load_script(DATA)
+    assert all(argv[0] in agentseamdoc.PROGRAMS for argv in script["setup"])
