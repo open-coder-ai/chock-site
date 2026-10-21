@@ -1054,6 +1054,7 @@ def _clients(
             STATE_WORD=sentence_start(texts[about["witness"]]),
             NOTE=Prose(_client_notes(site, clients, client)),
             BUILD=about["build_link"],
+            CLIENT_VALUE=texts["client_value"],
             STEPS_HEADING=about["steps_heading"],
             STEPS=_step_items(templates / track.slug, about["steps"]),
         )
