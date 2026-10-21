@@ -896,7 +896,7 @@ def agentseam_chock_pin() -> str:
     from importlib.metadata import distribution
 
     for req in distribution("chock").requires or []:
-        name, _, url = req.partition(" @ ")
+        name, _, url = req.partition("@")
         if name.strip() == AGENTSEAM_PROG and "@" in url:
             return url.rsplit("@", 1)[1].split(";", 1)[0].strip()
     return ""

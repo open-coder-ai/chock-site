@@ -38,6 +38,18 @@ def test_the_pinned_commit_is_installed_and_is_chocks_pin() -> None:
     assert engine.agentseam_chock_pin() == ref
 
 
+@pytest.mark.parametrize(
+    "spelling", ["agentseam @ git+{url}", "agentseam@ git+{url}", "agentseam@git+{url}"]
+)
+def test_chock_pin_is_read_whatever_the_spacing_around_at(
+    monkeypatch, spelling
+) -> None:
+    url = "https://github.com/open-coder-ai/agentseam@" + "a" * 40
+    fake = SimpleNamespace(requires=["PyYAML>=6", spelling.format(url=url)])
+    monkeypatch.setattr("importlib.metadata.distribution", lambda name: fake)
+    assert engine.agentseam_chock_pin() == "a" * 40
+
+
 def test_build_refuses_another_installed_agentseam(monkeypatch) -> None:
     monkeypatch.setattr(engine, "agentseam_commit", lambda: "0" * 40)
     ctx = SimpleNamespace(data_dir=DATA)
