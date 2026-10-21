@@ -1,7 +1,6 @@
 """R-2 checks: the home page's data builds, its claims are computed, nothing banned ships."""
 
 import dataclasses
-import hashlib
 import html as htmllib
 import json
 import re
@@ -15,13 +14,14 @@ from sitegen import home as home_mod
 from sitegen import homedata
 from sitegen.__main__ import TEMPLATES
 from sitegen.pageparts import PageError, install_command
+from sitegen.render import sentence_start
 
 ROOT = Path(__file__).resolve().parents[1]
 BANNED = ("Free forever", "pip install chock", "limit-diff-size-rule", "[stars]")
 TEXT_SUFFIXES = {".html", ".md", ".txt", ".json", ".xml", ".css", ".js"}
 CAVEAT = (
-    "Your agent still sends context to its own model provider; chock adds no "
-    "additional destination. Installing fetches the policies once."
+    "Your agent still sends context to its own model provider. Chock does not send "
+    "it anywhere else. Installing fetches the policies once."
 )
 
 
@@ -115,7 +115,7 @@ def test_incident_copy_never_claims_prevention(built) -> None:
     assert "OWASP ASI01–10 (every mapping partial)" in text
     assert "CISA Secure by Design and NIST SSDF" in text
     assert (
-        "chock doesn't stop every attack. It closes common, known entry points." in text
+        "Chock doesn't stop every attack. It closes common, known entry points." in text
     )
     for phrase in ("would have prevented", "mapped to", "would have stopped"):
         assert phrase not in text
@@ -140,10 +140,10 @@ def test_calculator_arithmetic_and_example_text(built) -> None:
     }
     text = _main_text(html)
     assert "Hours saved = findings × share covered × minutes per late fix ÷ 60" in text
-    assert "Example values, not measurements." in text
+    assert "These are example values, and we did not measure them." in text
     assert (
         "the formula gives 9 hours, $900 and 1.8 days. That is arithmetic on "
-        "assumptions, not a claim about your team." in text
+        "the values above. It says nothing about your own team." in text
     )
     for name in values:
         assert f'name="{name}"' in html
@@ -163,15 +163,15 @@ def test_two_pipelines_are_real_html(built) -> None:
 def test_no_model_and_local_copy(built) -> None:
     text = _main_text(_home(built))
     assert (
-        "chock does not ask a model whether your code is safe. Each check is a "
+        "No model decides whether your code is safe. Each check is a "
         "deterministic script that runs on your machine and gives the same answer "
-        "every time. A passing check adds nothing to the agent's context; a refusal "
-        "adds one short reason." in text
+        "every time. When a check passes, nothing is added to the agent's context. "
+        "When it refuses, the agent gets one short reason." in text
     )
     assert (
-        "chock checks code on the laptop, in the dev container or inside the cloud "
-        "agent's pod. There's no upload to a scanning service and no new vendor "
-        "holding your source." in text
+        "Chock checks code on the laptop, in the dev container or inside the cloud "
+        "agent's pod. Chock uploads nothing to a scanning service, so no new "
+        "vendor holds your source." in text
     )
     assert CAVEAT in text
     # No timing is shown: none was measured in this PR.
@@ -223,7 +223,8 @@ def test_one_policy_every_surface_uses_the_registry_label_block(
             assert "not graded yet for Devin" in text
             continue
         assert words[label["keyword"]] in text
-        assert label["says"] in text
+        # SITE-CAPS-3: the text after the badge starts its own sentence.
+        assert sentence_start(label["says"]) in text
     assert "plugin repo" not in text
     assert f"{row['eval_executed']} of {row['eval_cases']} test cases pass" in text
 
@@ -258,7 +259,7 @@ def test_works_with_lists_every_install_client(built) -> None:
     html = _home(built)
     block = re.search(r'<section class="works".*?</section>', html, re.DOTALL).group(0)
     clients = _site_json(built)["builder_clients"]
-    assert block.count('class="works-item"') == len(clients["order"]) == 12
+    assert block.count('class="works-item"') == len(clients["order"]) == 11
     for client in clients["order"]:
         assert clients["clients"][client]["name"] in block
 
@@ -278,36 +279,24 @@ def test_faq_adds_general_agents_answer(built) -> None:
     html = _home(built)
     assert "What are general agents?" in html
     assert (
-        "Agents that act for a person or a business. Their guardrails are being "
-        "designed; there is nothing to install yet." in _main_text(html)
+        "Agents that act for a person or a business. We are still designing their "
+        "guardrails, so there is nothing to install yet." in _main_text(html)
     )
     faq = (built.out / "faq" / "index.html").read_text(encoding="utf-8")
     assert "What are general agents?" in faq
 
 
-PROMO = {
-    "title": "The chock story",
-    "src": "/video/chock-promo-v9b.mp4",
-    "poster": "/video/chock-promo-v9b-poster.jpg",
-    "width": 1280,
-    "height": 720,
-    "duration": "1:02",
+# DOCS-6: rendered by VHS from videos/own-policy.tape (tests/test_videos.py checks the render).
+OWN = {
+    "title": "Write your own policy",
+    "src": "/video/own-policy.mp4",
+    "poster": "/video/own-policy.png",
+    "width": 1200,
+    "height": 640,
+    "duration": "0:35",
     "description": (
-        "A one-minute story: an AI coding agent is refused twice by chock "
-        "and fixes its own work."
-    ),
-}
-
-EXPLAINER = {
-    "title": "The full story",
-    "src": "/video/chock-promo-v8-explainer.mp4",
-    "poster": "/video/chock-promo-v8-explainer-poster.jpg",
-    "width": 1280,
-    "height": 720,
-    "duration": "1:57",
-    "description": (
-        "A two-minute look at how chock stops an agent's risky moves, "
-        "and the incidents behind each policy."
+        "A silent terminal recording: chock new scaffolds a policy and chock sync "
+        "wires it. Chock refuses the commit with the marked line. The clean commit lands."
     ),
 }
 
@@ -341,18 +330,19 @@ def test_videos_block_is_hidden_until_there_are_entries(built, tmp_path: Path) -
     assert "See it work" not in (tmp_path / "empty" / "index.md").read_text("utf-8")
 
 
-def test_promo_videos_ship_below_the_hero(built) -> None:
-    assert built.site.data["home"]["videos"] == [PROMO, EXPLAINER]
+def test_silent_recording_ships_below_the_hero(built) -> None:
+    assert built.site.data["home"]["videos"] == [OWN]
     html = _home(built)
-    assert html.count("<video") == 2
+    assert html.count("<video") == 1
     assert "autoplay" not in html and "<track" not in html
     tags = re.findall(r"<video[^>]*>", html)
     captions = re.findall(r"<figcaption>(.*?)</figcaption>", html, re.DOTALL)
-    for video, tag, caption in zip((PROMO, EXPLAINER), tags, captions, strict=True):
+    for video, tag, caption in zip((OWN,), tags, captions, strict=True):
         for attr in ("controls", 'preload="none"', "playsinline"):
             assert attr in tag
         assert f'poster="{video["poster"]}"' in tag
-        assert 'width="1280"' in tag and 'height="720"' in tag
+        assert f'width="{video["width"]}"' in tag
+        assert f'height="{video["height"]}"' in tag
         assert " loop" not in tag and "muted" not in tag
         assert f'<source src="{video["src"]}" type="video/mp4">' in html
         size = (ROOT / "static" / video["src"].lstrip("/")).stat().st_size
@@ -366,27 +356,30 @@ def test_promo_videos_ship_below_the_hero(built) -> None:
     assert after.startswith('<section class="section" aria-labelledby="see-it-work">')
     twin = (built.out / "index.md").read_text(encoding="utf-8")
     assert (
-        "- [The chock story](/video/chock-promo-v9b.mp4) (1:02, MP4): "
-        + PROMO["description"]
-        in twin
-    )
-    assert (
-        "- [The full story](/video/chock-promo-v8-explainer.mp4) (1:57, MP4): "
-        + EXPLAINER["description"]
+        "- [Write your own policy](/video/own-policy.mp4) (0:35, MP4): "
+        + OWN["description"]
         in twin
     )
 
 
-def test_published_video_files_match_the_plan() -> None:
-    sums = {
-        "chock-promo-v9b.mp4": "609a571be81a9279be64c5fd96dafcfb93aa6ffaff96d2be95851a002491e438",
-        "chock-promo-v9b-poster.jpg": "3fd94f0b0d60ded83d22b96f133e54615466acb7630487d38a77aea7fa71e71b",
-        "chock-promo-v8-explainer.mp4": "34d45ea2328bef74dc3eb0d18992f501787c9301fdf716c1ba635852613b9672",
-        "chock-promo-v8-explainer-poster.jpg": "9ab277aadf408faa8626cc103aafd0a149a91018cb237cf7c389eca1a79c23cf",
-    }
-    for name, want in sums.items():
-        data = (ROOT / "static" / "video" / name).read_bytes()
-        assert hashlib.sha256(data).hexdigest() == want, name
+# VID-OFF: the voiced promos were taken down (owner, 2026-10-18: the voice was out of sync).
+VOICED_PROMOS = (
+    "chock-promo-v9b.mp4",
+    "chock-promo-v9b-poster.jpg",
+    "chock-promo-v8-explainer.mp4",
+    "chock-promo-v8-explainer-poster.jpg",
+)
+
+
+def test_no_voiced_promo_is_published(built) -> None:
+    for name in VOICED_PROMOS:
+        assert not (ROOT / "static" / "video" / name).exists(), name
+        assert not (built.out / "video" / name).exists(), name
+    for path in built.out.rglob("*"):
+        if path.is_file() and path.suffix in (".html", ".md", ".txt", ".xml", ".json"):
+            assert "chock-promo" not in path.read_text(encoding="utf-8"), path
+    for video in built.site.data["home"]["videos"]:
+        assert video["description"].startswith("A silent terminal recording"), video
 
 
 @pytest.mark.parametrize(
@@ -396,7 +389,7 @@ def test_published_video_files_match_the_plan() -> None:
         ("src", "//example.com/video/promo.mp4"),
         ("src", "/video/../css/site.css"),
         ("src", "/video/missing.mp4"),
-        ("src", "video/chock-promo-v9b.mp4"),
+        ("src", "video/own-policy.mp4"),
         ("src", "/img/og-card.png"),
         ("poster", "/video/missing.jpg"),
         ("poster", "data:image/png;base64,AAAA"),
@@ -405,14 +398,14 @@ def test_published_video_files_match_the_plan() -> None:
     ],
 )
 def test_bad_video_path_fails_the_build(built, tmp_path: Path, field, value) -> None:
-    site = _with_videos(built, [{**PROMO, field: value}])
+    site = _with_videos(built, [{**OWN, field: value}])
     with pytest.raises(PageError, match=field):
         _write_home(site, tmp_path / "out")
 
 
 def test_captions_track_renders_only_when_set(built, tmp_path: Path) -> None:
     templates = _media_templates(tmp_path)
-    entry = {**PROMO, "src": "/video/a.mp4", "poster": "/video/a.jpg"}
+    entry = {**OWN, "src": "/video/a.mp4", "poster": "/video/a.jpg"}
     plain = _write_home(_with_videos(built, [entry]), tmp_path / "plain", templates)
     assert "<track" not in plain
     assert "Download the video (MP4, 1.3 MB)" in plain

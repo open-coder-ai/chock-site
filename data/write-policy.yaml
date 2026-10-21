@@ -1,0 +1,46 @@
+# DOCS-5: the scripted runs behind the Write policies pages (/docs/write/).
+# `python -m sitegen.writedoc --record` runs each run's steps, in order, with the installed
+# engine (it must be .framework-ref) in its own fresh git repository, and writes what each
+# step printed and its exit code to data/write-source/<run>.json. `--check` re-runs them and
+# fails when the output or an exit code differs. Never edit the JSON by hand.
+#
+# A step is `run:` (an argv whose program is chock, git or cat) or `sh:` (one line run by
+# `sh -c`, for a redirect or a pipe). The runs are offline: no step may need the network.
+
+# Printed in place of the throwaway repository and home folder, so the paths are stable.
+repo: /work/demo
+home: /home/demo
+# Run before each run's first step and not shown; the pages say so (texts.write.run_setup).
+setup:
+  - [git, init, -q, -b, main, .]
+  - [git, config, --global, user.name, demo]
+  - [git, config, --global, user.email, demo@example.invalid]
+runs:
+  # /docs/write/own-policy/: a content_regex policy, from scaffold to a refused commit.
+  own:
+    - {run: [chock, init, .]}
+    - {run: [chock, new, policy, block-marker, --kind, content_regex]}
+    - {run: [cat, .agents/policies/my-block-marker/manifest.yaml]}
+    - {run: [git, status, --short, --untracked-files=all, .agents/policies/my-block-marker]}
+    - {run: [chock, validate]}
+    - {run: [chock, eval, my-block-marker]}
+    - {run: [chock, sync, --repo, .]}
+    - {run: [chock, check, --repo, .]}
+    - {run: [git, add, -A]}
+    - {run: [git, commit, -q, -m, Add my-block-marker]}
+    - {sh: "echo 'x = 1  # DO NOT COMMIT' > notes.py"}
+    - {run: [git, add, notes.py]}
+    - {run: [git, commit, -q, -m, Add notes]}
+    - {sh: "echo 'x = 1' > notes.py"}
+    - {run: [git, add, notes.py]}
+    - {run: [git, commit, -q, -m, Add notes]}
+  # /docs/write/on-the-fly/: a guard written mid-task, then fed the event an agent's hook gets.
+  fly:
+    - {run: [chock, init, .]}
+    - {run: [chock, new, policy, no-tf-destroy, --kind, guard]}
+    - {run: [git, status, --short, --untracked-files=all, .agents/policies/my-no-tf-destroy]}
+    - {run: [chock, eval, my-no-tf-destroy]}
+    - {run: [chock, sync, --repo, .]}
+    - {sh: "printf '%s' '{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"terraform destroy\"}}' | sh .chock/bin/launch.sh .chock/bin/claude_code.py --guard .agents/policies/my-no-tf-destroy/implementations/my-no-tf-destroy.py"}
+    - {sh: "printf '%s' '{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"terraform plan\"}}' | sh .chock/bin/launch.sh .chock/bin/claude_code.py --guard .agents/policies/my-no-tf-destroy/implementations/my-no-tf-destroy.py"}
+    - {run: [chock, gate-log]}

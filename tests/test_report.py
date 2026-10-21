@@ -210,3 +210,20 @@ def test_report_js_uses_no_forbidden_apis() -> None:
     ):
         assert banned not in src, banned
     assert not re.search(r"setTimeout\s*\(\s*['\"`]", src)
+
+
+def test_an_agent_the_forms_do_not_offer_is_sent_as_other() -> None:
+    agents = [*AGENTS, "grok"]
+    url = report.issue_url(
+        REPORT, KINDS["site-bug"], {"agent": "grok"}, agents, SITE_URL
+    )
+    assert parse_qs(urlsplit(url).query)["agent"] == ["other"]
+    url = report.issue_url(
+        REPORT, KINDS["site-bug"], {"agent": "cursor"}, agents, SITE_URL
+    )
+    assert parse_qs(urlsplit(url).query)["agent"] == ["cursor"]
+
+
+def test_form_agents_must_include_other() -> None:
+    with pytest.raises(report.ReportError):
+        report.check_report({**REPORT, "form_agents": ["cursor"]})

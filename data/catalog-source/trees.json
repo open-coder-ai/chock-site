@@ -1,0 +1,14 @@
+[
+  {
+    "tree": "base",
+    "policies": 54
+  },
+  {
+    "tree": "compliance",
+    "policies": 3
+  },
+  {
+    "tree": "agentic-security",
+    "policies": 15
+  }
+]

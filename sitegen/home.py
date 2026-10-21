@@ -7,7 +7,6 @@ from . import homedata, repodata
 from .catalog import first_sentence
 from .model import Policy, Site
 from .pageparts import (
-    COMMAND_FORM,
     PARTIALS,
     PageError,
     badge,
@@ -20,7 +19,15 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, md, md_code, render_file, render_text_file
+from .render import (
+    Prose,
+    Safe,
+    md,
+    md_code,
+    render_file,
+    render_text_file,
+    sentence_start,
+)
 
 HOME = "home"
 MD = "md"
@@ -148,7 +155,7 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
         stats = "".join(
             render_file(
                 templates / PARTIALS / "track-stat.html",
-                LABEL=labels[key],
+                LABEL=sentence_start(labels[key]),
                 NUM=f"{numbers[key]:,}",
             )
             for key in conf.get("stats", [])
@@ -209,7 +216,11 @@ def _track_cards(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
 
 def how_command(site: Site) -> str:
     """The home page's command form: the untested one, since --apply is only for tested agents."""
-    return data_fill(site.data["builder_clients"]["commands"]["untested"], COMMAND_FORM)
+    clients = site.data["builder_clients"]
+    return data_fill(
+        clients["commands"]["untested"],
+        {"__CODE__": clients["texts"]["code_placeholder"], "__CLIENT__": "<agent>"},
+    )
 
 
 def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
@@ -270,11 +281,11 @@ def _surface(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> S
         {
             "NAME": row["name"],
             "STATE": row["state"],
-            "STATE_WORD": row["state_word"],
+            "STATE_WORD": sentence_start(row["state_word"]),
             "CHIP": Safe("")
             if row["keyword"] is None
             else keyword_chip(site, templates, row["keyword"], COUNTED),
-            "SAYS": row["says"],
+            "SAYS": sentence_start(row["says"]),
         }
         for row in _surface_rows(site, policy)
     ]
@@ -375,7 +386,7 @@ def _honest(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> Sa
         [
             {
                 "CHIP": keyword_chip(site, templates, key, COUNTED),
-                "WORD": words[key],
+                "WORD": sentence_start(words[key]),
                 "MEANING": site.data["label_meanings"][words[key]],
             }
             for key in words
@@ -662,9 +673,10 @@ def _twin(
     surfaces = "".join(
         f"- {row['name']} ({row['state_word']}): "
         + (
-            md(row["says"])
+            md(sentence_start(row["says"]))
             if row["keyword"] is None
-            else f"{site.label_words[COUNTED][row['keyword']]} — {md(row['says'])}"
+            else f"{sentence_start(site.label_words[COUNTED][row['keyword']])} — "
+            f"{md(sentence_start(row['says']))}"
         )
         + "\n"
         for row in _surface_rows(site, policy)
@@ -730,7 +742,8 @@ def _twin(
             for p in site.presets
         ),
         FIT_LINES="".join(
-            f"- {r['row']}: {land['fit_cols'][0]}: {r['a']} {land['fit_cols'][1]}: {r['b']}\n"
+            f"- {r['row']}: {sentence_start(land['fit_cols'][0])}: {r['a']} "
+            f"{sentence_start(land['fit_cols'][1])}: {r['b']}\n"
             for r in land["fit_rows"]
         ),
         OPEN_BODY=land["open_body"],

@@ -1,0 +1,56 @@
+# DOCS-3: the recorded run on /docs/agentseam/direct/. `python -m sitegen.agentseamdoc run --record`
+# writes these files into a fresh git repository, runs the steps in order with the installed
+# agentseam (it must be the commit data/agentseam-source/source.json pins) and writes what each
+# printed and its exit code to data/agentseam-run.json. `run --check` re-runs them and fails on
+# any difference. Never edit the JSON by hand. The run is offline.
+
+# Printed in place of the throwaway repository and home folder, so the paths are stable.
+repo: /work/demo
+home: /home/demo
+setup:
+  - [git, init, -q, -b, main, .]
+files:
+  # Word for word the handler in agentseam's README Quick start (tests/test_docs_agentseam.py).
+  my_handler.py: |
+    from agentseam import run, Decision
+
+    def handler(event):
+        if event.event == "pre_tool" and "AKIA" in (event.content or ""):
+            return Decision.deny("no AWS keys in memory files")
+        return Decision.allow()
+
+    run(handler)
+  # The Claude Code PreToolUse shape of agentseam's examples/generated/claude_code.md.
+  deny.json: |
+    {"cwd": "/repo", "hook_event_name": "PreToolUse", "permission_mode": "default", "session_id": "example", "tool_input": {"content": "aws_access_key_id = AKIA-PLACEHOLDER", "file_path": "AGENTS.md"}, "tool_name": "Write", "transcript_path": "/repo/.claude/transcript.jsonl"}
+  allow.json: |
+    {"cwd": "/repo", "hook_event_name": "PreToolUse", "permission_mode": "default", "session_id": "example", "tool_input": {"content": "Use ruff for lint.", "file_path": "AGENTS.md"}, "tool_name": "Write", "transcript_path": "/repo/.claude/transcript.jsonl"}
+  in_process.py: |
+    import json
+
+    from agentseam import Decision, handle
+
+
+    def handler(event):
+        if event.event == "pre_tool" and "AKIA" in (event.content or ""):
+            return Decision.deny("no AWS keys in memory files")
+        return Decision.allow()
+
+
+    with open("deny.json", encoding="utf-8") as payload:
+        raw = json.load(payload)
+    text, code, event, decision = handle(raw, handler, "claude_code")
+    print("event:", event.agent, event.event, event.tool, event.path)
+    print("decision:", decision.outcome, decision.reason)
+    print("exit code:", code)
+    print("printed:", text)
+steps:
+  - {run: [agentseam, --version]}
+  - {run: [agentseam, agents]}
+  - {run: [agentseam, install, all, python3 my_handler.py, --events, pre_tool, --repo, .]}
+  - {run: [cat, .claude/settings.json]}
+  - {run: [python3, my_handler.py], stdin: deny.json}
+  - {run: [python3, my_handler.py], stdin: allow.json}
+  - {run: [python3, in_process.py]}
+  - {run: [agentseam, uninstall, all, --repo, .]}
+  - {run: [cat, .claude/settings.json]}

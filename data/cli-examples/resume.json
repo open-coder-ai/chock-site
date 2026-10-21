@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 20,
+      "of": 21,
+      "command": "chock resume",
+      "output": "chock resume: refused: it needs a person at a terminal (stdin and stdout are not a TTY). Run `chock resume` yourself, in your own terminal.",
+      "exit": 1
+    }
+  ]
+}

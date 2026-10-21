@@ -10,13 +10,9 @@
 issue_url: https://github.com/open-coder-ai/agentseam/issues/__NUMBER__
 texts:
   label: "Evidence wanted for __NAME__."
-  line: "chock has not seen __NAME__ run the plugin yet. The command still builds the plugin. If you use __NAME__, you can help: run it and share what happens in"
+  line: "Chock has not seen __NAME__ run the plugin yet. The command still builds the plugin. If you use __NAME__, you can help: run it and share what happens in"
   link: "agentseam issue #__NUMBER__"
 issues:
-  antigravity: 129
-  gemini-cli: 132
-  goose: 177
-  grok: 188
   kimi-code: 135
   factory-droid: 184
   openhands: 181

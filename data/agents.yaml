@@ -1,14 +1,25 @@
+# How the guide names each site section from data/tracks.yaml, by its status.
+track_line:
+  available: "__TITLE__ under __HOME__"
+  in_design: "__TITLE__ under __HOME__ (still in design)"
 sections:
 - heading: "What this site is"
-  body: "chock.sh is a static catalog of guardrail policies for AI coding agents. The site is built in sections; today it has one, Coding agents, under /coding/. Every page has a Markdown twin at the same path: fetch index.md inside the page's directory. The catalog is pinned to one chock-catalog commit, shown in the footer of every page."
+  body: "This site, chock.sh, is a static catalog of guardrail policies for AI coding agents. The site has __TRACK_COUNT__ sections: __TRACKS__. Every page has a Markdown twin at the same path: fetch index.md inside the page's directory. The catalog is pinned to one chock-catalog commit, shown in the footer of every page."
 - heading: "Machine-readable data"
-  body: "Start at /api/index.json: it lists the site's sections, each with a home path and an api path. For the coding section, read /api/coding/catalog.json — every visible policy and preset, with schema_version 1 and track coding. /api/coding/policies/<id>.json holds one policy record, /api/coding/presets.json the presets, and /api/coding/selection.schema.json the schema a selection file is checked against. The same catalog data is at /data/site.json."
+  body: "Start at /api/index.json: it lists the site's sections, each with a home path and an api path. For the coding section, read /api/coding/catalog.json. It holds every visible policy and preset, with schema_version 1 and track coding. /api/coding/policies/<id>.json holds one policy record, /api/coding/presets.json the presets, and /api/coding/selection.schema.json the schema a selection file is checked against. The same catalog data is at /data/site.json."
 - heading: "Labels"
-  body: "Every policy carries one label per agent: the catalog's grade for it on that agent. blocks: the agent refuses the action. asks: the agent stops and asks the user. warns: the action goes ahead with a warning. advisory: text the agent reads; nothing stops a violation. A policy the catalog does not grade on an agent yet says \"not graded yet\" there; never read another agent's grade in its place. Each JSON record has the default agent's label in keyword and says, and every agent's label under agent_labels."
+  body: "Every policy carries one label per agent: the catalog's grade for it on that agent. Blocks: the agent refuses the action. Asks: the agent stops and asks the user. Warns: the action goes ahead with a warning. Advisory: the agent reads the text, and nothing stops a violation. A policy the catalog does not grade on an agent yet says \"Not graded yet\" there. Never read another agent's grade in its place. Each JSON record has the default agent's label in keyword and says, and every agent's label under agent_labels."
 - heading: "Choosing policies with the user"
-  body: "Pick policy ids with the user, not for them. The presets are named starting points; a policy's page lists the presets it belongs to. An advisory policy adds text the agent reads; it stops nothing on its own."
+  body: "Pick policy ids together with the user. Do not pick them on the user's behalf. The presets are named starting points. A policy's page lists the presets it belongs to. An advisory policy adds text the agent reads. It stops nothing on its own."
 - heading: "Building the selection"
-  body: "Build the selection object exactly as the schema describes: schema __SCHEMA__; client, the user's agent, one of __CLIENTS__; bundle.version __BUNDLE_VERSION__; the catalog source and ref from /api/coding/catalog.json; and one entry per picked policy with from catalog, id, version and sha256, sorted by id. Encode it as base64url of the UTF-8 JSON, without padding. The same functions are below in Python and JavaScript."
+  body: "Build the selection object exactly as the schema describes. It holds:"
+  items:
+    - "`schema` __SCHEMA__"
+    - "`client`, the user's agent, one of __CLIENTS__"
+    - "`bundle.version` __BUNDLE_VERSION__"
+    - "The catalog source and ref from /api/coding/catalog.json"
+    - "One entry per picked policy with `from` catalog, `id`, `version` and `sha256`, sorted by id"
+  after: "Encode it as base64url of the UTF-8 JSON, without padding. The same functions are below in Python and JavaScript."
   code_label: "Encode a selection object to its share code:"
   code_python: |
     import base64, json
@@ -24,10 +35,10 @@ sections:
       return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
     }
 - heading: "A worked example"
-  body: "The git-hygiene preset for __DEFAULT_CLIENT__, built the way the section above describes. The selection object, its share code and the command are generated from the pinned catalog when the site is built, so they match this catalog commit. Ask the user before running the command."
+  body: "The git-hygiene preset for __DEFAULT_CLIENT__, built the way the section above describes. The site build generates the selection object, its share code and the command from the pinned catalog, so they match this catalog commit. Ask the user before running the command."
   code_label: "The selection object for the git-hygiene preset, then its share code and command:"
   worked_example: git-hygiene
 - heading: "The install command"
   body: "For an agent marked tested (__WITNESSED_CLIENTS__), ask the user before running `__COMMAND_WITNESSED__`: it also runs that agent's own install steps. For the others, ask the user before running `__COMMAND_UNTESTED__`: it only builds the plugin and prints the steps for the user to apply. Both build hooks that change how the user's agent behaves. Show the user the chosen policies, with their labels on their agent, before asking. /coding/install/ lists every agent's steps."
 - heading: "What chock is not"
-  body: "chock is friction, not a security boundary. Advisory text can be ignored, and a block on the shell can be sidestepped by a determined agent. Say exactly that to the user; do not call it protection."
+  body: "Chock adds friction. It is not a security boundary. An agent can ignore advisory text, and a determined agent can get around a block on the shell. Tell the user exactly that. Do not call it protection."

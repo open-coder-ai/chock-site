@@ -143,7 +143,7 @@ const DESCRIPTIONS = {
   script: (c) =>
     `Refuses a change that writes a file named ${refuseNames(c).join(", ")}, at commit and ` +
     "when the agent writes a file.",
-  rule: () => "A rule the agent reads in its context; nothing enforces it.",
+  rule: () => "A rule the agent reads in its context. Nothing enforces it.",
   skill: (c) => c.answers.stop,
 };
 
@@ -223,7 +223,7 @@ const BUILDERS = {
       .map((s, i) => `${i + 1}. ${s}`)
       .join("\n")}\n`,
   guard_comment: () =>
-    "#: A command matching BLOCK is refused; spacing differences still match. Built from your answer.",
+    "#: A command matching BLOCK is refused. Spacing differences still match. Built from your answer.",
   block_pattern: (c) => `BLOCK = re.compile(${pyStr(guardRegex(c.answers.stop))})`,
   guard_message: (c) => `        print(${pyStr(`${c.id}: ${c.answers.message}`)}, file=sys.stderr)`,
   script_comment: () => "#: A write whose file name is in REFUSE is refused before it lands.",
@@ -364,15 +364,15 @@ function buildScript(files, selection, hash, ctx, site, client, clients) {
     `# Written by chock.sh/coding/author/ for the policy ${ctx.id}.`,
     "#",
     "# In order, it:",
-    "#   1. asks you for the agent, the folder, and build-only or install;",
+    "#   1. asks you for the agent, the folder, and build-only or install.",
     "#   2. writes chock.selection.yaml and the policy files under that folder",
-    "#      (every file below is a quoted heredoc, readable in full);",
-    "#   3. runs chock check --repo <folder> --only validate,evals and stops on failure;",
+    "#      (every file below is a quoted heredoc, readable in full).",
+    "#   3. runs chock check --repo <folder> --only validate,evals and stops on failure.",
     "#   4. runs chock install --selection <folder>/chock.selection.yaml",
-    "#      --client <agent> --trust-local <id>=<sha256>; the sha256 pins exactly",
-    "#      the policy code in this script, which you accepted by reading it;",
+    "#      --client <agent> --trust-local <id>=<sha256>. The sha256 pins exactly",
+    "#      the policy code in this script, which you accepted by reading it.",
     "#   5. answering install also passes --apply, the agent's own install step,",
-    "#      but only where that step has been witnessed; otherwise it says so.",
+    "#      but only where a person has seen that step work live. Otherwise it says so.",
     "#",
     "# Nothing is fetched from the network except chock's own pinned catalog fetch,",
     "# and only when catalog policies are in the selection. Read it before running.",
@@ -536,15 +536,32 @@ async function main() {
 
   // ----- draft -----
 
+  const clearBtn = $("#author-clear");
+  const clearedBox = $("#author-cleared");
+  const undoBtn = $("#author-undo");
+
+  // A draft exists once the visitor has changed anything Clear draft resets.
+  const hasDraft = () =>
+    kind !== Object.keys(kinds)[0] ||
+    name !== "" ||
+    Object.values(answers).some((value) => value) ||
+    picked.size > 0 ||
+    Object.keys(overrides).length > 0;
+
   let draftTimer = 0;
   function saveDraft() {
     window.clearTimeout(draftTimer);
     draftTimer = window.setTimeout(() => {
       try {
-        localStorage.setItem(
-          DRAFT_KEY,
-          JSON.stringify({ kind, name, answers, picked: [...picked], client, overrides }),
-        );
+        // The agent choice is kept even with an otherwise empty form; Clear draft leaves it.
+        if (hasDraft() || client !== C.default) {
+          localStorage.setItem(
+            DRAFT_KEY,
+            JSON.stringify({ kind, name, answers, picked: [...picked], client, overrides }),
+          );
+        } else {
+          localStorage.removeItem(DRAFT_KEY);
+        }
       } catch {
         // A full or blocked localStorage is not an error worth showing.
       }
@@ -693,11 +710,18 @@ async function main() {
 
   function ctx() {
     const id = slugify(name);
+    // Every question of the kind as a string, so a partial interview builds without throwing.
+    const full = Object.fromEntries(
+      kinds[kind].fields.map((field) => {
+        const value = answers[field.key];
+        return [field.key, typeof value === "string" ? value : ""];
+      }),
+    );
     return {
       kind,
       id,
       name: nameOf(id),
-      answers,
+      answers: full,
       spec: kinds[kind],
       cfg,
       untested: T.untested_note,
@@ -716,9 +740,13 @@ async function main() {
     for (const file of files) if (file.path in overrides) file.text = overrides[file.path];
     renderFiles(freshFiles);
     const errors = validate(c, T);
-    errorsBox.hidden = errors.length === 0;
+    // An unanswered question or a blank name is not an error yet: the output says what is missing.
+    const shown = errors.filter(
+      (text) => text !== T.required && !(text === T.id_invalid && !name.trim()),
+    );
+    errorsBox.hidden = shown.length === 0;
     errorList.replaceChildren(
-      ...[...new Set(errors)].map((text) => {
+      ...[...new Set(shown)].map((text) => {
         const item = document.createElement("li");
         item.textContent = text;
         return item;
@@ -746,6 +774,7 @@ async function main() {
   let running = false;
   let queuedFresh = null;
   function schedule(freshFiles) {
+    clearBtn.hidden = !hasDraft();
     queuedFresh = freshFiles || queuedFresh;
     if (running) return;
     running = true;
@@ -823,25 +852,66 @@ async function main() {
     copyText(event.currentTarget, shareUrl.value, shareUrl);
   });
 
-  $("#author-clear").addEventListener("click", () => {
+  // Puts a draft's parts into the page and redraws it.
+  function applyDraft(next) {
+    kind = next.kind;
+    name = next.name;
+    answers = next.answers;
+    picked = next.picked;
+    overrides = next.overrides;
+    nameInput.value = name;
+    for (const radio of $$("input[name='author-kind']")) radio.checked = radio.value === kind;
+    renderFields();
+    renderCatalog();
+    writeShare();
+    schedule(true);
+  }
+
+  // Clear sits at the top where it is easy to hit, so it can be undone for 10 seconds.
+  let undoDraft = null;
+  let undoTimer = 0;
+  function endUndo() {
+    window.clearTimeout(undoTimer);
+    undoDraft = null;
+    const hadFocus = document.activeElement === undoBtn;
+    clearedBox.hidden = true;
+    if (hadFocus) nameInput.focus();
+  }
+
+  clearBtn.addEventListener("click", () => {
+    undoDraft = {
+      kind,
+      name,
+      answers: { ...answers },
+      picked: new Set(picked),
+      overrides: { ...overrides },
+    };
     try {
       localStorage.removeItem(DRAFT_KEY);
     } catch {
       // Nothing stored: still reset the page.
     }
-    kind = Object.keys(kinds)[0];
-    name = "";
-    answers = {};
-    picked = new Set();
-    overrides = {};
-    nameInput.value = "";
-    for (const radio of $$("input[name='author-kind']")) radio.checked = radio.value === kind;
-    renderFields();
-    renderCatalog();
-    writeShare();
-    $("#author-clear-done").hidden = false;
+    applyDraft({
+      kind: Object.keys(kinds)[0],
+      name: "",
+      answers: {},
+      picked: new Set(),
+      overrides: {},
+    });
+    clearedBox.hidden = false;
+    undoBtn.focus();
     announce(T.clear_done);
-    schedule(true);
+    window.clearTimeout(undoTimer);
+    undoTimer = window.setTimeout(endUndo, 10000);
+  });
+
+  undoBtn.addEventListener("click", () => {
+    const previous = undoDraft;
+    endUndo();
+    if (!previous) return;
+    applyDraft(previous);
+    clearBtn.focus();
+    announce(T.undo_done);
   });
 
   // ----- first paint -----

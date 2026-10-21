@@ -79,6 +79,14 @@ jobs:
       - run: python scripts/install_engine_deps.py
       - run: pip check
       - run: pytest -q --ignore=tests/e2e
+      # DOCS-1: re-run the recorded CLI examples against the pinned engine; fail on any difference.
+      - run: python -m sitegen.cliexamples --check
+      # DOCS-4: the catalog pages' snapshot of .catalog at .catalog-ref, and the adopt run
+      # (it fetches the catalog from GitHub) against the pinned engine; fail on any difference.
+      - run: python -m sitegen.catalogdoc --catalog .catalog --check
+      # DOCS-5: re-run the Write policies pages' recorded runs against the pinned engine; fail on
+      # any difference.
+      - run: python -m sitegen.writedoc --check
 
   docs-drift:
     timeout-minutes: 5
@@ -86,6 +94,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          # full history: architecture diagrams cite chock-site files at a pinned commit
+          fetch-depth: 0
           persist-credentials: false
       - id: refs
         run: echo "framework=$(cat .framework-ref)" >> "$GITHUB_OUTPUT"
@@ -100,6 +110,8 @@ jobs:
           python-version: "3.12"
       - run: pip install --require-hashes -r requirements-dev.txt
       - run: python -m sitegen.docsource --chock .chock-src --check
+      # ARCH-1: every repo/path a diagram cites exists at the commit it pins (public clones).
+      - run: python -m sitegen.architecture --check --fetch --clones .arch-src --repo chock-site=.
 
   e2e:
     timeout-minutes: 25
@@ -187,3 +199,32 @@ jobs:
       - name: dist shows no Windows-style paths
         shell: bash
         run: python -m sitegen.distcheck dist
+
+  # DOCS-3: the agentseam pages' sources. The quoted agentseam docs match agentseam at the
+  # commit data/agentseam-source/source.json pins, and a re-run of the recorded direct use
+  # with that agentseam (installed by chock at .framework-ref) prints the same.
+  agentseam-docs:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: refs
+        run: |
+          echo "framework=$(cat .framework-ref)" >> "$GITHUB_OUTPUT"
+          echo "agentseam=$(python3 -c 'import json; print(json.load(open("data/agentseam-source/source.json"))["agentseam_ref"])')" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: open-coder-ai/agentseam
+          path: .agentseam-src
+          ref: ${{ steps.refs.outputs.agentseam }}
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+        env:
+          FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: python -m sitegen.agentseamdoc snapshot --agentseam .agentseam-src --check
+      - run: python -m sitegen.agentseamdoc run --check

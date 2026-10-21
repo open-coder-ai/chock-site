@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 6,
+      "of": 21,
+      "command": "chock verify verify",
+      "output": "verify: all packs match lockfile",
+      "exit": 0
+    }
+  ]
+}

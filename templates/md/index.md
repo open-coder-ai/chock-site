@@ -1,4 +1,4 @@
-# chock.sh
+# Chock.sh
 
 __SUB__
 
@@ -29,7 +29,7 @@ __COMMAND__
 
 __APPLY_NOTE__
 
-## One policy, every surface
+## One policy, every agent
 
 __SURFACE_BODY__
 

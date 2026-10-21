@@ -1,7 +1,9 @@
 """R-4: the Git repositories section in a browser — quiz, commands, download, share links."""
 
 import json
+import shlex
 from pathlib import Path
+from types import SimpleNamespace
 
 from conftest import assert_clean, collect, screenshot
 
@@ -52,7 +54,7 @@ def _expected(site: dict, ids: list[str], ci: bool) -> str:
     lines = [commands["init"]]
     for pid in sorted(ids):
         lines.append(
-            repodata.fill(
+            repodata.shell_line(
                 commands["add"],
                 {
                     "id": pid,
@@ -61,7 +63,7 @@ def _expected(site: dict, ids: list[str], ci: bool) -> str:
                 },
             )
         )
-    lines += [commands["sync_ci"] if ci else commands["sync"], commands["commit"]]
+    lines += [commands["sync_ci"] if ci else commands["sync"], commands["review"]]
     return "\n".join(lines)
 
 
@@ -114,7 +116,7 @@ def test_strictness_reads_the_repo_words(page, site_url) -> None:
         assert sorted(_ids(page)) == sorted(i for i in pool if tier[i] in allowed)
         chips = page.locator(".quiz-pick .label").all_text_contents()
         assert all(
-            c.strip().endswith(("at commit", "in agent", "advisory")) for c in chips
+            c.strip().endswith(("At commit", "In agent", "Advisory")) for c in chips
         )
 
 
@@ -148,10 +150,23 @@ def test_share_link_round_trips(page, site_url) -> None:
     _answer(page)
     ids = sorted(_ids(page))
     link = page.locator("#quiz-share-url").input_value()
-    assert link.endswith("#p=" + ",".join(ids))
+    assert link.endswith("#p=" + ",".join(ids) + "&host=github&ci=1")
     _start(page, site_url, "#p=" + ",".join(ids))
     assert sorted(_ids(page)) == ids
     assert "came from a share link" in page.locator("#link-notice").text_content()
+
+
+def test_share_link_carries_host_and_ci(page, site_url) -> None:
+    site = _site(page, site_url)
+    _start(page, site_url, "#p=block-no-verify&host=gitlab&ci=1")
+    assert _command(page) == _expected(site, ["block-no-verify"], True)
+    assert (
+        page.locator("#quiz-share-url")
+        .input_value()
+        .endswith("#p=block-no-verify&host=gitlab&ci=1")
+    )
+    _start(page, site_url, "#p=block-no-verify&host=gitlab&ci=0")
+    assert _command(page) == _expected(site, ["block-no-verify"], False)
 
 
 def test_unknown_ids_are_dropped_and_named(page, site_url) -> None:
@@ -232,10 +247,98 @@ def test_pages_fit_a_phone_and_screenshots(browser, site_url) -> None:
 
 def test_policy_tile_and_nav(page, site_url) -> None:
     page.goto(site_url + "/coding/policies/protect-main-branch/")
-    assert page.locator("#repo-tier .fact-value").text_content() == "at commit"
+    assert page.locator("#repo-tier .fact-value").text_content() == "At commit"
     assert page.locator('#nav-links a[href="/repos/"]').count() == 1
     page.goto(site_url + "/repos/")
     assert (
         page.locator("h1").text_content() == "Guardrails that live in your repository"
     )
     assert_clean(page)
+
+
+# --- SITE-1: the browser quotes the way Python does ----------------------------------------
+
+# Values a catalog could carry: the review's injection, quotes, spaces, globs, unicode, empty.
+TRICKY = [
+    "safe;echo PWNED > pwned",
+    "a'b",
+    "it's",
+    "two words",
+    "$(id)",
+    "`id`",
+    "a&&b",
+    "*.py",
+    "~user",
+    "naïve",
+    "",
+    "--ref",
+    "{id}",
+    "a\nb",
+    "back\\slash",
+    '"quoted"',
+]
+IMPORT = "const m = await import('/js/repos.js');"
+
+
+def _js(page, body: str, arg):
+    return page.evaluate(f"async (arg) => {{ {IMPORT} {body} }}", arg)
+
+
+def test_shell_arg_twins_agree_on_the_sites_values_and_on_hostile_ones(
+    page, site_url
+) -> None:
+    site = _site(page, site_url)
+    _start(page, site_url)
+    values = (
+        [p["id"] for p in site["policies"]]
+        + [p["sha256"] for p in site["policies"]]
+        + [site["catalog"]["ref"], *TRICKY]
+    )
+    assert len(values) > len(TRICKY) + 1
+    quoted = _js(page, "return arg.map(m.shellArg);", values)
+    assert quoted == [shlex.quote(v) for v in values]
+    assert_clean(page)
+
+
+def test_command_lines_twins_agree_on_the_sites_data(page, site_url) -> None:
+    site = _site(page, site_url)
+    _start(page, site_url)
+    ids = [p["id"] for p in site["policies"]]
+    picks = [SimpleNamespace(id=p["id"], sha256=p["sha256"]) for p in site["policies"]]
+    for ci in (False, True):
+        lines = _js(
+            page,
+            "const site = await (await fetch('/data/site.json')).json();"
+            " return m.commandLines(site, arg.ids, arg.ci);",
+            {"ids": ids, "ci": ci},
+        )
+        assert lines == repodata.command_lines(
+            site["repos"]["commands"], picks, site["catalog"]["ref"], ci
+        )
+
+
+def test_command_lines_twins_agree_on_a_hostile_catalog(page, site_url) -> None:
+    """A registry the build would refuse: both twins still emit one argument per value."""
+    site = _site(page, site_url)
+    _start(page, site_url)
+    hostile = {
+        "catalog": {"ref": "r$(id)"},
+        "repos": {"commands": site["repos"]["commands"]},
+        "policies": [
+            {"id": value, "sha256": f"{value}'s hash"} for value in TRICKY if value
+        ],
+    }
+    ids = [p["id"] for p in hostile["policies"]]
+    lines = _js(
+        page,
+        "return m.commandLines(arg.site, arg.ids, false);",
+        {"site": hostile, "ids": ids},
+    )
+    picks = [
+        SimpleNamespace(id=p["id"], sha256=p["sha256"]) for p in hostile["policies"]
+    ]
+    assert lines == repodata.command_lines(
+        hostile["repos"]["commands"], picks, "r$(id)", False
+    )
+    for line, pid in zip(lines[1:-2], sorted(ids), strict=True):
+        assert shlex.split(line)[:5] == ["chock", "add", pid, "--ref", "r$(id)"]

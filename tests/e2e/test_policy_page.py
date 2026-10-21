@@ -8,7 +8,7 @@ PAGE = "/coding/policies/block-no-verify/"
 
 def test_policy_page_content(page, site_url, request) -> None:
     page.goto(site_url + PAGE)
-    assert "blocks" in page.locator(".label").first.inner_text()
+    assert "Blocks" in page.locator(".label").first.inner_text()
     assert "git commit --no-verify -m wip" in page.content()
     assert "3c90e499d5c5" in page.content()  # sha256 prefix
     assert page.locator("#misses").count() == 1

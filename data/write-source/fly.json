@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "run": "fly",
+  "examples": [
+    {
+      "step": 1,
+      "command": "chock init .",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nNo git-pre-commit.sh policies found; pre-commit dispatcher unchanged\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nNo git-pre-commit.sh policies found; pre-merge-commit dispatcher unchanged\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nNo git-pre-push.sh policies found; pre-push dispatcher unchanged\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered SessionStart arm hook in .claude/settings.json\nINDEX.md: ~257 tokens (chars/4, max 2000)\nINDEX.md: ~257 tokens (chars/4, max 2000)\nImplementation registered at /work/demo/.git/hooks/pre-commit.d/99-chock-validate\n[PASS] All checks passed.\nInitialized Chock in /work/demo\nAgents: AGENTS.md + claude, copilot, gemini\nSkills: eval, optimize, policy-init, validate (refresh with `chock install-skills .`)\nPolicies: none. This repo enforces nothing yet.\n  1. copy a policy folder from https://github.com/open-coder-ai/chock-catalog (base/<id>/) into .agents/policies/<id>/\n  2. chock sync --repo .\nVerify anytime with:  chock check --only verify",
+      "exit": 0
+    },
+    {
+      "step": 2,
+      "command": "chock new policy no-tf-destroy --kind guard",
+      "output": "INDEX.md: ~285 tokens (chars/4, max 2000)\nCreated policy 'my-no-tf-destroy' at /work/demo/.agents\nNext:  python -m chock sync --repo .\n       python -m chock check --repo .",
+      "exit": 0
+    },
+    {
+      "step": 3,
+      "command": "git status --short --untracked-files=all .agents/policies/my-no-tf-destroy",
+      "output": "?? .agents/policies/my-no-tf-destroy/evals/suite.yaml\n?? .agents/policies/my-no-tf-destroy/implementations/my-no-tf-destroy.py\n?? .agents/policies/my-no-tf-destroy/manifest.yaml",
+      "exit": 0
+    },
+    {
+      "step": 4,
+      "command": "chock eval my-no-tf-destroy",
+      "output": "\nmy-no-tf-destroy  [deterministic]\n  PASS  tc-001                             authored  my-no-tf-destroy: this command is refused. Run it yourself after re…\n  PASS  tc-002                             authored  my-no-tf-destroy: this command is refused. Run it yourself after re…\n  PASS  tc-003                             authored  my-no-tf-destroy: this command needs a person's yes first.\n  PASS  tc-004                             authored  guard exit 0\n  score 1.00\n\n1 policies: 4 pass",
+      "exit": 0
+    },
+    {
+      "step": 5,
+      "command": "chock sync --repo .",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nNo git-pre-commit.sh policies found; pre-commit dispatcher unchanged\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nNo git-pre-commit.sh policies found; pre-merge-commit dispatcher unchanged\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nNo git-pre-push.sh policies found; pre-push dispatcher unchanged\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered 1 PreToolUse/Stop hook(s) in .claude/settings.json\n  claude_code: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run, recorded 2026-09-07)\n  claude_code: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 1 hook entr(y/ies) in .gemini/settings.json\n  gemini_cli: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis vendor-source, recorded 2026-08-28)\n  gemini_cli: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 1 agent hook(s) in .github/hooks/chock.json\n  vscode_copilot: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run-partial, recorded 2026-09-28)\nINDEX.md: ~285 tokens (chars/4, max 2000)\nRecompiled 1 policies\nmy-no-tf-destroy:\n  claude: best-effort (live-run)\n  copilot: best-effort (live-run-partial)\n  gemini: best-effort (vendor-source)",
+      "exit": 0
+    },
+    {
+      "step": 6,
+      "command": "printf '%s' '{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"terraform destroy\"}}' | sh .chock/bin/launch.sh .chock/bin/claude_code.py --guard .agents/policies/my-no-tf-destroy/implementations/my-no-tf-destroy.py",
+      "output": "my-no-tf-destroy: this command is refused. Run it yourself after review.\n{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"Blocked by chock policy: my-no-tf-destroy\"}}",
+      "exit": 0
+    },
+    {
+      "step": 7,
+      "command": "printf '%s' '{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"terraform plan\"}}' | sh .chock/bin/launch.sh .chock/bin/claude_code.py --guard .agents/policies/my-no-tf-destroy/implementations/my-no-tf-destroy.py",
+      "output": "",
+      "exit": 0
+    },
+    {
+      "step": 8,
+      "command": "chock gate-log",
+      "output": "policy            surface       events  allow  block    ask   warn  last block\nmy-no-tf-destroy  pre-tool-use       1      0      1      0      0  <time>\n\nAllowed tool calls: 1 (each counted once, never toward a policy)",
+      "exit": 0
+    }
+  ]
+}

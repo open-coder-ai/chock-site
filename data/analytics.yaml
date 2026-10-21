@@ -13,29 +13,29 @@ max_body: 1024
 events:
   install-copied:
     props: [agent]
-    what: "The install command was copied in the builder, and for which agent."
+    what: "Copying the install command in the builder, with the agent."
   share-copied:
     props: []
-    what: "A builder share link was copied."
+    what: "Copying a share link in the builder."
   selection-downloaded:
     props: []
-    what: "A selection file was downloaded from the builder."
+    what: "Downloading a selection file from the builder."
   quiz-finished:
     props: []
-    what: "The builder's questions were answered to the end."
+    what: "Answering the builder's questions to the end."
   preset-picked:
     props: [preset]
-    what: "A preset was picked in the builder, and which one."
+    what: "Picking a preset in the builder, with the preset."
   author-script-downloaded:
     props: [kind, agent]
-    what: "A setup script for a new policy was downloaded, with its kind and agent."
+    what: "Downloading a setup script for a new policy, with its kind and agent."
   report-form-opened:
     props: [form]
-    what: "An issue form was opened from the Report an issue page, and which one."
+    what: "Opening an issue form from the Report an issue page, with the form."
   policy-build-clicked:
     props: [policy, agent]
-    what: "\"Build for\" an agent was clicked on a policy page, with the policy id and the agent."
+    what: "Clicking \"Build for\" an agent on a policy page, with the policy id and the agent."
 security:
   heading: What this site counts
-  body: "The site counts page views and the few actions below, to learn which pages and tools people use. Each count carries only the action's name and the ids listed with it: never the address of the page, your selection, a share code, a policy you wrote or anything you typed. No cookie and no stored id are used, and no IP address, browser or account is stored with a count. If your browser sends Global Privacy Control or Do Not Track, the site counts nothing. The chock command line tool sends nothing at all."
+  body: "The site counts only the few actions below, to learn which tools people use. Each count carries only the action's name and the ids listed with it: never the address of the page, your selection, a share code, a policy you wrote or anything you typed. The site sets no cookie and stores no id. It stores no IP address, browser or account with a count. If your browser sends Global Privacy Control or Do Not Track, the site counts nothing. The chock command line tool sends nothing at all."
   list_label: "The actions counted:"

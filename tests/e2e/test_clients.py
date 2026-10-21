@@ -6,10 +6,12 @@ import sys
 from pathlib import Path
 
 import pytest
+from combo import pick_start
 from conftest import CATALOG, SCREENSHOTS, assert_clean, collect
 
 from sitegen import clientdata, engine
 from sitegen.presets import load_presets
+from sitegen.render import sentence_start
 from tests.fixtures.untested import CLIENT, ISSUE
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -19,7 +21,16 @@ WITNESS = clientdata.load_witness(ROOT / "data", engine.client_ids())
 # Every `chock install --client` target, in the picker's order (S-ALL).
 CLIENTS = tuple(WITNESS["clients"])
 # witness.yaml's "witnessed", where chock's ledger has a plugin-hook row.
-WITNESSED = ("claude-code", "cursor", "codex")
+WITNESSED = (
+    "claude-code",
+    "cursor",
+    "codex",
+    "copilot",
+    "devin",
+    "grok",
+    "goose",
+    "antigravity",
+)
 PRESET = "git-hygiene"
 SIZES = {
     "desktop": {"width": 1280, "height": 900},
@@ -62,7 +73,7 @@ def test_default_is_claude_code_and_the_picker_lists_every_install_client(
     )
     assert values == list(CLIENTS)
     assert sorted(values) == sorted(engine.client_ids())
-    assert len(values) == 12
+    assert len(values) == 11
     assert page.locator("#client-claude-code").is_checked()
     assert page.evaluate("location.hash") == ""
     assert_clean(page)
@@ -105,7 +116,10 @@ def test_each_agent_gets_its_command_steps_and_labels(page, site_url, client) ->
     labels = {p["id"]: p["agent_labels"][client] for p in site["policies"]}
     for policy_id, keyword, says in rows:
         label = labels[policy_id]
-        assert (keyword, says) == (label["keyword"], label["says"]), policy_id
+        assert (keyword, says) == (
+            label["keyword"],
+            sentence_start(label["says"]),
+        ), policy_id
     assert page.locator(".sel-item").count() == len(PRESETS[PRESET].members)
     assert_clean(page)
 
@@ -134,7 +148,7 @@ def test_the_page_fragment_keeps_the_agent(page, site_url) -> None:
     page.wait_for_selector(".sel-item")
     assert page.locator("#client-devin").is_checked()
     page.once("dialog", lambda dialog: dialog.accept())
-    page.locator("#builder-start").select_option("")
+    pick_start(page, "")
     assert page.evaluate("location.hash") == "#client=devin"
     assert_clean(page)
 
@@ -195,7 +209,7 @@ def test_notice_shown_for_an_untested_agent(page, untested_url) -> None:
     box = page.locator(f".client-evidence[data-client='{CLIENT}']")
     assert box.is_visible()
     name = engine.client_name(CLIENT)
-    assert f"chock has not seen {name} run the plugin yet" in box.inner_text()
+    assert f"Chock has not seen {name} run the plugin yet" in box.inner_text()
     assert "The command still builds the plugin" in box.inner_text()
     link = box.locator("a")
     assert link.get_attribute("href") == notice["url"]

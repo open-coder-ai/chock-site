@@ -68,6 +68,20 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
     return "/security/", "/security/index.md", twin
 
 
+def _faq_headings(data: dict[str, Any]) -> list[tuple[int, str, str]]:
+    """The FAQ's groups (h2) and questions (h3) in page order, for "On this page"."""
+    return [
+        heading
+        for group in data["faq"]["groups"]
+        for heading in [(2, f"group-{group['id']}", group["title"])]
+        + [
+            (3, item["id"], item["q"])
+            for item in data["faq"]["questions"]
+            if item["group"] == group["id"]
+        ]
+    ]
+
+
 def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
     """The FAQ page, grouped per faq.yaml (plan 6.7), and its twin."""
     data = site.data
@@ -113,6 +127,9 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 templates / "faq.html",
                 SUB=Prose(page["description"]),
                 FAQ_GROUPS=Safe(groups),
+                TOC=docs.toc_nav(
+                    templates, data["faq"]["toc_title"], _faq_headings(data)
+                ),
             )
         ),
         jsonld_data={
@@ -128,6 +145,7 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             ],
         },
         nav="faq",
+        scripts=("common.js", "docs.js"),
     )
     twin = render_text_file(
         templates / MD / "faq.md",
@@ -182,6 +200,18 @@ def _worked_example(site: Site, section: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _track_list(site: Site) -> str:
+    """The site's sections as the agent guide lists them: title, home path and status, from tracks.yaml."""
+    lines = site.data["agents"]["track_line"]
+    names = [
+        data_fill(lines[t.status], {"__TITLE__": t.title, "__HOME__": f"/{t.slug}/"})
+        for t in site.tracks
+    ]
+    if len(names) == 1:
+        return names[0]
+    return ", ".join(names[:-1]) + " and " + names[-1]
+
+
 def _guide_subs(site: Site) -> dict[str, str]:
     """The facts the agent guide's texts name: schema, agents and command forms, all from data."""
     clients = site.data["builder_clients"]
@@ -193,6 +223,8 @@ def _guide_subs(site: Site) -> dict[str, str]:
         "__CLIENTS__": ", ".join(clients["order"]),
         "__WITNESSED_CLIENTS__": ", ".join(witnessed),
         "__DEFAULT_CLIENT__": clients["default"],
+        "__TRACK_COUNT__": str(len(site.tracks)),
+        "__TRACKS__": _track_list(site),
         "__BUNDLE_VERSION__": clients["bundle_version"],
         "__COMMAND_WITNESSED__": data_fill(
             clients["commands"]["witnessed"],
@@ -213,7 +245,12 @@ def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, s
     sections = [
         _worked_example(site, s) if s.get("worked_example") else s
         for s in (
-            {**s, "body": data_fill(s["body"], subs)}
+            {
+                **s,
+                "body": data_fill(s["body"], subs),
+                "items": [data_fill(t, subs) for t in s.get("items", [])],
+                "after": data_fill(s.get("after", ""), subs),
+            }
             for s in data["agents"]["sections"]
         )
     ]
@@ -327,17 +364,19 @@ def _llms(
         ),
     ]
     total = sum(len([p for p in site.policies if p.track == t.id]) for t in site.tracks)
-    blockquote = (
-        "> chock turns a picked set of guardrail policies into plugins for AI "
+    # llmstxt.org shape: the title, the tagline as the summary blockquote, then notes.
+    notes = (
+        "Chock turns a picked set of guardrail policies into plugins for AI "
         f"agents. The coding section holds {total} policies, each "
         "labelled blocks, asks, warns or advisory, on a catalog pinned at "
         f"{site.catalog_ref[:12]}. Ask the user before picking or installing "
         "anything.\n"
     )
     lines = [
-        "# chock.sh\n",
-        blockquote,
-        "## Docs\n",
+        f"# {site.data['wordmark']}\n\n",
+        f"> {site.data['pages']['home']['title']}\n\n",
+        notes,
+        "\n## Docs\n\n",
     ]
     lines += [f"- [{name}]({path}): {note}\n" for name, path, note in docs]
     for section in sections:

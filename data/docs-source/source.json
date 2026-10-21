@@ -1,11 +1,29 @@
 {
-  "engine_ref": "c111603ca56534eb59083b6048456120be23616b",
+  "engine_ref": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
   "files": {
     "CHANGELOG.md": {
       "snapshot": "CHANGELOG.md"
     },
+    "README.md": {
+      "snapshot": "README.md"
+    },
+    "SECURITY.md": {
+      "snapshot": "SECURITY.md"
+    },
     "docs/adopting.md": {
       "snapshot": "docs__adopting.md"
+    },
+    "docs/agentic-risk-coverage.md": {
+      "snapshot": "docs__agentic-risk-coverage.md"
+    },
+    "docs/architecture.md": {
+      "snapshot": "docs__architecture.md"
+    },
+    "docs/assurance-case.md": {
+      "snapshot": "docs__assurance-case.md"
+    },
+    "docs/authoring-policies.md": {
+      "snapshot": "docs__authoring-policies.md"
     },
     "docs/baseline-policies.md": {
       "snapshot": "docs__baseline-policies.md"
@@ -22,12 +40,24 @@
     "docs/custom-policies.md": {
       "snapshot": "docs__custom-policies.md"
     },
+    "docs/decision-log.md": {
+      "snapshot": "docs__decision-log.md"
+    },
     "docs/enforcement-surfaces.md": {
       "snapshot": "docs__enforcement-surfaces.md"
+    },
+    "docs/evals.md": {
+      "snapshot": "docs__evals.md"
     },
     "docs/getting-started.md": {
       "snapshot": "docs__getting-started.md"
     },
-    "docs/troubleshooting.md": null
+    "docs/stop.md": {
+      "snapshot": "docs__stop.md"
+    },
+    "docs/troubleshooting.md": null,
+    "src/chock/packs/_skills/policy-init/SKILL.md": {
+      "snapshot": "src__chock__packs___skills__policy-init__SKILL.md"
+    }
   }
 }

@@ -173,11 +173,164 @@ def test_draft_persists_across_reload_and_clears(page, site_url) -> None:
     assert page.locator("#author-name").input_value() == FILLS["guard"]["name"]
     assert page.locator("#af-stop").input_value() == FILLS["guard"]["stop"]
     page.get_by_role("button", name="Clear draft").click()
-    assert page.locator("#author-clear-done").is_visible()
+    assert page.locator("#author-cleared").is_visible()
     page.reload()
     page.wait_for_selector("#author-fields .field")
     assert page.locator("#author-name").input_value() == ""
     assert_clean(page)
+
+
+def _draft(page):
+    return page.evaluate("localStorage.getItem('chock.author.draft.v1')")
+
+
+def test_clear_button_sits_at_the_top_only_with_a_draft(page, site_url) -> None:
+    _open(page, site_url)
+    page.evaluate("localStorage.removeItem('chock.author.draft.v1')")
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+    clear = page.locator("#author-clear")
+    assert clear.is_hidden()
+    page.fill("#author-name", "block secrets")
+    clear.wait_for(state="visible")
+    # Beside the interview heading, above the kind picker and every question.
+    head = page.locator("#author-interview").bounding_box()
+    box = clear.bounding_box()
+    assert abs((box["y"] + box["height"] / 2) - (head["y"] + head["height"] / 2)) < 16
+    assert box["y"] < page.locator(".kind-picker").bounding_box()["y"]
+    assert page.locator(".saved-note button").count() == 0
+    screenshot(page, "author_clear_top")
+    page.fill("#author-name", "")
+    clear.wait_for(state="hidden")
+    assert_clean(page)
+
+
+def test_clear_empties_form_and_storage_and_undo_restores(page, site_url) -> None:
+    _open(page, site_url)
+    _fill(page, "guard")
+    page.locator("#author-catalog-list .amember input").first.check()
+    page.wait_for_timeout(600)
+    stored = _draft(page)
+    assert stored and FILLS["guard"]["stop"] in stored
+    page.locator("#author-clear").click()
+    assert page.locator("#author-name").input_value() == ""
+    assert page.locator("#af-stop").input_value() == ""
+    assert page.locator("#author-catalog-list .amember input:checked").count() == 0
+    page.wait_for_timeout(600)
+    assert _draft(page) is None
+    status = page.locator("#author-cleared")
+    assert status.is_visible()
+    assert status.inner_text().startswith("Draft cleared.")
+    assert page.locator("#author-clear").is_hidden()
+    assert page.locator("#live").text_content() == "Draft cleared."
+    screenshot(page, "author_clear_undo")
+    # Keyboard: focus moved to Undo, so Enter restores.
+    assert page.evaluate("document.activeElement.id") == "author-undo"
+    page.keyboard.press("Enter")
+    assert status.is_hidden()
+    assert page.locator("input[name='author-kind'][value='guard']").is_checked()
+    assert page.locator("#author-name").input_value() == FILLS["guard"]["name"]
+    assert page.locator("#af-stop").input_value() == FILLS["guard"]["stop"]
+    assert page.locator("#author-catalog-list .amember input:checked").count() == 1
+    assert page.locator("#live").text_content() == "Draft restored."
+    page.wait_for_timeout(600)
+    assert _draft(page) == stored
+    assert page.locator("#author-clear").is_visible()
+    assert_clean(page)
+
+
+def test_undo_expires_after_ten_seconds(page, site_url) -> None:
+    page.clock.install()
+    _open(page, site_url)
+    page.fill("#author-name", "block secrets")
+    page.locator("#author-clear").wait_for(state="visible")
+    page.locator("#author-clear").click()
+    status = page.locator("#author-cleared")
+    assert status.is_visible()
+    page.clock.run_for(9_000)
+    assert status.is_visible()
+    page.clock.run_for(1_500)
+    assert status.is_hidden()
+    assert page.locator("#author-name").input_value() == ""
+    assert_clean(page)
+
+
+def _fresh(page, site_url: str) -> None:
+    _open(page, site_url)
+    page.evaluate("localStorage.removeItem('chock.author.draft.v1')")
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+
+
+def test_partial_interview_shows_no_error_and_keeps_the_draft(page, site_url) -> None:
+    _fresh(page, site_url)
+    page.fill("#author-name", FILLS["content_regex"]["name"])
+    page.fill("#af-message", FILLS["content_regex"]["message"])
+    page.wait_for_timeout(600)  # the draft save is debounced 300 ms
+    assert page.locator("#author-error-list").text_content() == ""
+    # Unanswered questions are not an error: the output says what is missing instead.
+    assert page.locator("#author-errors").is_hidden()
+    assert _script(page) == "Answer the questions above."
+    assert page.locator("#author-download").is_disabled()
+    stored = _draft(page)
+    assert stored and FILLS["content_regex"]["message"] in stored
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+    assert page.locator("input[name='author-kind'][value='content_regex']").is_checked()
+    assert page.locator("#author-name").input_value() == FILLS["content_regex"]["name"]
+    assert (
+        page.locator("#af-message").input_value() == FILLS["content_regex"]["message"]
+    )
+    assert page.locator("#author-errors").is_hidden()
+    assert_clean(page)
+
+
+@pytest.mark.parametrize("kind", sorted(FILLS))
+def test_one_answer_never_errors_for_any_kind(page, site_url, kind) -> None:
+    _fresh(page, site_url)
+    page.check(f"input[name='author-kind'][value='{kind}']")
+    page.fill("#author-name", FILLS[kind]["name"])
+    page.fill("#af-message", FILLS[kind]["message"])
+    page.wait_for_timeout(600)
+    assert page.locator("#author-error-list").text_content() == ""
+    assert page.locator("#author-errors").is_hidden()
+    assert_clean(page)
+
+
+def test_an_unusable_name_is_still_an_error(page, site_url) -> None:
+    _fresh(page, site_url)
+    page.fill("#author-name", "!!!")
+    errors = page.locator("#author-error-list")
+    errors.wait_for()
+    assert page.locator("#author-errors").is_visible()
+    assert "Every question needs an answer." not in errors.inner_text()
+    assert_clean(page)
+
+
+def test_agent_choice_alone_survives_reload(page, site_url) -> None:
+    _fresh(page, site_url)
+    page.check("input[name='client'][value='codex']")
+    page.wait_for_timeout(600)
+    assert _draft(page)
+    # The agent picker is not part of the draft Clear draft resets.
+    assert page.locator("#author-clear").is_hidden()
+    page.reload()
+    page.wait_for_selector("#author-fields .field")
+    assert page.locator("input[name='client'][value='codex']").is_checked()
+    assert page.locator("#author-name").input_value() == ""
+    assert_clean(page)
+
+
+def test_no_js_hides_the_clear_controls(browser, site_url) -> None:
+    context = browser.new_context(java_script_enabled=False)
+    page = context.new_page()
+    collect(page, site_url)
+    page.goto(site_url + AUTHOR)
+    assert page.locator("#author-clear").is_hidden()
+    assert page.locator("#author-cleared").is_hidden()
+    assert "localStorage draft" in page.locator(".saved-note").inner_text()
+    assert_clean(page)
+    context.close()
 
 
 def test_catalog_picks_join_the_selection_and_share(page, site_url) -> None:
@@ -228,7 +381,7 @@ def test_schema_2_fragment_restores_catalog_picks(page, site_url) -> None:
     second = page.context.new_page()
     collect(second, site_url)
     _open(second, site_url, "#s=not-base64!")
-    assert "could not be read" in second.locator("#link-notice").inner_text()
+    assert "could not read the link" in second.locator("#link-notice").inner_text()
     assert_clean(first)
     assert_clean(second)
 
@@ -466,7 +619,9 @@ def test_install_mode_says_untested_and_skips_apply(
     answers = f"{CLIENT}\n./my-guardrails\ninstall\n"
     result = _run_script(_script(page), tmp_path, answers)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert f"not been witnessed applying to {CLIENT}" in result.stdout
+    assert (
+        f"No one has seen chock install on {CLIENT} in a live run yet" in result.stdout
+    )
     assert "custom, not reviewed" in result.stdout
     assert_clean(page)
 

@@ -5,18 +5,21 @@
 tiers:
   - key: commit
     word: "at commit"
+    heading: "Checks at commit"
     glyph: "■"
-    meaning: "The commit is refused, locally and in CI."
+    meaning: "Chock refuses the commit, locally and in CI."
     equals: "enforced-at-commit"
   - key: agent
     word: "in agent"
+    heading: "Checks in the agent"
     glyph: "◆"
-    meaning: "Checked by the agent's hooks once chock sync wires them; fails open if the hook crashes."
+    meaning: "The agent's hooks check this once chock sync sets them up. If the hook crashes, the action goes through."
     starts_with: "best-effort"
   - key: advise
     word: "advisory"
+    heading: "Advisory"
     glyph: "○"
-    meaning: "Text the agent reads; nothing stops a violation."
+    meaning: "The agent reads the text, and nothing stops a violation."
     equals: "advisory"
 
 commands:
@@ -24,14 +27,14 @@ commands:
   add: "chock add {id} --ref {ref} --verify-sha {sha256} --skip-compile"
   sync: "chock sync --repo ."
   sync_ci: "chock sync --repo . --ci"
-  commit: 'git add -A && git commit -m "Add chock guardrails"'
+  review: "# Next: review `git status`, then commit the files chock wrote."
   script_header: ["#!/bin/sh", "set -eu"]
   script_name: "chock-setup.sh"
 
 pages:
   home:
     title: "Git repositories"
-    description: "Install chock policies into your own git repository: committed with the code, enforced at commit and in CI for every contributor and every agent."
+    description: "Install chock policies into your own git repository: committed with the code, enforced at commit and in CI for contributors who run `chock sync`, and for agents whose hooks are set up."
   builder:
     title: "Set up your repository"
     description: "Answer three questions and get one block of commands that installs the policies into your own git repository."
@@ -41,7 +44,7 @@ home:
   cta: "Pick your policies"
   tiers_heading: "What each policy does in a git repository"
   list_heading: "Every policy, by what it does in a repository"
-  list_intro: "Each name opens the policy's page. A policy's tier here is read from the catalog, not from how it is graded on any one agent."
+  list_intro: "Each name opens the policy's page. This page reads each tier from the catalog. A policy's grade on one agent does not change its tier."
   steps_heading: "How it works"
   steps:
     - {title: "Pick your policies", body: "Answer three questions, or take a preset. The builder writes one block of commands."}
@@ -50,13 +53,13 @@ home:
   install_heading: "Install chock first"
   install_note: "The commands need chock on your machine. Read the command before you run it."
   install_link: "The Install page has the details and the other ways to install."
-  computed_note: "Counts are computed from the catalog at each build."
+  computed_note: "Each build counts these from the catalog."
 
 builder:
   h1: "Set up your repository"
   noscript: "The repository builder needs JavaScript. You can still read every policy and its tier on the Git repositories page, and write the commands by hand from the command template below."
   template_heading: "The command template"
-  template_note: "One line per policy, sorted by id. The builder fills in the catalog commit and each policy's sha256; they come from this site's build and never from a link."
+  template_note: "One line per policy, sorted by id. The builder fills in the catalog commit and each policy's sha256. They come from this site's build and never from a link."
   install_heading: "Before you run it"
   install_note: "You need chock on your machine. Read the commands first: they change files in your repository."
   install_link: "More on the Install page"

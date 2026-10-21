@@ -1,0 +1,13 @@
+{
+  "doc": "Regenerate every derived file in dependency order, then run every check CI runs, once.\n\n    python tools/regen_all.py                # regenerate, then check everything CI checks\n    python tools/regen_all.py --fast         # the same, without pytest --cov and the staged adopter\n    python tools/regen_all.py --check-only   # write nothing; run the checks\n    python tools/regen_all.py --drift        # write nothing; check only the files that lag until the release\n    python tools/regen_all.py --base main    # the ref whose diff picks the transcripts to re-make\n\nOrder is load-bearing: lib/ copies -> plugin packages -> sync (the lockfile hashes packaged files) -> registry\nand README counts -> docs, matrix, figures, brand card (read the registry) -> adoption\ntranscripts (adopt the packaged folder). Checks run cheapest first, in parallel; transcripts\nare checked only once the plugin packages are known current.",
+  "scripts": [
+    "tools/gen_lib_copies.py",
+    "tools/gen_registry.py",
+    "tools/gen_policy_docs.py",
+    "tools/gen_coverage_matrix.py",
+    "tools/gen_java_security_contract.py",
+    "tools/gen_quickstart_sh.py",
+    "docs/assets/gen_brand_assets.py",
+    "tools/gen_adoption_transcript.py"
+  ]
+}

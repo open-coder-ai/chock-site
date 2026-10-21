@@ -3,8 +3,10 @@
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -67,7 +69,8 @@ def test_every_policy_tier_matches_its_registry_enforces(built, catalog_path) ->
         )
         tile = re.search(r'id="repo-tier".*?</div>', page, re.DOTALL).group(0)
         assert "In a git repo" in tile
-        assert f">{words[expected]}<" in tile, policy.id
+        word = words[expected]
+        assert f">{word[:1].upper() + word[1:]}<" in tile, policy.id
         twin = (built.out / "coding" / "policies" / policy.id / "index.md").read_text(
             encoding="utf-8"
         )
@@ -84,6 +87,7 @@ def test_home_counts_are_computed_from_the_registry(built, catalog_path) -> None
     registry = _registry(catalog_path)
     visible = {p.id for p in built.site.policies}
     html = (built.out / "repos" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "repos" / "index.md").read_text(encoding="utf-8")
     for tier in TIERS:
         n = sum(
             1
@@ -99,6 +103,8 @@ def test_home_counts_are_computed_from_the_registry(built, catalog_path) -> None
             rf'data-tier="{tier["key"]}".*?</section>', html, re.DOTALL
         ).group(0)
         assert group.count("<li>") == n
+        assert f'{tier["heading"]} <span class="repos-count">({n})</span></h3>' in group
+        assert f"\n### {tier['heading']} ({n})\n" in twin
     for pid in visible:
         assert f'href="/coding/policies/{pid}/"' in html
 
@@ -192,7 +198,6 @@ def _run(line: str, repo: Path, check: bool = True) -> subprocess.CompletedProce
     argv = line.split(" ")
     if argv[0] == "chock":
         argv = [*CHOCK, *argv[1:]]
-        # `git add -A && git commit ...` is a shell line; chock lines are plain argv
     result = subprocess.run(
         argv, cwd=repo, env=_env(), capture_output=True, text=True, check=False
     )
@@ -220,7 +225,7 @@ def test_commands_install_git_hygiene_in_a_temp_repo(
     assert _git(repo, "init", "-q", "-b", "work").returncode == 0
     lines = _commands(built, "git-hygiene", True, catalog_path)
     assert lines[0] == "chock init ."
-    assert lines[-1].startswith("git add -A && git commit")
+    assert lines[-1].startswith("# Next: review `git status`")
     for line in lines[:-1]:
         _run(line, repo)
     preset = next(p for p in built.site.presets if p.id == "git-hygiene")
@@ -275,7 +280,9 @@ def test_command_lines_are_sorted_and_end_as_the_plan_says(built) -> None:
         "scan-secrets",
     ]
     assert lines[3] == "chock sync --repo ."
-    assert lines[4] == 'git add -A && git commit -m "Add chock guardrails"'
+    assert lines[4] == commands["review"]
+    assert "git add" not in "\n".join(lines)
+    assert "`git status`" in lines[4] and "commit the files chock wrote" in lines[4]
     assert repodata.command_lines(commands, picks, "r", True)[3].endswith("--ci")
     assert repodata.script_text(commands, lines).startswith(
         "#!/bin/sh\nset -eu\nchock init .\n"
@@ -286,3 +293,82 @@ def test_fill_is_one_pass() -> None:
     assert repodata.fill("{a}", {"a": "{b}", "b": "X"}) == "{b}"
     with pytest.raises(PageError):
         repodata.fill("{missing}", {})
+
+
+# --- SITE-1: every value in a command line is one shell argument ---------------------------
+
+# Values a catalog could carry: the review's injection, quotes, spaces, globs, unicode, empty.
+TRICKY = [
+    "safe;echo PWNED > pwned",
+    "a'b",
+    "it's",
+    "two words",
+    "$(id)",
+    "`id`",
+    "a&&b",
+    "a|b",
+    "*.py",
+    "~user",
+    "naïve",
+    "",
+    "plain-id-9",
+    "abc123" * 10,
+    "--ref",
+    "{id}",
+    "a\nb",
+    "tab\there",
+    "back\\slash",
+    '"quoted"',
+]
+
+
+def test_shell_arg_is_shlex_quote() -> None:
+    for value in TRICKY:
+        assert repodata.shell_arg(value) == shlex.quote(value), value
+
+
+def test_shell_line_quotes_every_value_in_one_pass() -> None:
+    line = repodata.shell_line(
+        "chock add {id} --ref {ref}", {"id": "safe;echo PWNED > pwned", "ref": "{id}"}
+    )
+    assert line == "chock add 'safe;echo PWNED > pwned' --ref '{id}'"
+    assert shlex.split(line) == [
+        "chock",
+        "add",
+        "safe;echo PWNED > pwned",
+        "--ref",
+        "{id}",
+    ]
+    with pytest.raises(PageError):
+        repodata.shell_line("{missing}", {})
+
+
+def test_command_lines_read_back_as_the_arguments_they_carry(built) -> None:
+    commands = built.site.data["repos"]["commands"]
+    policy = next(p for p in built.site.policies if p.id == "block-no-verify")
+    hostile = replace(policy, id="safe;echo PWNED > pwned", sha256="a'b c")
+    lines = repodata.command_lines(commands, [hostile], "r$(id)", False)
+    assert shlex.split(lines[1]) == [
+        "chock",
+        "add",
+        "safe;echo PWNED > pwned",
+        "--ref",
+        "r$(id)",
+        "--verify-sha",
+        "a'b c",
+        "--skip-compile",
+    ]
+    assert "PWNED > pwned" not in shlex.join(shlex.split(lines[1])[:2])
+
+
+def test_real_values_are_shown_bare(built) -> None:
+    """Every pinned id, the catalog commit and every sha256 are shell-safe, so no line gains quotes."""
+    for policy in built.site.policies:
+        [line] = repodata.command_lines(
+            built.site.data["repos"]["commands"],
+            [policy],
+            built.site.catalog_ref,
+            False,
+        )[1:2]
+        assert "'" not in line, line
+        assert line.split(" ")[2] == policy.id

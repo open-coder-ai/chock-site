@@ -46,7 +46,7 @@ def test_install_page_lists_every_agent_from_builder_clients(built) -> None:
         for step in about["remove"]:
             (text,) = step.values()
             assert text.splitlines()[0] in twin, (client, text)
-    assert "schema</code></th><td>2 " in html.replace("\n", "")
+    assert "schema</code></th><td>2, " in html.replace("\n", "")
     assert ".claude" not in html.split('id="each-agent"')[0]
 
 

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 2,
+      "of": 21,
+      "command": "chock new policy block-marker --kind content_regex",
+      "output": "INDEX.md: ~336 tokens (chars/4, max 2000)\nCreated policy 'my-block-marker' at /work/demo/.agents\nNext:  python -m chock sync --repo .\n       python -m chock check --repo .",
+      "exit": 0
+    }
+  ]
+}

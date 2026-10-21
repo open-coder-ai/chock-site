@@ -1,0 +1,250 @@
+{
+  "id": "enforcement-surfaces",
+  "order": 4,
+  "title": "Emitters and hook points",
+  "summary": "Which emitter of chock compile writes each hook point, and the file chock sync installs for it.",
+  "intro": "A hook point is where a compiled control runs. The chock compile command hands each policy to one emitter per hook point. Then chock sync installs what the emitters wrote. Each arrow out of chock compile names the hook points that emitter writes, as the engine's compiler maps them.",
+  "pins": {
+    "chock": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96"
+  },
+  "canvas": {
+    "width": 1000,
+    "height": 380
+  },
+  "boundaries": [
+    {
+      "label": "Emitters: chock compile",
+      "x": 5,
+      "y": 30,
+      "w": 990,
+      "h": 210
+    },
+    {
+      "label": "What runs it: chock sync and chock gateway run",
+      "x": 5,
+      "y": 265,
+      "w": 990,
+      "h": 105
+    }
+  ],
+  "nodes": [
+    {
+      "id": "compile",
+      "label": "chock compile",
+      "code": true,
+      "kind": "code",
+      "x": 415,
+      "y": 50,
+      "source": "chock/src/chock/compile/compiler.py",
+      "card": "Runs the emitter for each hook point on a policy, in the engine's order, and writes the output to `.chock/compiled/<id>/<surface>/`. The gateway hook point has no emitter. It is modeled for budgets and egress, and nothing is emitted for it."
+    },
+    {
+      "id": "git-hook",
+      "label": "Git hook emitter",
+      "kind": "code",
+      "x": 10,
+      "y": 170,
+      "w": 150,
+      "source": "chock/src/chock/compile/emitters/git_hook.py",
+      "card": "Emits git-hook entrypoints from the policy's implementations folder: guards at pre-commit, pre-merge-commit and pre-push. Hard at commit and push. `git commit --no-verify` skips it."
+    },
+    {
+      "id": "ci",
+      "label": "CI emitter",
+      "kind": "code",
+      "x": 175,
+      "y": 170,
+      "w": 150,
+      "source": "chock/src/chock/compile/emitters/ci.py",
+      "card": "Emits a CI gate step that re-runs the policy's check over a pull request's commit range: the backstop for a skipped git hook."
+    },
+    {
+      "id": "in-agent",
+      "label": "In-agent emitter",
+      "kind": "code",
+      "x": 340,
+      "y": 170,
+      "w": 150,
+      "source": "chock/src/chock/compile/emitters/in_agent.py",
+      "card": "Hook fragments for every wired vendor. The `pre-tool-use` hook point refuses a call before it runs. The `stop` hook point reads what the turn left in the worktree and earns no coverage word. The `agent-hooks` hook point is the same deny for Copilot CLI and VS Code agent mode."
+    },
+    {
+      "id": "managed",
+      "label": "Managed settings",
+      "kind": "code",
+      "x": 505,
+      "y": 170,
+      "w": 150,
+      "source": "chock/src/chock/compile/emitters/claude_managed.py",
+      "card": "Emits Claude managed-settings.json fragments. There is no installer, so it enforces nothing today."
+    },
+    {
+      "id": "ambient",
+      "label": "Ambient rule",
+      "kind": "code",
+      "x": 670,
+      "y": 170,
+      "w": 150,
+      "source": "chock/src/chock/compile/emitters/ambient.py",
+      "card": "Emits the AGENTS.md block the agent is asked to follow. Advisory: it blocks nothing on its own."
+    },
+    {
+      "id": "mcp",
+      "label": "MCP gateway",
+      "kind": "code",
+      "x": 835,
+      "y": 170,
+      "w": 150,
+      "source": "chock/src/chock/compile/emitters/mcp_gateway.py",
+      "card": "Emits the gate specs the MCP proxy evaluates per tool call. It governs MCP-routed tool calls only."
+    },
+    {
+      "id": "githooks",
+      "label": "Git hooks",
+      "kind": "artifact",
+      "x": 10,
+      "y": 300,
+      "w": 150,
+      "source": "chock/src/chock/hooks/data/dispatcher.sh",
+      "card": "The chock sync command installs a dispatcher in .git/hooks. It runs every executable script for the event."
+    },
+    {
+      "id": "ciwf",
+      "label": "CI workflow",
+      "kind": "artifact",
+      "x": 175,
+      "y": 300,
+      "w": 150,
+      "source": "chock/src/chock/scaffold/install_ci.py",
+      "card": "With --ci, chock sync writes .github/workflows/chock.yml. Until then ci-gate is compiled and inert, and the coverage report says so."
+    },
+    {
+      "id": "agenthooks",
+      "label": "Agent hook files",
+      "kind": "artifact",
+      "x": 340,
+      "y": 300,
+      "w": 150,
+      "source": "chock/src/chock/hooks/in_agent_install.py",
+      "card": "The chock sync command writes each wired agent's hook file, in that agent's own format. What happens when a hook cannot run is agentseam's data, listed below.",
+      "facts": "tiers"
+    },
+    {
+      "id": "index",
+      "label": "INDEX.md",
+      "kind": "artifact",
+      "x": 670,
+      "y": 300,
+      "w": 150,
+      "source": "chock/src/chock/index/builder.py",
+      "card": "The chock sync command compiles every active rule into .agents/policies/INDEX.md. AGENTS.md holds one pointer to it."
+    },
+    {
+      "id": "proxy",
+      "label": "Gateway proxy",
+      "kind": "code",
+      "x": 835,
+      "y": 300,
+      "w": 150,
+      "source": "chock/src/chock/gateway/proxy.py",
+      "card": "A stdio proxy the client launches instead of the real MCP server. It refuses matching `tools/call` payloads. One downstream server per gateway process."
+    }
+  ],
+  "edges": [
+    {
+      "from": "compile",
+      "to": "git-hook",
+      "label": "git-hook",
+      "code": true,
+      "label_at": [
+        85,
+        160
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "ci",
+      "label": "ci-gate",
+      "code": true,
+      "label_at": [
+        250,
+        160
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "in-agent",
+      "label": "pre-tool-use, stop, agent-hooks",
+      "code": true,
+      "label_at": [
+        415,
+        160
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "managed",
+      "label": "managed-setting",
+      "code": true,
+      "label_at": [
+        580,
+        160
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "ambient",
+      "label": "ambient-rule",
+      "code": true,
+      "label_at": [
+        745,
+        160
+      ]
+    },
+    {
+      "from": "compile",
+      "to": "mcp",
+      "label": "mcp-gateway",
+      "code": true,
+      "label_at": [
+        910,
+        160
+      ]
+    },
+    {
+      "from": "git-hook",
+      "to": "githooks",
+      "label": "chock sync",
+      "code": true
+    },
+    {
+      "from": "ci",
+      "to": "ciwf",
+      "label": "chock sync --ci",
+      "code": true
+    },
+    {
+      "from": "in-agent",
+      "to": "agenthooks",
+      "label": "chock sync",
+      "code": true
+    },
+    {
+      "from": "ambient",
+      "to": "index",
+      "label": "chock sync",
+      "code": true
+    },
+    {
+      "from": "mcp",
+      "to": "proxy",
+      "label": "gateway run",
+      "code": true
+    }
+  ],
+  "path": [
+    "compile",
+    "in-agent",
+    "agenthooks"
+  ]
+}

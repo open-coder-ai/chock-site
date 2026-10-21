@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 9,
+      "of": 21,
+      "command": "chock policies",
+      "output": "id               state    coverage                                                                                                                                                                                                         mandatory\nmy-block-marker  enabled  claude: enforced-at-commit + best-effort at tool use (live-run); copilot: enforced-at-commit + best-effort at tool use (live-run-partial); gemini: enforced-at-commit + best-effort at tool use (vendor-source)  no",
+      "exit": 0
+    }
+  ]
+}

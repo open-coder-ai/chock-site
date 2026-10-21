@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from . import authordata, clientdata, clientpage, engine, report, routes
-from .catalog import first_sentence, lead_sentences
+from .catalog import first_sentence, lead_sentences, prose_lead, trigger_field
 from .model import Policy, SectionResult, Site, Track
 from .pageparts import (
     PARTIALS,
@@ -23,7 +23,15 @@ from .pageparts import (
     write_md,
     write_page,
 )
-from .render import Prose, Safe, md, md_code, render_file, render_text_file
+from .render import (
+    Prose,
+    Safe,
+    md,
+    md_code,
+    render_file,
+    render_text_file,
+    sentence_start,
+)
 from .sitedata import site_dict
 
 MD = "md"
@@ -44,7 +52,7 @@ def _home(
                 templates / PARTIALS / "home-stat.html",
                 EXTRA="",
                 NUM=str(counts_["total"]),
-                LABEL="policies",
+                LABEL=home["glance_policies"],
             )
         ]
         + [
@@ -52,7 +60,7 @@ def _home(
                 templates / PARTIALS / "home-stat.html",
                 EXTRA=" stat-block" if key == "block" else "",
                 NUM=str(counts_["label"][key]),
-                LABEL=f"{site.data['glyphs'][key]} {site.label_words[track.id][key]}",
+                LABEL=f"{site.data['glyphs'][key]} {sentence_start(site.label_words[track.id][key])}",
             )
             for key in site.label_words[track.id]
         ]
@@ -61,7 +69,7 @@ def _home(
                 templates / PARTIALS / "home-stat.html",
                 EXTRA="",
                 NUM=str(counts_["presets"]),
-                LABEL="presets",
+                LABEL=home["glance_presets"],
             )
         ]
     )
@@ -171,14 +179,16 @@ def grades_note(site: Site) -> str:
 
 def _where_text(site: Site, policy: Policy) -> str:
     """'Shell command · file write' — the policy's where tags as one line."""
-    text = " · ".join(site.data["where_names"][tag] for tag in policy.where)
-    return text[:1].upper() + text[1:]
+    return sentence_start(
+        " · ".join(site.data["where_names"][tag] for tag in policy.where)
+    )
 
 
 def _when_text(site: Site, policy: Policy) -> str:
     """'Before the command runs' — when the policy fires, from its where tags."""
-    text = " · ".join(site.data["when_names"][tag] for tag in policy.where)
-    return text[:1].upper() + text[1:]
+    return sentence_start(
+        " · ".join(site.data["when_names"][tag] for tag in policy.where)
+    )
 
 
 def _dist_bar(
@@ -191,7 +201,7 @@ def _dist_bar(
             templates / PARTIALS / "dist-seg.html",
             KEY=key,
             NUM=str(counts_["label"][key]),
-            WORD=words[key],
+            WORD=sentence_start(words[key]),
         )
         for key in words
     )
@@ -219,7 +229,7 @@ def _policies_list(
                 NAME=policy.name,
                 CHIP=chip(site, templates, policy, track.id),
                 STATUS=status_badge(site, templates, policy),
-                DESC=Prose(first_sentence(policy.description)),
+                DESC=Prose(sentence_start(first_sentence(policy.description))),
                 WHERE_TEXT=_where_text(site, policy),
                 VERSION=policy.version,
             )
@@ -231,7 +241,7 @@ def _policies_list(
             VALUE=tag,
             GLYPH_KEY="none",
             GLYPH="",
-            WORD=site.data["where_names"][tag],
+            WORD=sentence_start(site.data["where_names"][tag]),
             COUNT=str(counts_["where"][tag]),
         )
         for tag in site.data["where_names"]
@@ -307,8 +317,9 @@ def _policies_list(
         INTRO=Prose(f"{intro} {grades_note(site)}"),
         ROWS="".join(
             f"- [{md(policy.name)}](/{track.slug}/policies/{policy.id}/index.md) "
-            f"({md_code(policy.id)}, v{md(policy.version)}): {policy.word} — "
-            f"{md(policy.says)}. {md(first_sentence(policy.description))}\n"
+            f"({md_code(policy.id)}, v{md(policy.version)}): {sentence_start(policy.word)} — "
+            f"{md(sentence_start(policy.says))}. "
+            f"{md(sentence_start(first_sentence(policy.description)))}\n"
             for policy in policies_sorted(site)
         ),
     )
@@ -347,18 +358,26 @@ def _agent_rows(site: Site, templates: Path, policy: Policy) -> Safe:
                 templates / PARTIALS / "agent-label-row.html",
                 NAME=row["name"],
                 STATE=row["state"],
-                STATE_WORD=row["state_word"],
+                STATE_WORD=sentence_start(row["state_word"]),
                 CHIP=Safe("")
                 if row["keyword"] is None
                 else keyword_chip(site, templates, row["keyword"], "coding"),
-                SAYS=row["says"],
+                SAYS=sentence_start(row["says"]),
                 CLIENT=row["client"],
                 ID=policy.id,
-                BUILD=row["build"],
+                BUILD=site.data["builder_clients"]["texts"]["build_short"],
+                BUILD_LABEL=row["build"],
             )
             for row in _agent_labels(site, policy)
         )
     )
+
+
+def policy_title(policy: Policy) -> str:
+    """The page title: the label word once, whether or not the label text starts with it."""
+    if policy.says.split(" ", 1)[0].lower() == policy.word.lower():
+        return f"{policy.name}: {policy.says}"
+    return f"{policy.name} ({policy.word}): {policy.says}"
 
 
 def _policy_report(policy: Policy, track: Track) -> str:
@@ -458,9 +477,9 @@ def _policy_pages(
                 CHIP=chip(site, templates, policy, track.id),
                 STATUS=status_badge(site, templates, policy),
                 PRESET_CHIP=Safe(preset_chip),
-                SAYS=Prose(policy.says.rstrip(".") + "."),
+                SAYS=Prose(sentence_start(policy.says.rstrip(".") + ".")),
                 TIER=policy.tier,
-                TIER_WORD=site.label_words["repos"][policy.tier],
+                TIER_WORD=sentence_start(site.label_words["repos"][policy.tier]),
                 ACTS_ON=_where_text(site, policy),
                 WHEN=_when_text(site, policy),
                 LABEL_NOTE=Prose(texts["label_box_note"]),
@@ -468,12 +487,12 @@ def _policy_pages(
                 BY_AGENT_HEADING=texts["by_agent_heading"],
                 BY_AGENT_INTRO=texts["by_agent_intro"],
                 AGENT_ROWS=_agent_rows(site, templates, policy),
-                DESCRIPTION=Prose(policy.description),
-                MISSES=Prose(policy.misses or texts["misses_empty"]),
+                DESCRIPTION=Prose(sentence_start(policy.description)),
+                MISSES=Prose(sentence_start(policy.misses or texts["misses_empty"])),
                 EXAMPLES_SECTION=Safe(examples),
                 LATEST_VERSION=policy.latest.version,
                 LATEST_DATE=policy.latest.date,
-                LATEST_CHANGE=Prose(policy.latest.change),
+                LATEST_CHANGE=Prose(sentence_start(policy.latest.change)),
                 EVAL_EXECUTED=str(policy.eval_executed),
                 EVAL_CASES=str(policy.eval_cases),
                 SHA256=policy.sha256,
@@ -488,6 +507,7 @@ def _policy_pages(
             )
         )
         path = f"/{track.slug}/policies/{policy.id}/"
+        preview = policy_preview(site, policy)
         alt = (
             '<link rel="alternate" type="application/json" '
             f'href="/api/{track.slug}/policies/{policy.id}.json">'
@@ -497,15 +517,15 @@ def _policy_pages(
             out_dir,
             templates,
             path=path,
-            title=f"{policy.name}: {policy.word} {policy.says}",
-            description=lead_sentences(policy.description, META_MIN),
+            title=policy_title(policy),
+            description=preview,
             content=content,
             jsonld_data={
                 "@context": "https://schema.org",
                 "@type": "SoftwareSourceCode",
                 "name": policy.name,
                 "version": policy.version,
-                "description": lead_sentences(policy.description, META_MIN),
+                "description": preview,
                 "codeRepository": policy.source_url,
                 "license": "Apache-2.0",
                 "programmingLanguage": "Python",
@@ -521,7 +541,8 @@ def _policy_pages(
             TRACK=policy.track,
             NAME=md(policy.name),
             VERSION=md(policy.version),
-            WORD=policy.word,
+            LABEL=policy.word,
+            WORD=sentence_start(policy.word),
             TIER_WORD=site.label_words["repos"][policy.tier],
             TIER_MEANING=site.data["label_meanings"][
                 site.label_words["repos"][policy.tier]
@@ -531,7 +552,7 @@ def _policy_pages(
             SHA256=policy.sha256,
             SOURCE_URL=policy.source_url,
             CATALOG_REF=site.catalog_ref,
-            SAYS=md(policy.says.rstrip(".") + "."),
+            SAYS=md(sentence_start(policy.says.rstrip(".") + ".")),
             LABEL_NOTE=texts["label_box_note"],
             STATUS_MD=(
                 f"Status: {policy.status}."
@@ -541,17 +562,19 @@ def _policy_pages(
             BY_AGENT_HEADING=texts["by_agent_heading"],
             AGENT_LINES="".join(
                 f"- {row['name']} ({row['state_word']}): "
-                + (f"{row['word']} — " if row["word"] else "")
-                + f"{md(row['says'])}. Builder: /coding/builder/#client={row['client']}&p={policy.id}\n"
+                + (f"{sentence_start(row['word'])} — " if row["word"] else "")
+                + f"{md(sentence_start(row['says']))}. Builder: /coding/builder/#client={row['client']}&p={policy.id}\n"
                 for row in _agent_labels(site, policy)
             ),
             PLUGIN_NOTE=(" " + texts["plugin_repo_note"] if plugin_note else ""),
-            DESCRIPTION=md(policy.description),
-            MISSES=md(policy.misses) if policy.misses else texts["misses_empty"],
+            DESCRIPTION=md(sentence_start(policy.description)),
+            MISSES=md(sentence_start(policy.misses))
+            if policy.misses
+            else texts["misses_empty"],
             EXAMPLES_MD=examples_md,
             LATEST_VERSION=md(policy.latest.version),
             LATEST_DATE=md(policy.latest.date),
-            LATEST_CHANGE=md(policy.latest.change),
+            LATEST_CHANGE=md(sentence_start(policy.latest.change)),
             EVAL_EXECUTED=str(policy.eval_executed),
             EVAL_CASES=str(policy.eval_cases),
             CATALOG_COMMIT_URL=site.data["links"]["catalog_commit"] + site.catalog_ref,
@@ -580,7 +603,7 @@ def _member_rows(
             NAME=p.name,
             CHIP=chip(site, templates, p, track.id),
             STATUS=status_badge(site, templates, p),
-            SAYS=Prose(p.says),
+            SAYS=Prose(sentence_start(p.says)),
         )
         for p in members
     )
@@ -789,6 +812,7 @@ def _author(
                 SAVED_NOTE=texts["saved_note"],
                 CLEAR_LABEL=texts["clear_label"],
                 CLEAR_DONE=texts["clear_done"],
+                UNDO_LABEL=texts["undo_label"],
                 ADVANCED_HEADING=texts["advanced_heading"],
                 REPORT_HREF=report.report_link(page=path),
                 REPORT_TEXT=report.link_text(site, "author"),
@@ -852,11 +876,23 @@ def _remove_items(templates: Path, about: dict[str, Any]) -> Safe:
     )
 
 
+def policy_preview(site: Site, policy: Policy) -> str:
+    """A policy page's link-preview text: its prose lead, else its trigger field in site wording."""
+    lead = prose_lead(policy.description, META_MIN)
+    if lead:
+        return lead
+    trigger = trigger_field(policy.description)
+    if trigger:
+        return data_fill(site.data["texts"]["preview_trigger"], {"__TEXT__": trigger})
+    return lead_sentences(policy.description, META_MIN)
+
+
 def _client_command(clients: dict[str, Any], client: str) -> str:
-    """The install command form for one agent, with "…" for the selection code."""
+    """The install command form for one agent, with the placeholder for the selection code."""
     state = clients["clients"][client]["witness"]
     return data_fill(
-        clients["commands"][state], {"__CODE__": "…", "__CLIENT__": client}
+        clients["commands"][state],
+        {"__CODE__": clients["texts"]["code_placeholder"], "__CLIENT__": client},
     )
 
 
@@ -893,16 +929,22 @@ def _install(
             ID=client,
             NAME=about["name"],
             STATE=about["witness"],
-            STATE_WORD=clients["texts"][about["witness"]],
+            STATE_WORD=sentence_start(clients["texts"][about["witness"]]),
             EVIDENCE=Safe(
                 clientpage.evidence_line(clients, templates / track.slug, client)
             ),
             COMMAND_LABEL=inst["agent_command"],
             COMMAND=_client_command(clients, client),
+            CODE_HINT=Prose(clientpage.code_hint(clients)),
+            BUILDER_HREF=f"/{track.slug}/builder/#client={client}",
+            BUILDER_LINK=clients["texts"]["code_hint_link"],
             STEPS_HEADING=about["steps_heading"],
             STEPS=_step_items(templates / track.slug, about["steps"]),
             REMOVE_LABEL=inst["agent_remove"],
             REMOVE=_remove_items(templates / track.slug, about),
+            CLAUDE_PLUGIN=Safe(
+                clientpage.claude_plugin(clients, templates / track.slug, client)
+            ),
             REPORT_HREF=report.report_link(
                 agent=client, page=f"/{track.slug}/install/"
             ),
@@ -1021,7 +1063,7 @@ def _clients(
             ID=client,
             NAME=about["name"],
             STATE=about["witness"],
-            STATE_WORD=texts[about["witness"]],
+            STATE_WORD=sentence_start(texts[about["witness"]]),
             NOTE=Prose(_client_notes(site, clients, client)),
             BUILD=about["build_link"],
             REPO=Safe(_repo_line(templates, texts, about["plugin_repo"])),

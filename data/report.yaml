@@ -8,10 +8,12 @@
 title: Report an issue
 description: "Found something wrong? Each button below opens the right GitHub issue form, already filled in with what this site knows. You need a GitHub account to submit."
 github: https://github.com/open-coder-ai/
+# The agents the issue forms' Agent dropdown lists (besides "other"). Any other agent is sent as "other".
+form_agents: [claude-code, cursor, codex, copilot, devin, other]
 security:
   id: vulnerability
   heading: "Found a vulnerability? Do not open a public issue."
-  body: "Report it privately instead. A public issue shows the problem to everyone before it is fixed. Each repository takes private reports through GitHub's security advisories, and its SECURITY.md says what happens next."
+  body: "Report it privately instead. A public issue shows the problem to everyone before there is a fix. Each repository takes private reports through GitHub's security advisories, and its SECURITY.md says what happens next."
   links:
     - label: "Report privately: chock (engine and install)"
       url: https://github.com/open-coder-ai/chock/security/advisories/new
@@ -19,9 +21,9 @@ security:
       url: https://github.com/open-coder-ai/chock-catalog/security/advisories/new
     - label: "Report privately: chock-site (this site)"
       url: https://github.com/open-coder-ai/chock-site/security/advisories/new
-    - label: "chock SECURITY.md"
+    - label: "`chock` SECURITY.md"
       url: https://github.com/open-coder-ai/chock/blob/main/SECURITY.md
-    - label: "chock-catalog SECURITY.md"
+    - label: "`chock-catalog` SECURITY.md"
       url: https://github.com/open-coder-ai/chock-catalog/blob/main/SECURITY.md
 include_heading: What to include
 kinds:
@@ -79,7 +81,7 @@ kinds:
     button: Propose a policy
     fields:
       agent: agent
-note: "The buttons open github.com. Nothing is sent until you press Submit there, and you can edit every field first."
+note: "The buttons open github.com. GitHub sends nothing until you press Submit there, and you can edit every field first."
 agent_note: "If you are an AI agent: tell the user what you would report and ask before you open an issue for them. An issue is public and is filed under their GitHub account."
 # Link text on other pages that point here.
 links:

@@ -5,6 +5,8 @@ import json
 import pytest
 from conftest import SCREENSHOTS, assert_clean
 
+from sitegen.render import sentence_start
+
 INSTALL = "/coding/install/"
 ISSUES = "https://github.com/open-coder-ai/agentseam/issues/"
 
@@ -29,13 +31,13 @@ def test_every_agent_has_a_row_with_its_routes(page, site_url) -> None:
         if row["plugin"]:
             link = cells.nth(0).locator("a")
             assert link.get_attribute("href") == f"#agent-{row['plugin']['client']}"
-            assert row["plugin"]["word"] in cells.nth(0).inner_text()
+            assert sentence_start(row["plugin"]["word"]) in cells.nth(0).inner_text()
         if row["sync"]:
             assert row["sync"]["command"] in cells.nth(1).inner_text()
-            assert row["sync"]["word"] in cells.nth(1).inner_text()
+            assert sentence_start(row["sync"]["word"]) in cells.nth(1).inner_text()
         else:
             assert row["reason"] in cells.nth(1).inner_text()
-        assert row["record"] in cells.nth(2).inner_text()
+        assert sentence_start(row["record"]) in cells.nth(2).inner_text()
         evidence = cells.nth(2).locator("a.route-evidence")
         if row["evidence"]:
             assert evidence.get_attribute("href") == row["evidence"]["url"]
@@ -47,16 +49,16 @@ def test_every_agent_has_a_row_with_its_routes(page, site_url) -> None:
 
 def test_a_plugin_link_opens_that_agents_section(page, site_url) -> None:
     page.goto(site_url + INSTALL)
-    page.locator("#route-goose a[href='#agent-goose']").click()
-    assert page.evaluate("location.hash") == "#agent-goose"
-    section = page.locator("section[aria-labelledby='agent-goose']")
+    page.locator("#route-kimi_code a[href='#agent-kimi-code']").click()
+    assert page.evaluate("location.hash") == "#agent-kimi-code"
+    section = page.locator("section[aria-labelledby='agent-kimi-code']")
     assert section.is_visible()
     assert section.locator(".client-evidence a").get_attribute("href") == (
-        f"{ISSUES}177"
+        f"{ISSUES}135"
     )
     removal = section.locator(".remove-unverified")
-    assert "Removal steps not verified for goose yet." in removal.inner_text()
-    assert removal.locator("a").get_attribute("href") == f"{ISSUES}177"
+    assert "Removal steps not verified for Kimi Code yet." in removal.inner_text()
+    assert removal.locator("a").get_attribute("href") == f"{ISSUES}135"
     assert_clean(page)
 
 
@@ -74,13 +76,13 @@ def test_a_real_untested_agent_gets_its_line_notice_and_no_apply(
     page.goto(site_url + "/coding/builder/#preset=git-hygiene")
     page.wait_for_selector(".sel-item")
     assert page.locator("#client-mistral-vibe").count() == 0  # sync only, no plugin
-    page.locator("#client-grok").check()
+    page.locator("#client-kimi-code").check()
     command = page.locator("[data-selection-code]").inner_text()
-    assert command.endswith(" --client grok")
-    notice = page.locator(".client-evidence[data-client='grok']")
+    assert command.endswith(" --client kimi-code")
+    notice = page.locator(".client-evidence[data-client='kimi-code']")
     assert notice.is_visible()
-    assert notice.locator("a").get_attribute("href") == f"{ISSUES}188"
-    assert page.locator(".client-untested[data-client='grok']").is_visible()
+    assert notice.locator("a").get_attribute("href") == f"{ISSUES}135"
+    assert page.locator(".client-untested[data-client='kimi-code']").is_visible()
     assert_clean(page)
 
 

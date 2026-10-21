@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 16,
+      "of": 21,
+      "command": "chock compliance report --repo .",
+      "output": "Framework: owasp_asi\nControl      State      Title / Covering policies\n----------------------------------------------------------------------\nASI01        uncovered  Agent Goal Hijack\nASI02        uncovered  Tool Misuse & Exploitation\nASI03        uncovered  Identity & Privilege Abuse\nASI04        uncovered  Agentic Supply Chain\nASI05        uncovered  Unexpected Code Execution\nASI06        uncovered  Memory & Context Poisoning\nASI07        uncovered  Insecure Inter-Agent Communication\nASI08        uncovered  Cascading Failures\nASI09        uncovered  Human-Agent Trust Exploitation\nASI10        uncovered  Rogue Agents",
+      "exit": 0
+    }
+  ]
+}

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .model import Policy, Site, Track
-from .render import Prose, Safe, render_file
+from .render import Prose, Safe, render_file, sentence_start
 
 PARTIALS = "partials"
 BASE = "base.html"
@@ -30,10 +30,6 @@ CODE_KEYS = (
 )
 
 
-# The install command as prose shows it: the code elided, the agent named by its placeholder.
-COMMAND_FORM = {"__CODE__": "…", "__CLIENT__": "<agent>"}
-
-
 def data_fill(text: str, subs: dict[str, str]) -> str:
     """Substitute placeholders inside a data string (not an HTML template)."""
     if not subs:
@@ -49,7 +45,7 @@ def keyword_chip(site: Site, templates: Path, keyword: str, section: str) -> Saf
         render_file(
             templates / PARTIALS / "label-chip.html",
             KEYWORD=keyword,
-            WORD=word,
+            WORD=sentence_start(word),
             MEANING=site.data["label_meanings"][word],
             GLYPH=site.data["glyphs"][keyword],
         )
@@ -68,7 +64,9 @@ def status_badge(site: Site, templates: Path, policy: Policy) -> Safe:
         return Safe("")
     return Safe(
         render_file(
-            templates / PARTIALS / "status-badge.html", STATUS=policy.status, WORD=word
+            templates / PARTIALS / "status-badge.html",
+            STATUS=policy.status,
+            WORD=sentence_start(word),
         )
     )
 
@@ -93,7 +91,7 @@ def label_chips(
             VALUE=key,
             GLYPH_KEY=key,
             GLYPH=site.data["glyphs"][key],
-            WORD=words[key],
+            WORD=sentence_start(words[key]),
             COUNT=str(counts["label"][key]),
         )
         for key in words
@@ -243,20 +241,23 @@ def write_page(
         ARIA_FAQ=Safe(' aria-current="page"') if nav == "faq" else "",
         ARIA_SECURITY=Safe(' aria-current="page"') if nav == "security" else "",
     )
-    if path.endswith("/"):
-        target = out_dir / path.strip("/") / "index.html"
-    else:
-        target = out_dir / path.lstrip("/")
+    target = page_target(out_dir, path, "index.html")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(html, encoding="utf-8", newline="\n")
 
 
+def page_target(out_dir: Path, path: str, index: str) -> Path:
+    """The file a site route is written to: `index` under a folder route, refused outside out_dir."""
+    # Imported here: paths.py raises this module's PageError.
+    from .paths import safe_join
+
+    relative = path.strip("/") + "/" + index if path.endswith("/") else path.lstrip("/")
+    return safe_join(out_dir, relative.lstrip("/"), f"page route {path!r}")
+
+
 def write_md(out_dir: Path, path: str, text: str) -> Path:
     """Write one Markdown twin next to its page."""
-    if path.endswith("/"):
-        target = out_dir / path.strip("/") / "index.md"
-    else:
-        target = out_dir / path.lstrip("/")
+    target = page_target(out_dir, path, "index.md")
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text, encoding="utf-8", newline="\n")
     return target
@@ -359,6 +360,20 @@ def text_sections(site: Site, templates: Path, sections: list[dict[str, Any]]) -
                 URL=site.data["links"][section["link"]],
                 LABEL=section["link_label"],
             )
+        items = ""
+        if section.get("items"):
+            items = render_file(
+                templates / PARTIALS / "text-items.html",
+                ITEMS=Safe(
+                    "".join(
+                        render_file(
+                            templates / PARTIALS / "plain-li.html", TEXT=Prose(t)
+                        )
+                        for t in section["items"]
+                    )
+                ),
+                AFTER=Prose(section["after"]),
+            )
         code = ""
         if section.get("code_label"):
             code = render_file(
@@ -379,6 +394,7 @@ def text_sections(site: Site, templates: Path, sections: list[dict[str, Any]]) -
                 ID=slug(section["heading"]),
                 HEADING=section["heading"],
                 BODY=Prose(section["body"]),
+                ITEMS=Safe(items),
                 CODE=Safe(code),
                 LINK=Safe(link),
             )
@@ -391,6 +407,9 @@ def md_sections(sections: list[dict[str, Any]], links: dict[str, str]) -> str:
     out = []
     for s in sections:
         out.append(f"## {s['heading']}\n\n{s['body']}\n")
+        if s.get("items"):
+            out.append("\n" + "".join(f"- {t}\n" for t in s["items"]))
+            out.append(f"\n{s['after']}\n")
         if s.get("code_label"):
             out.append(f"\n{s['code_label']}\n")
             for key, lang in CODE_KEYS:

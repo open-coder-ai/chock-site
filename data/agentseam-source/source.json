@@ -1,0 +1,14 @@
+{
+  "agentseam_ref": "683f95b5f2784dc3446acb1c91636ebc5ee7bee6",
+  "files": {
+    "README.md": {
+      "snapshot": "README.md"
+    },
+    "docs/design.md": {
+      "snapshot": "docs__design.md"
+    },
+    "docs/quickstart.sh": {
+      "snapshot": "docs__quickstart.sh"
+    }
+  }
+}

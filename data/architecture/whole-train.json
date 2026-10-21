@@ -1,0 +1,286 @@
+{
+  "id": "whole-train",
+  "order": 1,
+  "title": "The whole train",
+  "summary": "Every repository in the chock train and how a policy travels from chock-catalog through chock to the hook your agent's client runs.",
+  "intro": "The chock-catalog repository holds the policies. Chock compiles them and wires them into a repository or a plugin. Agentseam's adapters speak each agent's hook dialect. Around them, the threat list, context-report, this site and the release check each read the train at a pinned commit.",
+  "pins": {
+    "chock": "39df00bbf7646a08481247f31d5091d09850f96f",
+    "agentseam": "dd4f0a485a36313328d381305cf09658d3c36fb4",
+    "chock-catalog": "3e9d2d3e04cfd6fd857c4afad3901a0dd32dfeaf",
+    "chock-release": "b8daf714219902483fc1fa2d8850767539806ef6",
+    "chock-threat-intel": "bb4084ff3cca58d65df836c8e359e184eb6da840",
+    "context-report": "3bf4d169b86abd3f7ed70c67b3b19327a7ce77a5",
+    "chock-site": "2f535fa5ced3b94579eb611038bc6955f3b8f5a1"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 630
+  },
+  "boundaries": [
+    {
+      "label": "Chock, the engine",
+      "x": 5,
+      "y": 120,
+      "w": 790,
+      "h": 110
+    },
+    {
+      "label": "In your repo",
+      "x": 200,
+      "y": 262,
+      "w": 400,
+      "h": 230
+    }
+  ],
+  "nodes": [
+    {
+      "id": "threat-intel",
+      "label": "Threat list",
+      "kind": "repo",
+      "x": 15,
+      "y": 40,
+      "source": "chock-threat-intel/reference/agentic-threat-ledger.md",
+      "card": "A human-reviewed weekly list of published agentic-AI threats. Each is scored by what the catalog does about it (enforced for a slice, advisory, policy wanted, or out of scope). It blocks nothing itself."
+    },
+    {
+      "id": "catalog",
+      "label": "Policy catalog",
+      "kind": "repo",
+      "x": 215,
+      "y": 40,
+      "source": "chock-catalog/registry.yaml",
+      "card": "One folder per policy under base/: a manifest, its checks and its evals. `registry.yaml` lists every policy. `tools/gen_registry.py` writes it from the folders on disk."
+    },
+    {
+      "id": "site",
+      "label": "chock.sh",
+      "kind": "repo",
+      "x": 415,
+      "y": 40,
+      "source": "chock-site/sitegen/__main__.py",
+      "card": "This site. The sitegen package builds every page from the catalog at .catalog-ref and the engine at .framework-ref, and refuses a catalog checked out at another commit."
+    },
+    {
+      "id": "release",
+      "label": "Release check",
+      "kind": "repo",
+      "x": 615,
+      "y": 40,
+      "source": "chock-release/check.py",
+      "card": "Checks one release manifest across the train: every repo at a commit on its default branch, CI green there, the catalog and this site pinned to the manifest's engine commit, and no release tag yet. Tagging runs only after this check passes, on the owner's approval."
+    },
+    {
+      "id": "eval",
+      "label": "chock eval export",
+      "code": true,
+      "kind": "code",
+      "x": 15,
+      "y": 150,
+      "source": "chock/src/chock/eval/context_report.py",
+      "card": "Exports chock policies to context-report's run/v0.1 case format. Chock writes the format. It never imports context-report."
+    },
+    {
+      "id": "compile",
+      "label": "chock compile",
+      "code": true,
+      "kind": "code",
+      "x": 215,
+      "y": 150,
+      "source": "chock/src/chock/compile/compiler.py",
+      "card": "Reads a policy folder and runs one emitter per hook point: the ambient rule, agent hooks, git hook, CI step, Claude managed settings and the MCP gateway. The output lands in .chock/compiled/<policy>/."
+    },
+    {
+      "id": "sync",
+      "label": "chock sync",
+      "code": true,
+      "kind": "code",
+      "x": 415,
+      "y": 150,
+      "source": "chock/src/chock/lifecycle.py",
+      "card": "Recompiles and rewires a repository so it matches its declared policies: each agent's hook file, the runtime in .chock/bin/, and the git hooks unless --skip-hooks. With --ci it also installs the CI gate workflow."
+    },
+    {
+      "id": "install",
+      "label": "Plugin install",
+      "kind": "code",
+      "x": 615,
+      "y": 150,
+      "source": "chock/src/chock/install/package.py",
+      "card": "Builds the policies picked on this site's builder into one merged plugin for one agent, and swaps it into place (ask the user before running it). No repository changes."
+    },
+    {
+      "id": "context-report",
+      "label": "context-report",
+      "code": true,
+      "kind": "repo",
+      "x": 15,
+      "y": 290,
+      "source": "context-report/src/context_report/cli.py",
+      "card": "An open report format for whether an agent plugin, hook, skill or AGENTS.md works: one row per measured fact, each marked recomputable by anyone or only claimed by the author."
+    },
+    {
+      "id": "compiled",
+      "label": ".chock/compiled",
+      "kind": "artifact",
+      "x": 215,
+      "y": 290,
+      "source": "chock-catalog/.chock/compiled/block-invisible-unicode/pre-tool-use/gate.json",
+      "card": "One folder per policy and hook point: gate.json files, hook fragments, the ambient rule, and the git-hook and CI entry points. The cited file is the catalog's own compiled gate for one policy."
+    },
+    {
+      "id": "runtime",
+      "label": "Per-agent runtime",
+      "kind": "artifact",
+      "x": 415,
+      "y": 290,
+      "source": "chock/src/chock/gate/runtime_bundle.py",
+      "card": "One file per agent in .chock/bin/ (claude_code.py, cursor.py and the rest): agentseam's bundled dispatcher and adapter plus chock's gate handler. Each agent's hook command runs it with --gate or --guard."
+    },
+    {
+      "id": "plugin",
+      "label": "Plugin folder",
+      "kind": "artifact",
+      "x": 615,
+      "y": 290,
+      "source": "chock/src/chock/install/place.py",
+      "card": "Where a client's plugin goes, and what chock may replace there. The plugin carries a runtime built the same way, for its one agent."
+    },
+    {
+      "id": "ci",
+      "label": "CI gate step",
+      "kind": "artifact",
+      "x": 15,
+      "y": 410,
+      "source": "chock/src/chock/compile/emitters/ci.py",
+      "card": "A CI step that re-runs the policy's check over a pull request's commit range, so a change that skipped the local hooks is still checked."
+    },
+    {
+      "id": "githooks",
+      "label": "Git hooks",
+      "kind": "artifact",
+      "x": 215,
+      "y": 410,
+      "source": "chock/src/chock/hooks/installers.py",
+      "card": "The git-hook dispatchers that run each policy's git-hook entry point at commit and push."
+    },
+    {
+      "id": "adapters",
+      "label": "Agentseam adapters",
+      "kind": "code",
+      "x": 415,
+      "y": 410,
+      "source": "agentseam/src/agentseam/adapters/__init__.py",
+      "card": "One adapter per agent: it parses that client's hook payload into one Event, and speaks the Decision back in the client's own dialect, on stdout and in the exit code."
+    },
+    {
+      "id": "client",
+      "label": "Your agent's client",
+      "kind": "client",
+      "x": 415,
+      "y": 550,
+      "source": "agentseam/src/agentseam/tier_table.py",
+      "facts": "tiers",
+      "card": "Claude Code, Cursor, Codex CLI and the others run the hook before a tool runs. What a hook can do there, and what happens when it cannot run, depends on the agent."
+    }
+  ],
+  "edges": [
+    {
+      "from": "threat-intel",
+      "to": "catalog",
+      "label": "Scores",
+      "label_at": [
+        200,
+        32
+      ]
+    },
+    {
+      "from": "catalog",
+      "to": "compile",
+      "label": "Policy folders"
+    },
+    {
+      "from": "catalog",
+      "to": "site",
+      "label": "Pinned",
+      "label_at": [
+        400,
+        32
+      ]
+    },
+    {
+      "from": "release",
+      "to": "site",
+      "label": "Checks pins",
+      "label_at": [
+        600,
+        32
+      ]
+    },
+    {
+      "from": "eval",
+      "to": "context-report",
+      "label": "run/v0.1 cases",
+      "code": true
+    },
+    {
+      "from": "compile",
+      "to": "compiled",
+      "label": "Writes"
+    },
+    {
+      "from": "sync",
+      "to": "runtime",
+      "label": "Writes"
+    },
+    {
+      "from": "compiled",
+      "to": "runtime",
+      "label": "gate.json",
+      "code": true,
+      "label_at": [
+        400,
+        283
+      ]
+    },
+    {
+      "from": "compiled",
+      "to": "githooks",
+      "label": "Entry points"
+    },
+    {
+      "from": "compiled",
+      "to": "ci",
+      "label": "step.yaml",
+      "code": true
+    },
+    {
+      "from": "runtime",
+      "to": "adapters",
+      "label": "Bundles"
+    },
+    {
+      "from": "adapters",
+      "to": "client",
+      "label": "Decision"
+    },
+    {
+      "from": "install",
+      "to": "plugin",
+      "label": "Builds"
+    },
+    {
+      "from": "plugin",
+      "to": "client",
+      "label": "Hooks"
+    }
+  ],
+  "path": [
+    "catalog",
+    "compile",
+    "compiled",
+    "runtime",
+    "adapters",
+    "client"
+  ]
+}

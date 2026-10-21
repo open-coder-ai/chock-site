@@ -103,7 +103,7 @@ def test_general_page_is_the_fixed_placeholder(built) -> None:
     text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", main)).strip()
     assert text == (
         "DESIGN IN PROGRESS General agents Guardrails for agents that act "
-        "for a person or a business. Design in progress. There is nothing "
+        "for a person or a business. We are still designing them. There is nothing "
         "to install yet. Follow open-coder-ai on GitHub"
     )
     banned = ("deny", "step_up", "modify", "profile", "approval", "specification")
@@ -247,9 +247,51 @@ def test_coding_pages_do_not_move_or_change(built, two_section_build) -> None:
                 assert old == new, rel
 
 
+# The agent guide names every section from tracks.yaml, so the stub joins its list (SITE-QA-1 c).
+GUIDE_THREE = (
+    "The site has 3 sections: Coding agents under /coding/, General agents under"
+    " /general/ (still in design) and Git repositories under /repos/."
+)
+GUIDE_FOUR = (
+    "The site has 4 sections: Coding agents under /coding/, General agents under"
+    " /general/ (still in design), Git repositories under /repos/ and Example agents"
+    " under /example/ (still in design)."
+)
+
+
 def test_shared_docs_unchanged_apart_from_stub(built, two_section_build) -> None:
     out = two_section_build
     for name in ("security", "faq", "for-agents", "report"):
         old = (built.out / name / "index.html").read_text(encoding="utf-8")
         new = (out / name / "index.html").read_text(encoding="utf-8")
+        if name == "for-agents":
+            assert old.count(GUIDE_THREE) == 1
+            old = old.replace(GUIDE_THREE, GUIDE_FOUR)
         assert _strip_shell(old) == _strip_shell(new), name
+
+
+def test_agent_guide_names_every_section_in_api_index(built) -> None:
+    """The guide's section count and list match /api/index.json, in the HTML page and its twin."""
+    index = json.loads((built.out / "api" / "index.json").read_text(encoding="utf-8"))
+    lines = yaml.safe_load((ROOT / "data" / "agents.yaml").read_text(encoding="utf-8"))[
+        "track_line"
+    ]
+    names = [
+        lines[t["status"]]
+        .replace("__TITLE__", t["title"])
+        .replace("__HOME__", t["home"])
+        for t in index["tracks"]
+    ]
+    sentence = (
+        f"The site has {len(names)} sections: "
+        + ", ".join(names[:-1])
+        + " and "
+        + names[-1]
+        + "."
+    )
+    assert sentence == GUIDE_THREE
+    twin = (built.out / "for-agents" / "index.md").read_text(encoding="utf-8")
+    page = (built.out / "for-agents" / "index.html").read_text(encoding="utf-8")
+    assert sentence in twin
+    assert sentence in page
+    assert "Today it has one" not in twin

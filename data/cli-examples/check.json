@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 4,
+      "of": 21,
+      "command": "chock check --repo .",
+      "output": "verify FAIL: my-block-marker: installed at .agents/policies/my-block-marker but not in chock.lock (run `chock sync`)\n== validate\n[PASS] All checks passed.\n== verify lockfile\n== policy evals\n\nmy-block-marker  [deterministic]\n  PASS  tc-001                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-002                             authored  gate exit 0 [gate derived from manifest; policy not compiled]\n  PASS  tc-003                             authored  my-block-marker: this change adds a line with a DO-NOT-COMMIT marke…\n  PASS  tc-004                             authored  gate exit 0 [gate derived from manifest; policy not compiled]\n  score 1.00\n\n5 policies: 4 pass, 44 skipped\n44 case(s) have no executable form; they are agent-mode material (tier 3).\n== enforcement matrix (skipped: no spec/enforcement-matrix.md in this repo)\n== matrix mechanisms (skipped: no spec/enforcement-matrix.md in this repo)\n== index freshness\n== ambient conflicts\n[PASS] All checks passed.\n== policy baseline (skipped: no --base given; CI passes the pull request's base branch)\n== result: FAIL (exit 1; see the FAIL above)",
+      "exit": 1
+    }
+  ]
+}

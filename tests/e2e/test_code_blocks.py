@@ -37,10 +37,17 @@ _GAPS = """selector => {
         if (!prev || !next) continue;
         const r = box.getBoundingClientRect();
         const name = e => `${e.tagName}.${e.className}`;
+        // A heading next, or a section opening with one, is a section boundary: the
+        // heading's own larger gap applies there, so "below" is not judged.
+        let first = next;
+        while (first && !/^H[1-6]$/.test(first.tagName)) {
+            first = [...first.children].find(shown);
+        }
         out.push({
             where: `${name(prev)} > ${name(box)} > ${name(next)}`,
             above: Math.round((r.top - prev.getBoundingClientRect().bottom) * 10) / 10,
             below: Math.round((next.getBoundingClientRect().top - r.bottom) * 10) / 10,
+            boundary: Boolean(first),
         });
     }
     return out;
@@ -77,12 +84,34 @@ _TOKEN_BREAKS = """() => {
 
 
 def _gap_problems(page, where: str) -> list[str]:
-    """Each box on the page whose gap above and gap below differ by more than 2 px."""
+    """Each box not at a section boundary whose gap above and gap below differ by more than 2 px."""
     return [
         f"{where} {gap['where']}: {gap['above']} above, {gap['below']} below"
         for gap in page.evaluate(_GAPS, BOXES)
-        if abs(gap["above"] - gap["below"]) > 2
+        if not gap["boundary"] and abs(gap["above"] - gap["below"]) > 2
     ]
+
+
+# A box between two paragraphs with unequal space, then a box before a heading.
+_UNEQUAL = (
+    '<main><p>Text above.</p><pre style="margin: 16px 0 40px">code</pre>'
+    "<p>Text below.</p></main>"
+)
+_BOUNDARY = (
+    '<main><section><p>Text above.</p><pre style="margin: 16px 0">code</pre></section>'
+    '<section><h2 style="margin-top: 40px">Next</h2><p>Text.</p></section></main>'
+)
+
+
+def test_gap_check_judges_boxes_between_text_but_not_at_a_heading(page) -> None:
+    page.set_content(_UNEQUAL)
+    assert _gap_problems(page, "unequal") == [
+        "unequal P. > PRE. > P.: 16 above, 40 below"
+    ]
+    page.set_content(_BOUNDARY)
+    gaps = page.evaluate(_GAPS, BOXES)
+    assert [(g["above"], g["below"], g["boundary"]) for g in gaps] == [(16, 40, True)]
+    assert _gap_problems(page, "boundary") == []
 
 
 def test_boxes_have_equal_space_above_and_below(

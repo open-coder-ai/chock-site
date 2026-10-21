@@ -1,0 +1,248 @@
+{
+  "id": "stop-and-resume",
+  "order": 5,
+  "title": "Stop and resume",
+  "summary": "A person's stop on agents. It shows the files chock stop and chock stop --everywhere write, the hooks that read them, and the log lines a stop leaves.",
+  "intro": "A stop is a file a person writes and every chock hook reads. While it is in force, the pre-tool stop check, the git dispatcher and the MCP gateway refuse the next action of an agent in scope, and each refusal is logged. Only a person at a terminal lifts it.",
+  "pins": {
+    "chock": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96"
+  },
+  "canvas": {
+    "width": 800,
+    "height": 560
+  },
+  "boundaries": [
+    {
+      "label": "A person, at a terminal",
+      "x": 5,
+      "y": 30,
+      "w": 790,
+      "h": 120
+    },
+    {
+      "label": "Local files, never committed",
+      "x": 5,
+      "y": 170,
+      "w": 790,
+      "h": 110
+    },
+    {
+      "label": "Every hook that checks an agent's next action",
+      "x": 5,
+      "y": 300,
+      "w": 790,
+      "h": 250
+    }
+  ],
+  "nodes": [
+    {
+      "id": "stop",
+      "label": "chock stop",
+      "code": true,
+      "kind": "code",
+      "x": 15,
+      "y": 70,
+      "source": "chock/src/chock/stop.py",
+      "card": "A person stops agents in one repository: it writes .chock/stop.json (scope, reason, who as git user.email, when) and an entry in the machine registry. An agent's shell is refused, and the refusal is logged."
+    },
+    {
+      "id": "everywhere",
+      "label": "stop --everywhere",
+      "code": true,
+      "kind": "code",
+      "x": 215,
+      "y": 70,
+      "source": "chock/src/chock/stop_everywhere.py",
+      "card": "A person stops every agent on the machine: it writes ~/.chock/stops/_everywhere.json. The --agent flag is refused with it: the scope is every agent."
+    },
+    {
+      "id": "resume",
+      "label": "chock resume",
+      "code": true,
+      "kind": "code",
+      "x": 615,
+      "y": 70,
+      "source": "chock/src/chock/stop.py",
+      "card": "Person-only: it refuses an agent's shell, needs stdin and stdout to be a TTY, and asks for the repository's name to be typed. With --everywhere it asks for the word everywhere and lifts only the machine-wide stop."
+    },
+    {
+      "id": "stopjson",
+      "label": ".chock/stop.json",
+      "kind": "artifact",
+      "x": 15,
+      "y": 200,
+      "source": "chock/src/chock/gate/runner/halt.py",
+      "card": "The repository's stop. Not committed, so a worktree has no copy of its own: the main checkout's stop reaches it."
+    },
+    {
+      "id": "registry",
+      "label": "Machine registry",
+      "kind": "artifact",
+      "x": 215,
+      "y": 200,
+      "source": "chock/src/chock/gate/runner/halt.py",
+      "card": "~/.chock/stops/<sha256 of the repository's realpath>.json (0o600), for a hook whose client names no project root for the session: it refuses every call of an agent in scope while any entry is in force."
+    },
+    {
+      "id": "everyfile",
+      "label": "_everywhere.json",
+      "kind": "artifact",
+      "x": 415,
+      "y": 200,
+      "source": "chock/src/chock/gate/runner/halt.py",
+      "card": "~/.chock/stops/_everywhere.json. A file there that is not a regular file, or cannot be read or parsed, refuses too."
+    },
+    {
+      "id": "halt",
+      "label": "Stop reader",
+      "kind": "code",
+      "x": 215,
+      "y": 330,
+      "source": "chock/src/chock/gate/runner/halt.py",
+      "card": "Reads every stop. A file that exists but cannot be read or parsed refuses every agent. Stdlib only: gate.py and every runtime carry it."
+    },
+    {
+      "id": "prehook",
+      "label": "Pre-tool stop check",
+      "kind": "code",
+      "x": 15,
+      "y": 460,
+      "source": "chock/src/chock/gate/repo_stop.py",
+      "card": "The chock sync command wires one --stop-check entry per client, with no matcher, so the stop sees every tool call, reads included. A refused call reads stopped: <reason>. What happens when a hook cannot run is agentseam's data, listed below.",
+      "facts": "tiers"
+    },
+    {
+      "id": "githook",
+      "label": "Git dispatcher",
+      "kind": "code",
+      "x": 215,
+      "y": 460,
+      "source": "chock/src/chock/hooks/data/dispatcher.sh",
+      "card": "Refuses an agent's commit or push while a stop is in force. A person's commit or push passes. Only the main checkout's .chock/bin/gate.py tells an agent from a person."
+    },
+    {
+      "id": "gateway",
+      "label": "MCP gateway",
+      "kind": "code",
+      "x": 415,
+      "y": 460,
+      "source": "chock/src/chock/gateway/stop.py",
+      "card": "Refuses each tools/call while a stop reaches it, as an MCP error. It forwards initialize, tools/list and every other method."
+    },
+    {
+      "id": "log",
+      "label": "Decision log",
+      "kind": "log",
+      "x": 615,
+      "y": 460,
+      "source": "chock/src/chock/gate/decision_log.py",
+      "card": "Each refused call is a block line with reason stopped. The chock stop and chock resume commands each write one chock-stop line: event repo_stop or repo_resume, with scope, who and when."
+    }
+  ],
+  "edges": [
+    {
+      "from": "stop",
+      "to": "stopjson",
+      "label": "Writes"
+    },
+    {
+      "from": "stop",
+      "to": "registry",
+      "label": "Registers",
+      "label_at": [
+        165,
+        150
+      ]
+    },
+    {
+      "from": "everywhere",
+      "to": "everyfile",
+      "label": "Writes",
+      "label_at": [
+        365,
+        150
+      ]
+    },
+    {
+      "from": "resume",
+      "to": "stopjson",
+      "label": "Removes",
+      "label_at": [
+        560,
+        150
+      ]
+    },
+    {
+      "from": "resume",
+      "to": "everyfile",
+      "label": "--everywhere",
+      "code": true,
+      "label_at": [
+        600,
+        185
+      ]
+    },
+    {
+      "from": "stopjson",
+      "to": "halt",
+      "label": "Reads"
+    },
+    {
+      "from": "registry",
+      "to": "halt",
+      "label": "Reads"
+    },
+    {
+      "from": "everyfile",
+      "to": "halt",
+      "label": "Reads"
+    },
+    {
+      "from": "halt",
+      "to": "prehook",
+      "label": "Tool call"
+    },
+    {
+      "from": "halt",
+      "to": "githook",
+      "label": "Commit, push"
+    },
+    {
+      "from": "halt",
+      "to": "gateway",
+      "label": "tools/call",
+      "code": true
+    },
+    {
+      "from": "gateway",
+      "to": "log",
+      "label": "Refusal",
+      "label_at": [
+        600,
+        452
+      ]
+    },
+    {
+      "from": "prehook",
+      "to": "log",
+      "label": "Refusal",
+      "via": [
+        [
+          100,
+          540
+        ],
+        [
+          700,
+          540
+        ]
+      ]
+    }
+  ],
+  "path": [
+    "stop",
+    "stopjson",
+    "halt",
+    "prehook",
+    "log"
+  ]
+}

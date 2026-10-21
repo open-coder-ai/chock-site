@@ -144,7 +144,7 @@ def test_calculator_text_shows_without_javascript(browser, site_url) -> None:
             "Hours saved = findings × share covered × minutes per late fix ÷ 60" in text
         )
         assert "the formula gives 9 hours, $900 and 1.8 days" in text
-        assert "Example values, not measurements." in text
+        assert "These are example values, and we did not measure them." in text
     finally:
         context.close()
 
@@ -156,7 +156,7 @@ def test_faq_opens_with_the_keyboard(page, site_url) -> None:
     page.keyboard.press("Enter")
     details = page.locator(".faq-details", has_text="What are general agents?")
     assert details.get_attribute("open") is not None
-    assert "there is nothing to install yet" in details.inner_text()
+    assert "so there is nothing to install yet" in details.inner_text()
 
 
 def test_home_fits_a_phone(browser, site_url) -> None:
@@ -190,22 +190,20 @@ def test_home_fits_a_phone(browser, site_url) -> None:
             )
         heading = page.locator("h1").inner_text()
         assert re.sub(r"\s+", " ", heading) == (
-            "A kill switch for your coding agent's wrong moves."
+            "Blocks your coding agent's wrong moves before they land."
         )
     finally:
         context.close()
 
 
+# VID-OFF: the voiced promos are gone; only the silent recording is on the home page.
 MEDIA = (
-    ("/video/chock-promo-v9b.mp4", "/video/chock-promo-v9b-poster.jpg"),
-    (
-        "/video/chock-promo-v8-explainer.mp4",
-        "/video/chock-promo-v8-explainer-poster.jpg",
-    ),
+    # DOCS-6: the own-policy VHS recording; its poster is the PNG VHS writes.
+    ("/video/own-policy.mp4", "/video/own-policy.png"),
 )
 
 
-def test_promo_videos_sit_below_the_hero(browser, site_url) -> None:
+def test_videos_sit_below_the_hero(browser, site_url) -> None:
     for viewport in (MOBILE, {"width": 1280, "height": 800}):
         context = browser.new_context(viewport=viewport)
         try:
@@ -213,8 +211,8 @@ def test_promo_videos_sit_below_the_hero(browser, site_url) -> None:
             collect(page, site_url)
             page.goto(site_url + "/")
             videos = page.locator("video.video-player")
-            assert videos.count() == 2
-            for i in range(2):
+            assert videos.count() == len(MEDIA)
+            for i in range(len(MEDIA)):
                 video = videos.nth(i)
                 video.scroll_into_view_if_needed()
                 assert video.is_visible()
@@ -222,23 +220,13 @@ def test_promo_videos_sit_below_the_hero(browser, site_url) -> None:
                 box = video.bounding_box()
                 assert box["y"] >= hero["y"] + hero["height"]
                 assert abs(box["width"] / box["height"] - 16 / 9) < 0.02
-            first, second = videos.evaluate_all(
-                "els => els.map(el => { const r = el.getBoundingClientRect();"
-                " return {top: r.top + scrollY, bottom: r.bottom + scrollY,"
-                " left: r.left, right: r.right}; })"
-            )
-            if viewport["width"] >= 1280:
-                assert first["top"] == second["top"]
-                assert first["right"] <= second["left"]
-            else:
-                assert second["top"] >= first["bottom"]
             page.wait_for_load_state("networkidle")
             assert_clean(page)
         finally:
             context.close()
 
 
-def test_promo_media_served_and_mp4_waits_for_play(page, site_url) -> None:
+def test_video_media_served_and_mp4_waits_for_play(page, site_url) -> None:
     requested: list[str] = []
     page.on("request", lambda req: requested.append(req.url))
     page.goto(site_url + "/")
@@ -248,10 +236,13 @@ def test_promo_media_served_and_mp4_waits_for_play(page, site_url) -> None:
     page.wait_for_load_state("networkidle")
     assert not [url for url in requested if url.endswith(".mp4")]
     for video, poster in MEDIA:
-        for path, kind in ((poster, "image/jpeg"), (video, "video/mp4")):
+        image = "image/png" if poster.endswith(".png") else "image/jpeg"
+        for path, kind in ((poster, image), (video, "video/mp4")):
             response = page.request.head(site_url + path)
             assert response.status == 200, path
             assert response.headers["content-type"] == kind
+    for gone in ("/video/chock-promo-v9b.mp4", "/video/chock-promo-v8-explainer.mp4"):
+        assert page.request.get(site_url + gone).status == 404, gone
     assert_clean(page)
 
 

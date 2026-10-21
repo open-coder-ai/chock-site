@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 11,
+      "of": 21,
+      "command": "chock disable my-block-marker",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nNo git-pre-commit.sh policies found; pre-commit dispatcher unchanged\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nNo git-pre-commit.sh policies found; pre-merge-commit dispatcher unchanged\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nNo git-pre-push.sh policies found; pre-push dispatcher unchanged\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nINDEX.md: ~257 tokens (chars/4, max 2000)\nINDEX.md: ~257 tokens (chars/4, max 2000)\nDisabled my-block-marker",
+      "exit": 0
+    }
+  ]
+}

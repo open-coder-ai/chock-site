@@ -194,21 +194,31 @@ def remove_steps(steps: list[dict[str, str]], client: str) -> list[dict[str, str
 
 def _remove_unverified(
     steps: list[dict[str, str]] | None,
-    text: str,
+    texts: dict[str, str],
     client: str,
     name: str,
     evidence: dict[str, Any],
+    report: str | None,
 ) -> dict[str, str] | None:
-    """For a client with no verified remove steps: the "not verified" line and its evidence link."""
+    """For a client with no verified remove steps: the "not verified" line and its link.
+
+    An untested client links its evidence issue; a witnessed one (`report` set) its witness report.
+    """
     if steps is not None:
         return None
-    notice = evidence_notice(evidence, client, name)
-    if notice is None:
-        raise PageError(f"site.json remove: {client} has no steps and no evidence row")
+    if report:
+        url, link = report, texts["remove_report_link"]
+    else:
+        notice = evidence_notice(evidence, client, name)
+        if notice is None:
+            raise PageError(
+                f"site.json remove: {client} has no steps, no evidence row and no report link"
+            )
+        url, link = notice["url"], notice["link"]
     return {
-        "text": data_fill(text, {"__NAME__": name}),
-        "url": notice["url"],
-        "link": notice["link"],
+        "text": data_fill(texts["remove_unverified"], {"__NAME__": name}),
+        "url": url,
+        "link": link,
     }
 
 
@@ -232,11 +242,11 @@ def builder_clients(
         ):
             raise PageError(f"site.json plugin_repos: {client} is {repo!r}")
     removes = _per_client(config, "remove", engine.client_ids())
-    unverified = texts["remove_unverified"]
     clients = {}
     for client, state in witness["clients"].items():
         name = engine.client_name(client)
         named = {"__NAME__": name}
+        report = data_fill(witness.get("report") or "", {"__CLIENT__": client})
         clients[client] = {
             "name": name,
             "witness": state,
@@ -245,14 +255,20 @@ def builder_clients(
             "untested_line": data_fill(texts["untested_line"], named),
             "steps_heading": data_fill(texts[f"steps_{state}"], named),
             "ungraded_note": data_fill(texts["ungraded_note"], named),
-            "report": data_fill(witness["report"], {"__CLIENT__": client}),
+            "report": report,
             "evidence": evidence_notice(evidence, client, name),
             "steps": engine.client_steps(client),
             "remove": remove_steps(removes[client] or [], client),
             "remove_unverified": _remove_unverified(
-                removes[client], unverified, client, name, evidence
+                removes[client],
+                texts,
+                client,
+                name,
+                evidence,
+                report if state == "witnessed" else None,
             ),
             "plugin_repo": repos[client],
+            "claude_plugin": engine.claude_plugin_offer(client),
             "build_link": data_fill(texts["build_link"], named),
             "labels": client_labels(
                 policies, client, words, data_fill(texts["ungraded_says"], named)

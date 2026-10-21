@@ -19,6 +19,8 @@ TITLE_KEY_RE = re.compile(r"\{([a-z_]+)\}")
 # Context the browser reads from the /report/ query; the rest is fixed at build time.
 QUERY_KEYS = ("policy", "version", "agent", "page")
 BUILD_KEYS = ("catalog_ref", "engine_ref")
+# The form dropdown's catch-all option, for an agent the forms do not list.
+OTHER_AGENT = "other"
 REPOS = ("chock", "chock-catalog", "chock-site")
 KIND_KEYS = (
     "id",
@@ -39,6 +41,13 @@ class ReportError(ValueError):
 def check_report(report: dict[str, Any]) -> None:
     """Fail the build when report.yaml would produce a link to the wrong form or field."""
     ids = set()
+    form_agents = report.get("form_agents", [])
+    if OTHER_AGENT not in form_agents or not all(
+        ID_RE.fullmatch(agent) for agent in form_agents
+    ):
+        raise ReportError(
+            "report.yaml form_agents must be agent ids and include 'other'"
+        )
     for kind in report["kinds"]:
         missing = [key for key in KIND_KEYS if key not in kind]
         if missing:
@@ -67,9 +76,12 @@ def check_report(report: dict[str, Any]) -> None:
 
 
 def clean_context(
-    context: dict[str, str], agents: list[str], site_url: str
+    context: dict[str, str], agents: list[str], site_url: str, form_agents: list[str]
 ) -> dict[str, str]:
-    """Only known keys with id-shaped values; a page becomes a full URL on this site."""
+    """Only known keys with id-shaped values; a page becomes a full URL on this site.
+
+    An agent the issue forms do not offer is sent as `other`, so the dropdown is never left blank.
+    """
     clean = {}
     for key, value in context.items():
         if key not in QUERY_KEYS + BUILD_KEYS or not isinstance(value, str):
@@ -78,7 +90,9 @@ def clean_context(
             if PAGE_RE.fullmatch(value):
                 clean[key] = site_url + value
         elif ID_RE.fullmatch(value) and (key != "agent" or value in agents):
-            clean[key] = value
+            clean[key] = (
+                OTHER_AGENT if key == "agent" and value not in form_agents else value
+            )
     return clean
 
 
@@ -90,7 +104,7 @@ def issue_url(
     site_url: str,
 ) -> str:
     """The new-issue URL for one kind: its form, plus every field the context can fill."""
-    clean = clean_context(context, agents, site_url)
+    clean = clean_context(context, agents, site_url, report["form_agents"])
     params = {"template": kind["template"]}
     title = kind.get("title", "")
     if title and set(TITLE_KEY_RE.findall(title)) <= set(clean):
@@ -132,7 +146,7 @@ def build(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             render_file(
                 templates / PARTIALS / "report-link.html",
                 URL=link["url"],
-                LABEL=link["label"],
+                LABEL=Prose(link["label"]),
             )
             for link in security["links"]
         )
@@ -183,6 +197,7 @@ def build(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
                 SEC_LINKS=links,
                 SITE_URL=site_url,
                 AGENTS=" ".join(agents),
+                FORM_AGENTS=" ".join(report["form_agents"]),
                 CARDS=cards,
                 NOTE=Prose(report["note"]),
             )
@@ -204,7 +219,7 @@ def build(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
         SEC_HEADING=security["heading"],
         SEC_BODY=security["body"],
         SEC_LINKS="".join(
-            f"- [{md(link['label'])}]({link['url']})\n" for link in security["links"]
+            f"- [{link['label']}]({link['url']})\n" for link in security["links"]
         ),
         KINDS="".join(
             f"## {md(kind['heading'])}\n\n{kind['body']}\n\n"

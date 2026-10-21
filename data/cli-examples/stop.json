@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "examples": [
+    {
+      "step": 18,
+      "of": 21,
+      "command": "chock stop --reason demo",
+      "output": "STOPPED: every agent, by unknown at <time>: demo. Its tool calls, commits and pushes are refused; `chock resume` lifts it.\nIt refuses the NEXT action of an agent whose hooks Chock wires; it stops no running process and revokes no credential.",
+      "exit": 0
+    }
+  ]
+}

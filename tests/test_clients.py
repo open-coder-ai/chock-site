@@ -47,29 +47,56 @@ def _witness_copy(tmp_path: Path, edit) -> Path:
 
 def test_witnessed_needs_a_plugin_hook_row_in_chocks_ledger() -> None:
     """S-ALL: witness.yaml's "witnessed" shows only where chock's ledger has a plugin-hook row."""
-    assert clientdata.ledger_clients(DATA) == {"claude-code", "cursor", "codex"}
+    assert clientdata.ledger_clients(DATA) == {
+        "claude-code",
+        "cursor",
+        "codex",
+        "copilot",
+        "devin",
+        "grok",
+        "goose",
+        "antigravity",
+    }
     data = clientdata.load_witness(DATA, engine.client_ids())
     assert data["default"] == "claude-code"
     shown = {c for c, s in data["clients"].items() if s == "witnessed"}
-    assert shown == {"claude-code", "cursor", "codex"}
-    assert data["unbacked"] == ["copilot", "devin"]
+    assert shown == {
+        "claude-code",
+        "cursor",
+        "codex",
+        "copilot",
+        "devin",
+        "grok",
+        "goose",
+        "antigravity",
+    }
+    assert data["unbacked"] == []
     backed = clientdata.load_witness(
         DATA,
         engine.client_ids(),
-        {"claude-code", "cursor", "codex", "copilot", "devin"},
+        {
+            "claude-code",
+            "cursor",
+            "codex",
+            "copilot",
+            "devin",
+            "grok",
+            "goose",
+            "antigravity",
+        },
     )
     assert backed["unbacked"] == []
     assert backed["clients"]["devin"] == "witnessed"
 
 
 def test_a_client_without_a_row_is_untested(tmp_path: Path) -> None:
-    """The 7 P-ALL clients have no witness.yaml row; they show untested, after the rows."""
+    """The 3 P-ALL clients without a witness.yaml row show untested, after the rows."""
     data = clientdata.load_witness(DATA, engine.client_ids())
     rows = yaml.safe_load((DATA / "witness.yaml").read_text(encoding="utf-8"))[
         "clients"
     ]
     missing = [c for c in engine.client_ids() if c not in rows]
-    assert len(missing) == 7
+    assert len(missing) == 3
     assert list(data["clients"]) == [*rows, *missing]
     assert all(data["clients"][c] == "untested" for c in missing)
     folder = _witness_copy(tmp_path, lambda d: d["clients"].pop("devin"))
@@ -147,7 +174,9 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
     for client, data in block["clients"].items():
         assert bool(data["remove"]) != bool(data["remove_unverified"]), client
         if data["remove_unverified"]:
-            assert data["remove_unverified"]["url"] == data["evidence"]["url"], client
+            link = data["report"] if data["witness"] == "witnessed" else None
+            url = link or data["evidence"]["url"]
+            assert data["remove_unverified"]["url"] == url, client
             assert data["remove_unverified"]["text"].startswith(
                 f"Removal steps not verified for {data['name']} yet."
             )
@@ -156,6 +185,60 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
         assert "__" not in json.dumps(data["remove"]), client
     with_repo = {c for c, d in block["clients"].items() if d["plugin_repo"]}
     assert with_repo == {"claude-code", "cursor", "codex", "copilot", "devin"}
+
+
+def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
+    """The owner's Windows run of 2026-10-19 verified these steps; the tidy-up steps are optional."""
+    block = _site(built)["builder_clients"]
+    expected = {
+        "goose": [
+            {
+                "note": "Delete the folder ~/.agents/plugins/chock-guardrails. Checked on Windows."
+            },
+            {
+                "note": "Optional tidy-up: delete the chock-guardrails entry in the plugins list "
+                "of goose's config.yaml. goose works without this step."
+            },
+        ],
+        "antigravity": [
+            {
+                "note": "Close Antigravity, delete the folder "
+                "~/.gemini/config/plugins/chock-guardrails, then reopen Antigravity. "
+                "Checked on Windows."
+            },
+            {
+                "note": "Optional tidy-up: delete the build copy "
+                "~/.chock/marketplace/antigravity/chock-guardrails. Antigravity does not read it."
+            },
+        ],
+    }
+    for client, steps in expected.items():
+        data = block["clients"][client]
+        assert data["witness"] == "witnessed", client
+        assert data["remove"] == steps, client
+        assert data["remove_unverified"] is None, client
+        assert data["report"].endswith(f"Witness%20report:%20{client}"), client
+
+
+def test_a_tested_client_without_steps_or_report_link_fails() -> None:
+    texts = {
+        "remove_unverified": "Removal steps not verified for __NAME__ yet.",
+        "remove_report_link": "a witness report",
+    }
+    evidence = {"issues": {}, "texts": {}, "issue_url": ""}
+    with pytest.raises(PageError, match="goose has no steps"):
+        clientdata._remove_unverified(None, texts, "goose", "goose", evidence, "")
+    with pytest.raises(PageError, match="goose has no steps"):
+        clientdata._remove_unverified(None, texts, "goose", "goose", evidence, None)
+    shown = clientdata._remove_unverified(None, texts, "goose", "goose", evidence, "u")
+    assert shown == {
+        "text": "Removal steps not verified for goose yet.",
+        "url": "u",
+        "link": "a witness report",
+    }
+    assert (
+        clientdata._remove_unverified([], texts, "goose", "goose", evidence, "") is None
+    )
 
 
 def test_site_json_carries_each_client(built) -> None:
@@ -221,13 +304,9 @@ def test_site_evidence_rows_are_the_untested_agents(tmp_path: Path) -> None:
     witness = clientdata.load_witness(DATA, engine.client_ids())
     issues = clientdata.load_evidence(DATA, witness)["issues"]
     untested = {c for c, s in witness["clients"].items() if s == "untested"}
-    # copilot and devin: witness.yaml says witnessed, chock's ledger has no row; no issue.
+    # a witness.yaml "witnessed" row that chock's ledger does not back has no issue.
     assert set(issues) == untested - set(witness["unbacked"])
     assert issues == {
-        "antigravity": 129,
-        "gemini-cli": 132,
-        "goose": 177,
-        "grok": 188,
         "kimi-code": 135,
         "factory-droid": 184,
         "openhands": 181,
@@ -271,7 +350,7 @@ def test_notice_shown_for_an_untested_agent(built_untested) -> None:
     notice = _site(built)["builder_clients"]["clients"][CLIENT]["evidence"]
     assert notice["url"] == URL
     assert notice["link"] == LINK
-    assert f"chock has not seen {NAME} run the plugin yet" in notice["line"]
+    assert f"Chock has not seen {NAME} run the plugin yet" in notice["line"]
     assert "The command still builds the plugin" in notice["line"]
     builder = (built.out / "coding" / "builder" / "index.html").read_text(
         encoding="utf-8"
@@ -306,7 +385,7 @@ def test_no_notice_for_a_witnessed_agent(request, which) -> None:
         assert f'class="client-evidence" data-client="{client}"' not in builder
         assert "client-evidence" not in _install_section(install, client), client
     notices = len([c for c, d in block["clients"].items() if d["evidence"]])
-    assert notices >= 7
+    assert notices >= 3
     assert builder.count('class="client-evidence"') == notices
     assert install.count('class="client-evidence"') == notices
 

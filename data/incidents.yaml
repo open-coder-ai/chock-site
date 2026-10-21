@@ -4,8 +4,8 @@
 heading: "The class of flaw behind real incidents"
 intro: "Most breaches start with a flaw someone shipped. Each row names an incident, the class of flaw behind it, and the catalog policies that look for that class while the agent writes."
 columns: {incident: "Incident", flaw: "The class of flaw behind it", policy: "Policy"}
-framework: "chock aligns with MITRE ATT&CK Initial Access, OWASP ASI01–10 (every mapping partial), CISA Secure by Design and NIST SSDF."
-honesty: "chock doesn't stop every attack. It closes common, known entry points."
+framework: "Chock aligns with MITRE ATT&CK Initial Access, OWASP ASI01–10 (every mapping partial), CISA Secure by Design and NIST SSDF."
+honesty: "Chock doesn't stop every attack. It closes common, known entry points."
 rows:
   - {incident: "Log4Shell (CVE-2021-44228)", flaw: "A logging library that evaluates lookups inside logged text", policies: ["java-security"]}
   - {incident: "Spring4Shell (CVE-2022-22965)", flaw: "A known-exploited framework version pinned in the build", policies: ["java-security"]}

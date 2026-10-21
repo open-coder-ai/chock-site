@@ -12,10 +12,12 @@ import {
   labelChip,
   parseShareFragment,
   sameMembers,
+  sentenceStart,
   shareFragment,
   track,
 } from "./common.js";
 import { commandOutputs, initQuiz } from "./quiz.js";
+import { enhanceSelect } from "./select.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -59,6 +61,7 @@ async function main() {
   const chips = $$(".chip[data-facet='label']");
   const search = $("#builder-search");
   const start = $("#builder-start");
+  const startBox = enhanceSelect(start);
   const status = $("#builder-status");
   const noticeBox = $("#link-notice");
   const selCount = $(".sel-count");
@@ -69,6 +72,8 @@ async function main() {
   const tabs = $$("[role='tab']");
   const panels = $$("[role='tabpanel']");
   const codeEl = $("[data-selection-code]");
+  // The Claude Code build line in each agent's panel takes the same selection code.
+  const argEls = $$("[data-selection-arg]");
   const shareEl = $("#share-url");
   const bar = $("#mobile-bar");
   const clientInputs = $$("#client-picker input[name='client']");
@@ -102,7 +107,7 @@ async function main() {
         label.keyword === C.ungraded ? C.texts.ungraded_word : site.label_words.coding[label.keyword];
       const meaning = C.clients[client].meanings[label.keyword];
       $(".label", row).replaceWith(labelChip(label.keyword, word, meaning));
-      $(".bsays", row).textContent = label.says;
+      $(".bsays", row).textContent = sentenceStart(label.says);
     }
   }
 
@@ -199,7 +204,7 @@ async function main() {
       item.appendChild(name);
       const says = document.createElement("span");
       says.className = "sel-says";
-      says.textContent = labelOf(p.id).says;
+      says.textContent = sentenceStart(labelOf(p.id).says);
       item.appendChild(says);
       const remove = document.createElement("button");
       remove.type = "button";
@@ -247,6 +252,7 @@ async function main() {
     if (!active) {
       codeEl.textContent = "";
       codeEl.removeAttribute("data-selection-code");
+      for (const el of argEls) el.textContent = el.dataset.placeholder;
       shareEl.value = "";
       shareEl.removeAttribute("data-selection-url");
       showTab(activeTab);
@@ -256,6 +262,7 @@ async function main() {
     const url = `${location.origin}${location.pathname}${shareFragment(client, picked)}`;
     codeEl.textContent = command;
     codeEl.dataset.selectionCode = code;
+    for (const el of argEls) el.textContent = code;
     shareEl.value = url;
     shareEl.setAttribute("data-selection-url", url);
     showTab(activeTab);
@@ -275,6 +282,7 @@ async function main() {
     const ids = [...picked];
     const match = presets.find((p) => sameMembers(p.members, ids));
     start.value = match ? match.id : "";
+    startBox.sync();
   }
 
   function writeFragment() {
@@ -394,7 +402,7 @@ async function main() {
   });
 
   selList.addEventListener("click", (event) => {
-    if (event.target === emptyNode) start.focus();
+    if (event.target === emptyNode) startBox.focus();
   });
 
   // ----- outputs: tabs, copy, download -----
@@ -567,7 +575,7 @@ async function main() {
     onFinish: () => track("quiz-finished"),
     onSkip: () => {
       showQuiz(false);
-      start.focus();
+      startBox.focus();
     },
   });
 

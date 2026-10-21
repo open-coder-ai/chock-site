@@ -8,9 +8,9 @@ tracks:
     slug: general
     title: General agents
     status: in_design
-    summary: "Guardrails for agents that act for a person or a business. Design in progress."
+    summary: "Guardrails for agents that act for a person or a business. We are still designing them."
   - id: repos
     slug: repos
     title: Git repositories
     status: available
-    summary: "Install policies into your own repository: committed with the code, enforced at commit and in CI for every contributor and every agent."
+    summary: "Install policies into your own repository: committed with the code, enforced at commit and in CI for contributors who run `chock sync`, and for agents whose hooks are set up."
