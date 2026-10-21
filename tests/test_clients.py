@@ -180,11 +180,8 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
             assert data["remove_unverified"]["text"].startswith(
                 f"Removal steps not verified for {data['name']} yet."
             )
-        repo = data["plugin_repo"]
-        assert repo is None or repo.startswith("https://github.com/open-coder-ai/")
+        assert "plugin_repo" not in data, client
         assert "__" not in json.dumps(data["remove"]), client
-    with_repo = {c for c, d in block["clients"].items() if d["plugin_repo"]}
-    assert with_repo == {"claude-code", "cursor", "codex", "copilot", "devin"}
 
 
 def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
