@@ -42,7 +42,7 @@
     "status_badges": {"deprecated": "DEPRECATED"},
     "change_rewrites": [
       {
-        "match": "^Status (?P<FROM>[a-z-]+) -> (?P<TO>[a-z-]+) by the BV-C3 promotion rule\\b.*\\bBehaviour unchanged\\.$",
+        "match": "^Status (?P<FROM>[a-z-]+) -> (?P<TO>[a-z-]+) (?:by the BV-C3 promotion rule\\b|\\([^)]*\\bBV-C3 promotion rule\\)).*\\bBehaviour unchanged\\.$",
         "text": "Promoted from __FROM__ to __TO__: every test case ran and passed, and no bug report was open. Behaviour unchanged."
       }
     ],

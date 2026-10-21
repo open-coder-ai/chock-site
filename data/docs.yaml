@@ -688,8 +688,8 @@ texts:
     sources: "Sources, at the pinned engine commit:"
     # agentseam's fail-mode word for a hook whose crash, timeout or absence lets the call run.
     fail_open: open
-    # The engine's label wording for a policy that judges a write only when the turn ends.
-    turn_end_marker: "the write itself is not judged"
+    # The catalog label wording for a policy that checks a write only when the turn ends.
+    turn_end_marker: "It does not check a file write when it happens"
     no_hook_columns: [Agent, Install methods, Why]
     fail_open_columns: [Agent, Install methods, Tier]
     turn_end_columns: [Agent, Policies that check writes only at turn end]
@@ -744,10 +744,10 @@ texts:
       - heading: "A person's CHOCK_ALLOW"
         body:
           - "A gate with `action: ask` cannot prompt at commit or push, so it refuses there. A person lets that one command through by running it with `CHOCK_ALLOW=<policy-id>`. This is not honoured for an agent's commit, and in CI an ask is a warning."
-          - "Chock tells an agent's commit from a person's by environment variables. `CHOCK_AGENT_COMMIT=0` says \"a person\" and wins over every marker. An agent could set it too, so it is a default and does not prove who made the commit. The guards on the agent's own commands are the separate backstop."
+          - "Chock tells an agent's commit from a person's by environment variables. `CHOCK_AGENT_COMMIT=0` unsets that one variable and clears no vendor marker. An agent could set it too. A person commits from their own shell, which has none of the markers. The guards on the agent's own commands are the separate backstop."
         sources:
           - {file: docs/enforcement-surfaces.md, quote: "it refuses unless a person runs that one command with `CHOCK_ALLOW=<policy-id>[,<policy-id>...]` and it is not an agent commit; in CI it is a warning."}
-          - {file: docs/enforcement-surfaces.md, quote: "an agent could set it too, so it is a default and not an identity"}
+          - {file: docs/enforcement-surfaces.md, quote: "`CHOCK_AGENT_COMMIT=0` unsets that one variable and clears no vendor marker (an agent could set it too): a person commits from their own shell, which has none."}
       - heading: "The observe rollout level"
         body:
           - "`rollout: observe` in `.chock/config.yaml` turns a compiled gate's block or ask into a warning, and `rollout: ask` caps it at ask. The action goes through, and the log records what chock would have blocked. Command guards, `tool_call` gates, the MCP gateway and a script hook's own exit 1 still block. An agent cannot lower the level for itself: it is held to the level committed in HEAD, or a stricter one, and `CHOCK_ROLLOUT` counts only for a person's own commit or push."
@@ -898,7 +898,7 @@ texts:
           - "Chock refuses an agent's `chock stop` or `chock resume`, and logs the refusal."
           - "`chock resume` needs a person at their own terminal: stdin and stdout must be a TTY, and the person types the repository's name. If the name does not match, the stop stays in force."
         sources:
-          - {file: src/chock/stop_common.py, quote: "Only a person changes a stop (the actor rule): an agent's `chock stop` or `chock resume` is refused, logged."}
+          - {file: src/chock/stop_common.py, quote: "The actor rule: an agent's `chock stop`, `resume` or person-only command is refused, with `rule` said, and logged."}
           - {file: src/chock/stop.py, quote: "Only a person at their own terminal resumes: stdin and stdout are TTYs and they type the repository's name."}
           - {file: src/chock/stop.py, quote: "the name typed does not match; the stop is still in force."}
       - heading: "Everywhere: one stop for the machine"
