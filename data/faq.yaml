@@ -38,6 +38,10 @@ questions:
   group: coding
   q: "How do I update or remove the plugin?"
   a: "Change your picks in the builder and run the new command. The Install page lists, for each agent, how it picks up a rebuild and how to remove the plugin."
+- id: change-or-remove
+  group: coding
+  q: "Change or remove"
+  a: "To change what is installed, ask first, then re-run chock install --selection 'YOUR_CODE' --apply with a new selection: it replaces the plugin in one step. To remove everything, use your agent's own plugin uninstall and marketplace removal. The Install page lists them for each agent."
 - id: what-command-does
   group: coding
   q: "What does the command do on my machine?"

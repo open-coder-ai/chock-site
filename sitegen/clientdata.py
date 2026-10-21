@@ -235,12 +235,6 @@ def builder_clients(
     witness = load_witness(data_dir, engine.client_ids())
     evidence = load_evidence(data_dir, witness)
     graded = graded_clients(policies, engine.client_ids())
-    repos = _per_client(config, "plugin_repos", engine.client_ids())
-    for client, repo in repos.items():
-        if repo is not None and not repo.startswith(
-            "https://github.com/open-coder-ai/"
-        ):
-            raise PageError(f"site.json plugin_repos: {client} is {repo!r}")
     removes = _per_client(config, "remove", engine.client_ids())
     clients = {}
     for client, state in witness["clients"].items():
@@ -267,7 +261,6 @@ def builder_clients(
                 evidence,
                 report if state == "witnessed" else None,
             ),
-            "plugin_repo": repos[client],
             "claude_plugin": engine.claude_plugin_offer(client),
             "build_link": data_fill(texts["build_link"], named),
             "labels": client_labels(

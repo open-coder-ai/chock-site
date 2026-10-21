@@ -3,6 +3,7 @@
 import json
 import re
 from dataclasses import replace
+from html import escape
 from pathlib import Path
 
 from sitegen.clientpage import agent_note
@@ -57,8 +58,11 @@ def test_agents_page_builds_for_every_agent(built) -> None:
     for client in block["order"]:
         about = block["clients"][client]
         assert f'href="/coding/builder/#client={client}"' in html
-        if about["plugin_repo"]:
-            assert about["plugin_repo"] in html
+        assert f"<code>--client {client}</code>" in html
+        for step in about["steps"]:
+            ((kind, text),) = step.items()
+            if kind == "command":
+                assert escape(text) in html, (client, text)
         assert f"state-{about['witness']}" in html
 
 
@@ -90,3 +94,18 @@ def test_status_badge_only_for_deprecated(built) -> None:
     ):
         badge = str(status_badge(built.site, templates, replace(policy, status=status)))
         assert ("DEPRECATED" in badge) is shown, status
+
+
+def test_no_generated_file_links_a_plugin_repo(built) -> None:
+    """The five chock-<client>-plugins repos are retired: plugins come from the builder (RP-3)."""
+    retired = re.compile(r"chock-[a-z-]+-plugins", re.IGNORECASE)
+    files = [
+        p for p in built.out.rglob("*") if p.suffix in (".html", ".md", ".txt", ".json")
+    ]
+    assert files
+    found = sorted(
+        str(p.relative_to(built.out))
+        for p in files
+        if retired.search(p.read_text(encoding="utf-8"))
+    )
+    assert found == []

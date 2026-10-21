@@ -252,13 +252,12 @@ pages:
     video: adopt-policy
     prose: []
     catalog:
-      - heading: Three ways to adopt
+      - heading: Two ways to adopt
         md: |
-          The catalog's README names three ways to install the same policies:
+          There are two ways to install the same policies:
 
           - **In your repository**, for a team: policies are pinned to a catalog commit, committed with the repository, and run at the agent's own hook where the client has one, at commit and in CI. This page walks through it.
-          - **In your coding agent, as plugins**, for one person with no repository changes: one plugin repository per agent, each with its own install lines, linked from the README's [Install section](__CATALOG__README.md#install).
-          - **One plugin built from your picks**. See [Quickstart: plugin](/docs/quickstart/plugin/).
+          - **In your coding agent, as one merged plugin per client**, for one person with no repository changes: the plugin repos are retired, and plugins come from the chock.sh builder. Ask first, then build it from a selection with `chock install --selection '<code>' --apply`. See [Quickstart: plugin](/docs/quickstart/plugin/).
       - heading: Adopt in your repository, step by step
         run: true
       - heading: Pin a commit and verify the hash
