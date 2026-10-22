@@ -1,0 +1,8 @@
+# Tests and lint on top of the build set.
+# Regenerate the .txt with:
+#   uv pip compile --universal --generate-hashes --python-version 3.12 requirements-dev.in -o requirements-dev.txt
+-r requirements-build.in
+pytest==9.1.1
+ruff==0.16.10
+playwright==1.63.0
+pytest-playwright==0.9.0
