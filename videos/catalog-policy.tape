@@ -22,7 +22,7 @@ Type "rm -rf /work/catalog /work/venv /work/home && mkdir -p /work/home && expor
 Enter
 Type "git config --global user.name Demo && git config --global user.email demo@example.com"
 Enter
-Type "git clone -q https://github.com/open-coder-ai/chock-catalog /work/catalog && cd /work/catalog && git checkout -q 9a26a779ed8e5aba917bde92d6161a6216af8b7e"
+Type "git clone -q https://github.com/open-coder-ai/chock-catalog /work/catalog && cd /work/catalog && git checkout -q c568b6bcfede1c3791d17741c5cabaa802917d47"
 Enter
 Wait
 Type "python3.12 -m venv /work/venv && export PATH=/work/venv/bin:$PATH"

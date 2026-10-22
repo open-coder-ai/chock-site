@@ -29,7 +29,7 @@ Type "chock init ."
 Enter
 Wait
 Sleep 2s
-Type "chock add protect-main-branch --ref 9a26a779ed8e5aba917bde92d6161a6216af8b7e"
+Type "chock add protect-main-branch --ref c568b6bcfede1c3791d17741c5cabaa802917d47"
 Enter
 Wait
 Sleep 3s
