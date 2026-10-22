@@ -73,15 +73,32 @@ def test_headers_hardening_and_noindex() -> None:
     assert max(len(line) for line in text.splitlines()) <= 2000
 
 
+ALLOWED_JOB_PERMISSIONS = {
+    "ci.yml": {},
+    "vendor-quotes.yml": {
+        "check": {"contents": "read", "issues": "write"},
+        "record": {"contents": "write", "pull-requests": "write"},
+    },
+    "videos.yml": {},
+}
+
+
 def test_workflows_are_pinned_and_least_privilege() -> None:
+    """Every workflow is read-only at the top and SHA-pinned; write permissions exist only in the
+    jobs the allowlist names, with exactly what they declare. A new workflow, job or permission fails here."""
     paths = sorted(WORKFLOWS.glob("*.yml"))
-    assert [p.name for p in paths] == ["ci.yml"]
+    assert [p.name for p in paths] == sorted(ALLOWED_JOB_PERMISSIONS)
     for path in paths:
         text = path.read_text(encoding="utf-8")
         flow = yaml.safe_load(text)
-        assert flow["permissions"] == {"contents": "read"}, path.name
-        for job in flow["jobs"].values():
-            assert "permissions" not in job, path.name
+        assert flow["permissions"] in ({"contents": "read"}, {}), path.name
+        allowed = ALLOWED_JOB_PERMISSIONS[path.name]
+        assert set(allowed) <= set(flow["jobs"]), path.name
+        for name, job in flow["jobs"].items():
+            assert job.get("permissions", {}) == allowed.get(name, {}), (
+                path.name,
+                name,
+            )
             assert "environment" not in job, path.name
         assert "pull_request_target" not in text, path.name
         assert "secrets." not in text, path.name
