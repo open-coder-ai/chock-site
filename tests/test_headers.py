@@ -95,7 +95,10 @@ def test_workflows_are_pinned_and_least_privilege() -> None:
         allowed = ALLOWED_JOB_PERMISSIONS[path.name]
         assert set(allowed) <= set(flow["jobs"]), path.name
         for name, job in flow["jobs"].items():
-            assert job.get("permissions", {}) == allowed.get(name, {}), (path.name, name)
+            assert job.get("permissions", {}) == allowed.get(name, {}), (
+                path.name,
+                name,
+            )
             assert "environment" not in job, path.name
         assert "pull_request_target" not in text, path.name
         assert "secrets." not in text, path.name
