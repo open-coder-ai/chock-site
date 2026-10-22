@@ -276,8 +276,7 @@ pages:
     nav_label: Add a policy to the catalog
     description: "Add a new policy to chock-catalog step by step: folder, manifest, implementation, evals, the generators, and the CI jobs a pull request runs."
     intro: "A catalog policy is one folder: a manifest, its evals and, for a guard, its implementation. The catalog's tools generate the rest and its CI checks it. The steps below follow the catalog's CONTRIBUTING.md and tools at the pinned commit, and were dry-run against it."
-    blocks: [video, catalog]
-    video: catalog-policy
+    blocks: [catalog]
     prose: []
     catalog:
       - quote: CONTRIBUTING.md
@@ -996,10 +995,6 @@ texts:
         title: Adopt a catalog policy
         description: "chock add installs protect-main-branch from the catalog at a pinned commit and chock sync wires it. Chock refuses a commit to main. The same commit on a branch lands."
         setup: "Before the first command, a hidden step made an empty git repository at `/work/demo`."
-      catalog-policy:
-        title: Add a policy to the catalog
-        description: "The recording scaffolds a new policy inside chock-catalog, moves it into the base tree and gives it its prose entry and README row. Then regen_all.py regenerates the derived files and runs the checks."
-        setup: "Before the first command, a hidden step cloned chock-catalog at the pinned commit to `/work/catalog`, and installed the engine that commit pins and the catalog's test requirements."
 
 # DOCS-3: the agentseam pages (sitegen/docs.py, sitegen/agentseamdoc.py). They document the
 # agentseam commit in data/agentseam-source/source.json. The build fails unless the installed

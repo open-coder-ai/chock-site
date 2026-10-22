@@ -11,11 +11,10 @@ from sitegen import videos
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = yaml.safe_load((ROOT / "data" / "docs.yaml").read_text(encoding="utf-8"))
 HOME = yaml.safe_load((ROOT / "data" / "home.yaml").read_text(encoding="utf-8"))
-NAMES = ("own-policy", "adopt-policy", "catalog-policy")
+NAMES = ("own-policy", "adopt-policy")
 PAGES = {
     "write-own": "own-policy",
     "catalog-adopt": "adopt-policy",
-    "catalog-contribute": "catalog-policy",
 }
 
 
@@ -46,9 +45,9 @@ def test_a_changed_tape_fails_until_it_is_rendered_again(tmp_path: Path) -> None
 def test_the_catalog_videos_ran_the_pinned_catalog() -> None:
     ref = (ROOT / ".catalog-ref").read_text(encoding="utf-8").strip()
     assert videos.load(ROOT, "own-policy")["catalog"] is None
-    for name in ("adopt-policy", "catalog-policy"):
-        assert videos.load(ROOT, name)["catalog"] == ref
-        assert ref in (ROOT / videos.TAPES / f"{name}.tape").read_text(encoding="utf-8")
+    assert videos.load(ROOT, "adopt-policy")["catalog"] == ref
+    tape = ROOT / videos.TAPES / "adopt-policy.tape"
+    assert ref in tape.read_text(encoding="utf-8")
 
 
 def test_shown_commands_leave_out_the_hidden_setup_and_clear() -> None:
@@ -91,3 +90,11 @@ def test_home_page_shows_the_own_policy_video() -> None:
         record["height"],
         record["duration"],
     )
+
+
+def test_no_page_embeds_or_links_a_catalog_policy_video(built) -> None:
+    pages = [*built.out.rglob("*.html"), *built.out.rglob("*.md")]
+    assert pages
+    for page in pages:
+        assert "catalog-policy" not in page.read_text(encoding="utf-8"), page
+    assert not list((built.out / "video").glob("catalog-policy*"))

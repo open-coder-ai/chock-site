@@ -16,17 +16,15 @@ In CI: run the `videos` workflow from the Actions tab, download its `videos` art
 every video, and commit `static/video/`.
 
 Locally, on Linux, with chock at `.framework-ref` installed, `vhs`, `ttyd` and `ffmpeg` on PATH,
-and a writable `/work` (the tapes use `/work/demo` and `/work/catalog` so printed paths are
-stable). Run outside an agent session, or with no agent variable such as `CLAUDECODE` or
-`AI_AGENT` in the environment: they change what chock's hooks print.
+and a writable `/work` (the tapes use `/work/demo` so printed paths are stable). Run outside an
+agent session, or with no agent variable such as `CLAUDECODE` or `AI_AGENT` in the environment:
+they change what chock's hooks print.
 
 ```bash
 vhs videos/own-policy.tape
 vhs videos/adopt-policy.tape      # needs the network: chock add fetches the catalog
-vhs videos/catalog-policy.tape    # needs the network and python3.12: clones the catalog
 python -m sitegen.videos --sidecar own-policy
 python -m sitegen.videos --sidecar adopt-policy --catalog "$(cat .catalog-ref)"
-python -m sitegen.videos --sidecar catalog-policy --catalog "$(cat .catalog-ref)" --engine "$(cat /work/catalog/.framework-ref)"
 python -m sitegen.videos --check
 ```
 
