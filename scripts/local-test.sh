@@ -100,8 +100,11 @@ if [ "$installed_ref" != "$engine_ref" ] \
     # The pin changed (or first run): drop the old engine so pip installs the pinned one.
     "$py" -m pip uninstall --quiet --yes chock
 fi
-"$py" -m pip install --quiet --upgrade pip
-"$py" -m pip install --quiet -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${engine_ref}"
+# PyPI packages are checked by hash; the engine is pinned by commit and pulls nothing else.
+"$py" -m pip install --quiet --require-hashes -r requirements-dev.txt
+"$py" -m pip install --quiet --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@${engine_ref}"
+"$py" scripts/install_engine_deps.py
+"$py" -m pip check
 printf '%s\n' "$engine_ref" > "$marker"
 "$py" -m chock --version
 
@@ -116,7 +119,7 @@ fi
 tmp_dest="$("$py" -c 'import os, tempfile; print(os.path.join(tempfile.gettempdir(), "chock-try"))')"
 engine_check() {
     echo "To test a builder selection end to end, in a second terminal:"
-    echo "  \"$py\" -m chock install --selection '<code from the builder>' --client codex --dest \"$tmp_dest\""
+    echo "  \"$py\" -m chock install --selection <code from the builder> --client codex --dest \"$tmp_dest\""
     echo "  (no --apply: it only builds the plugin into that folder; your agent config is untouched)"
 }
 

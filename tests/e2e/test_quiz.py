@@ -1,6 +1,7 @@
 """R-3: the builder's start screen — three questions, a result, and the way into the full builder."""
 
 import json
+import re
 from pathlib import Path
 
 from conftest import assert_clean, collect, screenshot
@@ -107,7 +108,7 @@ def test_the_agent_answer_and_the_agent_picker_are_one_choice(page, site_url) ->
     _answer_secrets_and_skipped(page, "Only hard stops")
     command = page.locator("[data-quiz-command]").inner_text()
     assert command.endswith(" --client cursor --apply")
-    assert engine.load_selection(command.split("'")[1])["client"] == "cursor"
+    assert engine.load_selection(command.split()[3])["client"] == "cursor"
     assert "Untested" not in page.locator(".quiz-command").inner_text()
     assert page.locator(".quiz-command .client-untested").count() == 0
     assert_clean(page)
@@ -120,7 +121,7 @@ def test_an_untested_agent_answer_says_so_and_skips_apply(page, untested_url) ->
     _answer_secrets_and_skipped(page, "Only hard stops")
     command = page.locator("[data-quiz-command]").inner_text()
     assert command.endswith(f" --client {CLIENT}")
-    assert engine.load_selection(command.split("'")[1])["client"] == CLIENT
+    assert engine.load_selection(command.split()[3])["client"] == CLIENT
     name = engine.client_name(CLIENT)
     assert f"Untested in {name}." in page.locator(".quiz-command").inner_text()
     assert_clean(page)
@@ -212,7 +213,7 @@ def test_remove_drops_a_pick_and_the_command(page, site_url) -> None:
     after = _result_ids(page)
     assert after == before[1:]
     command = page.locator("[data-quiz-command]").inner_text()
-    ids = [p["id"] for p in engine.load_selection(command.split("'")[1])["policies"]]
+    ids = [p["id"] for p in engine.load_selection(command.split()[3])["policies"]]
     assert sorted(ids) == sorted(after)
     assert_clean(page)
 
@@ -221,9 +222,11 @@ def test_command_is_a_valid_selection_with_the_picked_ids(page, site_url) -> Non
     _start(page, site_url)
     _answer_secrets_and_skipped(page, "Only hard stops")
     command = page.locator("[data-quiz-command]").inner_text()
-    assert command.startswith("chock install --selection '")
-    assert command.endswith("' --client claude-code --apply")
-    selection = engine.load_selection(command.split("'")[1])
+    assert re.fullmatch(
+        r"chock install --selection [A-Za-z0-9_-]+ --client claude-code --apply",
+        command,
+    ), command
+    selection = engine.load_selection(command.split()[3])
     assert sorted(p["id"] for p in selection["policies"]) == sorted(_result_ids(page))
     site = _site(page, site_url)
     assert selection["catalog"]["ref"] == site["catalog"]["ref"]

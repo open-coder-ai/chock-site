@@ -103,9 +103,12 @@ if ($installedRef -ne $engineRef) {
     & $py -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('chock') is None)"
     if ($LASTEXITCODE -eq 0) { Invoke-Native $py @("-m", "pip", "uninstall", "--quiet", "--yes", "chock") }
 }
-Invoke-Native $py @("-m", "pip", "install", "--quiet", "--upgrade", "pip")
-Invoke-Native $py @("-m", "pip", "install", "--quiet", "-r", "requirements-dev.txt",
+# PyPI packages are checked by hash; the engine is pinned by commit and pulls nothing else.
+Invoke-Native $py @("-m", "pip", "install", "--quiet", "--require-hashes", "-r", "requirements-dev.txt")
+Invoke-Native $py @("-m", "pip", "install", "--quiet", "--no-deps", "--no-build-isolation",
     "chock @ git+https://github.com/open-coder-ai/chock@$engineRef")
+Invoke-Native $py @("scripts/install_engine_deps.py")
+Invoke-Native $py @("-m", "pip", "check")
 [System.IO.File]::WriteAllText($marker, "$engineRef`n")
 Invoke-Native $py @("-m", "chock", "--version")
 
@@ -120,7 +123,7 @@ if ($RunTests) {
 $tmpDest = Join-Path ([System.IO.Path]::GetTempPath()) "chock-try"
 function Write-EngineCheck {
     Write-Host "To test a builder selection end to end, in a second PowerShell window:" -ForegroundColor Yellow
-    Write-Host "  & `"$py`" -m chock install --selection '<code from the builder>' --client codex --dest `"$tmpDest`"" -ForegroundColor Yellow
+    Write-Host "  & `"$py`" -m chock install --selection <code from the builder> --client codex --dest `"$tmpDest`"" -ForegroundColor Yellow
     Write-Host "  (no --apply: it only builds the plugin into that folder; your agent config is untouched)" -ForegroundColor Yellow
 }
 
