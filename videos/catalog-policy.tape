@@ -93,6 +93,20 @@ Type "python tools/regen_all.py --fast"
 Enter
 Wait
 Sleep 4s
+Type "git add base/block-marker && git commit -q -m 'Add block-marker'"
+Enter
+Wait
+Type "python tools/gen_policy_docs.py"
+Enter
+Wait
+Sleep 1s
+Type "clear"
+Enter
+Wait
+Type "python tools/regen_all.py --fast"
+Enter
+Wait
+Sleep 4s
 Type "git status --short"
 Enter
 Wait
