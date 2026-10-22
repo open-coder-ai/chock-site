@@ -1818,12 +1818,6 @@ body { overflow-x: clip; }
 .button-outline-dark { border-color: var(--primary); color: var(--primary); }
 .button-outline-dark:hover { color: var(--primary); border-color: var(--primary); background: color-mix(in srgb, var(--primary) 6%, transparent); }
 
-.videos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 24px; }
-.video { margin: 0; min-width: 0; }
-.video-player { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
-.video figcaption { margin-top: 12px; color: var(--muted); }
-.video-title { color: var(--text); font-weight: 600; }
-
 /* builder start screen */
 
 .builder-grid[hidden], .quiz[hidden] { display: none; }

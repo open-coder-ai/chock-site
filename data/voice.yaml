@@ -547,6 +547,7 @@ upstream:
   sentences:
   - Derived cases alone are not enough — attestation needs at least one authored case that could have failed.
   - Pull requests change sources; docs and images lag until the release.
+  - Run `python tools/regen_all.py`, commit `base/<id>`, then run `python tools/gen_policy_docs.py` again; until then `python tools/builder_link.py` lists the page.
   - The compliance and agentic-security packs stay uninstalled — by their own doctrine they only earn their place where they apply.
   - The tool adopts your policy into an empty repository — init, copy, recompile, install-hooks, validate, eval — and records what the tools printed.
   - 'What this repo runs — the subset of `base/` that applies to this repository, installed in `.agents/policies/` to govern the catalog itself (four do not apply here: `chock-mise`, `java-security`, `no-a11y-regression` and `rtk-dangerous-actions-blocker`): the repo protects itself the same way it asks adopters to.'
