@@ -91,10 +91,7 @@ See `AGENTS.md` for the rules and `templates/`, `data/`, `static/`, `sitegen/`,
 The landing page (`sitegen/home.py`) reads these files; every count, label and
 policy line on it is computed from the catalog at build time.
 
-- `data/home.yaml`, under `landing:`: the page copy. `videos: []` at the top holds the
-  home page's videos. **The video block ships hidden**: it renders only when `videos`
-  has entries (`{title, href}`), and the board's placeholders and clip grid are not
-  built at all.
+- `data/home.yaml`, under `landing:`: the page copy. The site shows no video.
 - `data/demo.yaml`: one entry per terminal-demo tab, a policy id and a case id from
   that policy's eval suite. The build fails if the case is missing or does not
   expect a block.
