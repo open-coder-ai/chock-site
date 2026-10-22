@@ -218,11 +218,10 @@ def test_install_commands_show_the_placeholder_and_link_the_builder(built) -> No
     sections = _agent_sections(page)
     for client in engine.client_ids():
         assert (
-            f"--selection &#x27;{html.escape(code)}&#x27; --client {client}"
-            in sections[client]
+            f"--selection {html.escape(code)} --client {client}" in sections[client]
         ), client
         assert (
             f'<a href="/coding/builder/#client={client}">{link}</a>' in sections[client]
         ), client
-        assert f"--selection '{code}' --client {client}" in twin, client
+        assert f"--selection {code} --client {client}" in twin, client
         assert f"{hint} [{link}](/coding/builder/#client={client})." in twin, client

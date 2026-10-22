@@ -119,7 +119,7 @@ fi
 tmp_dest="$("$py" -c 'import os, tempfile; print(os.path.join(tempfile.gettempdir(), "chock-try"))')"
 engine_check() {
     echo "To test a builder selection end to end, in a second terminal:"
-    echo "  \"$py\" -m chock install --selection '<code from the builder>' --client codex --dest \"$tmp_dest\""
+    echo "  \"$py\" -m chock install --selection <code from the builder> --client codex --dest \"$tmp_dest\""
     echo "  (no --apply: it only builds the plugin into that folder; your agent config is untouched)"
 }
 
