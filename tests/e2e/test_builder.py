@@ -1,6 +1,7 @@
 """The builder (plan 6.5, PR 3): presets, URL state, downloads, warnings, real install."""
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -54,7 +55,8 @@ def test_preset_gives_command_share_link_and_valid_selection(page, site_url) -> 
     pick_start(page, "git-hygiene")
     members = _members("git-hygiene")
     assert _count(page) == f"{len(members)} policies"
-    assert "--selection '" in page.locator("[data-selection-code]").inner_text()
+    command = page.locator("[data-selection-code]").inner_text()
+    assert re.search(r"--selection [A-Za-z0-9_-]+ --client ", command), command
     share = _share(page)
     assert share.endswith(f"#client=claude-code&p={','.join(members)}")
     assert (

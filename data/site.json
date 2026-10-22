@@ -178,8 +178,8 @@
       "factory-droid": null
     },
     "commands": {
-      "witnessed": "chock install --selection '__CODE__' --client __CLIENT__ --apply",
-      "untested": "chock install --selection '__CODE__' --client __CLIENT__"
+      "witnessed": "chock install --selection __CODE__ --client __CLIENT__ --apply",
+      "untested": "chock install --selection __CODE__ --client __CLIENT__"
     },
     "texts": {
       "legend": "Your agent",
