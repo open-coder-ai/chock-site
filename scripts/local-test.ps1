@@ -123,7 +123,7 @@ if ($RunTests) {
 $tmpDest = Join-Path ([System.IO.Path]::GetTempPath()) "chock-try"
 function Write-EngineCheck {
     Write-Host "To test a builder selection end to end, in a second PowerShell window:" -ForegroundColor Yellow
-    Write-Host "  & `"$py`" -m chock install --selection '<code from the builder>' --client codex --dest `"$tmpDest`"" -ForegroundColor Yellow
+    Write-Host "  & `"$py`" -m chock install --selection <code from the builder> --client codex --dest `"$tmpDest`"" -ForegroundColor Yellow
     Write-Host "  (no --apply: it only builds the plugin into that folder; your agent config is untouched)" -ForegroundColor Yellow
 }
 
