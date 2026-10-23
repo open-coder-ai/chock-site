@@ -5,7 +5,7 @@
   "summary": "A person's stop on agents. It shows the files chock stop and chock stop --everywhere write, the hooks that read them, and the log lines a stop leaves.",
   "intro": "A stop is a file a person writes and every chock hook reads. While it is in force, the pre-tool stop check, the git dispatcher and the MCP gateway refuse the next action of an agent in scope, and each refusal is logged. Only a person at a terminal lifts it.",
   "pins": {
-    "chock": "95d4b8a3565b5edcff3b930ab9d23891e7551dd0"
+    "chock": "8cf204f6f868e932069a8d2902db52f034e08dfc"
   },
   "canvas": {
     "width": 800,
