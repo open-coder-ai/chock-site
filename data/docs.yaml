@@ -257,7 +257,7 @@ pages:
           There are two ways to install the same policies:
 
           - **In your repository**, for a team: policies are pinned to a catalog commit, committed with the repository, and run at the agent's own hook where the client has one, at commit and in CI. This page walks through it.
-          - **In your coding agent, as one merged plugin per client**, for one person with no repository changes: the plugin repos are retired, and plugins come from the chock.sh builder. Ask first, then build it from a selection with `chock install --selection <code> --apply`. See [Quickstart: plugin](/docs/quickstart/plugin/).
+          - **In your coding agent, as plugins**, for one person with no repository changes. There are two ways, and you install a given policy from one of them only, never both, because every copy runs its own hook. The chock.sh builder makes one merged plugin per client and needs chock: ask first, then build it from a selection with `chock install --selection <code> --apply`. See [Quickstart: plugin](/docs/quickstart/plugin/). If you cannot install chock, the per-policy marketplace needs Python 3.11+, git and a bash but no chock, and carries one plugin per policy: the README's [Install section](__CATALOG__README.md#install) links each agent's repository.
       - heading: Adopt in your repository, step by step
         run: true
       - heading: Pin a commit and verify the hash

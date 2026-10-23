@@ -38,6 +38,10 @@ questions:
   group: coding
   q: "How do I change or remove the plugin?"
   a: "To change what is installed, ask first, then re-run chock install --selection YOUR_CODE --apply with a new selection: it replaces the plugin in one step. To remove everything, use your agent's own plugin uninstall and marketplace removal. The Install page lists them for each agent."
+- id: no-chock
+  group: coding
+  q: "Can I use the plugins without installing chock?"
+  a: "Yes, with the per-policy marketplace. It carries one plugin per policy and is republished with every chock release. The machine needs Python 3.11+, git and a bash, and no chock. The Agents page links the repository for each agent that has one. Add it, or mirror it into your own git server. Install a policy from one place only, never both: each copy runs its own hook."
 - id: what-command-does
   group: coding
   q: "What does the command do on my machine?"

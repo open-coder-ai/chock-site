@@ -1033,10 +1033,23 @@ def _client_notes(site: Site, clients: dict[str, Any], client: str) -> str:
     return " ".join([lead, *notes])
 
 
+def _repo_line(templates: Path, texts: dict[str, str], repo: str | None) -> str:
+    """An agent card's plugin-repository line, or "" for an agent without one."""
+    if repo is None:
+        return ""
+    return render_file(
+        templates / PARTIALS / "client-repo.html",
+        REPO_LINE=texts["repo_line"],
+        REPO=repo,
+        REPO_LABEL=repo.rsplit("/", 1)[-1],
+        REPO_NOTE=texts["repo_note"],
+    )
+
+
 def _clients(
     site: Site, track: Track, out_dir: Path, templates: Path
 ) -> tuple[str, str]:
-    """The agents page: every agent the builder builds for, its `--client` value, state and install notes."""
+    """The agents page: every agent the builder builds for, its `--client` value, state, install notes and plugin repo."""
     data = site.data
     clients = data["builder_clients"]
     page = data["pages"]["clients"]
@@ -1057,6 +1070,7 @@ def _clients(
             CLIENT_VALUE=texts["client_value"],
             STEPS_HEADING=about["steps_heading"],
             STEPS=_step_items(templates / track.slug, about["steps"]),
+            REPO=Safe(_repo_line(templates, texts, about["plugin_repo"])),
         )
         for client in clients["order"]
         if (about := clients["clients"][client])
@@ -1095,6 +1109,12 @@ def _clients(
             f"Builder: /coding/builder/#client={client}.\n\n"
             f"{about['steps_heading']}\n\n"
             f"{clientpage.md_steps(about['steps'], texts['ask_inline'])}"
+            + (
+                f"\n{texts['repo_line']} {about['plugin_repo']} "
+                f"{texts['repo_note']}\n\n"
+                if about["plugin_repo"]
+                else ""
+            )
             for client in clients["order"]
             if (about := clients["clients"][client])
         ),
@@ -1195,7 +1215,7 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
         f"- [Install](/{track.slug}/install/index.md): "
         "the command and the selection file\n"
         f"- [Agents](/{track.slug}/clients/index.md): "
-        "every agent the builder builds for, its --client value and install notes\n"
+        "every agent the builder builds for, its --client value, install notes and plugin repository\n"
     )
     llms += f"\n## {track.title}: policies\n\n"
     for policy in policies_sorted(site):
