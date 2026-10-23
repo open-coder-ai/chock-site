@@ -1042,13 +1042,14 @@ def _repo_line(templates: Path, texts: dict[str, str], repo: str | None) -> str:
         REPO_LINE=texts["repo_line"],
         REPO=repo,
         REPO_LABEL=repo.rsplit("/", 1)[-1],
+        REPO_NOTE=texts["repo_note"],
     )
 
 
 def _clients(
     site: Site, track: Track, out_dir: Path, templates: Path
 ) -> tuple[str, str]:
-    """The agents page: every agent the builder builds for, its state, and its plugin repo."""
+    """The agents page: every agent the builder builds for, its `--client` value, state, install notes and plugin repo."""
     data = site.data
     clients = data["builder_clients"]
     page = data["pages"]["clients"]
@@ -1066,6 +1067,9 @@ def _clients(
             STATE_WORD=sentence_start(texts[about["witness"]]),
             NOTE=Prose(_client_notes(site, clients, client)),
             BUILD=about["build_link"],
+            CLIENT_VALUE=texts["client_value"],
+            STEPS_HEADING=about["steps_heading"],
+            STEPS=_step_items(templates / track.slug, about["steps"]),
             REPO=Safe(_repo_line(templates, texts, about["plugin_repo"])),
         )
         for client in clients["order"]
@@ -1100,15 +1104,17 @@ def _clients(
         templates / MD / track.slug / "clients.md",
         INTRO=intro,
         CLIENT_LINES="".join(
-            f"- {about['name']} (`{client}`, {texts[about['witness']]}): "
+            f"## {about['name']} (`--client {client}`, {texts[about['witness']]})\n\n"
             f"{_client_notes(site, clients, client)} "
-            f"Builder: /coding/builder/#client={client}."
+            f"Builder: /coding/builder/#client={client}.\n\n"
+            f"{about['steps_heading']}\n\n"
+            f"{clientpage.md_steps(about['steps'], texts['ask_inline'])}"
             + (
-                f" {texts['repo_line']} {about['plugin_repo']}."
+                f"\n{texts['repo_line']} {about['plugin_repo']} "
+                f"{texts['repo_note']}\n\n"
                 if about["plugin_repo"]
                 else ""
             )
-            + "\n"
             for client in clients["order"]
             if (about := clients["clients"][client])
         ),
@@ -1209,7 +1215,7 @@ def build(site: Site, track: Track, out_dir: Path, templates: Path) -> SectionRe
         f"- [Install](/{track.slug}/install/index.md): "
         "the command and the selection file\n"
         f"- [Agents](/{track.slug}/clients/index.md): "
-        "every agent the builder builds for, and its plugin repository\n"
+        "every agent the builder builds for, its --client value, install notes and plugin repository\n"
     )
     llms += f"\n## {track.title}: policies\n\n"
     for policy in policies_sorted(site):

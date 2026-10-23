@@ -262,7 +262,7 @@ def markdown(block: dict[str, Any]) -> str:
             f"{code_hint(block)} [{block['texts']['code_hint_link']}]"
             f"(/coding/builder/#client={client}).\n\n{data['steps_heading']}\n\n"
         )
-        lines.append(_md_steps(data["steps"], block["texts"]["ask_inline"]))
+        lines.append(md_steps(data["steps"], block["texts"]["ask_inline"]))
         lines.append(f"\n{block['texts']['remove_md']}\n\n")
         for step in data["remove"]:
             (kind, text), *_ = step.items()
@@ -272,13 +272,16 @@ def markdown(block: dict[str, Any]) -> str:
                 f"- {unverified['text']} [{unverified['link']}]({unverified['url']}).\n"
             )
         if data["plugin_repo"]:
-            lines.append(f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n")
+            lines.append(
+                f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n\n"
+                f"{block['texts']['repo_note']}\n"
+            )
         lines.append(_md_claude_plugin(block, data["claude_plugin"]))
         lines.append("\n")
     return "".join(lines)
 
 
-def _md_steps(steps: list[dict[str, str]], ask: str) -> str:
+def md_steps(steps: list[dict[str, str]], ask: str) -> str:
     """Steps for the Markdown twin: numbered commands, notes with the ask, settings indented."""
     lines = []
     number = 0
@@ -306,7 +309,7 @@ def _md_claude_plugin(block: dict[str, Any], offer: dict[str, Any] | None) -> st
     for route in offer["routes"]:
         lines.append(f"{route['where']}: {route['label']}\n\n")
         lines.append(
-            _md_steps(
+            md_steps(
                 claude_route_steps(route, f"`{texts['code_placeholder']}`"),
                 texts["ask_inline"],
             )

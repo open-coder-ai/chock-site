@@ -97,7 +97,7 @@ The parser walk in section 3 measured 45 parser nodes at 39df00b and 48 at fd376
 
 - **README:** three adoption routes:
   - in-repo `chock init` / `chock add <id> --ref <sha> --verify-sha <sha256>` / `chock sync --repo . --ci`;
-  - per-agent plugin repos;
+  - per-agent plugin repos (retired: plugins come from the chock.sh builder);
   - `chock install --selection`.
 - **docs/:**
   - generated per-policy `docs/<id>/README.md` and `adoption.md`;
