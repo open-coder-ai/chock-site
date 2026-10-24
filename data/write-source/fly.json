@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "engine": "bc52474d895df3bf0ab4b4be7d55b0bf9ad0ff96",
+  "engine": "7fabc8a75aeb6dbe4e7da83b1f843cb0639d5a5a",
   "run": "fly",
   "examples": [
     {
@@ -36,7 +36,7 @@
     {
       "step": 6,
       "command": "printf '%s' '{\"hook_event_name\": \"PreToolUse\", \"tool_name\": \"Bash\", \"tool_input\": {\"command\": \"terraform destroy\"}}' | sh .chock/bin/launch.sh .chock/bin/claude_code.py --guard .agents/policies/my-no-tf-destroy/implementations/my-no-tf-destroy.py",
-      "output": "my-no-tf-destroy: this command is refused. Run it yourself after review.\n{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"Blocked by chock policy: my-no-tf-destroy\"}}",
+      "output": "my-no-tf-destroy: this command is refused. Run it yourself after review.\n{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"deny\", \"permissionDecisionReason\": \"Blocked by chock policy: my-no-tf-destroy: my-no-tf-destroy: this command is refused. Run it yourself after review.\"}}",
       "exit": 0
     },
     {

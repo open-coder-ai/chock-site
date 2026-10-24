@@ -4,6 +4,10 @@
     {
       "source": "agentseam src/agentseam/data/matrix.json (goose notes, agentseam 683f95b)",
       "texts": ["Git\\bin (sh.exe) put on PATH"]
+    },
+    {
+      "source": "chock-catalog base/refname-filename-metachar/manifest.yaml (changelog, catalog e885f91)",
+      "texts": ["r\\x.txt"]
     }
   ]
 }
