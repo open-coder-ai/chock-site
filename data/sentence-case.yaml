@@ -76,13 +76,13 @@ upstream:
     starts:
     - live probe of a chock plugin auto-discovered from
     - live probe of a chock plugin installed with
-    - live probe of chock's shipped plugin built on
-    - live probe of the chock plugin, every other
-    - 'live probe of the chock plugin: pin-github-actions'
     - 'live probe: a hook-JSON deny blocked a matched'
     - 'live probe: a stdout deny blocked a matched'
     - 'live probe: an exit-2 deny blocked a matched'
     - 'live probe: both variables were in the environment'
+    - live probe of chock's shipped plugin, built on Windows and copied to `…` with no h
+    - live probe of the chock plugin, with every other chock plugin disabled.
+    - live probe of the chock plugin.
   - source: chock src/chock/packs/_skills/policy-init/SKILL.md (quoted in data/docs-source)
     starts:
     - 'classify(request) using `…`; present user_facing_class:'
@@ -109,9 +109,6 @@ upstream:
   - source: chock src/chock/validation/schemas/manifest.hook.json
     starts:
     - 'on'' is authoritative: the compiler wires'
-  - source: chock-catalog CONTRIBUTING.md (quoted in data/catalog-source)
-    starts:
-    - and commit `…` in the same PR.
   - source: chock-catalog CONTRIBUTING.md CI gates (quoted in data/catalog-source/ci-gates.json)
     starts:
     - always() && github.event_name == 'push' &&
@@ -165,3 +162,6 @@ upstream:
   - source: chock-catalog base/token-efficiency/manifest.yaml
     starts:
     - 'avoid: wasting context window on low-signal'
+  - source: chock-catalog base/block-destructive-commands/manifest.yaml
+    starts:
+    - terraform plan was never refused; a case now pins it.
