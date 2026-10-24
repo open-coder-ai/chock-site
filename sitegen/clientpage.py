@@ -271,6 +271,11 @@ def markdown(block: dict[str, Any]) -> str:
             lines.append(
                 f"- {unverified['text']} [{unverified['link']}]({unverified['url']}).\n"
             )
+        if data["plugin_repo"]:
+            lines.append(
+                f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n\n"
+                f"{block['texts']['repo_note']}\n"
+            )
         lines.append(_md_claude_plugin(block, data["claude_plugin"]))
         lines.append("\n")
     return "".join(lines)
