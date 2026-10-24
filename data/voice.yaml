@@ -737,8 +737,7 @@ upstream:
 - source: chock-catalog base/protect-agent-config/manifest.yaml
   sentences:
   - 'Shell guard refuses writes to AGENTS.md, whole agent folders (.claude/, .cursor/, .codex/, .gemini/, .agents/, .chock/, ...), MCP/hook client configs (.mcp.json, ...), guardrails toggles, plugin install markers, chock.lock, hook files of Cline, Kiro, Augment, Windsurf and Devin (user and machine level), ~/.claude.json, Claude Code plugin roots, project config of Kilo Code, opencode, Factory, Amp, Continue and Goose, .git/{hooks,config}, policy implementations/: redirect, rm/mv/tee/sed -i, cp into, git checkout/restore, a write through a symlink; CLAUDE_CODE_PLUGIN_DIRS, claude --plugin-dir, chock resume (best effort).'
-  - Verdicts on POSIX are unchanged; tests in test_protect_agent_config_winroot.py.
-  - '`0.7.1` · `2026-10-20` · Fix, a Windows repository root is judged like a POSIX one (pre-release fix CAT-13): `outside()` counts a drive-letter path as outside the repository, so `cp CLAUDE.md /srv/backup/` (given the repository''s drive on Windows) is allowed as on Linux (tc-474); the substitution resolver accepts a drive-letter root and a Windows short name in it (`RUNNER~1`, as a GitHub runner spells its temp folder), so `cd $(git rev-parse --git-dir) && cd hooks && echo x > pre-commit` is refused on Windows too (tc-524).'
+  - Eval cases tc-1561 to tc-1566; tests in test_protect_agent_config_opaque.py.
 - source: chock-catalog base/protect-ci-workflows/manifest.yaml
   sentences:
   - 'Not judged: deletions, empty writes, shell writes to non-GitHub CI paths; plugin installs ship no gate.'
