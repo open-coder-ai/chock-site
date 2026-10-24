@@ -114,7 +114,10 @@ jobs:
             -m "vendor quotes: record dates verified $(date -u +%F)" \
             -m "Signed-off-by: $bot <$email>")
           git push origin "$commit:refs/heads/$BRANCH"
-          if [ "$(gh pr list --head "$BRANCH" --state open --json number --jq length)" = "0" ]; then
+          # --head matches the branch name of any fork too, so count only PRs whose head is this repository
+          open_prs=$(gh pr list --head "$BRANCH" --state open --json number,isCrossRepository \
+            --jq '[.[] | select(.isCrossRepository | not)] | length')
+          if [ "$open_prs" = "0" ]; then
             gh pr create --base main --head "$BRANCH" \
               --title "Vendor quotes: record verified dates" \
               --body "The weekly vendor-quotes workflow found these quotes on their pages and set \`checked\` in data/vendor-quotes.json. Only dates change. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

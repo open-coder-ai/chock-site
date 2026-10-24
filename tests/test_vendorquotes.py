@@ -2,10 +2,13 @@
 
 import datetime as dt
 import json
+import os
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 from sitegen import vendorquotes as vq
 from sitegen.pageparts import PageError
@@ -147,3 +150,60 @@ def test_cli_check_then_record_with_a_stub_fetch(
     assert vq.main([*record[:-1], "acme nobody", "--date", "2026-10-20"]) == 2
     checked = {q["id"]: q["checked"] for q in vq.load(tmp_path)}
     assert checked == {"acme": "2026-10-20", "gone": "2026-10-01"}
+
+
+FAKE_GH = """#!/bin/bash
+# Stands in for gh: prints $FAKE_PRS, through the --jq filter it was given, as gh does.
+while [ $# -gt 0 ]; do
+  [ "$1" = "--jq" ] && filter=$2
+  shift
+done
+printf '%s' "$FAKE_PRS" | jq -r "$filter"
+"""
+
+
+def _open_prs_seen_by_record_step(tmp_path: Path, prs: list[dict[str, object]]) -> str:
+    """Run the record step's existing-PR check against a fake gh listing `prs`; return its count."""
+    flow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "vendor-quotes.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    step = next(
+        s
+        for s in flow["jobs"]["record"]["steps"]
+        if s.get("name", "").startswith("commit to the bot")
+    )
+    lines = step["run"].splitlines()
+    start = next(
+        i for i, line in enumerate(lines) if line.startswith("open_prs=$(gh pr list")
+    )
+    command = lines[start]
+    while command.endswith("\\"):
+        start += 1
+        command = command[:-1] + lines[start]
+    fake = tmp_path / "gh"
+    fake.write_text(FAKE_GH, encoding="utf-8")
+    fake.chmod(0o755)
+    env = {
+        "PATH": f"{tmp_path}:{os.environ['PATH']}",
+        "BRANCH": "bot/vendor-quote-dates",
+        "FAKE_PRS": json.dumps(prs),
+    }
+    done = subprocess.run(
+        ["bash", "-c", f'{command}\necho "$open_prs"'],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return done.stdout.strip()
+
+
+def test_record_step_ignores_a_fork_pr_with_the_bot_branch_name(tmp_path: Path) -> None:
+    fork = {"number": 7, "isCrossRepository": True}
+    mine = {"number": 8, "isCrossRepository": False}
+    assert _open_prs_seen_by_record_step(tmp_path, []) == "0"
+    assert _open_prs_seen_by_record_step(tmp_path, [fork]) == "0"
+    assert _open_prs_seen_by_record_step(tmp_path, [fork, mine]) == "1"
+    assert _open_prs_seen_by_record_step(tmp_path, [mine]) == "1"
