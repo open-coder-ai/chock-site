@@ -196,3 +196,51 @@ def test_a_setup_step_outside_the_allowlist_is_refused(
 def test_the_committed_setup_is_allowlisted() -> None:
     script = catalogdoc.load_script(DATA, CATALOG_REF)
     assert all(argv[0] in catalogdoc.PROGRAMS for argv in script["setup"])
+
+
+def _git_script(steps: list[dict]) -> dict:
+    """A git-only adopt script, so the run needs no network and no catalog."""
+    return {
+        "repo": "/work/demo",
+        "home": "/home/demo",
+        "setup": [["git", "init", "-q", "-b", "main", "."]],
+        "steps": steps,
+    }
+
+
+def test_a_step_whose_exit_is_not_the_expected_one_fails_the_run() -> None:
+    script = _git_script([{"run": ["git", "rev-parse", "HEAD"]}])
+    with pytest.raises(PageError, match=r"adopt step 1.*exit 128.*expected 0"):
+        catalogdoc.run_adopt(script, ENGINE_REF, CATALOG_REF)
+
+
+def test_a_declared_exit_is_the_expected_one() -> None:
+    script = _git_script([{"run": ["git", "rev-parse", "HEAD"], "exit": 128}])
+    adopt = catalogdoc.run_adopt(script, ENGINE_REF, CATALOG_REF)
+    assert [e["exit"] for e in adopt["examples"]] == [128]
+
+
+def test_a_declared_exit_the_step_does_not_give_fails_the_run() -> None:
+    script = _git_script([{"run": ["git", "status", "-s"], "exit": 1}])
+    with pytest.raises(PageError, match=r"adopt step 1.*exit 0.*expected 1"):
+        catalogdoc.run_adopt(script, ENGINE_REF, CATALOG_REF)
+
+
+@pytest.mark.parametrize("declared", ["1", True, -1, 1.5, None, [1]])
+def test_a_step_exit_that_is_not_a_small_integer_is_refused(
+    tmp_path: Path, declared: object
+) -> None:
+    script = yaml.safe_load((DATA / catalogdoc.ADOPT_YAML).read_text(encoding="utf-8"))
+    script["steps"][0]["exit"] = declared
+    (tmp_path / catalogdoc.ADOPT_YAML).write_text(yaml.safe_dump(script), "utf-8")
+    with pytest.raises(PageError, match="exit"):
+        catalogdoc.load_script(tmp_path, CATALOG_REF)
+
+
+def test_the_committed_script_declares_the_refused_commit_and_nothing_else() -> None:
+    script = catalogdoc.load_script(DATA, CATALOG_REF)
+    declared = {s["run"][2]: s["exit"] for s in script["steps"] if "exit" in s}
+    assert declared == {"--allow-empty": 1}
+    adopt = json.loads((SOURCE / catalogdoc.ADOPT_JSON).read_text(encoding="utf-8"))
+    for step, example in zip(script["steps"], adopt["examples"], strict=True):
+        assert example["exit"] == step.get("exit", 0)
