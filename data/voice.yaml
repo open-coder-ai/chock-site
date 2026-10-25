@@ -646,9 +646,8 @@ upstream:
 - source: chock-catalog base/block-no-verify/manifest.yaml
   sentences:
   - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/revert, -n on commit/am; core.hooksPath set by -c, git config or GIT_CONFIG_*; HUSKY=0, SKIP=, LEFTHOOK=0 and kin; hook manager uninstall; aliases and rebase --exec defined in the command.
-  - Guard verdicts are unchanged, so no eval case is added; the flag is a manifest fact the engine reads.
-  - This policy refuses the commands that skip the hooks chock installs and the person-only variables that answer or lower them; a config line that disabled it would have lifted both in one unguarded write (the review's chain wrote that line through a wrapper script and ran `chock sync`).
-  - '`0.5.0` · `2026-10-19` · Behaviour change, the policy cannot be switched off from the config it guards (chock review B1, M2; pre-release fix CAT-6).'
+  - '`0.5.1` · `2026-10-24` · Behaviour change, added coverage for three more ways to switch the hooks chock installs off (SR-1c; eval cases tc-109 to tc-113; tests in test_block_no_verify_launcher.py).'
+  - 'Refused: writing the `chock.python` git key (the interpreter chock''s launcher runs hooks under), as `git config`, `-c` or the GIT_CONFIG_* variables; `git config --unset core.hooksPath` and `--unset-all`, which asked a person and now refuse as setting the key does (`--remove-section core` still asks); `git config --file <repo>/.git/config <key> <value>`, a direct write to the repository config.'
 - source: chock-catalog base/block-persistence-shapes/manifest.yaml
   sentences:
   - 'Best-effort guard against shell commands that publish or keep access after the session: npm/pnpm/yarn/twine/ poetry/uv/cargo/gem publish, docker/podman push and login, npm token and registry edits, repos made public; user services, launch agents, cron/at/schtasks, Run keys, authorized_keys, runner registration, sudoers, setuid bits, detached downloads.'
@@ -737,7 +736,9 @@ upstream:
 - source: chock-catalog base/protect-agent-config/manifest.yaml
   sentences:
   - 'Shell guard refuses writes to AGENTS.md, whole agent folders (.claude/, .cursor/, .codex/, .gemini/, .agents/, .chock/, ...), MCP/hook client configs (.mcp.json, ...), guardrails toggles, plugin install markers, chock.lock, hook files of Cline, Kiro, Augment, Windsurf and Devin (user and machine level), ~/.claude.json, Claude Code plugin roots, project config of Kilo Code, opencode, Factory, Amp, Continue and Goose, .git/{hooks,config}, policy implementations/: redirect, rm/mv/tee/sed -i, cp into, git checkout/restore, a write through a symlink; CLAUDE_CODE_PLUGIN_DIRS, claude --plugin-dir, chock resume (best effort).'
-  - Eval cases tc-1561 to tc-1566; tests in test_protect_agent_config_opaque.py.
+  - '`0.7.3` · `2026-10-24` · Added coverage (SR-1c; eval cases tc-1567 to tc-1571; tests in test_block_no_verify_launcher.py).'
+  - The `chock.python` git key, the interpreter chock's launcher runs hooks under, joins the `git config` keys that run code, so setting it by `git config`, `-c` or the GIT_CONFIG_* variables is refused as the other code-running keys are; reading it passes.
+  - 'Pinned, behaviour unchanged: `.chock/config.yaml` is protected as a shell write and as an Edit/Write (the whole-folder `.chock/` rule and its own entry), including written from inside `sh -c`, `bash -c` and `eval`; reading it passes.'
 - source: chock-catalog base/protect-ci-workflows/manifest.yaml
   sentences:
   - 'Not judged: deletions, empty writes, shell writes to non-GitHub CI paths; plugin installs ship no gate.'
