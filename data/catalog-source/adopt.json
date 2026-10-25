@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "engine": "7fabc8a75aeb6dbe4e7da83b1f843cb0639d5a5a",
-  "catalog": "d53dfd4ee354764be77375dce6161df4cf957100",
+  "engine": "6cbe32aa639a9b1f4291ff465abb29809a431945",
+  "catalog": "95ff7215d28e0dc2789aba42fec6f5cfc425baec",
   "examples": [
     {
       "step": 1,
@@ -11,20 +11,20 @@
     },
     {
       "step": 2,
-      "command": "chock add protect-main-branch --ref d53dfd4ee354764be77375dce6161df4cf957100",
-      "output": "Added protect-main-branch to .agents/policies/protect-main-branch\n  from https://github.com/open-coder-ai/chock-catalog at d53dfd4ee354764be77375dce6161df4cf957100\n  sha256 6613b44ea06affae018250660331b0fb254710dc9f9e72cd5e81826e07ce5a05\nINDEX.md: ~314 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "command": "chock add protect-main-branch --ref 95ff7215d28e0dc2789aba42fec6f5cfc425baec",
+      "output": "Added protect-main-branch to .agents/policies/protect-main-branch\n  from https://github.com/open-coder-ai/chock-catalog at 95ff7215d28e0dc2789aba42fec6f5cfc425baec\n  sha256 6613b44ea06affae018250660331b0fb254710dc9f9e72cd5e81826e07ce5a05\nINDEX.md: ~314 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
       "exit": 0
     },
     {
       "step": 3,
-      "command": "chock add scan-secrets --ref d53dfd4ee354764be77375dce6161df4cf957100 --verify-sha 9e20ae14cf86f18c3178ec32320186b80a3a9a32952a1ad851fb9ffd1fd0719c",
-      "output": "chock add: scan-secrets: expected sha256 9e20ae14cf86f18c3178ec32320186b80a3a9a32952a1ad851fb9ffd1fd0719c, got 80c27b6ce2f14571b1c2a1fa23e7f71e305ca3e21f760b3557509dfd430560d0. Nothing was installed.",
-      "exit": 1
+      "command": "chock add scan-secrets --ref 95ff7215d28e0dc2789aba42fec6f5cfc425baec --verify-sha 80c27b6ce2f14571b1c2a1fa23e7f71e305ca3e21f760b3557509dfd430560d0",
+      "output": "Added scan-secrets to .agents/policies/scan-secrets\n  from https://github.com/open-coder-ai/chock-catalog at 95ff7215d28e0dc2789aba42fec6f5cfc425baec\n  sha256 80c27b6ce2f14571b1c2a1fa23e7f71e305ca3e21f760b3557509dfd430560d0\nINDEX.md: ~428 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "exit": 0
     },
     {
       "step": 4,
       "command": "chock sync --repo . --ci",
-      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nRegistered 1 pre-commit policy implementation(s)\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nRegistered 1 pre-merge-commit policy implementation(s)\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nRegistered 1 pre-push policy implementation(s)\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nINDEX.md: ~314 tokens (chars/4, max 2000)\nRecompiled 1 policies\nprotect-main-branch:\n  claude: enforced-at-commit\n  copilot: enforced-at-commit\n  gemini: enforced-at-commit\n== install ci workflow\nInstalled CI workflow at /work/demo/.github/workflows/chock.yml",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nRegistered 2 pre-commit policy implementation(s)\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nRegistered 2 pre-merge-commit policy implementation(s)\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nRegistered 1 pre-push policy implementation(s)\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered 2 PreToolUse/Stop hook(s) in .claude/settings.json\n  claude_code: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run, recorded 2026-09-07)\n  claude_code: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 2 hook entr(y/ies) in .gemini/settings.json\n  gemini_cli: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis vendor-source, recorded 2026-08-28)\n  gemini_cli: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 1 agent hook(s) in .github/hooks/chock.json\n  vscode_copilot: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run-partial, recorded 2026-09-28)\nINDEX.md: ~428 tokens (chars/4, max 2000)\nRecompiled 2 policies\nprotect-main-branch:\n  claude: enforced-at-commit\n  copilot: enforced-at-commit\n  gemini: enforced-at-commit\nscan-secrets:\n  claude: enforced-at-commit + best-effort at tool use (live-run)\n  copilot: enforced-at-commit + best-effort at tool use (live-run-partial)\n  gemini: enforced-at-commit + best-effort at tool use (vendor-source)\n== install ci workflow\nInstalled CI workflow at /work/demo/.github/workflows/chock.yml",
       "exit": 0
     },
     {
