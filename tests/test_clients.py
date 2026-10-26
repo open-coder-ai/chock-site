@@ -1,6 +1,7 @@
 """BV-S1: witness data, per-client labels and steps in site.json's builder_clients block."""
 
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -170,7 +171,12 @@ def test_engine_untested_note_is_dropped_once(built) -> None:
 
 
 def test_remove_steps_and_repos_name_every_agent(built) -> None:
+    """D9 A2: each client names its per-policy plugin repo, or none, and the one-place-only line is in the texts."""
     block = _site(built)["builder_clients"]
+    config = json.loads((DATA / "site.json").read_text(encoding="utf-8"))
+    repos = config["builder_clients"]["plugin_repos"]
+    assert set(block["clients"]) == set(repos)
+    assert "from one place only, never both" in block["texts"]["repo_note"]
     for client, data in block["clients"].items():
         assert bool(data["remove"]) != bool(data["remove_unverified"]), client
         if data["remove_unverified"]:
@@ -180,11 +186,13 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
             assert data["remove_unverified"]["text"].startswith(
                 f"Removal steps not verified for {data['name']} yet."
             )
-        repo = data["plugin_repo"]
-        assert repo is None or repo.startswith("https://github.com/open-coder-ai/")
+        assert data["plugin_repo"] == repos[client], client
+        if repos[client]:
+            assert re.fullmatch(
+                r"https://github\.com/open-coder-ai/chock-[a-z-]+-plugins",
+                repos[client],
+            ), client
         assert "__" not in json.dumps(data["remove"]), client
-    with_repo = {c for c, d in block["clients"].items() if d["plugin_repo"]}
-    assert with_repo == {"claude-code", "cursor", "codex", "copilot", "devin"}
 
 
 def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
