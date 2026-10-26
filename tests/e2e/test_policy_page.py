@@ -10,7 +10,7 @@ def test_policy_page_content(page, site_url, request) -> None:
     page.goto(site_url + PAGE)
     assert "Blocks" in page.locator(".label").first.inner_text()
     assert "git commit --no-verify -m wip" in page.content()
-    assert "3c90e499d5c5" in page.content()  # sha256 prefix
+    assert "a406d50e4cf3" in page.content()  # sha256 prefix
     assert page.locator("#misses").count() == 1
     add = page.locator("a", has_text="Add to my plugin")
     assert add.get_attribute("href") == "/coding/builder/#add=block-no-verify"
