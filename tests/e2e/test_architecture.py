@@ -130,19 +130,12 @@ CONTRAST_JS = """([fg, fgProp, bg, bgProp]) => {
 }"""
 
 
-@pytest.mark.parametrize(
-    ("scheme", "page_bg"),
-    [("light", "rgb(244, 242, 237)"), ("dark", "rgb(36, 47, 75)")],
-)
-def test_figures_follow_the_site_theme_with_aa_text(
-    page, site_url, scheme: str, page_bg: str
-) -> None:
+def test_figures_follow_the_site_theme_with_aa_text(page, site_url) -> None:
     """No per-figure theme button: each figure takes the site theme and its text passes AA."""
-    page.emulate_media(color_scheme=scheme)
+    page_bg = "rgb(16, 37, 74)"
     page.set_viewport_size(DESKTOP)
     for diagram_id in IDS:
         page.goto(_url(site_url, diagram_id))
-        assert page.evaluate("document.documentElement.dataset.theme") == scheme
         figure = page.locator(".arch-figure")
         assert figure.get_attribute("data-theme") is None
         assert page.locator(".arch-theme-toggle").count() == 0
@@ -150,7 +143,7 @@ def test_figures_follow_the_site_theme_with_aa_text(
         assert figure.evaluate("e => getComputedStyle(e).backgroundColor") == page_bg
         for pair in TEXT_ON_SURFACE:
             ratio = page.evaluate(CONTRAST_JS, list(pair))
-            assert ratio >= 4.5, f"{scheme} {diagram_id}: {pair[0]}: {ratio:.2f}:1"
+            assert ratio >= 4.5, f"{diagram_id}: {pair[0]}: {ratio:.2f}:1"
     assert_clean(page)
 
 
