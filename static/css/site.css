@@ -2202,6 +2202,14 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
   html:not(.js) #nav-links { flex-wrap: wrap; gap: 6px 18px; }
 }
 
+/* Mid widths: the header's nav, button and wordmark in the heavier E10 type need tighter gaps to fit 1024px. */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .header-inner { gap: 14px; }
+  #nav-links { gap: 2px; }
+  #nav-links a { font-size: 14px; padding: 4px 7px; }
+  .header-inner .button-small { padding: 0 14px; }
+}
+
 /* Small phones: the header row (wordmark, button, menu) still fits on one line. */
 @media (max-width: 380px) {
   .header-inner { gap: 6px; }
