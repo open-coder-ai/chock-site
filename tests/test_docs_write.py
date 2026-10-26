@@ -186,3 +186,30 @@ def test_reference_pages_have_a_row_for_every_schema_field(built) -> None:
         for row in writedoc.schema_rows(load_schema(name), SCHEMA_STORE):
             assert f"<code>{row['field']}</code>" in page, row["field"]
             assert f"`{row['field']}`" in twin, row["field"]
+
+
+# --- SITE-1: setup steps go through the same program allowlist as the shown steps --------
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [
+        [["touch", "pwned"]],
+        [["sh", "-c", "touch pwned"]],
+        [{"sh": "touch pwned"}],
+        "git init",
+    ],
+)
+def test_a_setup_step_outside_the_allowlist_is_refused(
+    tmp_path: Path, setup: object
+) -> None:
+    script = yaml.safe_load((DATA / writedoc.SCRIPT_YAML).read_text(encoding="utf-8"))
+    script["setup"] = setup
+    (tmp_path / writedoc.SCRIPT_YAML).write_text(yaml.safe_dump(script), "utf-8")
+    with pytest.raises(PageError, match="setup"):
+        writedoc.load_script(tmp_path)
+
+
+def test_the_committed_setup_is_allowlisted() -> None:
+    script = writedoc.load_script(DATA)
+    assert all(argv[0] in writedoc.PROGRAMS for argv in script["setup"])

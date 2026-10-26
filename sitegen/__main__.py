@@ -15,11 +15,13 @@ from .catalog import CatalogError, catalog_head
 from .model import Site
 from .pages import PageError
 from .presets import PresetError
+from .version import VersionError, load_version, write_version_json
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 TEMPLATES = ROOT / "templates"
 STATIC = ROOT / "static"
+HEADERS = ROOT / "deploy" / "_headers"
 MARKER = ".sitegen-output"
 DEFAULT_SOURCE = "https://github.com/open-coder-ai/chock-catalog"
 
@@ -109,9 +111,12 @@ def build(
                 shutil.copytree(item, dest)
             else:
                 shutil.copy2(item, dest)
-    site = sitedata.build_site(
-        catalog, ref, _pin(".framework-ref"), source, release, data
-    )
+    shutil.copy2(HEADERS, out / "_headers")
+    engine_ref = _pin(".framework-ref")
+    version = load_version(data)
+    site = sitedata.build_site(catalog, ref, engine_ref, source, release, data)
+    site.data["version"] = version
+    write_version_json(out, version, engine_ref, ref)
     analytics.write_module(events, out / analytics.DIST_ALLOWLIST)
     sitedata.write_site_json(site, out)
     pages_mod.write_css(site, out, STATIC)
@@ -138,7 +143,7 @@ def _build_parser(prog: str, out_required: bool) -> argparse.ArgumentParser:
 def _run(args: argparse.Namespace) -> Site:
     try:
         return build(args.catalog, args.out, args.catalog_source, args.release)
-    except (AnalyticsError, CatalogError, PresetError, PageError) as exc:
+    except (AnalyticsError, CatalogError, PresetError, PageError, VersionError) as exc:
         print(exc, file=sys.stderr)
         raise SystemExit(2) from exc
 

@@ -17,7 +17,7 @@ questions:
 - id: tracking
   group: common
   q: "Do you collect anything about me?"
-  a: "Nothing personal. Your selection lives in the link after the #, which browsers never send to a server. There is no cookie and no account. The site counts page views and a few actions, such as copying a command. It stores no IP address or id with them. The Security page lists them. With Global Privacy Control or Do Not Track on, it counts nothing. The chock command line tool sends nothing."
+  a: "Nothing personal. Your selection lives in the link after the #, which browsers never send to a server. There is no cookie and no account. The site counts a few actions, such as copying a command, and no page views. It stores no IP address or id with them. The Security page lists them. With Global Privacy Control or Do Not Track on, it counts nothing. The chock command line tool sends nothing."
 - id: free
   group: common
   q: "Is it free?"

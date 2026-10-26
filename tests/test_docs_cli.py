@@ -202,3 +202,47 @@ def test_an_unknown_command_exits_2(tmp_path: Path) -> None:
         check=False,
     )
     assert done.returncode == 2
+
+
+# --- SITE-1: setup steps go through the same program allowlist as the shown steps --------
+
+
+def _script_with_setup(tmp_path: Path, setup: object) -> Path:
+    script = yaml.safe_load((DATA / "cli-examples.yaml").read_text(encoding="utf-8"))
+    script["setup"] = setup
+    (tmp_path / "cli-examples.yaml").write_text(yaml.safe_dump(script), "utf-8")
+    return tmp_path
+
+
+@pytest.mark.parametrize(
+    ("setup", "reason"),
+    [
+        ([["touch", "pwned"]], "'touch'"),
+        ([["sh", "-c", "touch pwned"]], "'sh'"),
+        ([{"sh": "touch pwned"}], "argv list"),
+        (["git init"], "argv list"),
+        ([[]], "argv list"),
+        ([["git", 1]], "argv list"),
+        ("git init", "list of argv lists"),
+        (None, "list of argv lists"),
+    ],
+)
+def test_a_setup_step_outside_the_allowlist_is_refused(
+    tmp_path: Path, setup: object, reason: str
+) -> None:
+    with pytest.raises(PageError, match="setup") as found:
+        cliexamples.load_script(_script_with_setup(tmp_path, setup))
+    assert reason in str(found.value)
+
+
+def test_an_allowlisted_setup_loads(tmp_path: Path) -> None:
+    setup = [["git", "init", "-q", "."], ["chock", "init", "."]]
+    assert (
+        cliexamples.load_script(_script_with_setup(tmp_path, setup))["setup"] == setup
+    )
+
+
+def test_the_committed_setup_is_allowlisted() -> None:
+    script = cliexamples.load_script(DATA)
+    assert all(argv[0] in cliexamples.PROGRAMS for argv in script["setup"])
+    assert all(step["run"][0] == cliexamples.PROG for step in script["steps"])

@@ -15,6 +15,7 @@ import yaml
 
 from .docsmd import first_sections, sections
 from .pageparts import PageError
+from .paths import safe_join
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -68,7 +69,7 @@ def snapshot(chock: Path, docs: dict[str, Any], ref: str) -> dict[str, str]:
     files: dict[str, str] = {}
     record: dict[str, Any] = {"engine_ref": ref, "files": {}}
     for path, want in sorted(wanted(docs).items()):
-        source = chock / path
+        source = safe_join(chock, path, "docs.yaml file")
         if not source.is_file():
             if want["optional"]:
                 record["files"][path] = None
@@ -104,7 +105,9 @@ def load(data_dir: Path, ref: str) -> dict[str, str | None]:
     return {
         path: None
         if entry is None
-        else (folder / entry["snapshot"]).read_text(encoding="utf-8")
+        else safe_join(folder, entry["snapshot"], f"{SOURCE_JSON} snapshot").read_text(
+            encoding="utf-8"
+        )
         for path, entry in record["files"].items()
     }
 

@@ -43,7 +43,7 @@ The script prints a command that runs the pinned chock engine on a selection cod
 from the site's builder:
 
 ```text
-<.venv python> -m chock install --selection '<code from the builder>' --client codex --dest <temp folder>/chock-try
+<.venv python> -m chock install --selection <code from the builder> --client codex --dest <temp folder>/chock-try
 ```
 
 Without `--apply` it only builds the plugin into that folder; your agent configuration

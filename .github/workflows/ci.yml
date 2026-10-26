@@ -19,9 +19,37 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt
+      - run: pip install --require-hashes -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+
+  workflows:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: pip install --require-hashes -r requirements-workflows.txt
+      - run: actionlint
+      - run: zizmor --offline .github/workflows
+
+  build:
+    # The Cloudflare Pages build path: the same script Cloudflare runs.
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: sh build.sh
+      - run: cat dist/version.json
 
   unit:
     timeout-minutes: 10
@@ -44,9 +72,12 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
         env:
           FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: python scripts/install_engine_deps.py
+      - run: pip check
       - run: pytest -q --ignore=tests/e2e
       # DOCS-1: re-run the recorded CLI examples against the pinned engine; fail on any difference.
       - run: python -m sitegen.cliexamples --check
@@ -77,7 +108,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt
+      - run: pip install --require-hashes -r requirements-dev.txt
       - run: python -m sitegen.docsource --chock .chock-src --check
       # ARCH-1: every repo/path a diagram cites exists at the commit it pins (public clones).
       - run: python -m sitegen.architecture --check --fetch --clones .arch-src --repo chock-site=.
@@ -103,9 +134,12 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
         env:
           FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: python scripts/install_engine_deps.py
+      - run: pip check
       - run: python -m playwright install --with-deps chromium
       - run: pytest -q tests/e2e
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -189,8 +223,11 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
         env:
           FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: python scripts/install_engine_deps.py
+      - run: pip check
       - run: python -m sitegen.agentseamdoc snapshot --agentseam .agentseam-src --check
       - run: python -m sitegen.agentseamdoc run --check

@@ -25,9 +25,12 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-      - run: pip install -r requirements-dev.txt "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: pip install --no-deps --no-build-isolation "chock @ git+https://github.com/open-coder-ai/chock@${FRAMEWORK_REF}"
         env:
           FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
+      - run: python scripts/install_engine_deps.py
+      - run: pip check
       # The tapes work in /work/demo and /work/catalog, fixed paths so printed paths are stable.
       - run: sudo mkdir -p /work && sudo chown "$(id -u):$(id -g)" /work
       - uses: charmbracelet/vhs-action@f6d7db07a432fcd3b06772628d36a57f96d95dcf # v2

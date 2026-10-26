@@ -4,6 +4,7 @@ import html
 import json
 import re
 import shlex
+import shutil
 from pathlib import Path
 
 import pytest
@@ -136,3 +137,62 @@ def test_regen_lists_the_generators_regen_all_runs(catalog_path: Path) -> None:
     assert regen["scripts"][0] == "tools/gen_lib_copies.py"
     assert "tools/gen_registry.py" in regen["scripts"]
     assert all((catalog_path / s).is_file() for s in regen["scripts"])
+
+
+# --- SITE-1: snapshot names, quoted paths and setup steps are checked -------------------
+
+
+def test_a_snapshot_name_that_leaves_the_folder_is_refused(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    shutil.copytree(DATA, data)
+    source = data / catalogdoc.SOURCE_DIR / catalogdoc.SOURCE_JSON
+    record = json.loads(source.read_text(encoding="utf-8"))
+    (tmp_path / "escaped").write_text("outside", encoding="utf-8")
+    first = next(iter(record["files"]))
+    record["files"][first] = "../../../escaped"
+    source.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(PageError, match="'../../../escaped'"):
+        catalogdoc.load(data, CATALOG_REF)
+
+
+def test_a_quoted_path_that_leaves_the_catalog_is_refused(catalog_path: Path) -> None:
+    docs = json.loads(json.dumps(DOCS))
+    quote = next(
+        part
+        for page in docs["pages"].values()
+        for part in page.get("catalog", [])
+        if "quote" in part
+    )
+    quote["quote"] = "../../etc/hostname"
+    with pytest.raises(PageError, match="'../../etc/hostname'"):
+        catalogdoc.snapshot(catalog_path, docs, CATALOG_REF)
+
+
+def _adopt_with_setup(tmp_path: Path, setup: object) -> Path:
+    script = yaml.safe_load((DATA / catalogdoc.ADOPT_YAML).read_text(encoding="utf-8"))
+    script["setup"] = setup
+    (tmp_path / catalogdoc.ADOPT_YAML).write_text(yaml.safe_dump(script), "utf-8")
+    return tmp_path
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [
+        [["touch", "pwned"]],
+        [["sh", "-c", "touch pwned"]],
+        [{"sh": "touch pwned"}],
+        ["git init"],
+        [[]],
+        "git init",
+    ],
+)
+def test_a_setup_step_outside_the_allowlist_is_refused(
+    tmp_path: Path, setup: object
+) -> None:
+    with pytest.raises(PageError, match="setup"):
+        catalogdoc.load_script(_adopt_with_setup(tmp_path, setup), CATALOG_REF)
+
+
+def test_the_committed_setup_is_allowlisted() -> None:
+    script = catalogdoc.load_script(DATA, CATALOG_REF)
+    assert all(argv[0] in catalogdoc.PROGRAMS for argv in script["setup"])

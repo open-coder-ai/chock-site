@@ -1,6 +1,7 @@
 """Tiers, counts and command lines for the Git repositories section (data/repos.yaml)."""
 
 import re
+import shlex
 from typing import Any
 
 from .model import Policy
@@ -72,16 +73,26 @@ def fill(template: str, values: dict[str, str]) -> str:
     return PLACEHOLDER.sub(lookup, template)
 
 
+def shell_arg(value: str) -> str:
+    """One value as a single POSIX sh argument (shlex.quote); `shellArg` in static/js/repos.js is its twin."""
+    return shlex.quote(value)
+
+
+def shell_line(template: str, values: dict[str, str]) -> str:
+    """A command line: `fill` with every value quoted by `shell_arg`, so no value is read as shell syntax."""
+    return fill(template, {name: shell_arg(value) for name, value in values.items()})
+
+
 def command_lines(
     commands: dict[str, Any], picks: list[Policy], ref: str, ci: bool
 ) -> list[str]:
-    """The setup commands: init, one add per policy sorted by id, sync, commit."""
+    """The setup commands: init, one add per policy sorted by id, sync, then the review note; every value shell-quoted."""
     lines = [commands["init"]]
     for policy in sorted(picks, key=lambda p: p.id):
         values = {"id": policy.id, "ref": ref, "sha256": policy.sha256}
-        lines.append(fill(commands["add"], values))
+        lines.append(shell_line(commands["add"], values))
     lines.append(commands["sync_ci"] if ci else commands["sync"])
-    lines.append(commands["commit"])
+    lines.append(commands["review"])
     return lines
 
 

@@ -1,0 +1,5 @@
+# CI's workflows job: workflow linters.
+# Regenerate the .txt with:
+#   uv pip compile --universal --generate-hashes --python-version 3.12 requirements-workflows.in -o requirements-workflows.txt
+actionlint-py==1.7.12.25
+zizmor==1.30.1

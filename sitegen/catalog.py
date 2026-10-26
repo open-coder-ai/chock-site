@@ -6,7 +6,9 @@ from pathlib import Path
 
 import yaml
 
+from .engine import POLICY_ID_RE
 from .model import Example, Latest, Policy
+from .paths import safe_join
 
 REGISTRY = "registry.yaml"
 MANIFEST = "manifest.yaml"
@@ -29,7 +31,22 @@ CATALOG_TREE = "https://github.com/open-coder-ai/chock-catalog/tree/"
 
 
 class CatalogError(Exception):
-    """A catalog checkout that cannot be read or is at the wrong commit."""
+    """A catalog checkout that cannot be read, is at the wrong commit, or names an unsafe id or path."""
+
+
+def check_policy_id(policy_id: object) -> str:
+    """A registry id, refused unless it matches the engine's policy-id grammar (engine.POLICY_ID_RE)."""
+    if not isinstance(policy_id, str) or not POLICY_ID_RE.fullmatch(policy_id):
+        raise CatalogError(
+            f"{REGISTRY}: policy id {policy_id!r} is not a valid policy id "
+            f"(must match {POLICY_ID_RE.pattern}); it would reach a shell line and a path"
+        )
+    return policy_id
+
+
+def policy_dir(catalog: Path, row: dict) -> Path:
+    """The folder a registry row's `path` names, refused unless it stays inside the catalog."""
+    return safe_join(catalog, row.get("path"), f"{REGISTRY}: path of {row.get('id')!r}")
 
 
 def catalog_head(catalog: Path) -> str:
@@ -206,7 +223,7 @@ def plain_change(change: str, rewrites: list[dict[str, str]]) -> str:
 def registry_ids(catalog: Path) -> list[str]:
     """Every policy id in registry.yaml, shown or not."""
     registry = yaml.safe_load((catalog / REGISTRY).read_text(encoding="utf-8")) or {}
-    return [str(row["id"]) for row in registry.get("policies", [])]
+    return [check_policy_id(row.get("id")) for row in registry.get("policies", [])]
 
 
 def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Policy]:
@@ -214,12 +231,11 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
     registry = yaml.safe_load((catalog / REGISTRY).read_text(encoding="utf-8")) or {}
     policies = []
     for row in registry.get("policies", []):
-        policy_id = str(row["id"])
+        policy_id = check_policy_id(row.get("id"))
         if policy_id in hidden:
             continue
-        manifest = yaml.safe_load(
-            (catalog / row["path"] / MANIFEST).read_text(encoding="utf-8")
-        )
+        folder = policy_dir(catalog, row)
+        manifest = yaml.safe_load((folder / MANIFEST).read_text(encoding="utf-8"))
         status = (manifest.get("lifecycle") or {}).get("status")
         if status in LIFECYCLE_HIDDEN:
             continue
@@ -238,7 +254,7 @@ def load_policies(catalog: Path, hidden: set[str], catalog_ref: str) -> list[Pol
                 latest=_latest_entry(manifest.get("changelog") or [], version),
                 source_url=f"{CATALOG_TREE}{catalog_ref}/{row['path']}",
                 enforces=str(row.get("enforces") or ""),
-                examples=_examples(catalog / row["path"]),
+                examples=_examples(folder),
                 client_labels=_client_labels(row),
                 status=_label_status(row),
             )

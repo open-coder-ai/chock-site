@@ -17,6 +17,7 @@ import {
   track,
 } from "./common.js";
 import { commandOutputs, initQuiz } from "./quiz.js";
+import { samePack } from "./samepack.js";
 import { enhanceSelect } from "./select.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -516,7 +517,8 @@ async function main() {
     // Schema 1 named claude-code only; schema 2 names the agent it was built for.
     if (typeof selection.client === "string" && knownClient(selection.client)) client = selection.client;
     const theirs = selection.catalog && typeof selection.catalog.ref === "string" ? selection.catalog.ref : "";
-    if (theirs === site.catalog.ref) {
+    // A different catalog commit is harmless when every policy has the same id and hash here.
+    if (theirs === site.catalog.ref || samePack(entries, policies)) {
       restore(ids);
       return true;
     }

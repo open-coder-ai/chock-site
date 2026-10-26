@@ -26,6 +26,7 @@ DATA = ROOT / "data"
 SCRIPT_YAML = "write-policy.yaml"
 OUT_DIR = "write-source"
 SCHEMA_VERSION = 1
+# The programs a run may execute, in its setup and its shown steps alike.
 PROGRAMS = ("chock", "git", "cat")
 # Nesting deeper than this is not tabulated; the engine's schemas nest at most 4 levels.
 MAX_DEPTH = 8
@@ -52,6 +53,7 @@ def load_script(data_dir: Path) -> dict[str, Any]:
                 raise PageError(
                     f"{SCRIPT_YAML} {name}: a step is {{run: [chock|git|cat, ...]}} or {{sh: line}}"
                 )
+    cliexamples.check_setup(script, PROGRAMS, SCRIPT_YAML)
     return script
 
 

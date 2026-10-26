@@ -37,5 +37,5 @@ events:
     what: "Clicking \"Build for\" an agent on a policy page, with the policy id and the agent."
 security:
   heading: What this site counts
-  body: "The site counts page views and the few actions below, to learn which pages and tools people use. Each count carries only the action's name and the ids listed with it: never the address of the page, your selection, a share code, a policy you wrote or anything you typed. The site sets no cookie and stores no id. It stores no IP address, browser or account with a count. If your browser sends Global Privacy Control or Do Not Track, the site counts nothing. The chock command line tool sends nothing at all."
+  body: "The site counts only the few actions below, to learn which tools people use. Each count carries only the action's name and the ids listed with it: never the address of the page, your selection, a share code, a policy you wrote or anything you typed. The site sets no cookie and stores no id. It stores no IP address, browser or account with a count. If your browser sends Global Privacy Control or Do Not Track, the site counts nothing. The chock command line tool sends nothing at all."
   list_label: "The actions counted:"

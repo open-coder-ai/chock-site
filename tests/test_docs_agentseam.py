@@ -3,6 +3,7 @@
 import html
 import json
 import re
+import shutil
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -35,6 +36,18 @@ def test_the_pinned_commit_is_installed_and_is_chocks_pin() -> None:
     assert re.fullmatch(r"[0-9a-f]{40}", ref)
     assert engine.agentseam_commit() == ref
     assert engine.agentseam_chock_pin() == ref
+
+
+@pytest.mark.parametrize(
+    "spelling", ["agentseam @ git+{url}", "agentseam@ git+{url}", "agentseam@git+{url}"]
+)
+def test_chock_pin_is_read_whatever_the_spacing_around_at(
+    monkeypatch, spelling
+) -> None:
+    url = "https://github.com/open-coder-ai/agentseam@" + "a" * 40
+    fake = SimpleNamespace(requires=["PyYAML>=6", spelling.format(url=url)])
+    monkeypatch.setattr("importlib.metadata.distribution", lambda name: fake)
+    assert engine.agentseam_chock_pin() == "a" * 40
 
 
 def test_build_refuses_another_installed_agentseam(monkeypatch) -> None:
@@ -156,3 +169,55 @@ def test_cli_page_has_every_command(built) -> None:
 )
 def test_every_agentseam_command_exits_2_on_an_unknown_option(path) -> None:
     assert engine.agentseam_exit([*path, NO_SUCH_OPTION]) == 2
+
+
+# --- SITE-1: snapshot names, quoted paths and setup steps are checked -------------------
+
+
+def test_a_snapshot_name_that_leaves_the_folder_is_refused(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    shutil.copytree(DATA, data)
+    source = data / CFG["source_dir"] / agentseamdoc.SOURCE_JSON
+    record = json.loads(source.read_text(encoding="utf-8"))
+    (tmp_path / "escaped").write_text("outside", encoding="utf-8")
+    first = next(iter(record["files"]))
+    record["files"][first] = {"snapshot": "../../../escaped"}
+    source.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(PageError, match="'../../../escaped'"):
+        agentseamdoc.load(data)
+
+
+def test_a_quoted_path_that_leaves_the_checkout_is_refused(tmp_path: Path) -> None:
+    checkout = tmp_path / "agentseam"
+    checkout.mkdir()
+    (tmp_path / "escaped.md").write_text("## A\n\noutside\n", encoding="utf-8")
+    cfg = json.loads(json.dumps(CFG))
+    cfg["quotes"] = [{"file": "../escaped.md", "sections": ["A"]}]
+    with pytest.raises(PageError, match="'../escaped.md'"):
+        agentseamdoc.snapshot(checkout, cfg, "r")
+
+
+def _run_with_setup(tmp_path: Path, setup: object) -> Path:
+    data = tmp_path / "data"
+    shutil.copytree(DATA, data)
+    path = data / CFG["run_script"]
+    script = yaml.safe_load(path.read_text(encoding="utf-8"))
+    script["setup"] = setup
+    path.write_text(yaml.safe_dump(script), encoding="utf-8")
+    return data
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [[["touch", "pwned"]], [{"sh": "touch pwned"}], ["git init"], [["git", 1]]],
+)
+def test_a_setup_step_outside_the_allowlist_is_refused(
+    tmp_path: Path, setup: object
+) -> None:
+    with pytest.raises(PageError, match="setup"):
+        agentseamdoc.load_script(_run_with_setup(tmp_path, setup))
+
+
+def test_the_committed_setup_is_allowlisted() -> None:
+    script = agentseamdoc.load_script(DATA)
+    assert all(argv[0] in agentseamdoc.PROGRAMS for argv in script["setup"])

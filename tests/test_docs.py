@@ -237,3 +237,28 @@ def test_sections_and_twin_links() -> None:
         sections(text, ["missing"])
     twin = rewrite_links(sections(text, ["A", "B"]), lambda h: "R:" + h, "ASK")
     assert "[l](R:x.md)" in twin and "ASK\n\n```" in twin
+
+
+# --- SITE-1: a snapshot name or a quoted path stays in its folder -------------------------
+
+
+def test_a_snapshot_name_that_leaves_the_folder_is_refused(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    shutil.copytree(DATA, data)
+    source = data / DOCS["source_dir"] / docsource.SOURCE_JSON
+    record = json.loads(source.read_text(encoding="utf-8"))
+    (tmp_path / "escaped").write_text("outside", encoding="utf-8")
+    first = next(path for path, entry in record["files"].items() if entry)
+    record["files"][first] = {"snapshot": "../../../escaped"}
+    source.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(PageError, match="'../../../escaped'"):
+        docsource.load(data, record["engine_ref"])
+
+
+def test_a_quoted_path_that_leaves_the_checkout_is_refused(tmp_path: Path) -> None:
+    chock = _fake_chock(tmp_path / "chock")
+    (tmp_path / "escaped.md").write_text("## Gate\n\noutside\n", encoding="utf-8")
+    docs = json.loads(json.dumps(DOCS))
+    docs["pages"]["overview"]["prose"][0]["file"] = "../escaped.md"
+    with pytest.raises(PageError, match="'../escaped.md'"):
+        docsource.snapshot(chock, docs, "r")
