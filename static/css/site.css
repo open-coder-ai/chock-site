@@ -131,12 +131,14 @@ h1, h2, h3 {
 
 /* Display type: 72px and 44px, down to 44px and 32px on a phone. */
 h1 { font-size: 72px; line-height: 0.95; letter-spacing: -0.04em; margin: 0 0 16px; }
-h2 { font-size: 44px; line-height: 1.02; letter-spacing: -0.035em; margin: 0 0 14px; }
+h2 { font-size: 32px; line-height: 1.1; letter-spacing: -0.03em; margin: 0 0 14px; }
+.section-intro-block h2, .head-row h2, .cta h2 { font-size: 44px; line-height: 1.02; letter-spacing: -0.035em; }
+.selection h2 { font-size: 24px; }
 h3 { font-size: 21px; margin: 0 0 8px; letter-spacing: -0.01em; font-weight: 600; line-height: 1.2; }
 
 @media (max-width: 720px) {
   h1 { font-size: 44px; }
-  h2 { font-size: 32px; }
+  h2, .section-intro-block h2, .head-row h2, .cta h2 { font-size: 28px; }
 }
 /* A section heading never sits flush under the block before it: at least 2 x --flow above it. */
 * + h2,
