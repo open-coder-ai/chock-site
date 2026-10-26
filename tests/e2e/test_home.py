@@ -291,6 +291,7 @@ def test_pipeline_chips_and_arrows_are_visible_and_clear(
 ) -> None:
     """Both pipelines: every chip shows, none overlaps a neighbour, every arrow between chips shows."""
     land = yaml.safe_load((ROOT / "data" / "home.yaml").read_text("utf-8"))["landing"]
+    # The steps come from data/home.yaml (shift_today, shift_with), rendered by templates/home/shift.html.
     wanted = [land["shift_today"], land["shift_with"]]
     context = browser.new_context(viewport={"width": size, "height": 900})
     try:
@@ -305,6 +306,9 @@ def test_pipeline_chips_and_arrows_are_visible_and_clear(
             for i, chip in enumerate(chips):
                 where = f"pipeline {n} chip {i} ({chip['text']})"
                 assert chip["shown"], f"{where}: not visible"
+                assert 0 <= chip["left"] and chip["right"] <= size, (
+                    f"{where}: outside the {size}px viewport"
+                )
                 assert chip["before"] == "none", f"{where}: numbered marker back"
                 last = i == len(chips) - 1
                 assert chip["arrowShown"] is (not last), f"{where}: arrow {chip}"
