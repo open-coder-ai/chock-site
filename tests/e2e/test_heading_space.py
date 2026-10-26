@@ -67,11 +67,11 @@ def _pages(site_url: str) -> list[str]:
     )
 
 
-@pytest.mark.parametrize(("size", "scheme"), [("desktop", "light"), ("phone", "dark")])
-def test_headings_have_space_above(browser, site_url, size, scheme) -> None:
+@pytest.mark.parametrize("size", ["desktop", "phone"])
+def test_headings_have_space_above(browser, site_url, size) -> None:
     pages = _pages(site_url)
     assert len(pages) > 200
-    context = browser.new_context(viewport=SIZES[size], color_scheme=scheme)
+    context = browser.new_context(viewport=SIZES[size])
     try:
         page = context.new_page()
         problems = []

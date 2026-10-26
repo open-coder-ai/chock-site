@@ -97,6 +97,7 @@ def _hero(site: Site, templates: Path, land: dict[str, Any], subs: dict) -> Safe
     return Safe(
         render_file(
             templates / HOME / "hero.html",
+            HERO_ART=Safe(render_file(templates / HOME / "hero-art.html")),
             EYEBROW=land["eyebrow"],
             STATS=data_fill(land["stats_line"], subs),
             HEADLINE_LEAD=land["headline_lead"],
@@ -122,6 +123,7 @@ def _works(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
         {
             "HREF": f"/coding/builder/#client={client}",
             "NAME": clients["clients"][client]["name"],
+            "STATE": clients["clients"][client]["witness"],
             "HOW": clients["texts"][clients["clients"][client]["witness"]],
         }
         for client in clients["order"]
@@ -229,11 +231,7 @@ def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
     for i, step in enumerate(land["how"], start=1):
         extra = ""
         if i == 2:
-            extra = render_file(
-                templates / PARTIALS / "how-code.html", CODE=command
-            ) + render_file(
-                templates / PARTIALS / "how-note.html", NOTE=land["how_apply_note"]
-            )
+            extra = render_file(templates / PARTIALS / "how-code.html", CODE=command)
         steps.append(
             {
                 "NUM": str(i),
@@ -248,6 +246,11 @@ def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
             EYEBROW=land["how_eyebrow"],
             HEADING=land["how_heading"],
             STEPS=_each(templates, "how-step", steps),
+            NOTE=Safe(
+                render_file(
+                    templates / PARTIALS / "how-note.html", NOTE=land["how_apply_note"]
+                )
+            ),
         )
     )
 
@@ -343,7 +346,7 @@ def _usecases(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
                 HEADLINE=case["headline"],
                 BODY=Prose(case["body"]),
                 POINTS=_each(
-                    templates, "plain-li", [{"TEXT": t} for t in case["points"]]
+                    templates, "point-li", [{"TEXT": t} for t in case["points"]]
                 ),
                 PRESET=preset.id,
                 PRESET_TITLE=preset.title,

@@ -1,4 +1,4 @@
-"""Theme checks: WCAG AA contrast of the light and dark tokens, and self-hosted fonts."""
+"""Theme checks: WCAG AA contrast of the one palette, self-hosted fonts, no third-party loads."""
 
 import re
 from pathlib import Path
@@ -14,7 +14,6 @@ CONTRAST_PAIRS = [
     ("text", "panel"),
     ("text", "panel-2"),
     ("text", "pill"),
-    ("text", "warn-bg"),
     ("body", "bg"),
     ("body", "bg-2"),
     ("body", "panel"),
@@ -30,15 +29,19 @@ CONTRAST_PAIRS = [
     ("accent", "panel"),
     ("accent", "panel-2"),
     ("accent", "pill"),
-    ("accent", "warn-bg"),
     ("on-accent", "accent"),
+    ("on-accent", "accent-2"),
     ("on-primary", "primary"),
     ("on-highlight", "highlight"),
+    ("highlight-text", "bg"),
     ("highlight-text", "bg-2"),
     ("highlight-text", "panel"),
+    ("highlight-text-2", "bg"),
     ("on-accent", "highlight-text"),
     ("warn-fg", "warn-bg"),
-    ("warn-fg", "bg"),
+    ("warn-fg", "warns-bg"),
+    ("warn-text", "bg"),
+    ("warn-text", "panel"),
     ("ok", "bg"),
     ("ok", "panel"),
     ("info", "bg"),
@@ -62,13 +65,10 @@ def _block(css: str, selector: str) -> str:
     return css[start : css.index("}", start)]
 
 
-def _palettes(built) -> dict[str, dict[str, str]]:
-    """The light tokens on :root and the dark set: :root overlaid by the dark rule."""
+def _palette(built) -> dict[str, str]:
+    """The one palette, declared on :root."""
     css = (built.out / "css" / "site.css").read_text(encoding="utf-8")
-    light = {n: v.upper() for n, v in TOKEN_RE.findall(_block(css, ":root"))}
-    dark_rule = _block(css, ':root[data-theme="dark"]')
-    dark = light | {n: v.upper() for n, v in TOKEN_RE.findall(dark_rule)}
-    return {"light": light, "dark": dark}
+    return {n: v.upper() for n, v in TOKEN_RE.findall(_block(css, ":root"))}
 
 
 def _luminance(hexcolor: str) -> float:
@@ -85,50 +85,89 @@ def _ratio(foreground: str, background: str) -> float:
     return (high + 0.05) / (low + 0.05)
 
 
-def test_light_is_default_and_dark_rules_agree(built) -> None:
-    """:root is light; the system-dark rule and the data-theme rule hold the same dark set."""
+def test_one_palette_on_root_and_no_theme_switch(built) -> None:
+    """site.css has dark on :root, no data-theme selector, no prefers-color-scheme rule."""
     css = (built.out / "css" / "site.css").read_text(encoding="utf-8")
-    assert "color-scheme: light;" in _block(css, ":root")
-    dark_rule = _block(css, ':root[data-theme="dark"]')
-    system_rule = _block(css, ":root:not([data-theme])")
-    assert "color-scheme: dark;" in dark_rule
-    assert TOKEN_RE.findall(system_rule) == TOKEN_RE.findall(dark_rule)
-    assert set(dict(TOKEN_RE.findall(dark_rule))) == set(_palettes(built)["light"])
+    assert "color-scheme: dark;" in _block(css, ":root")
+    assert "data-theme" not in css
+    assert "prefers-color-scheme" not in css
+    assert "theme-toggle" not in css
+
+
+def test_no_page_has_a_theme_script_or_toggle(built) -> None:
+    """No built page loads /js/theme.js or carries a theme toggle, and the file is gone."""
+    assert not (built.out / "js" / "theme.js").exists()
+    for page in built.out.rglob("*.html"):
+        text = page.read_text(encoding="utf-8")
+        assert "/js/theme.js" not in text, page
+        assert "theme-toggle" not in text, page
 
 
 def test_tokens_meet_contrast(built) -> None:
-    """In both themes every text pair passes 4.5:1 and every UI pair passes 3:1."""
-    for theme, tokens in _palettes(built).items():
-        for pairs, minimum in ((CONTRAST_PAIRS, 4.5), (UI_PAIRS, 3.0)):
-            for foreground, background in pairs:
-                assert foreground in tokens, f"--{foreground} missing"
-                assert background in tokens, f"--{background} missing"
-                ratio = _ratio(tokens[foreground], tokens[background])
-                assert ratio >= minimum, (
-                    f"{theme}: {foreground} on {background}: {ratio:.2f}:1"
-                )
+    """Every text pair passes 4.5:1 and every UI pair passes 3:1."""
+    tokens = _palette(built)
+    for pairs, minimum in ((CONTRAST_PAIRS, 4.5), (UI_PAIRS, 3.0)):
+        for foreground, background in pairs:
+            assert foreground in tokens, f"--{foreground} missing"
+            assert background in tokens, f"--{background} missing"
+            ratio = _ratio(tokens[foreground], tokens[background])
+            assert ratio >= minimum, f"{foreground} on {background}: {ratio:.2f}:1"
 
 
 def test_font_faces_resolve_to_self_hosted_woff2(built) -> None:
     css = (built.out / "css" / "site.css").read_text(encoding="utf-8")
     urls = FONT_URL_RE.findall(css)
     families = re.findall(r'font-family:\s*"([^"]+)"', css)
-    assert set(families[:2]) <= {"Instrument Sans", "JetBrains Mono"}
-    assert len(urls) == 7
+    assert set(families[:6]) == {"Schibsted Grotesk", "JetBrains Mono"}
+    assert len(urls) == 6
     for url in urls:
         path = built.out / url.lstrip("/")
         assert path.is_file(), url
         assert path.read_bytes()[:4] == b"wOF2", url
     licenses = {p.name for p in Path(built.out / "fonts").glob("OFL-*.txt")}
-    assert licenses == {"OFL-InstrumentSans.txt", "OFL-JetBrainsMono.txt"}
+    assert licenses == {"OFL-SchibstedGrotesk.txt", "OFL-JetBrainsMono.txt"}
 
 
-def test_theme_script_runs_before_the_stylesheet(built) -> None:
-    """Every page loads theme.js as a classic script ahead of site.css, so nothing flashes."""
-    tag = '<script src="/js/theme.js"></script>'
-    for page in built.out.rglob("*.html"):
-        head = page.read_text(encoding="utf-8").split("</head>", 1)[0]
-        if "/css/site.css" not in head:
+def test_no_page_loads_a_stylesheet_script_or_font_from_elsewhere(built) -> None:
+    """No built file names a font CDN or loads an https:// stylesheet, script or font."""
+    loads = re.compile(
+        r"""<script\b[^>]*src=["']https?://"""
+        r"""|<link\b[^>]*rel=["'](?:stylesheet|preload|modulepreload)["'][^>]*href=["']https?://""",
+        re.IGNORECASE,
+    )
+    css_url = re.compile(
+        r"""url\(\s*["']?https?://|@import\s+(?:url\()?["']?https?://""", re.IGNORECASE
+    )
+    for path in built.out.rglob("*"):
+        if not path.is_file() or path.suffix not in {".html", ".css", ".js"}:
             continue
-        assert tag in head, page
-        assert head.index(tag) < head.index('href="/css/site.css"'), page
+        text = path.read_text(encoding="utf-8")
+        assert "fonts.googleapis.com" not in text, path
+        assert "fonts.gstatic.com" not in text, path
+        if path.suffix == ".html":
+            assert not loads.search(text), path
+        if path.suffix == ".css":
+            assert not css_url.search(text), path
+
+
+def test_note_boxes_keep_text_readable_on_the_amber_tint(built) -> None:
+    """Warning boxes tint the amber over the panel; every text colour they use stays at 4.5:1."""
+    css = (built.out / "css" / "site.css").read_text(encoding="utf-8")
+    rule = re.search(
+        r"\.report-security,[^{]*\{[^}]*color-mix\(in srgb, var\(--warn-bg\) (\d+)%, var\(--panel\)\)",
+        css,
+    )
+    assert rule, "the note-box tint rule is missing"
+    share = int(rule.group(1)) / 100
+    tokens = _palette(built)
+
+    def channel(color: str, i: int) -> int:
+        return int(color[1 + 2 * i : 3 + 2 * i], 16)
+
+    tint = "#" + "".join(
+        f"{round(channel(tokens['warn-bg'], i) * share + channel(tokens['panel'], i) * (1 - share)):02X}"
+        for i in range(3)
+    )
+    for name in ("text", "body", "warn-text", "highlight-text"):
+        ratio = _ratio(tokens[name], tint)
+        assert ratio >= 4.5, f"{name} on the tint {tint}: {ratio:.2f}:1"

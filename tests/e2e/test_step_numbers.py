@@ -1,21 +1,20 @@
-"""The numbered step circles: each digit sits in the centre of its circle, both themes, 1280 and 390 px."""
+"""The how-it-works numerals: each digit sits in the centre of its chamfered square, 1280 and 390 px."""
 
 import base64
 
 import pytest
 
-CIRCLES = ".pipeline-steps li"
+CIRCLES = ".how-steps .step-num"
 SIZES = {
     "desktop": {"width": 1280, "height": 900},
     "phone": {"width": 390, "height": 844},
 }
 # Added through the CSSOM, which the CSP allows: hide the digit, then paint the circle solid.
-NO_DIGIT = f"{CIRCLES}::before {{ color: transparent !important; }}"
+NO_DIGIT = f"{CIRCLES} {{ color: transparent !important; }}"
 SOLID = (
-    f"{CIRCLES}::before {{ color: transparent !important;"
-    " border-color: #ff00ff !important; background: #ff00ff !important; }"
+    f"{CIRCLES} {{ color: transparent !important; background: #ff00ff !important; }}"
 )
-SIZE_JS = "(li) => { const s = getComputedStyle(li, '::before'); return [s.width, s.height]; }"
+SIZE_JS = "(el) => { const s = getComputedStyle(el); return [s.width, s.height]; }"
 # In the page: the box of pixels that differ between two screenshots, per region.
 BOXES_JS = """async ([a, b, regions]) => {
   const load = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = src; });
@@ -62,25 +61,24 @@ def _centre(box: list[int]) -> tuple[float, float]:
     return ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2)
 
 
-@pytest.mark.parametrize("scheme", ["light", "dark"])
 @pytest.mark.parametrize("size", sorted(SIZES))
-def test_step_digit_is_centred_in_its_circle(page, site_url, scheme, size) -> None:
-    page.emulate_media(color_scheme=scheme, reduced_motion="reduce")
+def test_step_digit_is_centred_in_its_numeral(page, site_url, size) -> None:
+    page.emulate_media(reduced_motion="reduce")
     page.set_viewport_size(SIZES[size])
     page.goto(site_url + "/")
     items = page.locator(CIRCLES)
-    assert items.count() == 9
+    assert items.count() == 3
     checked = 0
     for n in range(items.count()):
         item = items.nth(n)
         item.scroll_into_view_if_needed()
         page.evaluate("document.adoptedStyleSheets = []")
         box = item.bounding_box()
-        # The circle is the item's first 24 px; look a little past it on every side.
+        # The numeral is the item's whole box; look a little past it on every side.
         region = [
             max(0, int(box["x"]) - 4),
             max(0, int(box["y"]) - 4),
-            int(box["x"]) + 32,
+            int(box["x"] + box["width"]) + 4,
             int(box["y"] + box["height"]) + 4,
         ]
         plain = _shot(page)
@@ -93,10 +91,10 @@ def test_step_digit_is_centred_in_its_circle(page, site_url, scheme, size) -> No
             page.evaluate(BOXES_JS, [no_digit, solid, [region]])[0],
         )
         assert digit and circle, f"step {n + 1}: digit {digit}, circle {circle}"
-        assert item.evaluate(SIZE_JS) == ["24px", "24px"], f"step {n + 1}: circle size"
+        assert item.evaluate(SIZE_JS) == ["40px", "40px"], f"step {n + 1}: numeral size"
         (dx, dy), (cx, cy) = _centre(digit), _centre(circle)
         assert abs(dx - cx) <= 1 and abs(dy - cy) <= 1, (
-            f"{scheme} {size} step {n + 1}: digit centre ({dx}, {dy}), circle centre ({cx}, {cy})"
+            f"{size} step {n + 1}: digit centre ({dx}, {dy}), circle centre ({cx}, {cy})"
         )
         checked += 1
-    assert checked == 9
+    assert checked == 3
