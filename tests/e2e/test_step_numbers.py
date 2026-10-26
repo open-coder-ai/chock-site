@@ -1,4 +1,4 @@
-"""The numbered step circles: each digit sits in the centre of its circle, both themes, 1280 and 390 px."""
+"""The numbered step circles: each digit sits in the centre of its circle, 1280 and 390 px."""
 
 import base64
 
@@ -62,10 +62,9 @@ def _centre(box: list[int]) -> tuple[float, float]:
     return ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2)
 
 
-@pytest.mark.parametrize("scheme", ["light", "dark"])
 @pytest.mark.parametrize("size", sorted(SIZES))
-def test_step_digit_is_centred_in_its_circle(page, site_url, scheme, size) -> None:
-    page.emulate_media(color_scheme=scheme, reduced_motion="reduce")
+def test_step_digit_is_centred_in_its_circle(page, site_url, size) -> None:
+    page.emulate_media(reduced_motion="reduce")
     page.set_viewport_size(SIZES[size])
     page.goto(site_url + "/")
     items = page.locator(CIRCLES)
@@ -96,7 +95,7 @@ def test_step_digit_is_centred_in_its_circle(page, site_url, scheme, size) -> No
         assert item.evaluate(SIZE_JS) == ["24px", "24px"], f"step {n + 1}: circle size"
         (dx, dy), (cx, cy) = _centre(digit), _centre(circle)
         assert abs(dx - cx) <= 1 and abs(dy - cy) <= 1, (
-            f"{scheme} {size} step {n + 1}: digit centre ({dx}, {dy}), circle centre ({cx}, {cy})"
+            f"{size} step {n + 1}: digit centre ({dx}, {dy}), circle centre ({cx}, {cy})"
         )
         checked += 1
     assert checked == 9

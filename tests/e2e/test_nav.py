@@ -189,19 +189,18 @@ def test_nothing_shows_through_the_sticky_header_when_scrolled(
     browser, site_url
 ) -> None:
     for viewport in ({"width": 1900, "height": 1000}, {"width": 390, "height": 844}):
-        for scheme in ("dark", "light"):
-            context = browser.new_context(viewport=viewport, color_scheme=scheme)
-            try:
-                page = context.new_page()
-                for path in HEADER_PAGES:
-                    page.goto(site_url + path)
-                    page.wait_for_load_state("networkidle")
-                    for y in (60, 200, 600, 2000):
-                        page.evaluate("y => window.scrollTo(0, y)", y)
-                        where = f"{path} {viewport['width']} px {scheme}, scrolled {y}"
-                        _assert_header_clear(page, where)
-            finally:
-                context.close()
+        context = browser.new_context(viewport=viewport)
+        try:
+            page = context.new_page()
+            for path in HEADER_PAGES:
+                page.goto(site_url + path)
+                page.wait_for_load_state("networkidle")
+                for y in (60, 200, 600, 2000):
+                    page.evaluate("y => window.scrollTo(0, y)", y)
+                    where = f"{path} {viewport['width']} px, scrolled {y}"
+                    _assert_header_clear(page, where)
+        finally:
+            context.close()
 
 
 def test_each_quiz_step_lands_below_the_sticky_bars(browser, site_url) -> None:

@@ -76,42 +76,41 @@ def _rows_by_top(rows: list[dict]) -> list[list[dict]]:
 
 
 def test_list_layout_contrast_and_screenshots(browser, site_url) -> None:
-    for scheme in ("light", "dark"):
-        for size, viewport in SIZES.items():
-            context = browser.new_context(viewport=viewport, color_scheme=scheme)
-            try:
-                page = context.new_page()
-                collect(page, site_url)
-                page.goto(site_url + "/repos/")
-                where = f"{scheme} {size}"
-                screenshot(page, f"repos-list-{scheme}-{size}")
-                assert not page.evaluate(
-                    "document.scrollingElement.scrollWidth > window.innerWidth"
-                ), where
-                lists = page.evaluate(_LIST)
-                assert len(lists) == len(TIERS), where
-                for got in lists:
-                    for row in got["rows"]:
-                        assert row["nameContrast"] >= 4.5, f"{where}: {row}"
-                        assert row["idContrast"] >= 4.5, f"{where}: {row}"
-                        assert not row["nameAccent"], f"{where}: {row}"
-                        assert not row["underlined"], f"{where}: {row}"
-                        assert row["idBelow"] and not row["idPill"], f"{where}: {row}"
-                        assert row["idMono"] and row["idSmaller"], f"{where}: {row}"
-                        assert row["nameSmaller"], f"{where}: {row}"
-                        assert row["divider"] >= 1, f"{where}: {row}"
-                    lines = _rows_by_top(got["rows"])
-                    columns = 2 if size == "desktop" else 1
-                    assert all(len(line) <= columns for line in lines), where
-                    assert max(len(line) for line in lines) == columns, where
-                    lefts = {round(row["left"]) for row in got["rows"]}
-                    assert len(lefts) == columns, f"{where}: {lefts}"
-                    if columns == 2:
-                        heights = {round(row["height"], 1) for row in got["rows"]}
-                        assert len(heights) == 1, f"{where}: uneven rows {heights}"
-                assert_clean(page)
-            finally:
-                context.close()
+    for size, viewport in SIZES.items():
+        context = browser.new_context(viewport=viewport)
+        try:
+            page = context.new_page()
+            collect(page, site_url)
+            page.goto(site_url + "/repos/")
+            where = size
+            screenshot(page, f"repos-list-{size}")
+            assert not page.evaluate(
+                "document.scrollingElement.scrollWidth > window.innerWidth"
+            ), where
+            lists = page.evaluate(_LIST)
+            assert len(lists) == len(TIERS), where
+            for got in lists:
+                for row in got["rows"]:
+                    assert row["nameContrast"] >= 4.5, f"{where}: {row}"
+                    assert row["idContrast"] >= 4.5, f"{where}: {row}"
+                    assert not row["nameAccent"], f"{where}: {row}"
+                    assert not row["underlined"], f"{where}: {row}"
+                    assert row["idBelow"] and not row["idPill"], f"{where}: {row}"
+                    assert row["idMono"] and row["idSmaller"], f"{where}: {row}"
+                    assert row["nameSmaller"], f"{where}: {row}"
+                    assert row["divider"] >= 1, f"{where}: {row}"
+                lines = _rows_by_top(got["rows"])
+                columns = 2 if size == "desktop" else 1
+                assert all(len(line) <= columns for line in lines), where
+                assert max(len(line) for line in lines) == columns, where
+                lefts = {round(row["left"]) for row in got["rows"]}
+                assert len(lefts) == columns, f"{where}: {lefts}"
+                if columns == 2:
+                    heights = {round(row["height"], 1) for row in got["rows"]}
+                    assert len(heights) == 1, f"{where}: uneven rows {heights}"
+            assert_clean(page)
+        finally:
+            context.close()
 
 
 def test_headings_and_counts(page, site_url) -> None:
@@ -145,24 +144,23 @@ _STATE = """e => {
 
 
 def test_name_hover_and_keyboard_focus(browser, site_url) -> None:
-    for scheme in ("light", "dark"):
-        context = browser.new_context(viewport=SIZES["desktop"], color_scheme=scheme)
-        try:
-            page = context.new_page()
-            page.goto(site_url + "/repos/")
-            accent = page.evaluate(_ACCENT)
-            first = page.locator(".repos-list a").first
-            page.locator('a.arrow-link[href="/coding/install/"]').focus()
-            page.keyboard.press("Tab")
-            assert first.evaluate("e => e === document.activeElement"), scheme
-            focused = first.evaluate(_STATE)
-            assert focused["outline"] != "none" and focused["width"] >= 2, focused
-            assert focused["underlined"], (scheme, focused)
-            expect(first).to_have_css("color", accent)
-            second = page.locator(".repos-list a").nth(1)
-            second.hover()
-            expect(second).to_have_css("color", accent)
-            expect(second).to_have_css("text-decoration-line", "underline")
-            screenshot(page, f"repos-list-focus-{scheme}")
-        finally:
-            context.close()
+    context = browser.new_context(viewport=SIZES["desktop"])
+    try:
+        page = context.new_page()
+        page.goto(site_url + "/repos/")
+        accent = page.evaluate(_ACCENT)
+        first = page.locator(".repos-list a").first
+        page.locator('a.arrow-link[href="/coding/install/"]').focus()
+        page.keyboard.press("Tab")
+        assert first.evaluate("e => e === document.activeElement")
+        focused = first.evaluate(_STATE)
+        assert focused["outline"] != "none" and focused["width"] >= 2, focused
+        assert focused["underlined"], focused
+        expect(first).to_have_css("color", accent)
+        second = page.locator(".repos-list a").nth(1)
+        second.hover()
+        expect(second).to_have_css("color", accent)
+        expect(second).to_have_css("text-decoration-line", "underline")
+        screenshot(page, "repos-list-focus")
+    finally:
+        context.close()

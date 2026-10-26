@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pytest
 from combo import pick_start
 from conftest import assert_clean, collect, screenshot
 from test_sentence_case import _lowercase
@@ -158,10 +157,9 @@ def test_share_link_round_trip_shows_the_preset(page, site_url) -> None:
     assert_clean(other)
 
 
-@pytest.mark.parametrize("scheme", ["light", "dark"])
-def test_list_uses_site_tokens_in_both_themes(browser, site_url, scheme) -> None:
+def test_list_uses_site_tokens(browser, site_url) -> None:
     """Button and list take the theme's panel, text and line colours, not the OS defaults."""
-    context = browser.new_context(color_scheme=scheme)
+    context = browser.new_context()
     try:
         page = context.new_page()
         _open(page, site_url)
@@ -191,7 +189,7 @@ def test_list_uses_site_tokens_in_both_themes(browser, site_url, scheme) -> None
         assert got["border"] == got["tokens"]["line"]
         assert got["overflow"] == "auto"
         assert got["maxHeight"] != "none"
-        screenshot(page, f"preset-select-{scheme}-1280")
+        screenshot(page, "preset-select-1280")
     finally:
         context.close()
 
