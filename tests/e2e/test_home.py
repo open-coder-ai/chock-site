@@ -2,7 +2,9 @@
 
 import re
 
-from conftest import assert_clean, collect
+import pytest
+import yaml
+from conftest import ROOT, assert_clean, collect
 
 from sitegen import homedata
 
@@ -258,24 +260,75 @@ def test_home_has_no_horizontal_scroll_at_320px(browser, site_url) -> None:
         context.close()
 
 
-def test_pipeline_steps_are_chips_joined_by_arrows(page, site_url) -> None:
-    """Both pipelines draw each step as a chip with an arrow after it, except the last."""
-    page.goto(site_url + "/")
-    lists = page.locator(".pipeline-steps")
-    assert lists.count() == 2
-    for n, count in enumerate((5, 4)):
-        items = lists.nth(n).locator("li")
-        assert items.count() == count
-        for i in range(count):
-            after = items.nth(i).evaluate("e => getComputedStyle(e, '::after').content")
-            before = items.nth(i).evaluate(
-                "e => getComputedStyle(e, '::before').content"
-            )
-            assert after == ('"→"' if i < count - 1 else "none"), (n, i, after)
-            assert before == "none", (n, i, before)
-    # With chock, the two chock steps sit on the accent gradient and the others do not.
-    chips = lists.nth(1).locator("li")
-    for i, filled in enumerate((False, True, True, False)):
-        image = chips.nth(i).evaluate("e => getComputedStyle(e).backgroundImage")
-        assert ("linear-gradient" in image) is filled, (i, image)
-    assert_clean(page)
+PIPELINE_JS = """() => [...document.querySelectorAll(".pipeline-steps")].map((ol) => {
+  const box = ol.getBoundingClientRect();
+  return {
+    right: box.right,
+    chips: [...ol.children].map((li) => {
+      const r = li.getBoundingClientRect();
+      const after = getComputedStyle(li, "::after");
+      const before = getComputedStyle(li, "::before");
+      return {
+        text: li.textContent.trim(),
+        left: r.left, right: r.right, top: r.top, bottom: r.bottom,
+        shown: getComputedStyle(li).visibility === "visible" && r.width > 0 && r.height > 0,
+        arrow: after.content,
+        arrowShown: after.content !== "none" && after.visibility === "visible"
+          && after.opacity !== "0" && after.color !== "rgba(0, 0, 0, 0)",
+        before: before.content,
+        gradient: getComputedStyle(li).backgroundImage.includes("linear-gradient"),
+      };
+    }),
+  };
+})"""
+ARROW_REACH = 26  # the arrow sits this far right of its chip; the row gap is wider
+CARD_PADDING = 28
+
+
+@pytest.mark.parametrize("size", [1280, 390], ids=lambda w: f"{w}px")
+def test_pipeline_chips_and_arrows_are_visible_and_clear(
+    browser, site_url, size
+) -> None:
+    """Both pipelines: every chip shows, none overlaps a neighbour, every arrow between chips shows."""
+    land = yaml.safe_load((ROOT / "data" / "home.yaml").read_text("utf-8"))["landing"]
+    wanted = [land["shift_today"], land["shift_with"]]
+    context = browser.new_context(viewport={"width": size, "height": 900})
+    try:
+        page = context.new_page()
+        collect(page, site_url)
+        page.goto(site_url + "/")
+        lists = page.evaluate(PIPELINE_JS)
+        assert len(lists) == len(wanted) == 2
+        for n, (got, steps) in enumerate(zip(lists, wanted, strict=True)):
+            chips = got["chips"]
+            assert [c["text"] for c in chips] == steps, f"pipeline {n}"
+            for i, chip in enumerate(chips):
+                where = f"pipeline {n} chip {i} ({chip['text']})"
+                assert chip["shown"], f"{where}: not visible"
+                assert chip["before"] == "none", f"{where}: numbered marker back"
+                last = i == len(chips) - 1
+                assert chip["arrowShown"] is (not last), f"{where}: arrow {chip}"
+                assert chip["arrow"] == ("none" if last else '"→"'), where
+                if not last:
+                    assert chip["right"] + ARROW_REACH <= got["right"] + CARD_PADDING, (
+                        f"{where}: arrow leaves the card"
+                    )
+                for other in chips[i + 1 :]:
+                    apart = (
+                        chip["right"] <= other["left"]
+                        or other["right"] <= chip["left"]
+                        or chip["bottom"] <= other["top"]
+                        or other["bottom"] <= chip["top"]
+                    )
+                    assert apart, f"{where} overlaps {other['text']}"
+                nxt = chips[i + 1] if not last else None
+                if nxt and abs(nxt["top"] - chip["top"]) < 4:
+                    assert nxt["left"] >= chip["right"] + ARROW_REACH, (
+                        f"{where}: arrow runs into {nxt['text']}"
+                    )
+        # With chock, the two chock steps sit on the accent gradient and the others do not.
+        with_chock = lists[1]["chips"]
+        assert [c["gradient"] for c in with_chock] == [False, True, True, False]
+        assert_clean(page)
+    finally:
+        context.close()

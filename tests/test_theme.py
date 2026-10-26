@@ -148,3 +148,26 @@ def test_no_page_loads_a_stylesheet_script_or_font_from_elsewhere(built) -> None
             assert not loads.search(text), path
         if path.suffix == ".css":
             assert not css_url.search(text), path
+
+
+def test_note_boxes_keep_text_readable_on_the_amber_tint(built) -> None:
+    """Warning boxes tint the amber over the panel; every text colour they use stays at 4.5:1."""
+    css = (built.out / "css" / "site.css").read_text(encoding="utf-8")
+    rule = re.search(
+        r"\.report-security,[^{]*\{[^}]*color-mix\(in srgb, var\(--warn-bg\) (\d+)%, var\(--panel\)\)",
+        css,
+    )
+    assert rule, "the note-box tint rule is missing"
+    share = int(rule.group(1)) / 100
+    tokens = _palette(built)
+
+    def channel(color: str, i: int) -> int:
+        return int(color[1 + 2 * i : 3 + 2 * i], 16)
+
+    tint = "#" + "".join(
+        f"{round(channel(tokens['warn-bg'], i) * share + channel(tokens['panel'], i) * (1 - share)):02X}"
+        for i in range(3)
+    )
+    for name in ("text", "body", "warn-text", "highlight-text"):
+        ratio = _ratio(tokens[name], tint)
+        assert ratio >= 4.5, f"{name} on the tint {tint}: {ratio:.2f}:1"
