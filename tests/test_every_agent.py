@@ -97,15 +97,32 @@ def test_status_badge_only_for_deprecated(built) -> None:
 
 
 def test_no_generated_file_links_a_plugin_repo(built) -> None:
-    """The five chock-<client>-plugins repos are retired: plugins come from the builder (RP-3)."""
+    """D9 A2: each client's page names its per-policy plugin repo; any other chock-*-plugins link fails."""
+    site = json.loads((built.out / "data" / "site.json").read_text(encoding="utf-8"))
+    block = site["builder_clients"]
+    repos = {
+        client: data["plugin_repo"]
+        for client, data in block["clients"].items()
+        if data["plugin_repo"]
+    }
+    assert repos
+    line = "Install a policy from one place only, never both"
+    page = (built.out / "coding" / "clients" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "coding" / "clients" / "index.md").read_text(encoding="utf-8")
+    for text in (page, twin):
+        for client, repo in repos.items():
+            assert repo in text, client
+        assert line in text
+    allowed = {repo.rsplit("/", 1)[-1] for repo in repos.values()}
     retired = re.compile(r"chock-[a-z-]+-plugins", re.IGNORECASE)
     files = [
         p for p in built.out.rglob("*") if p.suffix in (".html", ".md", ".txt", ".json")
     ]
     assert files
     found = sorted(
-        str(p.relative_to(built.out))
+        f"{p.relative_to(built.out)}: {name}"
         for p in files
-        if retired.search(p.read_text(encoding="utf-8"))
+        for name in set(retired.findall(p.read_text(encoding="utf-8")))
+        if name not in allowed
     )
     assert found == []
