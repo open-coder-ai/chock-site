@@ -256,3 +256,26 @@ def test_home_has_no_horizontal_scroll_at_320px(browser, site_url) -> None:
         )
     finally:
         context.close()
+
+
+def test_pipeline_steps_are_chips_joined_by_arrows(page, site_url) -> None:
+    """Both pipelines draw each step as a chip with an arrow after it, except the last."""
+    page.goto(site_url + "/")
+    lists = page.locator(".pipeline-steps")
+    assert lists.count() == 2
+    for n, count in enumerate((5, 4)):
+        items = lists.nth(n).locator("li")
+        assert items.count() == count
+        for i in range(count):
+            after = items.nth(i).evaluate("e => getComputedStyle(e, '::after').content")
+            before = items.nth(i).evaluate(
+                "e => getComputedStyle(e, '::before').content"
+            )
+            assert after == ('"→"' if i < count - 1 else "none"), (n, i, after)
+            assert before == "none", (n, i, before)
+    # With chock, the two chock steps sit on the accent gradient and the others do not.
+    chips = lists.nth(1).locator("li")
+    for i, filled in enumerate((False, True, True, False)):
+        image = chips.nth(i).evaluate("e => getComputedStyle(e).backgroundImage")
+        assert ("linear-gradient" in image) is filled, (i, image)
+    assert_clean(page)
