@@ -6,10 +6,9 @@ import urllib.request
 from conftest import assert_clean
 
 FONTS = [
-    "InstrumentSans-Regular",
-    "InstrumentSans-Medium",
-    "InstrumentSans-SemiBold",
-    "InstrumentSans-Bold",
+    "SchibstedGrotesk-Regular",
+    "SchibstedGrotesk-SemiBold",
+    "SchibstedGrotesk-ExtraBold",
     "JetBrainsMono-Regular",
     "JetBrainsMono-Medium",
     "JetBrainsMono-Bold",
@@ -33,8 +32,10 @@ def test_every_font_file_serves_as_woff2(page, site_url) -> None:
     assert_clean(page)
 
 
-def test_body_copy_is_medium_weight_and_code_blocks_regular(page, site_url) -> None:
-    """Owner request: body copy renders at 500; headings and code blocks keep their weights."""
+def test_body_copy_is_regular_headings_extra_bold_and_code_blocks_regular(
+    page, site_url
+) -> None:
+    """E10: body copy renders at 400 and display headings at 800; code blocks stay at 400."""
     page.goto(site_url + "/")
 
     def weight(selector: str) -> str:
@@ -43,9 +44,9 @@ def test_body_copy_is_medium_weight_and_code_blocks_regular(page, site_url) -> N
             "s => getComputedStyle(document.querySelector(s)).fontWeight", selector
         )
 
-    assert weight(".hero-sub") == "500"
-    assert weight("body") == "500"
-    assert weight("h1") == "700"
+    assert weight(".hero-sub") == "400"
+    assert weight("body") == "400"
+    assert weight("h1") == "800"
     page.goto(site_url + "/coding/install/")
     assert weight("pre code") == "400"
     assert_clean(page)
