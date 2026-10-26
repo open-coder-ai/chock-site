@@ -2511,10 +2511,14 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
 .home .cta p { color: var(--body); font-size: 19px; }
 .home .cta .button { min-height: 56px; font-size: 17px; }
 
+/* the wheel crosses the hero text at every width up to 1039px (measured); the wedge stays */
+@media (max-width: 1039px) {
+  .hero-wheel { display: none; }
+}
+
 @media (max-width: 1000px) {
   .home .hero-band { grid-template-columns: minmax(0, 1fr); min-height: 0; padding: 40px 0; }
   .hero-art { opacity: 0.4; }
-  .hero-wheel { right: 24px; top: 40px; width: 260px; height: 260px; }
   .home .demo { justify-self: stretch; max-width: none; }
   .home .split, .home .usecase, .duo { grid-template-columns: minmax(0, 1fr); gap: 32px; }
   .home .usecase { gap: 0; }

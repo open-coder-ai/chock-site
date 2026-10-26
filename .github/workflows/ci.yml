@@ -114,7 +114,9 @@ jobs:
       - run: python -m sitegen.architecture --check --fetch --clones .arch-src --repo chock-site=.
 
   e2e:
-    timeout-minutes: 25
+    # Measured: pytest 18m12s-21m12s; a cold apt install of the browser's system
+    # packages took 11m58s once, so a cache miss needs room for both.
+    timeout-minutes: 40
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -140,7 +142,38 @@ jobs:
           FRAMEWORK_REF: ${{ steps.refs.outputs.framework }}
       - run: python scripts/install_engine_deps.py
       - run: pip check
-      - run: python -m playwright install --with-deps chromium
+      # The slow part of the install is apt (the mirror was throttled once), not the
+      # browser download, so the browser folder and the downloaded .deb files are cached.
+      - id: pw
+        run: |
+          echo "version=$(sed -n 's/^playwright==\([0-9.]*\).*/\1/p' requirements-dev.txt)" >> "$GITHUB_OUTPUT"
+          echo "image=${ImageVersion:-unknown}" >> "$GITHUB_OUTPUT"
+      - id: pw-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/playwright-debs
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: |
+          if ! sudo dpkg -i "$HOME"/playwright-debs/*.deb; then
+            echo "::warning::cached .deb files did not install; falling back to apt"
+            python -m playwright install-deps chromium
+          fi
+          python -m playwright install chromium
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m playwright install --with-deps chromium
+          mkdir -p "$HOME/playwright-debs"
+          cp /var/cache/apt/archives/*.deb "$HOME/playwright-debs/"
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/playwright-debs
+          key: ${{ steps.pw-cache.outputs.cache-primary-key }}
       - run: pytest -q tests/e2e
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: failure()
