@@ -115,20 +115,18 @@ upstream:
   - source: chock-catalog agentic-security/agentic-code-security/manifest.yaml
     starts:
     - 'avoid: code execution on the host, unpinned'
-    - provenance-marker-removed compares with HEAD
   - source: chock-catalog base/agent-discipline/manifest.yaml
     starts:
     - 'avoid: skipping verification, deleting assertions,'
-  - source: chock-catalog base/agent-permissions-scan/manifest.yaml
-    starts:
-    - 'ap-endpoint-override: a non-empty top-level'
-    - 'ap-mcp-enable-all: enableAllProjectMcpServers'
   - source: chock-catalog base/block-fetch-exec-in-files/manifest.yaml
     starts:
     - iex matching is now linear on long runs of
   - source: chock-catalog base/block-no-verify/plugin.json
     starts:
     - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/re
+  - source: chock-catalog base/block-secret-store-reads/manifest.yaml
+    starts:
+    - echo, printf, print and Write-Output (and Write-Host)
   - source: chock-catalog base/chock-mise/manifest.yaml
     starts:
     - 'avoid: inferring personal identity or employer-confidential'
@@ -141,6 +139,10 @@ upstream:
   - source: chock-catalog base/context-hygiene/manifest.yaml
     starts:
     - 'avoid: context rot and lost-in-the-middle'
+  - source: chock-catalog base/dockerfile-compose-security/manifest.yaml
+    starts:
+    - protect-agent-config's `…` of compiled folders
+    - protect-agent-config's \`…` of compiled folders
   - source: chock-catalog base/firecrawl-fallback-only/manifest.yaml
     starts:
     - 'avoid: reaching for the Firecrawl connector'
@@ -153,15 +155,18 @@ upstream:
   - source: chock-catalog base/limit-diff-size/manifest.yaml
     starts:
     - 'avoid: one commit carrying hundreds of hand-written'
+  - source: chock-catalog base/lockfile-integrity/manifest.yaml
+    starts:
+    - ci now raises lock-allowlist-edited for a change
   - source: chock-catalog base/memory-discipline/manifest.yaml
     starts:
     - 'avoid: persisting file contents, git history,'
   - source: chock-catalog base/no-a11y-regression/manifest.yaml
     starts:
     - 'avoid: breaking a requirement the previous'
+  - source: chock-catalog base/scan-secrets/manifest.yaml
+    starts:
+    - p on mkdir, ssh, tar and cp was never matched.
   - source: chock-catalog base/token-efficiency/manifest.yaml
     starts:
     - 'avoid: wasting context window on low-signal'
-  - source: chock-catalog base/block-destructive-commands/manifest.yaml
-    starts:
-    - terraform plan was never refused; a case now pins it.

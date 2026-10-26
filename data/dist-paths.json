@@ -6,8 +6,8 @@
       "texts": ["Git\\bin (sh.exe) put on PATH"]
     },
     {
-      "source": "chock-catalog base/refname-filename-metachar/manifest.yaml (changelog, catalog e885f91)",
-      "texts": ["r\\x.txt"]
+      "source": "chock-catalog base/registry-config/manifest.yaml (changelog, catalog a6a8841)",
+      "texts": ["(\\\\host\\share or //host/share)", "(\\\\\\\\host\\\\share or //host/share)"]
     }
   ]
 }
