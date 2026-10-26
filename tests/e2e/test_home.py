@@ -286,3 +286,47 @@ def test_pipeline_chips_and_arrows_are_visible_and_clear(
         assert_clean(page)
     finally:
         context.close()
+
+
+HERO_WIDTHS = [1366, 1024, 900, 768, 390, 360]
+
+HERO_BOXES = """() => {
+  const wheel = document.querySelector(".hero-wheel");
+  const shown = (el) => {
+    const style = getComputedStyle(el);
+    let opacity = 1;
+    for (let node = el; node; node = node.parentElement) {
+      opacity *= parseFloat(getComputedStyle(node).opacity);
+    }
+    return style.display !== "none" && style.visibility === "visible" && opacity > 0;
+  };
+  const box = (el) => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  };
+  const text = [...document.querySelectorAll(".hero-text, .hero-text *")]
+    .map((el) => ({ name: el.tagName + "." + el.className, ...box(el) }))
+    .filter((b) => b.right > b.left && b.bottom > b.top);
+  return { visible: shown(wheel), wheel: box(wheel), text };
+}"""
+
+
+@pytest.mark.parametrize("width", HERO_WIDTHS)
+def test_hero_wheel_never_crosses_hero_text(page, site_url, width) -> None:
+    page.set_viewport_size({"width": width, "height": 900})
+    page.goto(site_url + "/")
+    got = page.evaluate(HERO_BOXES)
+    assert got["text"], "no hero text boxes found"
+    if width == 1366:
+        assert got["visible"], "the wheel must show on the desktop layout"
+    if not got["visible"]:
+        return
+    wheel = got["wheel"]
+    for el in got["text"]:
+        apart = (
+            wheel["right"] <= el["left"]
+            or el["right"] <= wheel["left"]
+            or wheel["bottom"] <= el["top"]
+            or el["bottom"] <= wheel["top"]
+        )
+        assert apart, f"{width}px: the wheel {wheel} crosses {el['name']} {el}"
