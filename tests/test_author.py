@@ -120,7 +120,7 @@ def test_installed_engine_is_the_pinned_commit() -> None:
 
 @pytest.mark.parametrize("policy_id", ["my-a", "my-a-b", "my-0"])
 def test_js_path_order_matches_the_engine(policy_id: str) -> None:
-    # author.js sorts paths as strings; compute_pack_hash sorts Path objects by part.
+    # author.js sorts names by UTF-8 bytes; compute_pack_hash sorts Path objects by part.
     author = authordata.load_author(DATA)
     for kind, spec in author["kinds"].items():
         paths = [path.replace("__ID__", policy_id) for path in spec["files"]]

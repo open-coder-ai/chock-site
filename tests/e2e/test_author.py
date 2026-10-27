@@ -1,5 +1,7 @@
 """The author page (BV-S2): interview, files, catalog mixing, drafts, setup script."""
 
+import base64
+import json
 import os
 import re
 import shutil
@@ -17,6 +19,13 @@ from tests.fixtures.untested import CLIENT
 
 AUTHOR = "/coding/author/"
 ROOT = Path(__file__).resolve().parents[2]
+# Copied from open-coder-ai/chock tests/fixtures/pack_hash_v2_vectors.json at commit
+# 11437ed39bd5e833a767d6e02b015834a5ac53b9.
+VECTORS = json.loads(
+    (ROOT / "tests" / "fixtures" / "pack_hash_v2_vectors.json").read_text(
+        encoding="utf-8"
+    )
+)["vectors"]
 # The picker's order: witness.yaml's rows, then the engine clients without one (S-ALL).
 WITNESS_ORDER = list(
     clientdata.load_witness(ROOT / "data", engine.client_ids())["clients"]
@@ -554,6 +563,24 @@ def test_generated_script_builds_for_every_agent(
     assert engine.load_selection(str(selection))["client"] == agent
     assert "custom, not reviewed" in result.stdout
     assert_clean(page)
+
+
+@pytest.mark.parametrize("vector", VECTORS, ids=lambda v: v["name"])
+def test_js_pack_hash_matches_the_v2_vectors(page, site_url, vector) -> None:
+    """author.js's packHash gives the engine's v2 hex for every shared vector, raw bytes included."""
+    _open(page, site_url)
+    files = [
+        {"path": f["path"], "bytes": list(base64.b64decode(f["content_b64"]))}
+        for f in vector["files"]
+    ]
+    js_hash = page.evaluate(
+        """async (files) => {
+            const { packHash } = await import("/js/author.js");
+            return packHash(files.map((f) => ({ path: f.path, bytes: new Uint8Array(f.bytes) })));
+        }""",
+        files,
+    )
+    assert js_hash == vector["v2"]
 
 
 def _assert_engine_hash(page, policy_dir: Path) -> None:
