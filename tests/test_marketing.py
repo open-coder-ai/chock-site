@@ -238,6 +238,4 @@ def test_og_card_is_e10_navy_not_the_old_background() -> None:
     )
     pixel = _png_pixel(data, 40, 40)
     assert pixel != (0x0D, 0x16, 0x26)
-    assert all(abs(got - want) <= 10 for got, want in zip(pixel, (0x0E, 0x21, 0x40))), (
-        pixel
-    )
+    assert all(abs(got - want) <= 6 for got, want in zip(pixel, (15, 36, 71))), pixel
