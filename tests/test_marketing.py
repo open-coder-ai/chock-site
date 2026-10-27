@@ -2,6 +2,7 @@
 
 import json
 import re
+import zlib
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -188,3 +189,55 @@ def test_favicon_uses_only_e10_tokens() -> None:
     assert used <= tokens
     assert not used & {"#D9B45C", "#0D1626"}
     assert not re.search(r"rgb|hsl", svg)
+
+
+def _png_pixel(data: bytes, x: int, y: int) -> tuple[int, int, int]:
+    """Read one RGB pixel from an 8-bit, non-interlaced RGB or RGBA PNG without a library."""
+    width = int.from_bytes(data[16:20], "big")
+    depth, kind, _, _, interlace = data[24:29]
+    assert (depth, interlace) == (8, 0) and kind in (2, 6), (depth, kind, interlace)
+    step = 3 if kind == 2 else 4
+    raw = b""
+    pos = 8
+    while pos < len(data):
+        size = int.from_bytes(data[pos : pos + 4], "big")
+        if data[pos + 4 : pos + 8] == b"IDAT":
+            raw += data[pos + 8 : pos + 8 + size]
+        pos += 12 + size
+    raw = zlib.decompress(raw)
+    stride = width * step
+    prev = bytearray(stride)
+    for row in range(y + 1):
+        base = row * (stride + 1)
+        ftype, line = raw[base], bytearray(raw[base + 1 : base + 1 + stride])
+        for i in range(stride):
+            left = line[i - step] if i >= step else 0
+            up = prev[i]
+            corner = prev[i - step] if i >= step else 0
+            if ftype == 1:
+                line[i] = (line[i] + left) & 255
+            elif ftype == 2:
+                line[i] = (line[i] + up) & 255
+            elif ftype == 3:
+                line[i] = (line[i] + (left + up) // 2) & 255
+            elif ftype == 4:
+                p = left + up - corner
+                pa, pb, pc = abs(p - left), abs(p - up), abs(p - corner)
+                near = left if pa <= pb and pa <= pc else up if pb <= pc else corner
+                line[i] = (line[i] + near) & 255
+        prev = line
+    return tuple(prev[x * step : x * step + 3])
+
+
+def test_og_card_is_e10_navy_not_the_old_background() -> None:
+    """The social card is 1200x630 and its top-left corner is E10 navy, not the old #0D1626."""
+    data = (ROOT / "static" / "img" / "og-card.png").read_bytes()
+    assert (int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")) == (
+        1200,
+        630,
+    )
+    pixel = _png_pixel(data, 40, 40)
+    assert pixel != (0x0D, 0x16, 0x26)
+    assert all(abs(got - want) <= 10 for got, want in zip(pixel, (0x0E, 0x21, 0x40))), (
+        pixel
+    )
