@@ -192,6 +192,20 @@ def remove_steps(steps: list[dict[str, str]], client: str) -> list[dict[str, str
     return [{kind: data_fill(text, tokens) for kind, text in s.items()} for s in steps]
 
 
+def _same_step(text: str) -> str:
+    """A step's text reduced to words, so the engine's and the site's wording of one step match."""
+    return " ".join(text.replace("`", "").split()).casefold()
+
+
+def merged_remove(
+    engine_steps: list[dict[str, str]], site_steps: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """The engine's removal steps in its order, then each site step the engine does not already have."""
+    seen = {_same_step(text) for step in engine_steps for text in step.values()}
+    extra = [s for s in site_steps if _same_step(next(iter(s.values()))) not in seen]
+    return engine_steps + extra
+
+
 def _remove_unverified(
     steps: list[dict[str, str]] | None,
     texts: dict[str, str],
@@ -259,9 +273,11 @@ def builder_clients(
             "report": report,
             "evidence": evidence_notice(evidence, client, name),
             "steps": engine.client_steps(client),
-            "remove": engine_remove or remove_steps(removes[client] or [], client),
+            "remove": merged_remove(
+                engine_remove, remove_steps(removes[client] or [], client)
+            ),
             "remove_unverified": _remove_unverified(
-                removes[client] if not engine_remove else [],
+                removes[client],
                 texts,
                 client,
                 name,

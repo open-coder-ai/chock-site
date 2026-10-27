@@ -264,13 +264,13 @@ def markdown(block: dict[str, Any]) -> str:
         )
         lines.append(md_steps(data["steps"], block["texts"]["ask_inline"]))
         lines.append(f"\n{block['texts']['remove_md']}\n\n")
-        for step in data["remove"]:
-            (kind, text), *_ = step.items()
-            lines.append(f"- {text}\n" if kind == "note" else f"- `{text}`\n")
         if unverified := data["remove_unverified"]:
             lines.append(
                 f"- {unverified['text']} [{unverified['link']}]({unverified['url']}).\n"
             )
+        for step in data["remove"]:
+            (kind, text), *_ = step.items()
+            lines.append(f"- {text}\n" if kind == "note" else f"- `{text}`\n")
         if data["plugin_repo"]:
             lines.append(
                 f"\n{block['texts']['repo_line']} {data['plugin_repo']}\n\n"

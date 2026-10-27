@@ -862,18 +862,18 @@ def _step_items(templates: Path, steps: list[dict[str, str]]) -> Safe:
 
 
 def _remove_items(templates: Path, about: dict[str, Any]) -> Safe:
-    """An agent's remove steps, or the "not verified" line with its evidence link."""
+    """An agent's remove steps, under the "not verified" line with its evidence link where it has one."""
     unverified = about["remove_unverified"]
+    steps = _step_items(templates, about["remove"])
     if unverified is None:
-        return _step_items(templates, about["remove"])
-    return Safe(
-        render_file(
-            templates / "remove-unverified.html",
-            TEXT=unverified["text"],
-            URL=unverified["url"],
-            LINK=unverified["link"],
-        )
+        return steps
+    line = render_file(
+        templates / "remove-unverified.html",
+        TEXT=unverified["text"],
+        URL=unverified["url"],
+        LINK=unverified["link"],
     )
+    return Safe(line + steps)
 
 
 def policy_preview(site: Site, policy: Policy) -> str:

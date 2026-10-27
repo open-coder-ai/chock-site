@@ -179,7 +179,7 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
     assert set(block["clients"]) == set(repos)
     assert "from one place only, never both" in block["texts"]["repo_note"]
     for client, data in block["clients"].items():
-        assert bool(data["remove"]) != bool(data["remove_unverified"]), client
+        assert data["remove"] or data["remove_unverified"], client
         if data["remove_unverified"]:
             link = data["report"] if data["witness"] == "witnessed" else None
             url = link or data["evidence"]["url"]
@@ -197,10 +197,18 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
 
 
 def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
-    """Antigravity keeps the owner's Windows steps (2026-10-19); goose shows the engine's list, which wins."""
+    """The owner's Windows run of 2026-10-19 verified these steps; the tidy-up steps are optional."""
     block = _site(built)["builder_clients"]
     expected = {
-        "goose": engine.client_remove("goose"),
+        "goose": [
+            {
+                "note": "Delete the folder ~/.agents/plugins/chock-guardrails. Checked on Windows."
+            },
+            {
+                "note": "Optional tidy-up: delete the chock-guardrails entry in the plugins list "
+                "of goose's config.yaml. goose works without this step."
+            },
+        ],
         "antigravity": [
             {
                 "note": "Close Antigravity, delete the folder "
@@ -216,7 +224,9 @@ def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
     for client, steps in expected.items():
         data = block["clients"][client]
         assert data["witness"] == "witnessed", client
-        assert data["remove"] == steps, client
+        engine_steps = engine.client_remove(client)
+        assert data["remove"][: len(engine_steps)] == engine_steps, client
+        assert data["remove"][len(engine_steps) :] == steps, client
         assert data["remove_unverified"] is None, client
         assert data["report"].endswith(f"Witness%20report:%20{client}"), client
 
@@ -464,3 +474,39 @@ def test_every_engine_removal_entry_is_on_the_install_page_and_its_twin(built) -
             assert want in md_text, (client, text)
             shown += 1
     assert shown >= 20
+
+
+def test_unverified_client_keeps_its_not_verified_line_above_the_engine_steps(
+    built,
+) -> None:
+    """The site never drops a verification status: the line stays above the engine's removal steps."""
+    page = (built.out / "coding" / "install" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "coding" / "install" / "index.md").read_text(encoding="utf-8")
+    clients = _site(built)["builder_clients"]["clients"]
+    checked = 0
+    for client, data in clients.items():
+        if not data["remove_unverified"]:
+            continue
+        line = data["remove_unverified"]["text"]
+        assert line.startswith("Removal steps not verified for"), client
+        section = re.search(
+            rf'<section class="install-agent" aria-labelledby="agent-{client}">'
+            r".*?\n</section>",
+            page,
+            re.DOTALL,
+        )
+        block = re.search(
+            rf"### [^\n]*\(`{client}`[^\n]*\n.*?(?=\n### |\Z)", twin, re.DOTALL
+        )
+        assert section and block, client
+        steps = engine.client_remove(client)
+        first = _plain(next(iter(steps[0].values()))) if steps else None
+        for text in (_plain(section.group(0), markup=True), _plain(block.group(0))):
+            assert _plain(line) in text, client
+            if first:
+                assert text.index(_plain(line)) < text.index(first), client
+        checked += 1
+    assert {"openhands", "factory-droid"} <= {
+        c for c, d in clients.items() if d["remove_unverified"]
+    }
+    assert checked >= 2
