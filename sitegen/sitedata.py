@@ -86,6 +86,7 @@ def build_site(
 
     for policy in policies:
         policy.sha256 = engine.pack_hash(catalog / policy.path)
+        policy.sha256_v1 = engine.pack_hash_v1(catalog / policy.path)
         policy.latest.change = catalog_mod.plain_change(
             policy.latest.change, site_data["texts"]["change_rewrites"]
         )
@@ -195,6 +196,7 @@ def site_dict(site: Site) -> dict[str, Any]:
                 "name": p.name,
                 "version": p.version,
                 "sha256": p.sha256,
+                "sha256_v1": p.sha256_v1,
                 "keyword": p.keyword,
                 "word": p.word,
                 "says": p.says,

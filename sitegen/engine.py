@@ -1,6 +1,7 @@
 """The only module that imports chock (and agentseam): hashes, labels, schema, warnings, routes."""
 
 import base64
+import hashlib
 import importlib.resources
 import json
 import re
@@ -57,6 +58,23 @@ def _resource(name: str) -> dict[str, Any]:
 def pack_hash(pack_dir: Path) -> str:
     """The sha256 `chock add --verify-sha` and `chock install` check for one policy."""
     return chock.lock.compute_pack_hash(pack_dir)
+
+
+def pack_hash_v1(pack_dir: Path) -> str | None:
+    """The old (v1) pack hash the engine still accepts, or None when a file holds a NUL byte."""
+    files = sorted(
+        (path.relative_to(pack_dir).as_posix(), path.read_bytes())
+        for path in pack_dir.rglob("*")
+        if path.is_file()
+        and "__pycache__" not in path.parts
+        and path.suffix not in (".pyc", ".pyo")
+    )
+    if any(b"\0" in content for _name, content in files):
+        return None
+    digest = hashlib.sha256()
+    for name, content in files:
+        digest.update(name.encode("utf-8") + b"\0" + content + b"\0")
+    return digest.hexdigest()
 
 
 def label_words() -> dict[str, str]:

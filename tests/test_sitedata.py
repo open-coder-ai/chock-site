@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+import chock.lock
 import yaml
 
 from sitegen import engine
@@ -107,3 +108,21 @@ def test_build_is_byte_identical_and_lf_only(
         # for text files, which Path.write_text(newline="\n") governs.
         if rel.suffix not in (".png", ".woff2", ".jpg"):
             assert b"\r" not in content, rel
+
+
+def test_every_policy_has_a_v1_hash_the_engine_accepts(built, catalog_path) -> None:
+    paths = {
+        p["id"]: p["path"]
+        for p in yaml.safe_load((catalog_path / "registry.yaml").read_text("utf-8"))[
+            "policies"
+        ]
+    }
+    for policy in _site_json(built)["policies"]:
+        v1 = policy["sha256_v1"]
+        assert v1 is None or SHA256_RE.match(v1), policy["id"]
+        pack = catalog_path / paths[policy["id"]]
+        has_nul = any(b"\0" in f.read_bytes() for f in pack.rglob("*") if f.is_file())
+        assert (v1 is None) == has_nul, policy["id"]
+        if v1 is not None:
+            assert chock.lock.pack_hash_matches(pack, v1), policy["id"]
+        assert chock.lock.pack_hash_matches(pack, policy["sha256"]), policy["id"]
