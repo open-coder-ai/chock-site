@@ -246,7 +246,7 @@ def test_use_cases_are_coding_only_and_drawn_from_presets(built) -> None:
     assert (
         "general agents"
         not in re.search(
-            r'<section class="section" aria-labelledby="use-cases">.*?</section>',
+            r'<section class="[^"]*" aria-labelledby="use-cases">.*?</section>',
             html,
             re.DOTALL,
         )
@@ -463,8 +463,8 @@ def test_home_sections_in_the_specified_order(built) -> None:
         "use-cases",
         "honest-by-design",
         "no-model-no-tokens",
-        "shift-left",
         "code-stays-local",
+        "shift-left",
         "real-incidents",
         "presets",
         "where-chock-fits",
