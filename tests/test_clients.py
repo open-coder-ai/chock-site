@@ -1,5 +1,6 @@
 """BV-S1: witness data, per-client labels and steps in site.json's builder_clients block."""
 
+import html
 import json
 import re
 import shutil
@@ -196,18 +197,10 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
 
 
 def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
-    """The owner's Windows run of 2026-10-19 verified these steps; the tidy-up steps are optional."""
+    """Antigravity keeps the owner's Windows steps (2026-10-19); goose shows the engine's list, which wins."""
     block = _site(built)["builder_clients"]
     expected = {
-        "goose": [
-            {
-                "note": "Delete the folder ~/.agents/plugins/chock-guardrails. Checked on Windows."
-            },
-            {
-                "note": "Optional tidy-up: delete the chock-guardrails entry in the plugins list "
-                "of goose's config.yaml. goose works without this step."
-            },
-        ],
+        "goose": engine.client_remove("goose"),
         "antigravity": [
             {
                 "note": "Close Antigravity, delete the folder "
@@ -432,3 +425,42 @@ def test_the_notice_follows_the_data_row(tmp_path: Path) -> None:
     dropped = _evidence_copy(tmp_path / "dropped", lambda d: d["issues"].pop(CLIENT))
     assert clientdata.evidence_notice(dropped, CLIENT, NAME) is None
     assert clientpage.evidence_lines(block(dropped), TEMPLATES) == ""
+
+
+def _plain(text: str, markup: bool = False) -> str:
+    """Text without tags (when `markup`), entities or backticks, so a rendered note matches the engine's."""
+    if markup:
+        text = html.unescape(re.sub(r"<[^>]+>", "", text))
+    text = text.replace("`", "")
+    return " ".join(text.split())
+
+
+def test_every_engine_removal_entry_is_on_the_install_page_and_its_twin(built) -> None:
+    """The Install page and its Markdown twin show each client's whole engine removal list."""
+    page = (built.out / "coding" / "install" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "coding" / "install" / "index.md").read_text(encoding="utf-8")
+    shown = 0
+    for client in engine.client_ids():
+        entries = engine.client_remove(client)
+        if not entries:
+            continue
+        section = re.search(
+            rf'<section class="install-agent" aria-labelledby="agent-{client}">'
+            r".*?\n</section>",
+            page,
+            re.DOTALL,
+        )
+        assert section, client
+        block = re.search(
+            rf"### [^\n]*\(`{client}`[^\n]*\n.*?(?=\n### |\Z)", twin, re.DOTALL
+        )
+        assert block, client
+        html_text = _plain(section.group(0), markup=True)
+        md_text = _plain(block.group(0))
+        for entry in entries:
+            (_, text), *_ = entry.items()
+            want = _plain(text)
+            assert want in html_text, (client, text)
+            assert want in md_text, (client, text)
+            shown += 1
+    assert shown >= 20

@@ -247,6 +247,7 @@ def builder_clients(
         name = engine.client_name(client)
         named = {"__NAME__": name}
         report = data_fill(witness.get("report") or "", {"__CLIENT__": client})
+        engine_remove = engine.client_remove(client)
         clients[client] = {
             "name": name,
             "witness": state,
@@ -258,9 +259,9 @@ def builder_clients(
             "report": report,
             "evidence": evidence_notice(evidence, client, name),
             "steps": engine.client_steps(client),
-            "remove": remove_steps(removes[client] or [], client),
+            "remove": engine_remove or remove_steps(removes[client] or [], client),
             "remove_unverified": _remove_unverified(
-                removes[client],
+                removes[client] if not engine_remove else [],
                 texts,
                 client,
                 name,
