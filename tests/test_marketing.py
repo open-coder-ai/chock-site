@@ -175,3 +175,16 @@ def test_favicon_and_og_card_local_and_sized(built) -> None:
     w = int.from_bytes(data[16:20], "big")
     h = int.from_bytes(data[20:24], "big")
     assert (w, h) == (1200, 630)
+
+
+def test_favicon_uses_only_e10_tokens() -> None:
+    """The favicon's colours are E10 tokens from site.css, and no pre-E10 colour."""
+    css = (ROOT / "static" / "css" / "site.css").read_text(encoding="utf-8")
+    root = css[css.index(":root {") :].split("}", 1)[0]
+    tokens = {c.upper() for c in re.findall(r"#[0-9A-Fa-f]{6}\b", root)}
+    svg = (ROOT / "static" / "favicon.svg").read_text(encoding="utf-8")
+    used = {c.upper() for c in re.findall(r"#[0-9A-Fa-f]{3,8}\b", svg)}
+    assert {"#0B1B33", "#38BDF8", "#0EA5E9"} <= used
+    assert used <= tokens
+    assert not used & {"#D9B45C", "#0D1626"}
+    assert not re.search(r"rgb|hsl", svg)
