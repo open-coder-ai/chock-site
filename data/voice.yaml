@@ -615,19 +615,13 @@ upstream:
   sentences:
   - Commit, agent write, turn's end; additions only; unreadable configs refused.
   - 'Warns only (observe): flags files that make a dev tool run code on open, clone or shell entry -- agent hooks, helpers, env/BASE_URL overrides, auto-approve; VS Code folderOpen tasks, trust off, repo executables; devcontainer initializeCommand; .envrc, mise, husky, lefthook, pre-commit; gitconfig exec keys, gitattributes drivers, unsafe .gitmodules.'
-  - '`0.0.2` · `2026-10-25` · Behaviour change, added coverage for key identity: keys for long values, parsed-value digests and unreadable files now carry the full SHA-256 digest instead of its first 16 hex digits, so two different values cannot share a key; a waiver or baseline entry for a value over 160 characters must be re-keyed.'
-- source: chock-catalog base/agent-permissions-scan/manifest.yaml
-  sentences:
-  - Keys for long values and for unreadable files now carry the full SHA-256 digest instead of its first 16 hex digits; a waiver or baseline entry for a value over 160 characters must be re-keyed.
 - source: chock-catalog base/ask-credential-switching/manifest.yaml
   sentences:
   - 'Asks a person before a shell command switches the identity later commands act as: aws --profile, AWS_PROFILE= or AWS keys (also $env:), sts assume-role, configure set of a key; gcloud account, configuration, login or impersonation; az account set, az login as a principal or identity; kubectl use-context or set-credentials; writes to ~/.aws, ~/.config/gcloud, ~/.azure.'
-  - '`0.0.4` · `2026-10-24` · Shared shell reader updated (SR-2d1; the copy in implementations/chock_shellparse is regenerated, this policy''s own script is unchanged).'
   - 'Added coverage: an arithmetic shift in `$(( ))`, `(( ))` or `$[ ]` is no longer read as the start of a here-document, so the lines after it are judged as before; the string given to `env -S` or `--split-string` is read as the command env runs; `env -i` is recorded on the command it runs.'
 - source: chock-catalog base/block-curl-pipe-sh/manifest.yaml
   sentences:
   - 'Best-effort guard: refuses a download (curl, wget, iwr; ssh host cmd, scp/rsync/aws s3 cp to stdout) wired into a shell or interpreter (sh..fish, python, perl, ruby, node, php, lua, pwsh, deno, bun, su, source, eval, iex) by pipe, substitution or here-string, also inside bash -c/ssh/docker exec bodies, or downloaded then run with no checksum or signature step.'
-  - '`0.1.7` · `2026-10-25` · Hardening, closes a regression of 0.1.6 (SR-2d2c review; eval cases tc-089 to tc-091; tests added to test_block_curl_pipe_sh_sr2c.py, 9 red then green).'
 - source: chock-catalog base/block-destructive-commands/manifest.yaml
   sentences:
   - Best-effort, on parsed commands (echo ignored); one verdict table shared with rtk-dangerous-actions-blocker.
@@ -635,8 +629,6 @@ upstream:
   - '`0.3.1` · `2026-10-24` · Shared shell reader updated (SR-2d1; the copy in implementations/chock_shellparse is regenerated, this policy''s own script is unchanged).'
 - source: chock-catalog base/block-fetch-exec-in-files/manifest.yaml
   sentences:
-  - 'Fixed: an echo/printf/Write-Host line was skipped wholesale, so an echo followed by && and a piped download went unseen (now skipped only when the line is the echo and nothing chains after it; make''s @echo and -echo included); a ''#'' inside a word before the downloader hid the line; the here-string/substitution runners now see ''/dev/stdin <<<'', ''command curl'', ''env curl'' and ''/usr/bin/curl''; the pipe form sees a a DownloadString call piped to iex, a piped ''sudo -u root sh'', ''/usr/bin/env bash'', ''source /dev/stdin'', and python with flags before stdin (''python3 -u -'', ''python3 -I''); PowerShell iex of ''$(irm ...)'', ''& { $(irm ...) }'' and curl aliases; Dockerfile exec-form ''ADD ["URL", "/dst"]''.'
-  - 'Known limits named in the description: continuation lines, variables ($(CURL), $SHELL, x=$(curl ..); eval $x), unicode-escaped JSON, split or quoted command names (c""url), download-to-file then run, fetchers and interpreters outside the lists (http, fetch, nc, deno, Rscript, tclsh, su -c, ssh, docker run -i), quoted echo arguments containing $(download piped to sh), extensionless scripts, and a line with thousands of repeated downloader words takes seconds to judge.'
   - 'Warns (observe rollout) when a line added to a script, Dockerfile, Makefile, CI workflow or package.json wires a download into a code runner: curl/wget/aria2c/lynx/iwr/irm piped into a shell, python/perl/ruby/node/php/lua on stdin, pwsh or iex; bash -c, eval, source or a here-string of a $(...) or <(...) download; Dockerfile ADD of a URL without --checksum.'
 - source: chock-catalog base/block-hook-bypass-in-files/manifest.yaml
   sentences:
@@ -645,12 +637,10 @@ upstream:
 - source: chock-catalog base/block-no-verify/manifest.yaml
   sentences:
   - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/revert, -n on commit/am; core.hooksPath set by -c, git config or GIT_CONFIG_*; HUSKY=0, SKIP=, LEFTHOOK=0 and kin; hook manager uninstall; aliases and rebase --exec defined in the command.
-  - '`0.5.2` · `2026-10-24` · Behaviour change, added coverage for the environment wipe (SR-2d1; eval cases tc-114 to tc-117; tests in test_block_no_verify_env_wipe.py).'
   - Shared shell reader updated (SR-2d1; the copy in implementations/chock_shellparse is regenerated, this policy's own script is unchanged).
 - source: chock-catalog base/block-persistence-shapes/manifest.yaml
   sentences:
   - 'Best-effort guard against shell commands that publish or keep access after the session: npm/pnpm/yarn/twine/ poetry/uv/cargo/gem publish, docker/podman push and login, npm token and registry edits, repos made public; user services, launch agents, cron/at/schtasks, Run keys, authorized_keys, runner registration, sudoers, setuid bits, detached downloads.'
-  - '`0.0.5` · `2026-10-24` · Shared shell reader updated (SR-2d1; the copy in implementations/chock_shellparse is regenerated, this policy''s own script is unchanged).'
 - source: chock-catalog base/block-secret-store-reads/manifest.yaml
   sentences:
   - 'Best-effort guard against an agent reading credentials from the shell: cat, cp, tar, source or < on ~/.ssh (not .pub), ~/.aws, ~/.npmrc, agent CLI dirs, browser DBs, wallets, .env, *.tfstate; interpreter one-liners naming them; token printers (gh auth token, aws sts); curl, wget or iwr to cloud metadata credential paths (169.254.169.254, 169.254.170.2, GCE).'
@@ -681,9 +671,6 @@ upstream:
   - 'Friction, not a security boundary: refuses or asks (each rule''s tier) on GitHub Actions weaknesses a change adds to workflows, composite actions and dependabot.yml: event text in run/script, PR-head checkout under pull_request_target/workflow_run/issue_comment, missing or write-all permissions, secrets inherit or inlined, self-hosted runners on PRs, GITHUB_ENV writes, artifact and cache poisoning, agent steps on untrusted text.'
   - 'The manifest moves from action: warn / enforcement: advise to action: block / enforcement: block, the ceiling; the script already exits 1 for a block-tier rule and 3 for an ask-tier one, so each rule now lands on its roadmap default (section 6 ci-github-actions-security table).'
   - The pack cleared D15 with a fire rate of 0.6% over the catalog's full first-parent history (154 commits, chock-catalog#223; one adopter not measured).
-- source: chock-catalog base/code-safety/manifest.yaml
-  sentences:
-  - eval/exec is Python-only; only the SQL rule also covers JS, which the description and rule text now say.
 - source: chock-catalog base/compromised-package-ioc/manifest.yaml
   sentences:
   - A snapshot, not a feed; friction, not a boundary.
@@ -695,9 +682,6 @@ upstream:
   - 'Behaviour change: a sibling gate (block-fetch-exec-in-files, block-unpinned-agent-components, agentic-code-security) counts as installed only when a readable regular `gate.json` (not a symlink, at most 1 MiB) under its compiled folder, directly or one folder down, has `action: block`; a bare folder, such as one a plain `mkdir` leaves, an unreadable file or a gate that only warns no longer hides this bundle''s deny findings.'
   - 'Behaviour change: the fetch-exec and remote-ADD deferral applies the installed sibling''s own `content_pattern` from its compiled gate to the physical line, and defers nothing when the pattern is missing or does not compile; the HP03 regex copies are gone, so forms the sibling''s pattern reads (a quoted `''curl''`, a pipe into `python3 -`) are now left to it and a line it does not read (a space-preceded `#` in quotes before the fetch) is reported here.'
   - 'Known limits: the copied scan-secrets pattern is still the 0.0.9 one (it reads fewer quoted-colon forms than the shipped 0.1.2, which only means a double report); the pins and node-tls deferrals still use this bundle''s own line patterns, gated by the same block-action check.'
-- source: chock-catalog base/git-safety/manifest.yaml
-  sentences:
-  - '`0.0.4` · `2026-09-30` · Wording only: limit-diff-size is listed as an enforced counterpart (it asks at commit), not as advisory; protect-main-branch is named as a commit and push gate and block-destructive-commands as a command guard plus pre-push hook.'
 - source: chock-catalog base/guard-deletion/manifest.yaml
   sentences:
   - The rename and copy header names are now unquoted the way git quotes them (\a \b \f \n \r \t \v \\ \" and octal bytes), so a move into or out of a judged scope is recognised for a name that holds a quote, backslash or control character.
@@ -708,7 +692,6 @@ upstream:
   - 'Known limit: the engine still writes finding messages to its log unredacted; that is the framework''s to change.'
 - source: chock-catalog base/hardening-flags/manifest.yaml
   sentences:
-  - 'Limits named that were found missing from the list: Microsoft toolchain switches (`/GS-`, `/DYNAMICBASE:NO`, `/NXCOMPAT:NO`, `/guard:cf-`) in any file; runtime and deployment weakening (sysctl and `sysctl.conf` such as kernel.randomize_va_space=0, kptr_restrict, ptrace_scope, `setenforce 0`, SELinux or AppArmor off, seccomp=unconfined, `--privileged`, `--cap-add=ALL`, compose files and Kubernetes securityContext), none of which this policy reads; `cc::Build::define("_FORTIFY_SOURCE", "0")` in build.rs; a flag whose characters are split by shell quotes (`-fno-stack-pro"tector"`) or built by command substitution; and CI workflow files, `.zsh` and `.ps1` scripts, justfiles and `CMakePresets.json`.'
   - Not MSVC, sysctl or container settings; misses environment flags, generated files.
 - source: chock-catalog base/java-security/manifest.yaml
   sentences:
@@ -726,14 +709,10 @@ upstream:
   - ci now raises lock-allowlist-edited for a change that carries the allowlist, as tool use and agent-commit do; push does not.
 - source: chock-catalog base/no-a11y-regression/manifest.yaml
   sentences:
-  - They called it a commit-time guard script, which left out the hook.gate that has judged the agent at tool use since 1.1.0.
   - 'avoid: breaking a requirement the previous revision met; interrupting a correct fix.'
-  - tools/mechanism.py now names both, `commit-time guard script + tool-use script gate`, and the page says the tool-use point is best-effort (it needs the agent's hook installed and fails open if the hook crashes) while the commit stays the enforced one.
 - source: chock-catalog base/opaque-blob-guard/manifest.yaml
   sentences:
   - 'Warns (observe rollout; never refuses yet) when a change adds or edits, in tests/, fixtures/, testdata/, spec/, m4/, vendor/, gradle/wrapper/: a file whose first bytes are an archive, executable, wasm or database signature (any extension), a random-looking non-media file over 100 KB, or a symlink out of the repo; m4/configure/Makefile text that decodes and evaluates; a gradle wrapper jar changed with no new distributionSha256Sum.'
-  - '`0.0.3` · `2026-10-24` · Fix for Windows (SR-2d1; tests in test_opaque_blob_git_kill.py).'
-  - Reading a git object past the hash cap kills the git process and keeps what was read; the check no longer names `signal.SIGKILL`, which Windows lacks, so the gate no longer faults on every in-scope change there.
 - source: chock-catalog base/package-lifecycle-scripts/manifest.yaml
   sentences:
   - 'Blocks fetch-exec class hooks and asks about other new ones when a change adds or edits code that runs at install or build time: npm install/prepare/pack scripts, gypfile without native sources, bin shadowing, unpinned git/URL deps; setup.py cmdclass and import-time calls, .pth imports, conftest, pyproject build hooks; build.rs and build-deps; go:generate; MSBuild Exec; gemspec, extconf, Podfile, Composer, Maven, Gradle exec.'
@@ -741,8 +720,9 @@ upstream:
 - source: chock-catalog base/protect-agent-config/manifest.yaml
   sentences:
   - 'Shell guard refuses writes to AGENTS.md, whole agent folders (.claude/, .cursor/, .codex/, .gemini/, .agents/, .chock/, ...), MCP/hook client configs (.mcp.json, ...), guardrails toggles, plugin install markers, chock.lock, hook files of Cline, Kiro, Augment, Windsurf and Devin (user and machine level), ~/.claude.json, Claude Code plugin roots, project config of Kilo Code, opencode, Factory, Amp, Continue and Goose, .git/{hooks,config}, policy implementations/: redirect, rm/mv/tee/sed -i, cp into, git checkout/restore, a write through a symlink; CLAUDE_CODE_PLUGIN_DIRS, claude --plugin-dir, chock resume (best effort).'
-  - '`0.7.5` · `2026-10-25` · Added coverage, green at baseline: the guard''s logic is unchanged (SR-2d2c; eval cases tc-1579 to tc-1587; tests in test_protect_agent_config_sr2c.py, 76 passed on the 0.7.4 sources).'
-  - 'Pinned: a here-document or redirect is judged by the path it writes, so a test file whose body only names the dependency allowlist, .mcp.json or a compiled file is allowed, and a here-document written to a protected target is refused; `implementations/` is protected where hooks run (`.agents/policies/<id>/implementations`, `.chock/compiled`, and a link into either), and a catalog''s own sources (`base/<id>/implementations`, `agentic-security/<id>/implementations`) stay editable, for the shell guard and the Edit/Write gate; reads (`ls`, `cat`, `grep`, `find`, `diff`, `git diff`, `git show`) of `.chock/compiled` and the installed copies pass.'
+  - '`0.7.6` · `2026-10-27` · Behaviour change (SR-2d2e, Claude Security finding F24; eval cases tc-1588 to tc-1593; tests in test_protect_agent_config_sr2e.py).'
+  - '`mkdir`, `mkdir -p`, `md`, and each spelling the guard already reads for other verbs (braces, variables, `cd` then a relative path, `bash -c`, quoting, `\\` separators, capitals), is refused when it makes a folder at or under `.chock/compiled`, the one protected path whose bare existence a gate reads (the constant `PRESENCE` in pathset.py, checked against the protected paths in a test; dockerfile-compose-security reads `.chock/compiled/<id>` as an installed sibling).'
+  - 'A `mkdir` anywhere else stays open: `build/out`, `.claude/commands`, `.cursor`, `.agents/policies/<id>` (no gate reads a bare folder there; writes inside are still refused).'
 - source: chock-catalog base/protect-ci-workflows/manifest.yaml
   sentences:
   - 'Not judged: deletions, empty writes, shell writes to non-GitHub CI paths; plugin installs ship no gate.'
@@ -762,13 +742,10 @@ upstream:
 - source: chock-catalog base/refname-filename-metachar/manifest.yaml
   sentences:
   - Paths a change adds or renames into (commit, agent writes), and branches and tags pushed (pre-push), with command substitution, an IFS expansion, a backtick, ; & | < >, a double quote, a backslash, a control or bidi character, a base64-decode shape, a leading dash or trailing space or dot in a segment, or a '..' segment; a ref also with a full commit id's shape.
-  - '`0.1.4` · `2026-10-24` · Shared shell reader updated (SR-2d1; the copy in implementations/chock_shellparse is regenerated, this policy''s own script is unchanged).'
 - source: chock-catalog base/registry-config/manifest.yaml
   sentences:
   - From CPython 3.12.15 (gh-155292, CVE-2026-17084) the stdlib IDNA2003 codec keeps those letters while the URL Standard lowercases them, so the two read two different hosts; older interpreters lowercased them and accepted the name.
   - 'Refuses package-manager config that redirects installs or weakens them: literal tokens, http or unlisted registry hosts (parsed, so lookalike and userinfo spellings fail), TLS or checksum checks off, install scripts on (npm, Yarn, pnpm, Bun, pip, uv, Poetry, conda, Go, Cargo, NuGet, Maven, Bundler, Composer, Hex, Dependabot); asks on extra indexes, replaces, no cooldown.'
-  - 'A file: URL (and a file: GOPROXY element) is local only with an empty host or localhost; any other host is judged against the allowlist like an https one.'
-  - A scheme-less value written as a UNC path (\\host\share or //host/share) is judged the same way.
 - source: chock-catalog base/review-like-a-red-team/manifest.yaml
   sentences:
   - 'Trigger: finishing or committing a diff that touches code, build or CI config, dependencies or agent config; a plan adding a handler, parser, auth path, crypto or sink; an ask-tier gate finding.'
@@ -785,7 +762,6 @@ upstream:
 - source: chock-catalog base/scan-secrets-entropy/manifest.yaml
   sentences:
   - 'Friction, not a security boundary: asks a person before a write adds secrets scan-secrets misses -- high-entropy values (16-150 chars) by secret-like keys, GitHub/npm tokens with valid checksums, Stripe test keys, Slack/AWS key-id shapes, Luhn-valid cards.'
-  - '`0.1.3` · `2026-10-24` · Internal rewrite (SR-2d1; tests in test_entropy_code_shape.py).'
 - source: chock-catalog base/scan-secrets/manifest.yaml
   sentences:
   - 'Tests: test_scan_secrets_sr2d2.py; eval case tc-059.'
@@ -793,7 +769,6 @@ upstream:
   sentences:
   - Only added lines; prose skipped.
   - 'Runs: commit, agent write, turn''s end; CI annotates.'
-  - The script prints a findings document; the engine re-runs it on the baseline and asks only about what the change adds, so a marker line already in HEAD, or one that only moves within its file, is old.
 - source: chock-catalog base/verify-dependency-exists/manifest.yaml
   sentences:
   - Allowlist gate for new dependencies; no registry lookup.

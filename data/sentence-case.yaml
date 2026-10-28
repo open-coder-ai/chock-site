@@ -118,15 +118,9 @@ upstream:
   - source: chock-catalog base/agent-discipline/manifest.yaml
     starts:
     - 'avoid: skipping verification, deleting assertions,'
-  - source: chock-catalog base/block-fetch-exec-in-files/manifest.yaml
-    starts:
-    - iex matching is now linear on long runs of
   - source: chock-catalog base/block-no-verify/plugin.json
     starts:
     - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/re
-  - source: chock-catalog base/block-secret-store-reads/manifest.yaml
-    starts:
-    - echo, printf, print and Write-Output (and Write-Host)
   - source: chock-catalog base/chock-mise/manifest.yaml
     starts:
     - 'avoid: inferring personal identity or employer-confidential'
