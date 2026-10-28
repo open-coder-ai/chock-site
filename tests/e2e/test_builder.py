@@ -179,6 +179,42 @@ def test_other_catalog_ref_with_same_hashes_is_taken_without_notice(
     assert_clean(page)
 
 
+def _v1_link(page, site_url: str, policy_id: str, sha256: str | None = None) -> str:
+    """A link for one policy at another catalog commit, carrying its v1 hash unless sha256 is given."""
+    _open(page, site_url)
+    pick_start(page, "git-hygiene")
+    selection = engine.load_selection(_code(page))
+    site = json.loads(page.evaluate("fetch('/data/site.json').then(r => r.text())"))
+    ours = next(p for p in site["policies"] if p["id"] == policy_id)
+    assert ours["sha256_v1"], policy_id
+    selection["catalog"]["ref"] = "0" * 40
+    selection["policies"] = [
+        {**e, "sha256": sha256 or ours["sha256_v1"]}
+        for e in selection["policies"]
+        if e["id"] == policy_id
+    ]
+    return "#s=" + engine.encode_selection(selection)
+
+
+def test_link_with_a_v1_hash_opens_preselected_without_notice(page, site_url) -> None:
+    policy_id = _members("git-hygiene")[0]
+    fragment = _v1_link(page, site_url, policy_id)
+    _open(page, site_url, fragment)
+    assert page.locator("#link-notice").inner_text().strip() == ""
+    assert page.get_by_role("button", name="Use the same policies here").count() == 0
+    assert _picked_ids(page) == [policy_id]
+    assert_clean(page)
+
+
+def test_link_with_a_wrong_hash_still_shows_the_notice(page, site_url) -> None:
+    policy_id = _members("git-hygiene")[0]
+    fragment = _v1_link(page, site_url, policy_id, "0" * 64)
+    _open(page, site_url, fragment)
+    assert "This site shows" in page.locator("#link-notice").inner_text()
+    assert _count(page) == "0 policies"
+    assert_clean(page)
+
+
 def test_unknown_id_is_listed_not_dropped_silently(page, site_url) -> None:
     _open(page, site_url)
     pick_start(page, "test-integrity")

@@ -36,3 +36,15 @@ test("an empty or malformed list does not match", () => {
 test("inherited names are not policies", () => {
   assert.equal(samePack([entry("constructor", "1".repeat(64))], known), false);
 });
+
+test("a v1 hash matches when the site has one", () => {
+  const withV1 = new Map([["a", { id: "a", sha256: "1".repeat(64), sha256_v1: "4".repeat(64) }]]);
+  assert.equal(samePack([entry("a", "4".repeat(64))], withV1), true);
+  assert.equal(samePack([entry("a", "5".repeat(64))], withV1), false);
+});
+
+test("a null v1 hash never matches", () => {
+  const noV1 = new Map([["a", { id: "a", sha256: "1".repeat(64), sha256_v1: null }]]);
+  assert.equal(samePack([entry("a", "1".repeat(64))], noV1), true);
+  assert.equal(samePack([{ id: "a", sha256: null }], noV1), false);
+});
