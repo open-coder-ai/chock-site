@@ -754,7 +754,7 @@ texts:
           - {file: src/chock/gate/runner/actor.py}
       - heading: "A guardrail turned off: chock bundle off"
         body:
-          - "With the plugin, `chock bundle off <id>` switches one member of the plugin off. It does nothing until you switch it back on."
+          - "With the plugin, `chock bundle off <id>` switches one member of the plugin off. The off applies from the next session, not the current one. At repo scope it applies only once `.chock/guardrails.json` is committed. The member stays off until you switch it back on."
         see: configure
         sources:
           - {file: docs/custom-policies.md, quote: "Switch one off like any member: `chock bundle off <id>`."}
