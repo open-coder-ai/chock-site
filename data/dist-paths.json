@@ -4,10 +4,6 @@
     {
       "source": "agentseam src/agentseam/data/matrix.json (goose notes, agentseam 683f95b)",
       "texts": ["Git\\bin (sh.exe) put on PATH"]
-    },
-    {
-      "source": "chock-catalog base/registry-config/manifest.yaml (changelog, catalog a6a8841)",
-      "texts": ["(\\\\host\\share or //host/share)", "(\\\\\\\\host\\\\share or //host/share)"]
     }
   ]
 }

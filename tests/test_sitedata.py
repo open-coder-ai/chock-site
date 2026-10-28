@@ -66,11 +66,13 @@ def test_warning_texts_cover_engine_rules(built) -> None:
     )
 
 
-def test_git_safety_latest_matches_manifest_version(built, catalog_path: Path) -> None:
+def test_block_test_skips_latest_matches_manifest_version(
+    built, catalog_path: Path
+) -> None:
     data = _site_json(built)
-    policy = next(p for p in data["policies"] if p["id"] == "git-safety")
+    policy = next(p for p in data["policies"] if p["id"] == "block-test-skips")
     manifest = yaml.safe_load(
-        (catalog_path / "base" / "git-safety" / "manifest.yaml").read_text(
+        (catalog_path / "base" / "block-test-skips" / "manifest.yaml").read_text(
             encoding="utf-8"
         )
     )
@@ -80,7 +82,7 @@ def test_git_safety_latest_matches_manifest_version(built, catalog_path: Path) -
     entry = next(
         e for e in manifest["changelog"] if e["version"] == manifest["version"]
     )
-    assert policy["latest"]["version"] == "0.0.4"
+    assert policy["latest"]["version"] == manifest["version"]
     assert policy["latest"]["date"] == str(entry["date"])
     assert policy["latest"]["change"] == " ".join(str(entry["changes"][0]).split())
 
