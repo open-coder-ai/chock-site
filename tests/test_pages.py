@@ -132,7 +132,7 @@ def test_block_no_verify_page_content(built) -> None:
     html = (
         built.out / "coding" / "policies" / "block-no-verify" / "index.html"
     ).read_text(encoding="utf-8")
-    assert "<title>Block No-Verify (blocks): refuses a matched" in html
+    assert "<title>Block Skipping Git Hooks (blocks): refuses a matched" in html
     assert 'id="what-it-does"' in html
     assert 'id="misses"' in html
     assert 'id="label"' in html
