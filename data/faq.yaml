@@ -37,7 +37,7 @@ questions:
 - id: update-remove
   group: coding
   q: "How do I change or remove the plugin?"
-  a: "To change what is installed, ask first, then re-run chock install --selection YOUR_CODE --apply with a new selection: it replaces the plugin in one step. To remove everything, use your agent's own plugin uninstall and marketplace removal. The Install page lists them for each agent."
+  a: "To change what is installed, ask first, then re-run chock install --selection YOUR_CODE --apply with a new selection: it replaces the plugin in one step. To remove everything, use your agent's own plugin uninstall and marketplace removal, then delete the build folder. The Install page lists them for each agent."
 - id: no-chock
   group: coding
   q: "Can I use the plugins without installing chock?"

@@ -171,6 +171,13 @@ def client_steps(client: str) -> list[dict[str, str]]:
     return _site_steps(raw, chock.install.steps.render(client, client_tokens(client)))
 
 
+def client_remove(client: str) -> list[dict[str, str]]:
+    """The client's removal steps as `chock install` prints them; empty when the engine has none."""
+    raw = chock.install.package.client(client).get("remove", [])
+    rendered = chock.install.steps.render_remove(client, client_tokens(client))
+    return _site_steps(raw, rendered)
+
+
 def _site_steps(
     raw: list[dict[str, Any]], rendered: list[chock.install.steps.Step]
 ) -> list[dict[str, str]]:
