@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "engine": "acc5a1e507d5506e3cacfde599ca890680175ff5",
-  "catalog": "a6a88411939940c3a5a3f12299fdab324c7dc1d2",
+  "engine": "c4e9a4a126fda7f0df5542b80d5d40a527a2dd40",
+  "catalog": "f88bf2290b3e369ca61e2cea22ae518d12683df2",
   "examples": [
     {
       "step": 1,
@@ -11,14 +11,14 @@
     },
     {
       "step": 2,
-      "command": "chock add protect-main-branch --ref a6a88411939940c3a5a3f12299fdab324c7dc1d2",
-      "output": "Added protect-main-branch to .agents/policies/protect-main-branch\n  from https://github.com/open-coder-ai/chock-catalog at a6a88411939940c3a5a3f12299fdab324c7dc1d2\n  sha256 6613b44ea06affae018250660331b0fb254710dc9f9e72cd5e81826e07ce5a05\nINDEX.md: ~314 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "command": "chock add protect-main-branch --ref f88bf2290b3e369ca61e2cea22ae518d12683df2",
+      "output": "Added protect-main-branch to .agents/policies/protect-main-branch\n  from https://github.com/open-coder-ai/chock-catalog at f88bf2290b3e369ca61e2cea22ae518d12683df2\n  sha256 b469c3dbab9a12a009e3ef995fcab99d468e1363da4892af9f1b3bbdcf24a173\nINDEX.md: ~314 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
       "exit": 0
     },
     {
       "step": 3,
-      "command": "chock add scan-secrets --ref a6a88411939940c3a5a3f12299fdab324c7dc1d2 --verify-sha 288a58ccf6ebae063654c325a1b47e67ec00b336aede78a5fa28d232d386ec0f",
-      "output": "Added scan-secrets to .agents/policies/scan-secrets\n  from https://github.com/open-coder-ai/chock-catalog at a6a88411939940c3a5a3f12299fdab324c7dc1d2\n  sha256 288a58ccf6ebae063654c325a1b47e67ec00b336aede78a5fa28d232d386ec0f\nINDEX.md: ~428 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "command": "chock add scan-secrets --ref f88bf2290b3e369ca61e2cea22ae518d12683df2 --verify-sha c7cf363c6eb8a8ed47287beef9c06fe76dfd2d9c0ccc203fe74e32fba0e92a94",
+      "output": "Added scan-secrets to .agents/policies/scan-secrets\n  from https://github.com/open-coder-ai/chock-catalog at f88bf2290b3e369ca61e2cea22ae518d12683df2\n  sha256 c7cf363c6eb8a8ed47287beef9c06fe76dfd2d9c0ccc203fe74e32fba0e92a94\nINDEX.md: ~428 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
       "exit": 0
     },
     {
