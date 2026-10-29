@@ -129,7 +129,7 @@ def test_cursor_gets_no_option_only_chocks_caveat(built) -> None:
         (built.out / "coding" / "install" / "index.html").read_text(encoding="utf-8")
     )["cursor"]
     assert HEADING not in section
-    assert "Not offered for Cursor:" in section
+    assert "Not offered for Cursor." in section
 
 
 def test_clients_chock_is_silent_on_show_nothing(built) -> None:

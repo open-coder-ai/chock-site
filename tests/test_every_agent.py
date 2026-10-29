@@ -3,6 +3,7 @@
 import json
 import re
 from dataclasses import replace
+from html import escape
 from pathlib import Path
 
 from sitegen.clientpage import agent_note
@@ -57,8 +58,11 @@ def test_agents_page_builds_for_every_agent(built) -> None:
     for client in block["order"]:
         about = block["clients"][client]
         assert f'href="/coding/builder/#client={client}"' in html
-        if about["plugin_repo"]:
-            assert about["plugin_repo"] in html
+        assert f"<code>--client {client}</code>" in html
+        for step in about["steps"]:
+            ((kind, text),) = step.items()
+            if kind == "command":
+                assert escape(text) in html, (client, text)
         assert f"state-{about['witness']}" in html
 
 
@@ -90,3 +94,35 @@ def test_status_badge_only_for_deprecated(built) -> None:
     ):
         badge = str(status_badge(built.site, templates, replace(policy, status=status)))
         assert ("DEPRECATED" in badge) is shown, status
+
+
+def test_no_generated_file_links_a_plugin_repo(built) -> None:
+    """D9 A2: each client's page names its per-policy plugin repo; any other chock-*-plugins link fails."""
+    site = json.loads((built.out / "data" / "site.json").read_text(encoding="utf-8"))
+    block = site["builder_clients"]
+    repos = {
+        client: data["plugin_repo"]
+        for client, data in block["clients"].items()
+        if data["plugin_repo"]
+    }
+    assert repos
+    line = "Install a policy from one place only, never both"
+    page = (built.out / "coding" / "clients" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "coding" / "clients" / "index.md").read_text(encoding="utf-8")
+    for text in (page, twin):
+        for client, repo in repos.items():
+            assert repo in text, client
+        assert line in text
+    allowed = {repo.rsplit("/", 1)[-1] for repo in repos.values()}
+    retired = re.compile(r"chock-[a-z-]+-plugins", re.IGNORECASE)
+    files = [
+        p for p in built.out.rglob("*") if p.suffix in (".html", ".md", ".txt", ".json")
+    ]
+    assert files
+    found = sorted(
+        f"{p.relative_to(built.out)}: {name}"
+        for p in files
+        for name in set(retired.findall(p.read_text(encoding="utf-8")))
+        if name not in allowed
+    )
+    assert found == []

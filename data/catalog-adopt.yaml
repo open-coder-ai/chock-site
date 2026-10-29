@@ -3,6 +3,8 @@
 # installed engine (it must be .framework-ref) in a fresh git repository, and writes what each
 # one printed and its exit code to data/catalog-source/adopt.json. `--check` re-runs them and
 # fails when the output or an exit code differs. Never edit the JSON by hand.
+# A step is expected to exit 0 unless it declares `exit: N`; a run whose step exits otherwise
+# fails instead of recording it, so a stale value below breaks the build, not the page.
 #
 # __CATALOG_REF__ is replaced by .catalog-ref. `chock add` fetches the catalog from GitHub,
 # so this run needs the network. The --verify-sha value is the hash `chock add` printed for
@@ -20,9 +22,9 @@ setup:
 steps:
   - {run: [chock, init, .]}
   - {run: [chock, add, protect-main-branch, --ref, __CATALOG_REF__]}
-  - {run: [chock, add, scan-secrets, --ref, __CATALOG_REF__, --verify-sha, 9e20ae14cf86f18c3178ec32320186b80a3a9a32952a1ad851fb9ffd1fd0719c]}
+  - {run: [chock, add, scan-secrets, --ref, __CATALOG_REF__, --verify-sha, c7cf363c6eb8a8ed47287beef9c06fe76dfd2d9c0ccc203fe74e32fba0e92a94]}
   - {run: [chock, sync, --repo, ., --ci]}
-  - {run: [git, commit, --allow-empty, -m, notes]}
+  - {run: [git, commit, --allow-empty, -m, notes], exit: 1}
   - {run: [git, switch, -c, adopt-chock]}
   - {run: [git, add, -A]}
   - {run: [git, commit, -q, -m, Adopt chock]}

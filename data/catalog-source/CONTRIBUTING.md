@@ -1,6 +1,7 @@
 ## The three rules
 
-All are mechanical, and all are checked by CI rather than by a reviewer's memory.
+All are mechanical, and all are checked by a machine rather than by a reviewer's memory:
+rules 1 and 2 by CI on every PR, rule 3 by the nightly run against `main` and by the release.
 
 **1. A policy claims only what it can do.** If it does not exit non-zero, it is advisory,
 and the tooling labels it that way whatever the manifest says. 25 of the 72
@@ -17,11 +18,14 @@ that could have failed.
 python tools/gen_adoption_transcript.py --policy <your-policy-id>
 ```
 
-and commit `docs/<id>/adoption.md` in the same PR. The tool adopts your policy into an
-empty repository — init, copy, recompile, install-hooks, validate, eval — and records what
-the tools printed. CI re-runs the same adoption and diffs: pasted or edited output fails,
-because the transcript's value is that it *cannot* be written by hand. A PR touching a
-policy without its transcript fails with exactly this command.
+(`python tools/regen_all.py` runs it for every policy you changed) and commit
+`docs/<id>/adoption.md` in the same PR. The tool adopts your policy into an empty
+repository — init, copy, recompile, install-hooks, validate, eval — and records what the
+tools printed. PR CI does not run it: a missing or stale transcript does not fail a PR. The
+nightly workflow runs `python tools/gen_adoption_transcript.py --check` against `main` and
+fails on a transcript that does not reproduce, and the release regenerates every transcript
+and checks it — so pasted or edited output is caught there, because the transcript's value
+is that it *cannot* be written by hand.
 
 ## Layout
 
@@ -36,6 +40,26 @@ base/<id>/
 
 `docs/<id>/README.md` is generated — edit `manifest.yaml` and
 `docs/policy-prose.yaml`, then run `python tools/gen_policy_docs.py`.
+
+### New policy
+
+`chock new policy` writes the installed tree (`.agents/policies/<id>/`) and re-indexes it,
+not the catalog source, so move the folder to `base/` and put the index files back:
+
+```bash
+chock new policy <id> --kind content_regex   # or guard, script, rule, skill: a tested template
+mv .agents/policies/<id> base/<id>
+git restore .agents/policies/INDEX.md .agents/policies/INDEX-extended.md .chock/registry.json
+```
+
+Then edit `base/<id>/manifest.yaml` and `evals/suite.yaml`, add a `<id>:` entry
+(`solves`, `customise`) to `docs/policy-prose.yaml` and a row for it in the README's
+table for its kind, and run `python tools/regen_all.py` until it ends `== CLEAN`.
+
+A new policy's builder link pins a commit that holds the policy's files, generated ones included, so
+the link can only be right after they are committed. Run `python tools/regen_all.py`, commit
+`base/<id>`, then run `python tools/gen_policy_docs.py` again; until then
+`python tools/builder_link.py` lists the page.
 
 ## What CI runs
 

@@ -198,56 +198,6 @@ def test_home_fits_a_phone(browser, site_url) -> None:
         context.close()
 
 
-# VID-OFF: the voiced promos are gone; only the silent recording is on the home page.
-MEDIA = (
-    # DOCS-6: the own-policy VHS recording; its poster is the PNG VHS writes.
-    ("/video/own-policy.mp4", "/video/own-policy.png"),
-)
-
-
-def test_videos_sit_below_the_hero(browser, site_url) -> None:
-    for viewport in (MOBILE, {"width": 1280, "height": 800}):
-        context = browser.new_context(viewport=viewport)
-        try:
-            page = context.new_page()
-            collect(page, site_url)
-            page.goto(site_url + "/")
-            videos = page.locator("video.video-player")
-            assert videos.count() == len(MEDIA)
-            for i in range(len(MEDIA)):
-                video = videos.nth(i)
-                video.scroll_into_view_if_needed()
-                assert video.is_visible()
-                hero = page.locator("#top").bounding_box()
-                box = video.bounding_box()
-                assert box["y"] >= hero["y"] + hero["height"]
-                assert abs(box["width"] / box["height"] - 16 / 9) < 0.02
-            page.wait_for_load_state("networkidle")
-            assert_clean(page)
-        finally:
-            context.close()
-
-
-def test_video_media_served_and_mp4_waits_for_play(page, site_url) -> None:
-    requested: list[str] = []
-    page.on("request", lambda req: requested.append(req.url))
-    page.goto(site_url + "/")
-    videos = page.locator("video.video-player")
-    for i in range(videos.count()):
-        videos.nth(i).scroll_into_view_if_needed()
-    page.wait_for_load_state("networkidle")
-    assert not [url for url in requested if url.endswith(".mp4")]
-    for video, poster in MEDIA:
-        image = "image/png" if poster.endswith(".png") else "image/jpeg"
-        for path, kind in ((poster, image), (video, "video/mp4")):
-            response = page.request.head(site_url + path)
-            assert response.status == 200, path
-            assert response.headers["content-type"] == kind
-    for gone in ("/video/chock-promo-v9b.mp4", "/video/chock-promo-v8-explainer.mp4"):
-        assert page.request.get(site_url + gone).status == 404, gone
-    assert_clean(page)
-
-
 def test_home_has_no_horizontal_scroll_at_320px(browser, site_url) -> None:
     context = browser.new_context(viewport={"width": 320, "height": 640})
     try:

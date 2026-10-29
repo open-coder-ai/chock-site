@@ -193,10 +193,17 @@ def load_script(data_dir: Path, ref: str) -> dict[str, Any]:
     """data/catalog-adopt.yaml with __CATALOG_REF__ arguments set to .catalog-ref."""
     script = yaml.safe_load((data_dir / ADOPT_YAML).read_text(encoding="utf-8"))
     for step in script["steps"]:
-        if set(step) != {"run"} or step["run"][0] not in PROGRAMS:
+        if (
+            not {"run"} <= set(step) <= {"run", "exit"}
+            or step["run"][0] not in PROGRAMS
+        ):
             raise PageError(
-                f"{ADOPT_YAML}: a step is {{run: [{'|'.join(PROGRAMS)}, ...]}}"
+                f"{ADOPT_YAML}: a step is {{run: [{'|'.join(PROGRAMS)}, ...]}} "
+                "with an optional exit"
             )
+        expected = step.get("exit", 0)
+        if type(expected) is not int or not 0 <= expected <= 255:
+            raise PageError(f"{ADOPT_YAML}: a step's exit is an integer from 0 to 255")
         step["run"] = [ref if arg == CATALOG_REF else arg for arg in step["run"]]
     cliexamples.check_setup(script, PROGRAMS, ADOPT_YAML)
     return script
@@ -228,6 +235,12 @@ def run_adopt(
                 timeout=cliexamples.STEP_TIMEOUT,
                 check=False,
             )
+            expected = step.get("exit", 0)
+            if done.returncode != expected:
+                raise PageError(
+                    f"adopt step {number} ({shlex.join(argv)}) gave exit {done.returncode}, "
+                    f"expected {expected}: fix the step or declare its exit in {ADOPT_YAML}"
+                )
             output = cliexamples.normalise(done.stdout, shown)
             if str(tmp) in output or str(tmp.resolve()) in output:
                 raise PageError(

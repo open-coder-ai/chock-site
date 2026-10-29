@@ -132,7 +132,7 @@ def test_block_no_verify_page_content(built) -> None:
     html = (
         built.out / "coding" / "policies" / "block-no-verify" / "index.html"
     ).read_text(encoding="utf-8")
-    assert "<title>Block No-Verify (blocks): refuses a matched" in html
+    assert "<title>Block Skipping Git Hooks (blocks): refuses a matched" in html
     assert 'id="what-it-does"' in html
     assert 'id="misses"' in html
     assert 'id="label"' in html
@@ -140,7 +140,7 @@ def test_block_no_verify_page_content(built) -> None:
     assert 'id="provenance"' in html
     assert 'id="latest-change"' in html
     assert "git commit --no-verify -m wip" in html
-    assert "107 of 107 pass" in html
+    assert "116 of 116 pass" in html
     assert "older aliases, scripts, $VARs." in html
     assert "/coding/builder/#add=block-no-verify" in html
     assert "/coding/builder/#preset=git-hygiene" in html

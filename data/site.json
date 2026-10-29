@@ -18,7 +18,7 @@
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
     "author": {"title": "Author a policy", "description": "Describe a safeguard in plain words. The page fills a chock policy template and writes a setup script you read and run yourself. The browser compiles nothing and runs nothing."},
-    "clients": {"title": "Agents", "description": "From your picks, chock.sh builds one plugin for __NAMES__. Where an agent has a plugin repository, it is a second way to get single policies."},
+    "clients": {"title": "Agents", "description": "From your picks, chock.sh builds one plugin for __NAMES__. Cannot install chock? Where an agent has a plugin repository, it is a per-policy marketplace that needs no chock on the machine."},
     "security": {"title": "Security", "description": "What chock is and is not. It adds friction, and it is not a security boundary. How chock checks what it installs, and how to report a bug."},
     "install": {"title": "Install", "description": "Install chock, build a plugin for your agent from a selection code, and update or remove it."},
     "faq": {"title": "FAQ", "description": "Answers about chock: what the labels mean, what the command does and what it cannot do."},
@@ -42,7 +42,7 @@
     "status_badges": {"deprecated": "DEPRECATED"},
     "change_rewrites": [
       {
-        "match": "^Status (?P<FROM>[a-z-]+) -> (?P<TO>[a-z-]+) by the BV-C3 promotion rule\\b.*\\bBehaviour unchanged\\.$",
+        "match": "^Status (?P<FROM>[a-z-]+) -> (?P<TO>[a-z-]+) (?:by the BV-C3 promotion rule\\b|\\([^)]*\\bBV-C3 promotion rule\\)).*\\bBehaviour unchanged\\.$",
         "text": "Promoted from __FROM__ to __TO__: every test case ran and passed, and no bug report was open. Behaviour unchanged."
       }
     ],
@@ -105,7 +105,7 @@
     "install_heading": "Install chock",
     "install_command": "pip install \"chock @ git+https://github.com/open-coder-ai/chock@__FRAMEWORK_REF__\"",
     "install_command_released": "pipx install chock",
-    "install_note": "You need Python 3.11 or newer. The engine is the only thing you install, and it builds the plugin from the pinned catalog.",
+    "install_note": "You need Python 3.11 or newer. The engine is the only thing you install, and it builds the plugin from the pinned catalog. Cannot install chock on this machine? Use the per-policy marketplace instead: it needs Python 3.11+, git and a bash but no chock, and the Agents page links each agent's repository. Install a policy from one place only, never both.",
     "run_heading": "Run the command",
     "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. `--client` names the agent. For an agent marked tested, `--apply` also runs that agent's own install steps. For an untested agent, the command only builds the plugin, and you run the steps yourself.",
     "agents_heading": "Each agent",
@@ -189,10 +189,12 @@
       "untested_line": "Nobody has seen these policies fire in __NAME__ yet, so the command builds the plugin without --apply. Apply the steps below yourself, check that a refusal fires, and",
       "page_intro": "Pick an agent in the builder and the command builds one plugin for it. Tested means a person has seen chock refuse actions in that agent. For a tested agent, the command also installs the plugin. For an untested agent, the command builds the plugin and you follow the install steps yourself.",
       "build_link": "Build for __NAME__",
+      "client_value": "Builder value:",
+      "repo_line": "Cannot install chock? Use the per-policy marketplace, which needs Python 3.11+, git and a bash but no chock:",
+      "repo_note": "Install a policy from one place only, never both: each copy runs its own hook.",
       "build_short": "Build",
       "card_witnessed": "Tested: one command builds the plugin and installs it.",
       "card_untested": "Untested: the command builds the plugin, and you apply the steps in __NAME__ yourself.",
-      "repo_line": "Another way to install: single-policy plugins in",
       "remove_md": "To remove it:",
       "remove_unverified": "Removal steps not verified for __NAME__ yet. What you see when you remove it is wanted in",
       "remove_report_link": "a witness report",

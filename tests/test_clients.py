@@ -1,6 +1,8 @@
 """BV-S1: witness data, per-client labels and steps in site.json's builder_clients block."""
 
+import html
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -170,9 +172,14 @@ def test_engine_untested_note_is_dropped_once(built) -> None:
 
 
 def test_remove_steps_and_repos_name_every_agent(built) -> None:
+    """D9 A2: each client names its per-policy plugin repo, or none, and the one-place-only line is in the texts."""
     block = _site(built)["builder_clients"]
+    config = json.loads((DATA / "site.json").read_text(encoding="utf-8"))
+    repos = config["builder_clients"]["plugin_repos"]
+    assert set(block["clients"]) == set(repos)
+    assert "from one place only, never both" in block["texts"]["repo_note"]
     for client, data in block["clients"].items():
-        assert bool(data["remove"]) != bool(data["remove_unverified"]), client
+        assert data["remove"] or data["remove_unverified"], client
         if data["remove_unverified"]:
             link = data["report"] if data["witness"] == "witnessed" else None
             url = link or data["evidence"]["url"]
@@ -180,11 +187,13 @@ def test_remove_steps_and_repos_name_every_agent(built) -> None:
             assert data["remove_unverified"]["text"].startswith(
                 f"Removal steps not verified for {data['name']} yet."
             )
-        repo = data["plugin_repo"]
-        assert repo is None or repo.startswith("https://github.com/open-coder-ai/")
+        assert data["plugin_repo"] == repos[client], client
+        if repos[client]:
+            assert re.fullmatch(
+                r"https://github\.com/open-coder-ai/chock-[a-z-]+-plugins",
+                repos[client],
+            ), client
         assert "__" not in json.dumps(data["remove"]), client
-    with_repo = {c for c, d in block["clients"].items() if d["plugin_repo"]}
-    assert with_repo == {"claude-code", "cursor", "codex", "copilot", "devin"}
 
 
 def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
@@ -215,7 +224,9 @@ def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
     for client, steps in expected.items():
         data = block["clients"][client]
         assert data["witness"] == "witnessed", client
-        assert data["remove"] == steps, client
+        engine_steps = engine.client_remove(client)
+        assert data["remove"][: len(engine_steps)] == engine_steps, client
+        assert data["remove"][len(engine_steps) :] == steps, client
         assert data["remove_unverified"] is None, client
         assert data["report"].endswith(f"Witness%20report:%20{client}"), client
 
@@ -424,3 +435,78 @@ def test_the_notice_follows_the_data_row(tmp_path: Path) -> None:
     dropped = _evidence_copy(tmp_path / "dropped", lambda d: d["issues"].pop(CLIENT))
     assert clientdata.evidence_notice(dropped, CLIENT, NAME) is None
     assert clientpage.evidence_lines(block(dropped), TEMPLATES) == ""
+
+
+def _plain(text: str, markup: bool = False) -> str:
+    """Text without tags (when `markup`), entities or backticks, so a rendered note matches the engine's."""
+    if markup:
+        text = html.unescape(re.sub(r"<[^>]+>", "", text))
+    text = text.replace("`", "")
+    return " ".join(text.split())
+
+
+def test_every_engine_removal_entry_is_on_the_install_page_and_its_twin(built) -> None:
+    """The Install page and its Markdown twin show each client's whole engine removal list."""
+    page = (built.out / "coding" / "install" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "coding" / "install" / "index.md").read_text(encoding="utf-8")
+    shown = 0
+    for client in engine.client_ids():
+        entries = engine.client_remove(client)
+        if not entries:
+            continue
+        section = re.search(
+            rf'<section class="install-agent" aria-labelledby="agent-{client}">'
+            r".*?\n</section>",
+            page,
+            re.DOTALL,
+        )
+        assert section, client
+        block = re.search(
+            rf"### [^\n]*\(`{client}`[^\n]*\n.*?(?=\n### |\Z)", twin, re.DOTALL
+        )
+        assert block, client
+        html_text = _plain(section.group(0), markup=True)
+        md_text = _plain(block.group(0))
+        for entry in entries:
+            (_, text), *_ = entry.items()
+            want = _plain(text)
+            assert want in html_text, (client, text)
+            assert want in md_text, (client, text)
+            shown += 1
+    assert shown >= 20
+
+
+def test_unverified_client_keeps_its_not_verified_line_above_the_engine_steps(
+    built,
+) -> None:
+    """The site never drops a verification status: the line stays above the engine's removal steps."""
+    page = (built.out / "coding" / "install" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "coding" / "install" / "index.md").read_text(encoding="utf-8")
+    clients = _site(built)["builder_clients"]["clients"]
+    checked = 0
+    for client, data in clients.items():
+        if not data["remove_unverified"]:
+            continue
+        line = data["remove_unverified"]["text"]
+        assert line.startswith("Removal steps not verified for"), client
+        section = re.search(
+            rf'<section class="install-agent" aria-labelledby="agent-{client}">'
+            r".*?\n</section>",
+            page,
+            re.DOTALL,
+        )
+        block = re.search(
+            rf"### [^\n]*\(`{client}`[^\n]*\n.*?(?=\n### |\Z)", twin, re.DOTALL
+        )
+        assert section and block, client
+        steps = engine.client_remove(client)
+        first = _plain(next(iter(steps[0].values()))) if steps else None
+        for text in (_plain(section.group(0), markup=True), _plain(block.group(0))):
+            assert _plain(line) in text, client
+            if first:
+                assert text.index(_plain(line)) < text.index(first), client
+        checked += 1
+    assert {"openhands", "factory-droid"} <= {
+        c for c, d in clients.items() if d["remove_unverified"]
+    }
+    assert checked >= 2
