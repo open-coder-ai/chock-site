@@ -636,6 +636,8 @@ upstream:
   - 'Friction, not a security boundary: flags lines added to hook launchers and scripts that switch git hooks off -- the hook-skip option on a git…'
 - source: chock-catalog base/block-no-verify/manifest.yaml
   sentences:
+  - 'A direct write to the repository config with `--file .git/config` was allowed there because the path check compared a backslash-separated path with `.git/config`; it now compares with `/` separators, so the write is refused on Windows as elsewhere.'
+  - '`0.5.4` · `2026-10-30` · Fix for Windows (IR-F45; tests in test_block_no_verify_launcher.py).'
   - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/revert, -n on commit/am; core.hooksPath set by -c, git config or GIT_CONFIG_*; HUSKY=0, SKIP=, LEFTHOOK=0 and kin; hook manager uninstall; aliases and rebase --exec defined in the command.
   - Shared shell reader updated (SR-2d1; the copy in implementations/chock_shellparse is regenerated, this policy's own script is unchanged).
 - source: chock-catalog base/block-persistence-shapes/manifest.yaml
@@ -712,6 +714,7 @@ upstream:
   - 'avoid: breaking a requirement the previous revision met; interrupting a correct fix.'
 - source: chock-catalog base/opaque-blob-guard/manifest.yaml
   sentences:
+  - '`0.0.5` · `2026-10-30` · Fix for Windows (IR-F45; tests in test_opaque_blob_nofollow.py).'
   - 'Warns (observe rollout; never refuses yet) when a change adds or edits, in tests/, fixtures/, testdata/, spec/, m4/, vendor/, gradle/wrapper/: a file whose first bytes are an archive, executable, wasm or database signature (any extension), a random-looking non-media file over 100 KB, or a symlink out of the repo; m4/configure/Makefile text that decodes and evaluates; a gradle wrapper jar changed with no new distributionSha256Sum.'
 - source: chock-catalog base/package-lifecycle-scripts/manifest.yaml
   sentences:
