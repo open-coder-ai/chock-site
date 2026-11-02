@@ -202,9 +202,6 @@ def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
     expected = {
         "goose": [
             {
-                "note": "Delete the folder ~/.agents/plugins/chock-guardrails. Checked on Windows."
-            },
-            {
                 "note": "Optional tidy-up: delete the chock-guardrails entry in the plugins list "
                 "of goose's config.yaml. goose works without this step."
             },
@@ -229,6 +226,19 @@ def test_goose_and_antigravity_show_their_witnessed_remove_steps(built) -> None:
         assert data["remove"][len(engine_steps) :] == steps, client
         assert data["remove_unverified"] is None, client
         assert data["report"].endswith(f"Witness%20report:%20{client}"), client
+
+
+def test_removal_steps_show_once_per_agent(built) -> None:
+    """The engine carries these agents' steps; the site adds nothing but goose's tidy-up note."""
+    block = _site(built)["builder_clients"]["clients"]
+    for client in ("cursor", "copilot", "devin", "grok"):
+        assert block[client]["remove"] == engine.client_remove(client), client
+        assert block[client]["remove_unverified"] is None, client
+    tidy_up = {
+        "note": "Optional tidy-up: delete the chock-guardrails entry in the plugins list "
+        "of goose's config.yaml. goose works without this step."
+    }
+    assert block["goose"]["remove"] == [*engine.client_remove("goose"), tidy_up]
 
 
 def test_a_tested_client_without_steps_or_report_link_fails() -> None:
