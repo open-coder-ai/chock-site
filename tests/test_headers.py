@@ -65,6 +65,7 @@ def test_headers_hardening_and_noindex() -> None:
         assert f"{feature}=()" in every["Permissions-Policy"]
     assert rules["https://:project.pages.dev/*"] == {"X-Robots-Tag": "noindex"}
     assert rules["https://:version.:project.pages.dev/*"] == {"X-Robots-Tag": "noindex"}
+    assert rules["https://staging.chock.sh/*"] == {"X-Robots-Tag": "noindex"}
     assert "Strict-Transport-Security" not in text
     for folder in ("css", "js", "img", "fonts"):
         assert rules[f"/{folder}/*"] == {"Cache-Control": "public, max-age=300"}
@@ -73,13 +74,29 @@ def test_headers_hardening_and_noindex() -> None:
     assert max(len(line) for line in text.splitlines()) <= 2000
 
 
+def test_noindex_covers_pages_dev_and_staging_only() -> None:
+    """Only the pages.dev and staging hosts get noindex; the production hosts never do."""
+    rules = _rules(HEADERS.read_text(encoding="utf-8"))
+    noindex = {
+        pattern for pattern, headers in rules.items() if "X-Robots-Tag" in headers
+    }
+    assert noindex == {
+        "https://:project.pages.dev/*",
+        "https://:version.:project.pages.dev/*",
+        "https://staging.chock.sh/*",
+    }
+    for pattern in rules:
+        assert not pattern.startswith(("https://chock.sh", "https://www.chock.sh")), (
+            pattern
+        )
+
+
 ALLOWED_JOB_PERMISSIONS = {
     "ci.yml": {},
     "vendor-quotes.yml": {
         "check": {"contents": "read", "issues": "write"},
         "record": {"contents": "write", "pull-requests": "write"},
     },
-    "videos.yml": {},
 }
 
 

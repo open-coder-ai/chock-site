@@ -10,7 +10,7 @@ Install chock (ask the user before running anything):
 __INSTALL__
 ```
 
-__VIDEOS__## Refused moves, from each policy's own tests
+## Refused moves, from each policy's own tests
 
 __DEMO_NOTE__
 

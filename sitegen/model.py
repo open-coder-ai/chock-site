@@ -49,6 +49,7 @@ class Policy:
     track: str = "coding"
     enforces: str = ""
     sha256: str = ""
+    sha256_v1: str | None = None
     keyword: str = ""
     tier: str = ""
     word: str = ""

@@ -26,3 +26,7 @@ https://:project.pages.dev/*
   X-Robots-Tag: noindex
 https://:version.:project.pages.dev/*
   X-Robots-Tag: noindex
+
+# The custom staging host is not indexed either. Never add chock.sh or www.chock.sh here.
+https://staging.chock.sh/*
+  X-Robots-Tag: noindex

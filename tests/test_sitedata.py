@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+import chock.lock
 import yaml
 
 from sitegen import engine
@@ -65,11 +66,13 @@ def test_warning_texts_cover_engine_rules(built) -> None:
     )
 
 
-def test_git_safety_latest_matches_manifest_version(built, catalog_path: Path) -> None:
+def test_block_test_skips_latest_matches_manifest_version(
+    built, catalog_path: Path
+) -> None:
     data = _site_json(built)
-    policy = next(p for p in data["policies"] if p["id"] == "git-safety")
+    policy = next(p for p in data["policies"] if p["id"] == "block-test-skips")
     manifest = yaml.safe_load(
-        (catalog_path / "base" / "git-safety" / "manifest.yaml").read_text(
+        (catalog_path / "base" / "block-test-skips" / "manifest.yaml").read_text(
             encoding="utf-8"
         )
     )
@@ -79,7 +82,7 @@ def test_git_safety_latest_matches_manifest_version(built, catalog_path: Path) -
     entry = next(
         e for e in manifest["changelog"] if e["version"] == manifest["version"]
     )
-    assert policy["latest"]["version"] == "0.0.4"
+    assert policy["latest"]["version"] == manifest["version"]
     assert policy["latest"]["date"] == str(entry["date"])
     assert policy["latest"]["change"] == " ".join(str(entry["changes"][0]).split())
 
@@ -103,8 +106,25 @@ def test_build_is_byte_identical_and_lf_only(
     for rel in files1:
         content = (built.out / rel).read_bytes()
         assert content == (out2 / rel).read_bytes(), rel
-        # Binary assets (og-card.png, fonts, the videos and posters) legally
-        # contain 0x0d; the LF rule is for text files, which
-        # Path.write_text(newline="\n") governs.
-        if rel.suffix not in (".png", ".woff2", ".mp4", ".jpg"):
+        # Binary assets (og-card.png, fonts) legally contain 0x0d; the LF rule is
+        # for text files, which Path.write_text(newline="\n") governs.
+        if rel.suffix not in (".png", ".woff2", ".jpg"):
             assert b"\r" not in content, rel
+
+
+def test_every_policy_has_a_v1_hash_the_engine_accepts(built, catalog_path) -> None:
+    paths = {
+        p["id"]: p["path"]
+        for p in yaml.safe_load((catalog_path / "registry.yaml").read_text("utf-8"))[
+            "policies"
+        ]
+    }
+    for policy in _site_json(built)["policies"]:
+        v1 = policy["sha256_v1"]
+        assert v1 is None or SHA256_RE.match(v1), policy["id"]
+        pack = catalog_path / paths[policy["id"]]
+        has_nul = any(b"\0" in f.read_bytes() for f in pack.rglob("*") if f.is_file())
+        assert (v1 is None) == has_nul, policy["id"]
+        if v1 is not None:
+            assert chock.lock.pack_hash_matches(pack, v1), policy["id"]
+        assert chock.lock.pack_hash_matches(pack, policy["sha256"]), policy["id"]

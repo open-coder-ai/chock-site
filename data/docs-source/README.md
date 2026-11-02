@@ -20,7 +20,7 @@ The 15 in the table above get a git hook, a CI gate and an `AGENTS.md` rule; mos
 
 ### How do I install it?
 
-See [Install](#install): in your repo, or as plugins.
+See [Install](#install): in your repo, or as one plugin from the builder.
 
 ### What does it cost?
 

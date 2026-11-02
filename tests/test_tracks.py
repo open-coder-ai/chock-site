@@ -38,7 +38,6 @@ SHARED_TOP_LEVEL = {
     "js",
     "img",
     "fonts",
-    "video",
     "data",
     # The plan-4 output-safety marker; a build artefact, not a page.
     ".sitegen-output",

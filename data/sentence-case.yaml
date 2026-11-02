@@ -76,13 +76,13 @@ upstream:
     starts:
     - live probe of a chock plugin auto-discovered from
     - live probe of a chock plugin installed with
-    - live probe of chock's shipped plugin built on
-    - live probe of the chock plugin, every other
-    - 'live probe of the chock plugin: pin-github-actions'
     - 'live probe: a hook-JSON deny blocked a matched'
     - 'live probe: a stdout deny blocked a matched'
     - 'live probe: an exit-2 deny blocked a matched'
     - 'live probe: both variables were in the environment'
+    - live probe of chock's shipped plugin, built on Windows and copied to `…` with no h
+    - live probe of the chock plugin, with every other chock plugin disabled.
+    - live probe of the chock plugin.
   - source: chock src/chock/packs/_skills/policy-init/SKILL.md (quoted in data/docs-source)
     starts:
     - 'classify(request) using `…`; present user_facing_class:'
@@ -109,26 +109,15 @@ upstream:
   - source: chock src/chock/validation/schemas/manifest.hook.json
     starts:
     - 'on'' is authoritative: the compiler wires'
-  - source: chock-catalog CONTRIBUTING.md (quoted in data/catalog-source)
-    starts:
-    - and commit `…` in the same PR.
   - source: chock-catalog CONTRIBUTING.md CI gates (quoted in data/catalog-source/ci-gates.json)
     starts:
     - always() && github.event_name == 'push' &&
   - source: chock-catalog agentic-security/agentic-code-security/manifest.yaml
     starts:
     - 'avoid: code execution on the host, unpinned'
-    - provenance-marker-removed compares with HEAD
   - source: chock-catalog base/agent-discipline/manifest.yaml
     starts:
     - 'avoid: skipping verification, deleting assertions,'
-  - source: chock-catalog base/agent-permissions-scan/manifest.yaml
-    starts:
-    - 'ap-endpoint-override: a non-empty top-level'
-    - 'ap-mcp-enable-all: enableAllProjectMcpServers'
-  - source: chock-catalog base/block-fetch-exec-in-files/manifest.yaml
-    starts:
-    - iex matching is now linear on long runs of
   - source: chock-catalog base/block-no-verify/plugin.json
     starts:
     - no-verify on commit/push/merge/am/rebase/pull/cherry-pick/re
@@ -144,6 +133,10 @@ upstream:
   - source: chock-catalog base/context-hygiene/manifest.yaml
     starts:
     - 'avoid: context rot and lost-in-the-middle'
+  - source: chock-catalog base/dockerfile-compose-security/manifest.yaml
+    starts:
+    - protect-agent-config's `…` of compiled folders
+    - protect-agent-config's \`…` of compiled folders
   - source: chock-catalog base/firecrawl-fallback-only/manifest.yaml
     starts:
     - 'avoid: reaching for the Firecrawl connector'
@@ -156,12 +149,18 @@ upstream:
   - source: chock-catalog base/limit-diff-size/manifest.yaml
     starts:
     - 'avoid: one commit carrying hundreds of hand-written'
+  - source: chock-catalog base/lockfile-integrity/manifest.yaml
+    starts:
+    - ci now raises lock-allowlist-edited for a change
   - source: chock-catalog base/memory-discipline/manifest.yaml
     starts:
     - 'avoid: persisting file contents, git history,'
   - source: chock-catalog base/no-a11y-regression/manifest.yaml
     starts:
     - 'avoid: breaking a requirement the previous'
+  - source: chock-catalog base/scan-secrets/manifest.yaml
+    starts:
+    - p on mkdir, ssh, tar and cp was never matched.
   - source: chock-catalog base/token-efficiency/manifest.yaml
     starts:
     - 'avoid: wasting context window on low-signal'

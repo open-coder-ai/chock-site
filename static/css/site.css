@@ -1754,12 +1754,6 @@ body { overflow-x: clip; }
 .cta p { color: var(--body); }
 .cta-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 
-.videos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 24px; }
-.video { margin: 0; min-width: 0; }
-.video-player { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: contain; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
-.video figcaption { margin-top: 12px; color: var(--muted); }
-.video-title { color: var(--text); font-weight: 600; }
-
 /* builder start screen */
 
 .builder-grid[hidden], .quiz[hidden] { display: none; }
