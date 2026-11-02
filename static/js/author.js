@@ -286,17 +286,36 @@ async function sha256bytes(parts) {
 // The text a file's quoted heredoc writes: it always ends in a newline.
 const asWritten = (text) => (text.endsWith("\n") ? text : `${text}\n`);
 
-// The pack hash over a policy's {path, text} files, sorted by POSIX path as the engine sorts.
+// An 8-byte big-endian unsigned integer.
+function u64be(n) {
+  const out = new Uint8Array(8);
+  new DataView(out.buffer).setBigUint64(0, BigInt(n));
+  return out;
+}
+
+// Byte-wise order of two Uint8Arrays (a prefix sorts first), the order the engine sorts names in.
+function compareBytes(a, b) {
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i += 1) if (a[i] !== b[i]) return a[i] - b[i];
+  return a.length - b.length;
+}
+
+const PACK_HASH_DOMAIN = "chock-pack-hash-v2\n";
+
+// Pack hash v2 over {path, text} or {path, bytes} files, as chock.lock.compute_pack_hash writes it:
+// the domain, then per file u64be(len name) name u64be(len content) content, files sorted by the
+// UTF-8 bytes of the POSIX path (JS string order is UTF-16, so it is not used).
 function packHash(files) {
   const enc = new TextEncoder();
-  const parts = [];
-  for (const file of [...files].sort((a, b) => (a.path < b.path ? -1 : 1)))
-    parts.push(
-      enc.encode(file.path),
-      new Uint8Array([0]),
-      enc.encode(asWritten(file.text)),
-      new Uint8Array([0]),
-    );
+  const entries = files
+    .map((file) => ({
+      name: enc.encode(file.path),
+      content: file.bytes ?? enc.encode(asWritten(file.text)),
+    }))
+    .sort((a, b) => compareBytes(a.name, b.name));
+  const parts = [enc.encode(PACK_HASH_DOMAIN)];
+  for (const { name, content } of entries)
+    parts.push(u64be(name.length), name, u64be(content.length), content);
   return sha256bytes(parts);
 }
 
@@ -975,3 +994,5 @@ async function main() {
 }
 
 main();
+
+export { packHash };

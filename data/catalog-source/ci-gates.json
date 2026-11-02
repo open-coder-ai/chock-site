@@ -22,6 +22,17 @@
     ]
   },
   {
+    "job": "windows-adopter",
+    "if": "needs.scope.outputs.windows == 'true'",
+    "steps": [
+      "Read the framework pin",
+      "Check out the framework",
+      "The framework checkout is the pinned commit",
+      "Install Chock",
+      "This repo is a valid adopter on Windows"
+    ]
+  },
+  {
     "job": "generated",
     "if": null,
     "steps": [

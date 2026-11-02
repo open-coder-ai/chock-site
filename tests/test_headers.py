@@ -97,7 +97,6 @@ ALLOWED_JOB_PERMISSIONS = {
         "check": {"contents": "read", "issues": "write"},
         "record": {"contents": "write", "pull-requests": "write"},
     },
-    "videos.yml": {},
 }
 
 
