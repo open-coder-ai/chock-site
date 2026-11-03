@@ -5,7 +5,7 @@
   "summary": "Which emitter of chock compile writes each hook point, and the file chock sync installs for it.",
   "intro": "A hook point is where a compiled control runs. The chock compile command hands each policy to one emitter per hook point. Then chock sync installs what the emitters wrote. Each arrow out of chock compile names the hook points that emitter writes, as the engine's compiler maps them.",
   "pins": {
-    "chock": "5b5392ccbae73decbc02a2a1fde58eec2db8d1d8"
+    "chock": "1b35a3ebe0e8905a515a1b27947dabda5273424c"
   },
   "canvas": {
     "width": 1000,
