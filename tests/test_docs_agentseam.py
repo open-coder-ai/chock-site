@@ -31,11 +31,22 @@ def _examples() -> list[dict]:
     return agentseamdoc.load_run(DATA)["examples"]
 
 
-def test_the_pinned_commit_is_installed_and_is_chocks_pin() -> None:
+def test_a_commit_pin_is_installed_from_git_and_is_chocks_pin(monkeypatch) -> None:
     ref = agentseamdoc.pinned(DATA)
     assert re.fullmatch(r"[0-9a-f]{40}", ref)
-    assert engine.agentseam_commit() == ref
+    monkeypatch.setattr(engine, "agentseam_commit", lambda: ref)
+    monkeypatch.setattr(engine, "agentseam_chock_spec", lambda: ("commit", ref))
     assert engine.agentseam_chock_pin() == ref
+    assert docs._agentseam_ref(SimpleNamespace(data_dir=DATA)) == ref
+
+
+def test_a_version_pin_is_installed_chocks_pin_and_the_snapshots_version() -> None:
+    ref = agentseamdoc.pinned(DATA)
+    assert re.fullmatch(r"[0-9a-f]{40}", ref)
+    version = agentseamdoc.pinned_version(DATA)
+    assert engine.agentseam_chock_spec() == ("version", version)
+    assert engine.agentseam_meta()["version"] == version
+    assert docs._agentseam_ref(SimpleNamespace(data_dir=DATA)) == ref
 
 
 @pytest.mark.parametrize(
@@ -221,3 +232,70 @@ def test_a_setup_step_outside_the_allowlist_is_refused(
 def test_the_committed_setup_is_allowlisted() -> None:
     script = agentseamdoc.load_script(DATA)
     assert all(argv[0] in agentseamdoc.PROGRAMS for argv in script["setup"])
+
+
+def _fake_chock(monkeypatch, requirement: str) -> None:
+    fake = SimpleNamespace(requires=["PyYAML>=6", requirement])
+    monkeypatch.setattr("importlib.metadata.distribution", lambda name: fake)
+
+
+def test_chock_version_pin_is_read(monkeypatch) -> None:
+    _fake_chock(monkeypatch, "agentseam==0.4.1")
+    assert engine.agentseam_chock_spec() == ("version", "0.4.1")
+    assert engine.agentseam_chock_pin() == ""
+
+
+@pytest.mark.parametrize(
+    "requirement",
+    [
+        "agentseam>=0.4",
+        "agentseam~=0.4.1",
+        "agentseam",
+        "agentseam==0.4.*",
+        "agentseam!=0.4.1",
+    ],
+)
+def test_a_range_or_unpinned_specifier_is_refused(monkeypatch, requirement) -> None:
+    _fake_chock(monkeypatch, requirement)
+    monkeypatch.setattr(engine, "agentseam_commit", lambda: "")
+    assert engine.agentseam_chock_spec() == ""
+    with pytest.raises(PageError, match="requires no agentseam commit or version"):
+        docs._agentseam_ref(SimpleNamespace(data_dir=DATA))
+
+
+def test_version_pin_refuses_another_installed_version(monkeypatch) -> None:
+    monkeypatch.setattr(engine, "agentseam_chock_spec", lambda: ("version", "0.4.1"))
+    monkeypatch.setattr(engine, "agentseam_meta", lambda: {"version": "0.4.2"})
+    with pytest.raises(PageError, match="the installed agentseam is 0.4.2"):
+        docs._agentseam_ref(SimpleNamespace(data_dir=DATA))
+
+
+def test_version_pin_refuses_another_chock_version(monkeypatch) -> None:
+    monkeypatch.setattr(engine, "agentseam_chock_spec", lambda: ("version", "0.4.2"))
+    with pytest.raises(PageError, match="requires agentseam==0.4.2"):
+        docs._agentseam_ref(SimpleNamespace(data_dir=DATA))
+
+
+def test_version_pin_refuses_another_snapshot_version(monkeypatch) -> None:
+    monkeypatch.setattr(agentseamdoc, "pinned_version", lambda data_dir: "0.4.0")
+    with pytest.raises(PageError, match="the snapshot is version 0.4.0"):
+        docs._agentseam_ref(SimpleNamespace(data_dir=DATA))
+
+
+def test_snapshot_check_refuses_a_checkout_of_another_version(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    (tmp_path / "pyproject.toml").write_text('[project]\nversion = "9.9.9"\n')
+    monkeypatch.setattr(agentseamdoc, "_head", lambda path: agentseamdoc.pinned(DATA))
+    monkeypatch.setattr(agentseamdoc, "snapshot", lambda *args: {})
+    args = SimpleNamespace(agentseam=tmp_path, data=DATA, check=True)
+    assert agentseamdoc._snapshot_main(args) == 1
+    assert "is version 9.9.9, the snapshot records 0.4.1" in capsys.readouterr().err
+
+
+def test_a_checkout_without_a_version_is_refused(tmp_path) -> None:
+    with pytest.raises(PageError, match="no pyproject.toml"):
+        agentseamdoc.checkout_version(tmp_path)
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'x'\n")
+    with pytest.raises(PageError, match="no \\[project\\] version"):
+        agentseamdoc.checkout_version(tmp_path)

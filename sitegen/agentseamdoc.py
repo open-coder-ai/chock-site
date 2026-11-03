@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,28 @@ def pinned(data_dir: Path) -> str:
     ]
 
 
+def pinned_version(data_dir: Path) -> str:
+    """The agentseam version the snapshot was taken at, or "" if none is recorded."""
+    folder = data_dir / config(data_dir)["source_dir"]
+    record = json.loads((folder / SOURCE_JSON).read_text(encoding="utf-8"))
+    return record.get("agentseam_version", "")
+
+
+def checkout_version(checkout: Path) -> str:
+    """The `[project] version` in an agentseam checkout's pyproject.toml."""
+    path = checkout / "pyproject.toml"
+    if not path.is_file():
+        raise PageError(f"{checkout}: no pyproject.toml")
+    version = (
+        tomllib.loads(path.read_text(encoding="utf-8"))
+        .get("project", {})
+        .get("version")
+    )
+    if not isinstance(version, str) or not version:
+        raise PageError(f"{path}: no [project] version")
+    return version
+
+
 def snapshot_name(path: str) -> str:
     """The snapshot file an agentseam path is stored in."""
     return path.replace("/", "__")
@@ -74,6 +97,11 @@ def snapshot(checkout: Path, cfg: dict[str, Any], ref: str) -> dict[str, str]:
         name = snapshot_name(quote["file"])
         files[name] = extract(source.read_text(encoding="utf-8"), quote)
         record["files"][quote["file"]] = {"snapshot": name}
+    record = {
+        "agentseam_ref": ref,
+        "agentseam_version": checkout_version(checkout),
+        "files": record["files"],
+    }
     files[SOURCE_JSON] = json.dumps(record, indent=2, ensure_ascii=False) + "\n"
     return files
 
@@ -227,6 +255,15 @@ def _snapshot_main(args: argparse.Namespace) -> int:
     folder = args.data / cfg["source_dir"]
     present = {p.name for p in folder.glob("*")} if folder.is_dir() else set()
     if args.check:
+        recorded = pinned_version(args.data)
+        if recorded != checkout_version(args.agentseam):
+            print(
+                f"{args.agentseam}: pyproject.toml is version "
+                f"{checkout_version(args.agentseam)}, the snapshot records {recorded or 'none'}\n"
+                "run: python -m sitegen.agentseamdoc snapshot --agentseam <checkout>",
+                file=sys.stderr,
+            )
+            return 1
         drift = sorted(
             name
             for name in set(files) | present
