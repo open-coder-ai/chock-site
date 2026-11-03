@@ -1,10 +1,11 @@
 """Site events (plan AN-1): each call site sends exactly its event, and nothing is sent when it must not be."""
 
 import json
+import shutil
 
 import pytest
 from combo import pick_start
-from conftest import assert_clean
+from conftest import _serve, assert_clean
 from test_author import _fill
 from test_author import _open as _open_author
 
@@ -247,3 +248,76 @@ def test_track_drops_bad_calls(page, site_url) -> None:
     page.wait_for_timeout(QUIET_MS)
     assert sent == []
     assert_clean(page)
+
+
+# ----- page views (plan AN-2) -----
+
+BEACON = "https://static.cloudflareinsights.com/beacon.min.js"
+TOKEN = "0123456789abcdef0123456789abcdef"
+
+
+@pytest.fixture(scope="module")
+def token_site_url(tmp_path_factory):
+    """The site built with a web analytics token set (the real data/ has none yet)."""
+    from sitegen.__main__ import DATA
+
+    data = tmp_path_factory.mktemp("token") / "data"
+    shutil.copytree(DATA, data)
+    path = data / "site.json"
+    site = json.loads(path.read_text(encoding="utf-8"))
+    site["web_analytics_token"] = TOKEN
+    path.write_text(json.dumps(site), encoding="utf-8")
+    yield from _serve(tmp_path_factory, data)
+
+
+def _beacon_requests(page, url: str) -> tuple[list[str], int]:
+    """Open url with the beacon request intercepted (never fetched); the requests made and scripts added."""
+    seen: list[str] = []
+
+    def handle(route) -> None:
+        seen.append(route.request.url)
+        route.fulfill(status=200, content_type="text/javascript", body="")
+
+    page.route(BEACON, handle)
+    page.goto(url)
+    page.wait_for_load_state("load")
+    page.wait_for_timeout(QUIET_MS)
+    return seen, page.locator("script[data-cf-beacon]").count()
+
+
+def test_page_view_beacon_is_requested_with_a_token(page, token_site_url) -> None:
+    seen, count = _beacon_requests(page, token_site_url + "/?track=1")
+    assert seen == [BEACON]
+    assert count == 1
+    attr = page.locator("script[data-cf-beacon]").get_attribute("data-cf-beacon")
+    assert json.loads(attr) == {"token": TOKEN}
+
+
+@pytest.mark.parametrize(
+    "script",
+    [
+        "Object.defineProperty(Navigator.prototype, 'globalPrivacyControl', {get: () => true})",
+        "Object.defineProperty(Navigator.prototype, 'doNotTrack', {get: () => '1'})",
+    ],
+)
+def test_page_view_beacon_is_not_requested_with_gpc_or_dnt(
+    page, token_site_url, script
+) -> None:
+    page.add_init_script(script)
+    seen, count = _beacon_requests(page, token_site_url + "/?track=1")
+    assert seen == []
+    assert count == 0
+
+
+def test_page_view_beacon_is_not_requested_on_localhost_by_default(
+    page, token_site_url
+) -> None:
+    seen, count = _beacon_requests(page, token_site_url + "/")
+    assert seen == []
+    assert count == 0
+
+
+def test_page_view_beacon_is_not_requested_without_a_token(page, site_url) -> None:
+    seen, count = _beacon_requests(page, site_url + "/?track=1")
+    assert seen == []
+    assert count == 0

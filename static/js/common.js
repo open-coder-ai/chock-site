@@ -195,6 +195,30 @@ export function track(name, props = {}) {
   }
 }
 
+const BEACON_SRC = "https://static.cloudflareinsights.com/beacon.min.js";
+const BEACON_TOKEN = /^[0-9a-f]{32}$/;
+
+// Page views (plan AN-2): Cloudflare Web Analytics, loaded here and not injected by Cloudflare so
+// that Global Privacy Control and Do Not Track are honoured. The public token comes from the page's
+// <meta name="web-analytics-token">; an empty token loads nothing. Loads at most once per page.
+export function loadPageBeacon(doc = document, nav = navigator, loc = location, win = window) {
+  try {
+    if (!trackingAllowed(nav, loc, win)) return false;
+    const meta = doc.querySelector('meta[name="web-analytics-token"]');
+    const token = meta ? meta.getAttribute("content") : "";
+    if (typeof token !== "string" || !BEACON_TOKEN.test(token)) return false;
+    if (doc.querySelector("script[data-cf-beacon]")) return false;
+    const script = doc.createElement("script");
+    script.defer = true;
+    script.src = BEACON_SRC;
+    script.setAttribute("data-cf-beacon", JSON.stringify({ token }));
+    doc.head.appendChild(script);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function initNavToggle() {
   const button = document.querySelector(".nav-toggle");
   const nav = document.getElementById("nav-links");
@@ -224,3 +248,4 @@ function initStickyTop() {
 initNavToggle();
 initStickyTop();
 initCopyButtons();
+loadPageBeacon();
