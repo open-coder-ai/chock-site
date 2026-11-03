@@ -62,6 +62,7 @@ upstream:
 - source: agentseam src/agentseam/adapters/__init__.py
   sentences:
   - 'Per-agent adapters: parse a vendor payload -> Event; speak a Decision in vendor dialect.'
+  - 'Whose reading of `raw`''s event counts when `detect()` declines: the claimants; else, when the payload names its event, every adapter that maps names -- one that infers the event from shape alone has no say over a payload it did not claim; else nobody, and the event is unknown.'
 - source: agentseam src/agentseam/cli.py
   sentences:
   - Each agent's permission surface; render a policy into it

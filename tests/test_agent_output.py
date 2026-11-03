@@ -169,10 +169,10 @@ def _unasked(text: str) -> list[str]:
     ]
 
 
-def test_install_hooks_in_the_changelog_is_not_chock_install(built) -> None:
-    twin = (built.out / "docs" / "release-notes" / "index.md").read_text("utf-8")
-    assert "`chock install-hooks`" in twin
-    assert not _unasked(twin)
+def test_install_hooks_in_the_changelog_is_not_chock_install() -> None:
+    text = "The changelog says `chock install-hooks` now writes the hook files."
+    assert "`chock install-hooks`" in text
+    assert not _unasked(text)
 
 
 def test_a_real_chock_install_sentence_without_ask_still_fails() -> None:

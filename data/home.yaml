@@ -12,7 +12,7 @@ landing:
   stats_line: "__COUNT__ POLICIES · __TESTED__ TESTS"
   headline_lead: "Blocks your coding agent's"
   headline_accent: "wrong moves before they land."
-  sub: "Stop your AI coding agent from doing what you'd catch in review — one rule, blocked in Claude Code, Cursor, Codex and Copilot, and enforced at commit and in CI."
+  sub: "Stop your AI coding agent from doing what you'd catch in review: one rule, blocked in Claude Code, Cursor, Codex and Copilot, and enforced at commit and in CI."
   primary_cta: "Build your plugin"
   secondary_cta: "See how it works"
   copy_label: "Copy"
