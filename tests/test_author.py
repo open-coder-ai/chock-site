@@ -16,8 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 KINDS = {"content_regex", "guard", "rule", "script", "skill"}
 CSP = (
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' "
-    "data:; connect-src 'self'; font-src 'self'; object-src 'none'; "
+    "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; "
+    "style-src 'self'; img-src 'self' data:; "
+    "connect-src 'self' https://cloudflareinsights.com; font-src 'self'; object-src 'none'; "
     "base-uri 'none'; form-action 'none'"
 )
 TOKENS = ("__ID__", "__NAME__", "__DATE__")
