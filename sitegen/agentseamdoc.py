@@ -296,14 +296,33 @@ def _snapshot_main(args: argparse.Namespace) -> int:
     return 0
 
 
+def _installed_refusal(data: Path, ref: str) -> str:
+    """Why the installed agentseam is not the one the snapshot documents, or "" when it is."""
+    spec = engine.agentseam_chock_spec()
+    commit = engine.agentseam_commit()
+    if spec and spec[0] == "commit":
+        if commit != ref:
+            return f"installed agentseam is {commit or 'not from git'}, the snapshot pins {ref}"
+        return ""
+    if spec and spec[0] == "version":
+        if commit and commit != ref:
+            return f"installed agentseam is {commit}, the snapshot pins {ref}"
+        installed = engine.agentseam_meta()["version"]
+        snapshot = pinned_version(data)
+        if not spec[1] == installed == snapshot:
+            return (
+                f"installed agentseam is version {installed}, chock requires {spec[1]}, "
+                f"the snapshot is version {snapshot or 'unrecorded'}"
+            )
+        return ""
+    return "chock does not pin agentseam to one commit or version"
+
+
 def _run_main(args: argparse.Namespace) -> int:
     ref = pinned(args.data)
-    installed = engine.agentseam_commit()
-    if installed != ref:
-        print(
-            f"installed agentseam is {installed or 'not from git'}, the snapshot pins {ref}",
-            file=sys.stderr,
-        )
+    refusal = _installed_refusal(args.data, ref)
+    if refusal:
+        print(refusal, file=sys.stderr)
         return 2
     try:
         fresh = render(run_session(load_script(args.data), ref))
