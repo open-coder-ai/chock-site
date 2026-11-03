@@ -12,8 +12,9 @@ import yaml
 from tests.conftest import DATA
 
 CSP = (
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' "
-    "data:; connect-src 'self'; font-src 'self'; object-src 'none'; "
+    "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; "
+    "style-src 'self'; img-src 'self' data:; "
+    "connect-src 'self' https://cloudflareinsights.com; font-src 'self'; object-src 'none'; "
     "base-uri 'none'; form-action 'none'"
 )
 FOOTER = "Chock adds friction. It is not a security boundary."

@@ -916,15 +916,28 @@ def agentseam_exit(argv: list[str]) -> int:
         return int(stop.code or 0)
 
 
-def agentseam_chock_pin() -> str:
-    """The agentseam commit the installed chock requires (`agentseam @ git+…@<commit>`), or ""."""
+def agentseam_chock_spec() -> tuple[str, str] | str:
+    """How the installed chock pins agentseam: ("commit", sha), ("version", X.Y.Z), or "" for any other form."""
     from importlib.metadata import distribution
 
     for req in distribution("chock").requires or []:
+        req, _, marker = req.partition(";")
+        req = req.strip()
+        if "extra" in marker:
+            continue
         name, _, url = req.partition("@")
         if name.strip() == AGENTSEAM_PROG and "@" in url:
-            return url.rsplit("@", 1)[1].split(";", 1)[0].strip()
+            return ("commit", url.rsplit("@", 1)[1].strip())
+        found = re.fullmatch(rf"{AGENTSEAM_PROG}\s*==\s*(\d+(?:\.\d+)*)", req)
+        if found:
+            return ("version", found[1])
     return ""
+
+
+def agentseam_chock_pin() -> str:
+    """The agentseam commit the installed chock requires (`agentseam @ git+…@<commit>`), or ""."""
+    spec = agentseam_chock_spec()
+    return spec[1] if spec and spec[0] == "commit" else ""
 
 
 # --- DOCS-5: the schemas the Write policies reference pages tabulate -------------------

@@ -54,6 +54,17 @@ def test_headers_csp_is_meta_csp_plus_frame_ancestors(built) -> None:
     assert csp == parser.csp + "; frame-ancestors 'none'"
 
 
+def test_headers_csp_allows_only_the_cloudflare_beacon_origins() -> None:
+    csp = _rules(HEADERS.read_text(encoding="utf-8"))["/*"]["Content-Security-Policy"]
+    directives = {p.split()[0]: p.split()[1:] for p in csp.split("; ")}
+    assert directives["script-src"] == [
+        "'self'",
+        "https://static.cloudflareinsights.com",
+    ]
+    assert directives["connect-src"] == ["'self'", "https://cloudflareinsights.com"]
+    assert directives["default-src"] == ["'self'"]
+
+
 def test_headers_hardening_and_noindex() -> None:
     text = HEADERS.read_text(encoding="utf-8")
     rules = _rules(text)

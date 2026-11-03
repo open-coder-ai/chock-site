@@ -364,6 +364,16 @@ def first_sections(text: str, count: int, level: int = 2) -> str:
     return sections(text, titles, level)
 
 
+def github_anchor(title: str) -> str:
+    """The id GitHub gives a heading: lower-case, punctuation dropped, each space a hyphen."""
+    return re.sub(r"[^\w\- ]", "", title.lower()).replace(" ", "-")
+
+
+def first_titles(text: str, count: int, level: int = 2) -> list[str]:
+    """The titles of the first `count` level-`level` headings of `text`."""
+    return [t for lv, t, _ in headings(text) if lv == level][:count]
+
+
 def first_code(text: str) -> tuple[str, str]:
     """The language and body of the first fenced code block in `text`."""
     lines = text.splitlines()

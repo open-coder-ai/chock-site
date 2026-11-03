@@ -142,11 +142,11 @@ pages:
     path: /docs/release-notes/
     title: Release notes
     nav_label: Release notes
-    description: "The newest entries of the engine's changelog at the pinned commit."
-    intro: "This page shows the newest sections of chock's CHANGELOG.md at the pinned engine commit."
+    description: "The newest versions in the engine's changelog, each linked to its entry at the pinned commit."
+    intro: "This page lists the newest versions in chock's CHANGELOG.md. Each links to its entry in CHANGELOG.md at the pinned engine commit, where the full entries are."
     blocks: []
     prose:
-      - {file: CHANGELOG.md, first: 5}
+      - {file: CHANGELOG.md, first: 5, headings: true}
   # COPY-2: wording and sources in data/landscape.yaml; the prose below is what its quotes cite.
   where-chock-sits:
     path: /docs/where-chock-sits/
@@ -822,6 +822,7 @@ texts:
     help_parser: "This is what `--help` prints, from the same parser. The usage line names the program as the engine's parser does."
     help_own_parser: "This command reads its arguments itself, without argparse, so this is all the engine says about them: what it prints for `--help`."
   prose_heading: From the engine docs
+  heading_link: "Read the full entry in CHANGELOG.md at the pinned commit"
   ask_code: "Ask the user before running the commands below:"
   ask_note: "Ask the user before running a command this note names:"
   help_more: "The full options are on this page's HTML version, as the engine prints them."

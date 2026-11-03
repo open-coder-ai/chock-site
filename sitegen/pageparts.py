@@ -17,6 +17,19 @@ class PageError(ValueError):
     """Page copy or data that cannot be rendered into a page."""
 
 
+WA_TOKEN_RE = re.compile(r"^(?:[0-9a-f]{32})?$")
+
+
+def web_analytics_token(site: Site) -> str:
+    """data/site.json web_analytics_token: empty (no page-view count) or a 32-hex Cloudflare token."""
+    token = site.data["web_analytics_token"]
+    if not isinstance(token, str) or not WA_TOKEN_RE.fullmatch(token):
+        raise PageError(
+            "site.json web_analytics_token must be empty or 32 hex characters"
+        )
+    return token
+
+
 def slug(text: str) -> str:
     """A lower-case heading slug."""
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
@@ -221,6 +234,7 @@ def write_page(
         DESCRIPTION=description,
         CANONICAL=site.data["site_url"] + path,
         OG_IMAGE=site.data["og_image"],
+        WA_TOKEN=web_analytics_token(site),
         MD_HREF=md_href,
         ALT_JSON=Safe(alt_json),
         JSONLD=jsonld(jsonld_data),

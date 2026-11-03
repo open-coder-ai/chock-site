@@ -1,5 +1,6 @@
-"""A copy of data/ with the fixture agent untested and given an evidence row."""
+"""Copies of data/ for tests: one agent untested, or `released` forced either way."""
 
+import json
 import shutil
 from pathlib import Path
 
@@ -24,4 +25,14 @@ def untested_data(dest: Path) -> Path:
     shutil.copytree(DATA, dest)
     _edit(dest / "witness.yaml", lambda d: d["clients"].update({CLIENT: "untested"}))
     _edit(dest / "evidence.yaml", lambda d: d["issues"].update({CLIENT: ISSUE}))
+    return dest
+
+
+def released_data(dest: Path, released: bool) -> Path:
+    """Copy data/ to dest with site.json's `released` set to the given value."""
+    shutil.copytree(DATA, dest)
+    path = dest / "site.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["released"] = released
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     return dest
