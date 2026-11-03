@@ -22,7 +22,15 @@ from . import (
     engine,
     vendorquotes,
 )
-from .docsmd import Renderer, first_code, first_sections, rewrite_links, sections
+from .docsmd import (
+    Renderer,
+    first_code,
+    first_sections,
+    first_titles,
+    github_anchor,
+    rewrite_links,
+    sections,
+)
 from .model import Policy, SectionResult, Site
 from .pageparts import (
     PageError,
@@ -1311,6 +1319,9 @@ def _prose(ctx: Ctx, body: Body, entry: dict[str, Any]) -> None:
     text = ctx.prose[entry["file"]]
     if text is None:
         return
+    if entry.get("headings"):
+        _heading_links(ctx, body, entry, text)
+        return
     quoted = (
         first_sections(text, entry["first"])
         if entry.get("first")
@@ -1334,6 +1345,22 @@ def _prose(ctx: Ctx, body: Body, entry: dict[str, Any]) -> None:
         + rewrite_links(quoted, resolve, ctx.texts["ask_code"])
         + "\n"
     )
+
+
+def _heading_links(ctx: Ctx, body: Body, entry: dict[str, Any], text: str) -> None:
+    """The newest headings of a chock file as sections, each linking to its place in the file at the pinned commit."""
+    base = _engine_url(ctx, entry["file"])
+    label = ctx.texts["heading_link"]
+    for title in first_titles(text, entry["first"]):
+        url = f"{base}#{github_anchor(title)}"
+        link = ctx.t("link", HREF=url, TEXT=label)
+        _section(
+            ctx,
+            body,
+            title,
+            ctx.t("para", TEXT=Safe(link)),
+            f"[{label}]({url})",
+        )
 
 
 # --- agent and policy pages ------------------------------------------------------

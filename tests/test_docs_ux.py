@@ -83,7 +83,15 @@ def test_first_code_takes_the_first_fenced_block() -> None:
         first_code("## A\n\nno code\n")
 
 
-def test_overview_has_a_tab_per_path_with_its_commands(built) -> None:
+def _install_html(built) -> str:
+    """The install line the overview's tabs show: the pinned git line, or `pipx install chock` once released."""
+    if built.site.data["released"]:
+        return "pipx install chock"
+    return "pip install &quot;chock @ git+https://github.com/open-coder-ai/chock@"
+
+
+def test_overview_has_a_tab_per_path_with_its_commands(built_released) -> None:
+    built = built_released
     page = _page(built, "/docs/")
     tabs = re.search(
         r'<div class="docs-tabs" data-label="([^"]+)">(.*?)\n</div>\s*</section>',
@@ -97,7 +105,7 @@ def test_overview_has_a_tab_per_path_with_its_commands(built) -> None:
     )
     assert [title for _, title in panels] == [p["title"] for p in TEXTS["paths"]]
     plugin, repo = tabs.group(2).split('<div class="docs-tab-panel"')[1:]
-    install = "pip install &quot;chock @ git+https://github.com/open-coder-ai/chock@"
+    install = _install_html(built)
     assert install in plugin and install in repo
     assert "--client &lt;agent&gt;" in plugin and "chock init" not in plugin
     assert "chock init ." in repo and "chock sync --repo ." in repo
@@ -118,11 +126,14 @@ def test_tab_headings_stay_out_of_the_toc(built) -> None:
         assert f'href="#{panel_id}"' not in page
 
 
-def test_overview_twin_asks_before_each_tabs_commands(built) -> None:
-    twin = _page(built, "/docs/", "index.md")
+def test_overview_twin_asks_before_each_tabs_commands(built_released) -> None:
+    twin = _page(built_released, "/docs/", "index.md")
+    command = (
+        "pipx install chock" if built_released.site.data["released"] else "pip install "
+    )
     for path in TEXTS["paths"]:
         block = twin.split(f"### {path['title']}\n\n", 1)[1]
-        assert block.startswith(f"{TEXTS['ask_code']}\n\n    pip install ")
+        assert block.startswith(f"{TEXTS['ask_code']}\n\n    {command}")
     assert "    chock init .\n" in twin
 
 
