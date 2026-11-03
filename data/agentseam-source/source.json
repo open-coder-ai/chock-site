@@ -1,5 +1,6 @@
 {
   "agentseam_ref": "17dd700eb0b1f8af9c6bfd42bd9438fd5e4445cb",
+  "agentseam_version": "0.4.1",
   "files": {
     "README.md": {
       "snapshot": "README.md"

@@ -2294,15 +2294,34 @@ from . import agentseamdoc
 
 
 def _agentseam_ref(ctx: Ctx) -> str:
-    """The agentseam commit the pages document; refused unless it is installed and chock's pin."""
+    """The agentseam commit the pages document; refused unless the installed agentseam is chock's pin."""
     pinned = agentseamdoc.pinned(ctx.data_dir)
+    spec = engine.agentseam_chock_spec()
+    if spec and spec[0] == "version":
+        # A git install (a local checkout) must also be the commit the snapshot links to.
+        commit = engine.agentseam_commit()
+        if commit and commit != pinned:
+            raise PageError(
+                f"agentseam: the snapshot pins {pinned}, the installed agentseam is "
+                f"{commit}: install agentseam {spec[1]} from PyPI or at that commit"
+            )
+        installed = engine.agentseam_meta()["version"]
+        snapshot = agentseamdoc.pinned_version(ctx.data_dir)
+        if not spec[1] == installed == snapshot:
+            raise PageError(
+                f"agentseam: chock at .framework-ref requires agentseam=={spec[1]}, the "
+                f"installed agentseam is {installed}, the snapshot is version {snapshot or 'unrecorded'}: "
+                "install chock at .framework-ref and run "
+                "python -m sitegen.agentseamdoc snapshot and run --record"
+            )
+        return pinned
     installed = engine.agentseam_commit()
-    required = engine.agentseam_chock_pin()
+    required = spec[1] if spec else ""
     if not pinned == installed == required:
         raise PageError(
             f"agentseam: the snapshot pins {pinned}, the installed agentseam is "
             f"{installed or 'not from git'}, chock at .framework-ref requires "
-            f"{required or 'no agentseam commit'}: install chock at .framework-ref and run "
+            f"{required or 'no agentseam commit or version'}: install chock at .framework-ref and run "
             "python -m sitegen.agentseamdoc snapshot and run --record"
         )
     return pinned
