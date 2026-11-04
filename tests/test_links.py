@@ -1,9 +1,12 @@
 """Every root-relative link resolves to a file that the build wrote."""
 
+import dataclasses
 import re
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
+
+from sitegen import pages
 
 EXTERNAL_RE = re.compile(r"^(?:https?:)?//")
 
@@ -60,7 +63,23 @@ def test_sitemap_lists_every_page(built) -> None:
     assert urls == dirs, f"missing: {sorted(dirs - urls)}\nextra: {sorted(urls - dirs)}"
 
 
-def test_robots_disallows_all_while_not_launched(built) -> None:
-    robots = (built.out / "robots.txt").read_text(encoding="utf-8")
-    assert "Disallow: /" in robots
-    assert "Allow:" not in robots
+def test_robots_follows_the_launched_flag(built, tmp_path) -> None:
+    """Not launched: Disallow all. Launched: Allow plus the Sitemap and llms.txt lines."""
+    for launched in (False, True):
+        site = dataclasses.replace(
+            built.site, data={**built.site.data, "launched": launched}
+        )
+        pages._sitemap(site, tmp_path, ["/"])
+        robots = (tmp_path / "robots.txt").read_text(encoding="utf-8")
+        if launched:
+            assert "Allow: /\n" in robots
+            assert "Disallow:" not in robots
+            assert "Sitemap: https://chock.sh/sitemap.xml" in robots
+            assert "# llms.txt: https://chock.sh/llms.txt" in robots
+        else:
+            assert "Disallow: /\n" in robots
+            assert "Allow:" not in robots
+            assert "Sitemap:" not in robots
+    assert built.site.data["launched"] is True
+    shipped = (built.out / "robots.txt").read_text(encoding="utf-8")
+    assert shipped.startswith("User-agent: *\nAllow: /\n")
