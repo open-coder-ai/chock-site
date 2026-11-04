@@ -77,12 +77,22 @@ def test_headers_hardening_and_noindex() -> None:
     assert rules["https://:project.pages.dev/*"] == {"X-Robots-Tag": "noindex"}
     assert rules["https://:version.:project.pages.dev/*"] == {"X-Robots-Tag": "noindex"}
     assert rules["https://staging.chock.sh/*"] == {"X-Robots-Tag": "noindex"}
-    assert "Strict-Transport-Security" not in text
     for folder in ("css", "js", "img", "fonts"):
         assert rules[f"/{folder}/*"] == {"Cache-Control": "public, max-age=300"}
     # Cloudflare Pages limits: 100 rules, 2000 characters per line.
     assert len(rules) <= 100
     assert max(len(line) for line in text.splitlines()) <= 2000
+
+
+def test_hsts_is_on_for_chock_sh_only() -> None:
+    """HSTS is set for https://chock.sh/* alone: no pages.dev or staging rule, no subdomains, no preload."""
+    rules = _rules(HEADERS.read_text(encoding="utf-8"))
+    with_hsts = {p for p, h in rules.items() if "Strict-Transport-Security" in h}
+    assert with_hsts == {"https://chock.sh/*"}
+    assert rules["https://chock.sh/*"] == {
+        "Strict-Transport-Security": "max-age=31536000"
+    }
+    assert "X-Robots-Tag" not in rules["https://chock.sh/*"]
 
 
 def test_noindex_covers_pages_dev_and_staging_only() -> None:
@@ -96,10 +106,9 @@ def test_noindex_covers_pages_dev_and_staging_only() -> None:
         "https://:version.:project.pages.dev/*",
         "https://staging.chock.sh/*",
     }
-    for pattern in rules:
-        assert not pattern.startswith(("https://chock.sh", "https://www.chock.sh")), (
-            pattern
-        )
+    for pattern, headers in rules.items():
+        if pattern.startswith(("https://chock.sh", "https://www.chock.sh")):
+            assert "X-Robots-Tag" not in headers, pattern
 
 
 ALLOWED_JOB_PERMISSIONS = {
