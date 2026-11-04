@@ -124,19 +124,29 @@ def _directive(csp: str, name: str) -> list[str]:
     raise AssertionError(name)
 
 
-def test_site_json_token_is_empty_until_the_owner_adds_it() -> None:
+def test_site_json_token_is_empty_or_32_hex() -> None:
     import json
 
     site = json.loads((DATA / "site.json").read_text(encoding="utf-8"))
-    assert site["web_analytics_token"] == ""
+    assert site["web_analytics_token"] == "" or re.fullmatch(
+        r"[0-9a-f]{32}", site["web_analytics_token"]
+    )
 
 
-def test_pages_carry_the_token_meta_and_no_beacon_script(built) -> None:
+def test_pages_carry_the_token_meta_and_no_static_beacon_script(built) -> None:
+    """The meta holds site.json's token; the beacon is added by common.js (tests/node/beacon.test.mjs), never written into the HTML."""
+    import json
+
+    token = json.loads((DATA / "site.json").read_text(encoding="utf-8"))[
+        "web_analytics_token"
+    ]
     for path in ("index.html", "security/index.html", "coding/builder/index.html"):
         page = (built.out / path).read_text(encoding="utf-8")
-        assert TOKEN_META.findall(page) == [""], path
+        assert TOKEN_META.findall(page) == [token], path
         assert "cloudflareinsights.com/beacon" not in page, path
         assert "data-cf-beacon" not in page, path
+        if token:
+            assert token not in page.replace(f'content="{token}"', ""), path
 
 
 def test_csp_adds_exactly_the_two_beacon_origins(built) -> None:

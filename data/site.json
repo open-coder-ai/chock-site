@@ -4,7 +4,7 @@
   "site_url": "https://chock.sh",
   "wordmark": "Chock.sh",
   "og_image": "/img/og-card.png",
-  "web_analytics_token": "",
+  "web_analytics_token": "8f593ffc22e14e30a2b27d65c2b263f4",
   "section_nav": [
     {"key": "overview", "label": "Overview"},
     {"key": "policies", "label": "Policies"},
