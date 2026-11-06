@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # `pip install chock`, `pipx install chock` or `pip3 install chock`, bare or quoted, and the
 # version after `==` if any. The commit-pinned form (`"chock @ git+...@<sha>"`) is not matched.
 INSTALL = re.compile(
-    r"""\bpip(?:x|3)?\s+install\s+(?:--?[\w-]+\s+)*(?:&quot;|["'])?chock(?![\w-])(?!\s*@)"""
+    r"""\bpip(?:x|3)?\s+install\s+(?:-[\w-]*\s+)*(?:&quot;|["'])?chock(?![\w-])(?!\s*@)"""
     r"""(?:==(\d+(?:\.\d+)*(?:[a-z]+\d+)?))?"""
 )
 TEXT_SUFFIXES = {".html", ".md", ".txt", ".json", ".xml", ".js"}
