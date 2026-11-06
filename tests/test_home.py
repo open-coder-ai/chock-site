@@ -266,8 +266,9 @@ def test_install_line_follows_released(built_released) -> None:
     html = _home(built_released)
     assert 'id="home-install"' in html
     if released:
-        assert install_command(built_released.site) == "pipx install chock"
-        assert "pipx install chock" in html
+        pinned = f"pipx install chock=={built_released.site.data['version']}"
+        assert install_command(built_released.site) == pinned
+        assert pinned in html
         assert built_released.site.framework_ref not in html
     else:
         assert built_released.site.framework_ref in install_command(built_released.site)

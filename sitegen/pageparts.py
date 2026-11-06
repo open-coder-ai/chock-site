@@ -85,10 +85,15 @@ def status_badge(site: Site, templates: Path, policy: Policy) -> Safe:
 
 
 def install_command(site: Site) -> str:
-    """The engine install line the Install page shows, chosen by `released`."""
+    """The engine install line the Install page shows, chosen by `released`.
+
+    Released, it pins the version data/version.json holds, the one /version.json names (S-10).
+    """
     inst = site.data["install"]
     if site.data.get("released"):
-        return inst["install_command_released"]
+        return data_fill(
+            inst["install_command_released"], {"__VERSION__": site.data["version"]}
+        )
     return data_fill(inst["install_command"], {"__FRAMEWORK_REF__": site.framework_ref})
 
 

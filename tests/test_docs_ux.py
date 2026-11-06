@@ -84,9 +84,9 @@ def test_first_code_takes_the_first_fenced_block() -> None:
 
 
 def _install_html(built) -> str:
-    """The install line the overview's tabs show: the pinned git line, or `pipx install chock` once released."""
+    """The install line the overview's tabs show: the pinned git line, or `pipx install chock==<version>` once released."""
     if built.site.data["released"]:
-        return "pipx install chock"
+        return f"pipx install chock=={built.site.data['version']}"
     return "pip install &quot;chock @ git+https://github.com/open-coder-ai/chock@"
 
 
@@ -129,7 +129,9 @@ def test_tab_headings_stay_out_of_the_toc(built) -> None:
 def test_overview_twin_asks_before_each_tabs_commands(built_released) -> None:
     twin = _page(built_released, "/docs/", "index.md")
     command = (
-        "pipx install chock" if built_released.site.data["released"] else "pip install "
+        f"pipx install chock=={built_released.site.data['version']}"
+        if built_released.site.data["released"]
+        else "pip install "
     )
     for path in TEXTS["paths"]:
         block = twin.split(f"### {path['title']}\n\n", 1)[1]
