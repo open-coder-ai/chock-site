@@ -810,7 +810,7 @@ texts:
     subcommands_heading: Subcommands
     subcommands_head: [Subcommand, Summary]
     exit_heading: "Exit codes"
-    exit_usage: "2: argparse rejected the arguments, for example an option this command does not have. The site's tests run every command with an unknown option and check that it exits 2."
+    exit_usage: "2: argparse rejected the arguments, for example an option this command does not have. The site's tests give every command's parser an unknown option and check that it exits 2."
     exit_own_parser: "This command reads its arguments itself, without argparse."
     exit_recorded: "Chock documents no other exit codes. Each example below shows the code its run returned."
     exit_unrecorded: "Chock documents no other exit codes, and this page has no recorded run."
