@@ -120,7 +120,13 @@ def build_site(
 
     names = [c["name"] for c in site_data["builder_clients"]["clients"].values()]
     for item in site_data["faq"]["questions"]:
-        item["a"] = data_fill(item["a"], {"__AGENTS__": ", ".join(names)})
+        item["a"] = data_fill(
+            item["a"],
+            {
+                "__AGENTS__": ", ".join(names),
+                "__MARKETPLACE__": engine.marketplace_name(),
+            },
+        )
 
     site_data["author"] = authordata.load_author(data_dir)
 

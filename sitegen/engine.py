@@ -176,8 +176,13 @@ def client_tokens(client: str) -> dict[str, str]:
         "__DEST__": dest.as_posix(),
         "__PLUGIN_DIR__": Path(folder).as_posix(),
         "__PLUGIN__": BUNDLE_NAME,
-        "__MARKETPLACE__": chock.install.package.settings()["marketplace"],
+        "__MARKETPLACE__": marketplace_name(),
     }
+
+
+def marketplace_name() -> str:
+    """The local marketplace name `chock install` registers, shared by every build made with it."""
+    return chock.install.package.settings()["marketplace"]
 
 
 def client_steps(client: str) -> list[dict[str, str]]:
@@ -569,6 +574,22 @@ def _cli_node(
     for sub, sub_parser, sub_help in subs:
         nodes += _cli_node(sub_parser, [*path, sub], group, sub_help)
     return nodes
+
+
+def cli_parser(name: str) -> Any:
+    """The argparse parser `chock <name>` builds, or None for a command that parses its own arguments."""
+    return _capture_parser(name)[0]
+
+
+def person_only_commands() -> set[str]:
+    """The commands the engine refuses under an agent marker before they parse their arguments."""
+    groups = _data("commands.json")
+    return {
+        name
+        for commands in groups.values()
+        for name, spec in commands.items()
+        if spec.get("person_only")
+    }
 
 
 def cli_tree() -> list[dict[str, Any]]:

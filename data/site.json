@@ -105,7 +105,7 @@
   "install": {
     "install_heading": "Install chock",
     "install_command": "pip install \"chock @ git+https://github.com/open-coder-ai/chock@__FRAMEWORK_REF__\"",
-    "install_command_released": "pipx install chock",
+    "install_command_released": "pipx install chock==__VERSION__",
     "install_note": "You need Python 3.11 or newer. The engine is the only thing you install, and it builds the plugin from the pinned catalog. Cannot install chock on this machine? Use the per-policy marketplace instead: it needs Python 3.11+, git and a bash but no chock, and the Agents page links each agent's repository. Install a policy from one place only, never both.",
     "run_heading": "Run the command",
     "run_body": "Pick your agent and your policies on the builder, copy the command and run it in your repo. `--client` names the agent. For an agent marked tested, `--apply` also runs that agent's own install steps. For an untested agent, the command only builds the plugin, and you run the steps yourself.",
