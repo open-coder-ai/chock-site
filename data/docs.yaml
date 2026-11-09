@@ -122,7 +122,8 @@ pages:
     # stand in these sections word for word, so docs-drift catches a change in chock.
     checked:
       - {file: README.md, sections: ["Guardrails, not guarantees", FAQ for people and agents]}
-      - {file: SECURITY.md, sections: [Threat model]}
+      # Reporting a vulnerability also feeds /.well-known/security.txt (sitegen/securitytxt.py).
+      - {file: SECURITY.md, sections: [Reporting a vulnerability, Threat model]}
       - {file: docs/assurance-case.md, sections: [Top-level claim, "Residual risks, stated"]}
       - {file: docs/baseline-policies.md, sections: [What the base catalog offers]}
       - {file: docs/enforcement-surfaces.md, sections: [The nine surfaces, What happens when the guard cannot decide]}

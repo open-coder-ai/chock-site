@@ -45,6 +45,13 @@ SHARED_TOP_LEVEL = {
     "_headers",
     # The release version marker (REL-3), read by the release check.
     "version.json",
+    # RFC 9116 security.txt (S-8), under the folder RFC 8615 reserves.
+    ".well-known",
+    # The IndexNow key file (S-9), named after the public key in data/well-known.yaml.
+    yaml.safe_load((ROOT / "data" / "well-known.yaml").read_text(encoding="utf-8"))[
+        "indexnow"
+    ]["key"]
+    + ".txt",
 }
 EXAMPLE = Track(
     id="example",
