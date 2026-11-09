@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from sitegen.__main__ import build
-from tests.fixtures.untested import untested_data
+from tests.fixtures.untested import released_data, untested_data
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / ".catalog"
@@ -37,5 +37,18 @@ def built_untested(
     """The site built from test-only data with one agent untested (tests/fixtures)."""
     data = untested_data(tmp_path_factory.mktemp("untested") / "data")
     out = tmp_path_factory.mktemp("dist-untested")
+    site = build(catalog_path, out, str(catalog_path.resolve()), None, data)
+    return Built(site, out)
+
+
+@pytest.fixture(scope="session", params=[False, True], ids=["pre-release", "released"])
+def built_released(
+    request: pytest.FixtureRequest,
+    tmp_path_factory: pytest.TempPathFactory,
+    catalog_path: Path,
+) -> Built:
+    """The site built from data with `released` false, then true, whatever data/ holds."""
+    data = released_data(tmp_path_factory.mktemp("released") / "data", request.param)
+    out = tmp_path_factory.mktemp("dist-released")
     site = build(catalog_path, out, str(catalog_path.resolve()), None, data)
     return Built(site, out)

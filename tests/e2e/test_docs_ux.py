@@ -157,6 +157,18 @@ def test_toc_marks_the_section_scrolled_to(browser, site_url) -> None:
         context.close()
 
 
+COPY_OVERLAPS = """blocks => blocks
+    .filter(b => b.getClientRects().length > 0)
+    .map(b => {
+        const code = b.querySelector("pre").getBoundingClientRect();
+        const button = b.querySelector(".code-copy").getBoundingClientRect();
+        const apart = button.left >= code.right || button.right <= code.left
+            || button.top >= code.bottom || button.bottom <= code.top;
+        return apart ? null : b.textContent.slice(0, 40);
+    })
+    .filter(Boolean)"""
+
+
 def test_copy_button_never_covers_the_code(browser, site_url) -> None:
     for viewport in (DESKTOP, MOBILE):
         context = browser.new_context(viewport=viewport)
@@ -165,25 +177,36 @@ def test_copy_button_never_covers_the_code(browser, site_url) -> None:
             collect(page, site_url)
             page.goto(site_url + "/docs/")
             overlaps = page.eval_on_selector_all(
-                ".docs-main .code-block",
-                """blocks => blocks
-                    .filter(b => b.getClientRects().length > 0)
-                    .map(b => {
-                        const code = b.querySelector("pre").getBoundingClientRect();
-                        const button = b.querySelector(".code-copy").getBoundingClientRect();
-                        const apart = button.left >= code.right || button.right <= code.left
-                            || button.top >= code.bottom || button.bottom <= code.top;
-                        return apart ? null : b.textContent.slice(0, 40);
-                    })
-                    .filter(Boolean)""",
+                ".docs-main .code-block", COPY_OVERLAPS
             )
             shown = page.locator(".docs-main .code-block:visible").count()
             assert shown > 0 and not overlaps, f"{viewport}: {overlaps}"
-            # The long install line still scrolls inside its own area.
-            assert page.evaluate(
-                "() => { const p = document.querySelector('.docs-main .code-block pre');"
-                " return p.scrollWidth > p.clientWidth; }"
+            # Long lines scroll inside their block, whatever the install line's length.
+            unscrollable = page.eval_on_selector_all(
+                ".docs-main .code-block pre",
+                """pres => pres
+                    .filter(p => p.getClientRects().length > 0)
+                    .map(p => [getComputedStyle(p), p])
+                    .filter(([s]) => !["auto", "scroll"].includes(s.overflowX) || s.whiteSpace !== "pre")
+                    .map(([, p]) => p.textContent.slice(0, 40))""",
             )
+            assert not unscrollable, f"{viewport}: {unscrollable}"
+            page.evaluate(
+                """() => {
+                    const p = [...document.querySelectorAll('.docs-main .code-block pre')]
+                        .find(p => p.getClientRects().length > 0);
+                    p.textContent = "x".repeat(300);
+                }"""
+            )
+            assert page.evaluate(
+                """() => {
+                    const p = [...document.querySelectorAll('.docs-main .code-block pre')]
+                        .find(p => p.getClientRects().length > 0);
+                    return p.scrollWidth > p.clientWidth;
+                }"""
+            ), f"{viewport}: a 300-character line does not scroll"
+            after = page.eval_on_selector_all(".docs-main .code-block", COPY_OVERLAPS)
+            assert not after, f"{viewport}: {after}"
             assert_clean(page)
         finally:
             context.close()

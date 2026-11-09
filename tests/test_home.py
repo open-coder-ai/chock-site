@@ -1,6 +1,5 @@
 """R-2 checks: the home page's data builds, its claims are computed, nothing banned ships."""
 
-import dataclasses
 import html as htmllib
 import json
 import re
@@ -262,15 +261,19 @@ def test_works_with_lists_every_install_client(built) -> None:
         assert clients["clients"][client]["name"] in block
 
 
-def test_install_line_follows_released(built) -> None:
-    html = _home(built)
+def test_install_line_follows_released(built_released) -> None:
+    released = built_released.site.data["released"]
+    html = _home(built_released)
     assert 'id="home-install"' in html
-    assert built.site.framework_ref in html
-    assert "pipx install chock" not in html  # `released` is false
-    released = dataclasses.replace(
-        built.site, data={**built.site.data, "released": True}
-    )
-    assert install_command(released) == "pipx install chock"
+    if released:
+        pinned = f"pipx install chock=={built_released.site.data['version']}"
+        assert install_command(built_released.site) == pinned
+        assert pinned in html
+        assert built_released.site.framework_ref not in html
+    else:
+        assert built_released.site.framework_ref in install_command(built_released.site)
+        assert built_released.site.framework_ref in html
+        assert "pipx install chock" not in html
 
 
 def test_faq_adds_general_agents_answer(built) -> None:

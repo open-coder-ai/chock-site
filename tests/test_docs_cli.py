@@ -172,11 +172,29 @@ def test_a_stale_or_stray_recording_fails_the_build() -> None:
         docs._cli_covered(_ctx(cli_examples={**recordings, "nope": {}}))
 
 
-def test_every_parser_exits_2_on_an_unknown_option(tmp_path: Path) -> None:
-    # The pages' exit-code line rests on this run, not on a reading of argparse.
-    chock = _chock()
+def test_every_parser_exits_2_on_an_unknown_option(capsys) -> None:
+    # The pages' exit-code line rests on this: each command's own parser, given an unknown
+    # option, as the command hands it its arguments. Parsing only, so no command runs and the
+    # engine's agent-marker refusal, which comes before parsing, is never reached.
     for node in TREE:
         if not node["parser"]:
+            continue
+        parser = engine.cli_parser(node["path"][0])
+        assert parser is not None, node["path"]
+        with pytest.raises(SystemExit) as stopped:
+            parser.parse_args([*node["path"][1:], NO_SUCH_OPTION])
+        assert stopped.value.code == 2, node["path"]
+        assert "error:" in capsys.readouterr().err, node["path"]
+
+
+def test_every_open_command_exits_2_on_an_unknown_option(tmp_path: Path) -> None:
+    # The same through the installed `chock`, for every command the engine does not keep to a
+    # person: its dispatcher hands the option to argparse whoever runs it.
+    chock = _chock()
+    person_only = engine.person_only_commands()
+    ran = 0
+    for node in TREE:
+        if not node["parser"] or node["path"][0] in person_only:
             continue
         done = subprocess.run(
             [chock, *node["path"], NO_SUCH_OPTION],
@@ -189,6 +207,8 @@ def test_every_parser_exits_2_on_an_unknown_option(tmp_path: Path) -> None:
         )
         assert done.returncode == 2, (node["path"], done.stderr[-300:])
         assert "error:" in done.stderr, node["path"]
+        ran += 1
+    assert ran, "no command outside the person-only set has a parser"
 
 
 def test_an_unknown_command_exits_2(tmp_path: Path) -> None:

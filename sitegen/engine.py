@@ -176,8 +176,13 @@ def client_tokens(client: str) -> dict[str, str]:
         "__DEST__": dest.as_posix(),
         "__PLUGIN_DIR__": Path(folder).as_posix(),
         "__PLUGIN__": BUNDLE_NAME,
-        "__MARKETPLACE__": chock.install.package.settings()["marketplace"],
+        "__MARKETPLACE__": marketplace_name(),
     }
+
+
+def marketplace_name() -> str:
+    """The local marketplace name `chock install` registers, shared by every build made with it."""
+    return chock.install.package.settings()["marketplace"]
 
 
 def client_steps(client: str) -> list[dict[str, str]]:
@@ -571,6 +576,22 @@ def _cli_node(
     return nodes
 
 
+def cli_parser(name: str) -> Any:
+    """The argparse parser `chock <name>` builds, or None for a command that parses its own arguments."""
+    return _capture_parser(name)[0]
+
+
+def person_only_commands() -> set[str]:
+    """The commands the engine refuses under an agent marker before they parse their arguments."""
+    groups = _data("commands.json")
+    return {
+        name
+        for commands in groups.values()
+        for name, spec in commands.items()
+        if spec.get("person_only")
+    }
+
+
 def cli_tree() -> list[dict[str, Any]]:
     """Every `chock` command and subcommand as its parser declares it, in commands.json order.
 
@@ -916,15 +937,28 @@ def agentseam_exit(argv: list[str]) -> int:
         return int(stop.code or 0)
 
 
-def agentseam_chock_pin() -> str:
-    """The agentseam commit the installed chock requires (`agentseam @ git+…@<commit>`), or ""."""
+def agentseam_chock_spec() -> tuple[str, str] | str:
+    """How the installed chock pins agentseam: ("commit", sha), ("version", X.Y.Z), or "" for any other form."""
     from importlib.metadata import distribution
 
     for req in distribution("chock").requires or []:
+        req, _, marker = req.partition(";")
+        req = req.strip()
+        if "extra" in marker:
+            continue
         name, _, url = req.partition("@")
         if name.strip() == AGENTSEAM_PROG and "@" in url:
-            return url.rsplit("@", 1)[1].split(";", 1)[0].strip()
+            return ("commit", url.rsplit("@", 1)[1].strip())
+        found = re.fullmatch(rf"{AGENTSEAM_PROG}\s*==\s*(\d+(?:\.\d+)*)", req)
+        if found:
+            return ("version", found[1])
     return ""
+
+
+def agentseam_chock_pin() -> str:
+    """The agentseam commit the installed chock requires (`agentseam @ git+…@<commit>`), or ""."""
+    spec = agentseam_chock_spec()
+    return spec[1] if spec and spec[0] == "commit" else ""
 
 
 # --- DOCS-5: the schemas the Write policies reference pages tabulate -------------------

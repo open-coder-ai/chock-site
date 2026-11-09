@@ -106,3 +106,88 @@ def test_security_page_lists_every_event(built, data) -> None:
         assert "Global Privacy Control" in text
         assert "sends nothing" in text
         assert "no analytics" not in text.lower()
+
+
+# ----- page views (plan AN-2) -----
+
+BEACON_SCRIPT = "https://static.cloudflareinsights.com"
+BEACON_CONNECT = "https://cloudflareinsights.com"
+TOKEN_META = re.compile(r'<meta name="web-analytics-token" content="([^"]*)">')
+
+
+def _directive(csp: str, name: str) -> list[str]:
+    """The sources of one CSP directive."""
+    for part in csp.split(";"):
+        words = part.split()
+        if words and words[0] == name:
+            return words[1:]
+    raise AssertionError(name)
+
+
+def test_site_json_token_is_empty_until_the_owner_adds_it() -> None:
+    import json
+
+    site = json.loads((DATA / "site.json").read_text(encoding="utf-8"))
+    assert site["web_analytics_token"] == ""
+
+
+def test_pages_carry_the_token_meta_and_no_beacon_script(built) -> None:
+    for path in ("index.html", "security/index.html", "coding/builder/index.html"):
+        page = (built.out / path).read_text(encoding="utf-8")
+        assert TOKEN_META.findall(page) == [""], path
+        assert "cloudflareinsights.com/beacon" not in page, path
+        assert "data-cf-beacon" not in page, path
+
+
+def test_csp_adds_exactly_the_two_beacon_origins(built) -> None:
+    page = (built.out / "index.html").read_text(encoding="utf-8")
+    csp = re.search(r'http-equiv="Content-Security-Policy" content="([^"]*)"', page)[1]
+    assert _directive(csp, "script-src") == ["'self'", BEACON_SCRIPT]
+    assert _directive(csp, "connect-src") == ["'self'", BEACON_CONNECT]
+    for name in ("default-src", "style-src", "img-src", "font-src", "object-src"):
+        assert BEACON_SCRIPT not in _directive(csp, name), name
+        assert BEACON_CONNECT not in _directive(csp, name), name
+    assert (built.out / "_headers").read_text(encoding="utf-8").count(
+        BEACON_SCRIPT
+    ) == 1
+
+
+def test_security_text_says_page_views_honour_gpc_and_dnt(built, data) -> None:
+    sentence = (
+        "Page views are counted with Cloudflare Web Analytics, which sets no cookie. "
+        "It records the page address, referrer, country and browser type in aggregate. "
+        "It does not load when your browser sends Global Privacy Control or Do Not Track."
+    )
+    assert sentence in data["security"]["body"]
+    page = (built.out / "security" / "index.html").read_text(encoding="utf-8")
+    twin = (built.out / "security" / "index.md").read_text(encoding="utf-8")
+    assert html.escape(sentence, quote=False) in page.replace("&#x27;", "'")
+    assert sentence in twin
+
+
+@pytest.mark.parametrize("token", ["abc", "G" * 32, "a" * 33, '"><script>x</script>'])
+def test_a_bad_token_refuses_the_build(token) -> None:
+    from sitegen.model import Site
+    from sitegen.pageparts import PageError, web_analytics_token
+
+    site = Site.__new__(Site)
+    site.data = {"web_analytics_token": token}
+    with pytest.raises(PageError):
+        web_analytics_token(site)
+
+
+def test_a_good_token_is_accepted() -> None:
+    from sitegen.model import Site
+    from sitegen.pageparts import web_analytics_token
+
+    site = Site.__new__(Site)
+    site.data = {"web_analytics_token": "0123456789abcdef" * 2}
+    assert web_analytics_token(site) == "0123456789abcdef" * 2
+
+
+def test_stats_scripts_read_the_token_from_the_environment() -> None:
+    for name in ("stats.sh", "stats.ps1"):
+        text = (ROOT / "scripts" / name).read_text(encoding="utf-8")
+        assert "CF_API_TOKEN" in text and "CF_ACCOUNT_ID" in text, name
+        assert "chock_site_events" in text, name
+        assert "analytics_engine/sql" in text, name
