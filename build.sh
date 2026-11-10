@@ -58,5 +58,6 @@ venv_pip check
 
 [ -f dist/_headers ] || fail "dist/_headers is missing"
 [ -f dist/version.json ] || fail "dist/version.json is missing"
+[ -f dist/favicon.ico ] || fail "dist/favicon.ico is missing"
 [ -f dist/.well-known/security.txt ] || fail "dist/.well-known/security.txt is missing"
 echo "build.sh: dist/ built"

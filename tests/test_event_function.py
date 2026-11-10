@@ -13,7 +13,13 @@ def test_event_function_node_suite() -> None:
     assert node, "node is required to test functions/api/event.js"
     # functions/ has no package.json, so Node must detect its ES module syntax.
     result = subprocess.run(
-        [node, "--experimental-detect-module", "--test", str(NODE_TEST)],
+        [
+            node,
+            "--experimental-detect-module",
+            "--test-reporter=tap",
+            "--test",
+            str(NODE_TEST),
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,
