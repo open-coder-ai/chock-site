@@ -12,7 +12,7 @@ def test_beacon_node_suite() -> None:
     node = shutil.which("node")
     assert node, "node is required to test static/js/common.js loadPageBeacon"
     result = subprocess.run(
-        [node, "--test", str(NODE_TEST)],
+        [node, "--test-reporter=tap", "--test", str(NODE_TEST)],
         cwd=ROOT,
         capture_output=True,
         text=True,
