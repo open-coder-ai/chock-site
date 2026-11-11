@@ -47,6 +47,18 @@ def test_no_page_denies_page_views_while_the_beacon_is_in_the_build(built) -> No
             assert claim not in text.lower(), f"{path}: {claim!r}"
 
 
+def test_the_readme_names_the_one_third_party_request(built) -> None:
+    if not _beacon_in_build(built.out):
+        return
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    assert "no third-party requests" not in readme.lower()
+    assert (
+        "The only third-party request is Cloudflare's cookieless Web Analytics "
+        "beacon, which is skipped when the browser sends Global Privacy Control "
+        "or Do Not Track."
+    ) in readme
+
+
 @pytest.mark.parametrize(
     ("page", "start"),
     [

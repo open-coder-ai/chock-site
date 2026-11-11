@@ -3,6 +3,7 @@
 import copy
 import html
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -132,6 +133,18 @@ def _site_token() -> str:
     return site["web_analytics_token"]
 
 
+class ScriptTags(HTMLParser):
+    """Collects the attributes of every script tag, whatever its letter case."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.tags: list[dict[str, str | None]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "script":
+            self.tags.append(dict(attrs))
+
+
 def test_site_json_token_is_32_lowercase_hex() -> None:
     assert re.fullmatch(r"[0-9a-f]{32}", _site_token())
 
@@ -144,9 +157,14 @@ def test_every_page_carries_the_token_meta_and_no_beacon_script(built) -> None:
         page = path.read_text(encoding="utf-8")
         assert TOKEN_META.findall(page) == [token], path
         assert "data-cf-beacon" not in page, path
-        for tag in re.findall(r"<script\b[^>]*>", page):
-            assert "cloudflareinsights" not in tag, path
-            assert "://" not in tag and 'src="//' not in tag, tag
+        parser = ScriptTags()
+        parser.feed(page)
+        assert parser.tags, path
+        for attrs in parser.tags:
+            assert "data-cf-beacon" not in attrs, path
+            src = attrs.get("src") or ""
+            assert "cloudflareinsights" not in src, path
+            assert "//" not in src, f"{path}: {src}"
 
 
 def test_only_the_loader_names_the_beacon_script(built) -> None:
