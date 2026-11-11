@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 from combo import pick_start
-from conftest import BEACON, _serve, assert_clean
+from conftest import BEACON, _serve, answer_beacon, assert_clean
 from test_author import _fill
 from test_author import _open as _open_author
 
@@ -14,6 +14,12 @@ REPORT = "/report/"
 POLICY = "block-no-verify"
 # How long a test waits for a beacon that must not come.
 QUIET_MS = 600
+
+
+@pytest.fixture(autouse=True)
+def _beacon_answered(page) -> None:
+    """Every page in this module may be tracked, so the beacon is answered locally."""
+    answer_beacon(page)
 
 
 def _record(page, status: int = 204) -> list[dict]:
