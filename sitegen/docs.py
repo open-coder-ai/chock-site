@@ -288,16 +288,21 @@ def _count(values: list[str]) -> list[tuple[str, int]]:
     return sorted(seen.items())
 
 
+def _row(ctx: Ctx, key: str, count: int) -> str:
+    """The count row text for a count: the `_one` wording for exactly one, else the plural."""
+    return ctx.texts[key + "_one" if count == 1 else key]
+
+
 def _grades(ctx: Ctx, body: Body) -> None:
     grades = [
         sentence_start(
-            data_fill(ctx.texts["grade_row"], {"__GRADE__": g, "__COUNT__": str(n)})
+            data_fill(_row(ctx, "grade_row", n), {"__GRADE__": g, "__COUNT__": str(n)})
         )
         for g, n in _count([a["grade"] for a in ctx.agents])
     ]
     bases = [
         sentence_start(
-            data_fill(ctx.texts["basis_row"], {"__BASIS__": b, "__COUNT__": str(n)})
+            data_fill(_row(ctx, "basis_row", n), {"__BASIS__": b, "__COUNT__": str(n)})
         )
         for b, n in _count([a["basis"] for a in ctx.agents])
     ]

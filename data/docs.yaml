@@ -566,8 +566,10 @@ texts:
   grades_heading: Grades and what they rest on
   grades_intro: "Agentseam grades what each agent can enforce before a tool runs. The evidence caps the grade: a row that rests on vendor docs never reads enforceable. Counts at the pinned agentseam release:"
   grade_row: "__GRADE__: __COUNT__ agents"
+  grade_row_one: "__GRADE__: __COUNT__ agent"
   basis_heading: "Basis of each row"
   basis_row: "__BASIS__: __COUNT__ agents"
+  basis_row_one: "__BASIS__: __COUNT__ agent"
   witness_heading: Tested and documented
   witness_body: "Tested means a person saw chock refuse an action in that agent, with that install method, and the engine's list of live tests records the date and method. Documented means the claim rests on the vendor's docs or source. The engine's list of live tests at this commit has __COUNT__ rows."
   install_heading: "1. Install the engine"

@@ -1,6 +1,7 @@
 """Shared pages and orchestration: sections build themselves via SECTION_BUILDERS."""
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -61,7 +62,7 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
     twin = render_text_file(
         templates / MD / "security.md",
         SUB=Prose(page["description"]),
-        SECTIONS=md_sections(data["security"], data["links"])
+        SECTIONS=md_sections(data["security"], _md_links(site))
         + analytics.security_md(data["analytics"]),
     )
     write_md(out_dir, "/security/", twin)
@@ -71,6 +72,11 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
 def _absolute(site: Site, link: str) -> str:
     """A link for a Markdown twin: a site path gets the site's URL, any other link stays."""
     return site.data["site_url"] + link if link.startswith("/") else link
+
+
+def _md_links(site: Site) -> dict[str, str]:
+    """data/site.json links for a Markdown twin, each site path made absolute."""
+    return {key: _absolute(site, link) for key, link in site.data["links"].items()}
 
 
 def _faq_headings(data: dict[str, Any]) -> list[tuple[int, str, str]]:
@@ -283,7 +289,7 @@ def _for_agents(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, s
     twin = render_text_file(
         templates / MD / "for-agents.md",
         SUB=Prose(page["description"]),
-        SECTIONS=md_sections(sections, data["links"]),
+        SECTIONS=md_sections(sections, _md_links(site)),
     )
     write_md(out_dir, "/for-agents/", twin)
     return "/for-agents/", "/for-agents/index.md", twin
@@ -406,7 +412,11 @@ def _llms(
         )
     lines.extend(section.data_lines for section in sections)
     lines.append("- [/data/site.json](/data/site.json): the generated site data\n")
-    (out_dir / "llms.txt").write_text("".join(lines), encoding="utf-8", newline="\n")
+    # llmstxt.org lists absolute URLs: every link to a site path gets the site's URL, in one pass.
+    text = re.sub(
+        r"\]\((/[^)\s]*)\)", lambda m: f"]({_absolute(site, m[1])})", "".join(lines)
+    )
+    (out_dir / "llms.txt").write_text(text, encoding="utf-8", newline="\n")
 
     ordered: list[tuple[str, str]] = [
         next((p, t) for p, t in shared_docs if p == path) for _, path, _ in docs

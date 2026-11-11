@@ -38,7 +38,7 @@ def test_page_has_one_nav_entry_and_every_item(built) -> None:
     overview = (built.out / "docs" / "index.html").read_text(encoding="utf-8")
     assert f'href="{PAGE["path"]}"' in overview
     llms = (built.out / "llms.txt").read_text(encoding="utf-8")
-    assert f"]({PAGE['path']}index.md)" in llms
+    assert f"](https://chock.sh{PAGE['path']}index.md)" in llms
 
 
 def test_every_quote_stands_in_the_snapshot() -> None:

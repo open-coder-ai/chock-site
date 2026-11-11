@@ -18,7 +18,7 @@ Picked catalog policies install beside the authored one. They are the same polic
 
 __SCRIPT_HINT__ The script:
 
-1. Asks for the agent (one of the five client ids), the folder, and build-only or install, with the interview's answers as defaults.
+1. Asks for the agent (one of the client ids), the folder, and build-only or install, with the interview's answers as defaults.
 2. Writes `chock.selection.yaml` (schema 2) and the policy folder into `.agents/policies/<id>/` as quoted heredocs.
 3. Runs `chock check --repo <folder> --only validate,evals` and stops on any failure.
 4. Runs `chock install --selection <folder>/chock.selection.yaml --client <agent> --trust-local <id>=<sha256>`, the step the CLI asks you to review. The sha256 pins exactly the policy code printed in the script, so reading the script is that review. Answering `install` also passes `--apply`, the agent's own install step, but only where a person has seen that step work live.
