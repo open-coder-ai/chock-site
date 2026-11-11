@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 from combo import pick_start
-from conftest import _serve, assert_clean
+from conftest import BEACON, _serve, assert_clean
 from test_author import _fill
 from test_author import _open as _open_author
 
@@ -252,22 +252,32 @@ def test_track_drops_bad_calls(page, site_url) -> None:
 
 # ----- page views (plan AN-2) -----
 
-BEACON = "https://static.cloudflareinsights.com/beacon.min.js"
 TOKEN = "0123456789abcdef0123456789abcdef"
 
 
-@pytest.fixture(scope="module")
-def token_site_url(tmp_path_factory):
-    """The site built with a web analytics token set (the real data/ has none yet)."""
+def _serve_with_token(tmp_path_factory, token: str):
+    """Serve the site built from data/ with web_analytics_token replaced."""
     from sitegen.__main__ import DATA
 
     data = tmp_path_factory.mktemp("token") / "data"
     shutil.copytree(DATA, data)
     path = data / "site.json"
     site = json.loads(path.read_text(encoding="utf-8"))
-    site["web_analytics_token"] = TOKEN
+    site["web_analytics_token"] = token
     path.write_text(json.dumps(site), encoding="utf-8")
     yield from _serve(tmp_path_factory, data)
+
+
+@pytest.fixture(scope="module")
+def token_site_url(tmp_path_factory):
+    """The site built with a test web analytics token."""
+    yield from _serve_with_token(tmp_path_factory, TOKEN)
+
+
+@pytest.fixture(scope="module")
+def no_token_site_url(tmp_path_factory):
+    """The site built with an empty web analytics token."""
+    yield from _serve_with_token(tmp_path_factory, "")
 
 
 def _beacon_requests(page, url: str) -> tuple[list[str], int]:
@@ -317,7 +327,31 @@ def test_page_view_beacon_is_not_requested_on_localhost_by_default(
     assert count == 0
 
 
-def test_page_view_beacon_is_not_requested_without_a_token(page, site_url) -> None:
-    seen, count = _beacon_requests(page, site_url + "/?track=1")
+def test_page_view_beacon_is_not_requested_without_a_token(
+    page, no_token_site_url
+) -> None:
+    seen, count = _beacon_requests(page, no_token_site_url + "/?track=1")
     assert seen == []
     assert count == 0
+
+
+def test_the_real_site_requests_the_beacon_with_its_own_token(page, site_url) -> None:
+    from sitegen.__main__ import DATA
+
+    site = json.loads((DATA / "site.json").read_text(encoding="utf-8"))
+    token = site["web_analytics_token"]
+    assert len(token) == 32
+    seen, count = _beacon_requests(page, site_url + "/?track=1")
+    assert seen == [BEACON]
+    assert count == 1
+    attr = page.locator("script[data-cf-beacon]").get_attribute("data-cf-beacon")
+    assert json.loads(attr) == {"token": token}
+
+
+def test_the_real_site_requests_no_beacon_on_localhost_by_default(
+    page, site_url
+) -> None:
+    seen, count = _beacon_requests(page, site_url + "/")
+    assert seen == []
+    assert count == 0
+    assert_clean(page)

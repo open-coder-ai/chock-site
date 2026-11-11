@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / ".catalog"
 SCREENSHOTS = ROOT / "test-results" / "screenshots"
 NON_REQUEST_SCHEMES = ("data", "about", "blob")
+# The page-view beacon (plan AN-2). Tests answer it locally, so it is never fetched.
+BEACON = "https://static.cloudflareinsights.com/beacon.min.js"
 
 
 def _serve(tmp_path_factory: pytest.TempPathFactory, data: Path = DATA):
@@ -62,7 +64,7 @@ def collect(page: Any, site_url: str) -> None:
         parsed = urlparse(url)
         if parsed.scheme in NON_REQUEST_SCHEMES:
             return False
-        return _origin(url) != allowed
+        return url != BEACON and _origin(url) != allowed
 
     page.on(
         "console",
@@ -89,6 +91,12 @@ def collect(page: Any, site_url: str) -> None:
 
 @pytest.fixture(autouse=True)
 def _watch(page, site_url) -> None:
+    page.route(
+        BEACON,
+        lambda route: route.fulfill(
+            status=200, content_type="text/javascript", body=""
+        ),
+    )
     collect(page, site_url)
 
 
