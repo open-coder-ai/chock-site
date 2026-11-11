@@ -33,6 +33,8 @@ SHARED_TOP_LEVEL = {
     "sitemap.xml",
     "robots.txt",
     "favicon.svg",
+    # Built from favicon.svg (IR-F68): browsers and crawlers ask for /favicon.ico.
+    "favicon.ico",
     "api",
     "css",
     "js",
