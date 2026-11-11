@@ -158,9 +158,6 @@ upstream:
   - source: chock-catalog base/no-a11y-regression/manifest.yaml
     starts:
     - 'avoid: breaking a requirement the previous'
-  - source: chock-catalog base/scan-secrets/manifest.yaml
-    starts:
-    - p on mkdir, ssh, tar and cp was never matched.
   - source: chock-catalog base/token-efficiency/manifest.yaml
     starts:
     - 'avoid: wasting context window on low-signal'
