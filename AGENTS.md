@@ -11,7 +11,7 @@ Rules for this repo, from `plan/chock-site-implementation.md` section 2 in open-
    - never use `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `eval`, `new Function`, or `setTimeout` with a string;
    - build elements with `document.createElement` and set text with `textContent`.
 6. **Readable by agents:** every page has a `.md` twin and structured data, and agent-facing text states facts and asks the user before anything is run (section 6.8).
-7. **No third-party requests.** No CDN, web font, analytics, iframe or external image. Links (`<a href="https://github.com/...">`) are fine. Everything a page *loads* comes from the same site.
+7. **No third-party requests.** No CDN, web font, analytics, iframe or external image. Links (`<a href="https://github.com/...">`) are fine. Everything a page *loads* comes from the same site. The one exception is the Cloudflare Web Analytics beacon: it sets no cookie, and only loadPageBeacon in static/js/common.js adds it, behind the Global Privacy Control and Do Not Track guard (owner decision 2026-10-08, plan/site-analytics.md in org-plan).
 8. **Every page** carries the CSP meta tag in section 6.2. No inline `<script>` and no inline `style=""` or `<style>`, because the CSP blocks them.
 9. **Tests:** never skip, xfail or delete a failing test. Fix the code. If you think a test is wrong, say so in the PR and leave it failing.
 10. **Git:**
