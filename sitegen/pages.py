@@ -68,6 +68,11 @@ def _security(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str
     return "/security/", "/security/index.md", twin
 
 
+def _absolute(site: Site, link: str) -> str:
+    """A link for a Markdown twin: a site path gets the site's URL, any other link stays."""
+    return site.data["site_url"] + link if link.startswith("/") else link
+
+
 def _faq_headings(data: dict[str, Any]) -> list[tuple[int, str, str]]:
     """The FAQ's groups (h2) and questions (h3) in page order, for "On this page"."""
     return [
@@ -155,7 +160,7 @@ def _faq(site: Site, out_dir: Path, templates: Path) -> tuple[str, str, str]:
             + "".join(
                 f"### {item['q']}\n\n{item['a']}\n\n"
                 + (
-                    f"[{item['link_label']}]({site.data['site_url']}{item['link']})\n\n"
+                    f"[{item['link_label']}]({_absolute(site, item['link'])})\n\n"
                     if "link" in item
                     else ""
                 )

@@ -692,7 +692,7 @@ texts:
     turn_end_columns: [Agent, Policies that check writes only at turn end]
     # The engine's label keyword for a policy that is rule text only.
     advisory_keyword: advise
-    advisory_line: "__COUNT__ of the __TOTAL__ policies in the pinned catalog carry the label __WORD__ on __AGENT__: rule text the agent reads, and may not follow."
+    advisory_line: "__COUNT__ of the __TOTAL__ policies this site shows from the pinned catalog carry the label __WORD__ on __AGENT__: rule text the agent reads, and may not follow."
     see: "See:"
     misses_intro: "Policies whose catalog entry lists what it misses:"
     items:

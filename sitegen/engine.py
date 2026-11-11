@@ -43,6 +43,8 @@ UNWIRED_UNADAPTED = "unadapted"
 NOT_APPLICABLE = agentseam_tiers.NOT_APPLICABLE
 # The engine's one rule for a policy id, which it enforces before an id becomes a path or a command token.
 POLICY_ID_RE = chock.policy_id.POLICY_ID_RE
+# How the engine's warning for an untested client opens (chock's README derive.py reads the same).
+UNTESTED_PREFIX = "Untested:"
 # An argument shown as is: shell-safe characters, with a leading ~ kept for the shell to expand.
 PLAIN_ARG = re.compile(r"~?[\w@%+=:,./-]+")
 
@@ -149,6 +151,20 @@ def policy_labels(catalog: Path, selection: dict[str, Any]) -> dict[str, Any]:
         label.policy_id: label
         for label in chock.install.package.labels(members, catalog, selection["client"])
     }
+
+
+def untested_clients() -> list[str]:
+    """The clients the engine itself warns are untested: chock's README counts these as untested."""
+    return [
+        client
+        for client in client_ids()
+        if any(
+            rule["kind"] == "client"
+            and rule["says"].startswith(UNTESTED_PREFIX)
+            and client in rule["clients"]
+            for rule in warning_rules()
+        )
+    ]
 
 
 def client_ids() -> list[str]:

@@ -4,6 +4,7 @@
   "site_url": "https://chock.sh",
   "wordmark": "Chock.sh",
   "og_image": "/img/og-card.png",
+  "og_image_alt": "Chock.sh: blocks your coding agent's wrong moves before they land. Free and open source.",
   "web_analytics_token": "",
   "section_nav": [
     {"key": "overview", "label": "Overview"},
@@ -14,7 +15,7 @@
     {"key": "clients", "label": "Agents"}
   ],
   "pages": {
-    "home": {"title": "Blocks your coding agent's wrong moves before they land.", "description": "Blocks your coding agent's wrong moves before they land."},
+    "home": {"title": "Blocks your coding agent's wrong moves before they land."},
     "coding": {"title": "Coding agents", "description": "Guardrail policies for AI coding agents: __COUNT__ of them, each labelled blocks, asks, warns or advisory."},
     "policies": {"title": "Policies", "description": "__COUNT__ policies from the chock catalog, each labelled blocks, asks, warns or advisory, with what it acts on and what it misses."},
     "builder": {"title": "Build your plugin", "description": "Pick the policies you want and chock builds one plugin from them for your agent. Free and open source."},
@@ -34,6 +35,7 @@
     "builder_no_group": "Policies that no preset lists. Pick them one by one.",
     "the_agent": "The agent",
     "not_shown": "The catalog has __TOTAL__ policies. __HIDDEN_COUNT__ more __HIDDEN_VERB__ deprecated and not shown here: __HIDDEN_IDS__.",
+    "counts_rule": "Counts leave out deprecated policies, so they cover __SHOWN__ of the __TOTAL__ in the catalog's registry.yaml (not counted: __HIDDEN_IDS__).",
     "builder_outputs_hint": "You need chock on your machine. See Install. Read the command before you run it: it checks each policy against its hash at catalog __CATALOG_REF_12__.",
     "builder_need_one": "Pick at least one policy.",
     "policies_intro": "__COUNT__ guardrails for AI coding agents. Each one carries a label for what it does: it blocks, asks you, warns, or is advice the agent reads.",
