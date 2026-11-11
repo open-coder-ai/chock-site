@@ -8,7 +8,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import ClassVar
 
-from . import analytics, docsource, favicon, sitedata, wellknown
+from . import analytics, docsource, favicon, sharecard, sitedata, wellknown
 from . import pages as pages_mod
 from .analytics import AnalyticsError
 from .catalog import CatalogError, catalog_head
@@ -117,6 +117,7 @@ def build(
     version = load_version(data)
     site = sitedata.build_site(catalog, ref, engine_ref, source, release, data)
     site.data["version"] = version
+    site.data["og_image_size"] = sharecard.image_size(STATIC, site.data["og_image"])
     write_version_json(out, version, engine_ref, ref)
     wellknown.write(
         out,
