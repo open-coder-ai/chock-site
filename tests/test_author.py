@@ -189,7 +189,7 @@ def test_author_page_in_nav_and_llms(built) -> None:
     html = _author_html(built)
     assert 'href="/coding/author/"' in html
     llms = (built.out / "llms.txt").read_text(encoding="utf-8")
-    assert "/coding/author/index.md" in llms
+    assert "](https://chock.sh/coding/author/index.md)" in llms
     builder = (built.out / "coding" / "builder" / "index.html").read_text(
         encoding="utf-8"
     )

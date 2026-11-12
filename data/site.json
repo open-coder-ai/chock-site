@@ -5,7 +5,7 @@
   "wordmark": "Chock.sh",
   "og_image": "/img/og-card.png",
   "og_image_alt": "Chock.sh: blocks your coding agent's wrong moves before they land. Free and open source.",
-  "web_analytics_token": "",
+  "web_analytics_token": "7c259cdcf5e045c982e1dbf0ad8c5a2b",
   "section_nav": [
     {"key": "overview", "label": "Overview"},
     {"key": "policies", "label": "Policies"},
@@ -66,7 +66,7 @@
     "catalog_repo": "https://github.com/open-coder-ai/chock-catalog",
     "catalog_tree": "https://github.com/open-coder-ai/chock-catalog/tree/",
     "catalog_commit": "https://github.com/open-coder-ai/chock-catalog/commit/",
-    "security_policy": "https://github.com/open-coder-ai/chock-catalog/blob/main/SECURITY.md",
+    "report_vulnerability": "/report/#vulnerability",
     "catalog_contributing": "https://github.com/open-coder-ai/chock-catalog/blob/main/CONTRIBUTING.md"
   },
   "label_meanings": {
@@ -100,9 +100,9 @@
   },
   "security": [
     {"heading": "What the policies are", "body": "Chock adds friction. It is not a security boundary. A policy refuses a risky action, asks you about it, warns on it or flags it. It does not make the action impossible. An agent can ignore advisory text, and a determined agent can get around a block on the shell. Each policy's label says which of these it does."},
-    {"heading": "What the site does", "body": "The site is static files: nothing you pick leaves your machine, and the builder runs in your browser. Your selection lives in the URL fragment after the #, which browsers never send to a server. The author page saves a policy you draft only in this browser's localStorage. The page never sends it anywhere. Its share link holds the agent and catalog ids, and never your draft. There is no cookie and no account. The site counts a few actions and no page views, with no personal data. The list is at the end of this page."},
+    {"heading": "What the site does", "body": "The site is static files: nothing you pick leaves your machine, and the builder runs in your browser. Your selection lives in the URL fragment after the #, which browsers never send to a server. The author page saves a policy you draft only in this browser's localStorage. The page never sends it anywhere. Its share link holds the agent and catalog ids, and never your draft. There is no cookie and no account. The site counts page views and a few actions, and sets no cookie. What it counts is at the end of this page."},
     {"heading": "Why the command is safe to read before running", "body": "The command fetches one pinned catalog commit and checks every policy against its sha256. That is the same hash shown on the policy's page. If the pack does not match, the install fails and chock writes nothing. The commit must be on a branch or tag the catalog publishes, so a link cannot point at a fork's code."},
-    {"heading": "How to report a problem", "body": "Report it as a security issue in the chock-catalog repository. Do not open a public issue in the engine or site repositories.", "link": "security_policy", "link_label": "Report a security issue"}
+    {"heading": "How to report a problem", "body": "Report a vulnerability privately, never in a public issue. The Report an issue page lists the private advisory form for each repository: chock, chock-catalog and chock-site.", "link": "report_vulnerability", "link_label": "Report a vulnerability privately"}
   ],
   "install": {
     "install_heading": "Install chock",

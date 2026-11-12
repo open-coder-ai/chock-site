@@ -3,6 +3,7 @@
 import copy
 import html
 import re
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -124,19 +125,56 @@ def _directive(csp: str, name: str) -> list[str]:
     raise AssertionError(name)
 
 
-def test_site_json_token_is_empty_until_the_owner_adds_it() -> None:
+def _site_token() -> str:
+    """data/site.json web_analytics_token."""
     import json
 
     site = json.loads((DATA / "site.json").read_text(encoding="utf-8"))
-    assert site["web_analytics_token"] == ""
+    return site["web_analytics_token"]
 
 
-def test_pages_carry_the_token_meta_and_no_beacon_script(built) -> None:
-    for path in ("index.html", "security/index.html", "coding/builder/index.html"):
-        page = (built.out / path).read_text(encoding="utf-8")
-        assert TOKEN_META.findall(page) == [""], path
-        assert "cloudflareinsights.com/beacon" not in page, path
+class ScriptTags(HTMLParser):
+    """Collects the attributes of every script tag, whatever its letter case."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.tags: list[dict[str, str | None]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "script":
+            self.tags.append(dict(attrs))
+
+
+def test_site_json_token_is_32_lowercase_hex() -> None:
+    assert re.fullmatch(r"[0-9a-f]{32}", _site_token())
+
+
+def test_every_page_carries_the_token_meta_and_no_beacon_script(built) -> None:
+    token = _site_token()
+    pages = sorted(built.out.rglob("*.html"))
+    assert len(pages) > 100
+    for path in pages:
+        page = path.read_text(encoding="utf-8")
+        assert TOKEN_META.findall(page) == [token], path
         assert "data-cf-beacon" not in page, path
+        parser = ScriptTags()
+        parser.feed(page)
+        assert parser.tags, path
+        for attrs in parser.tags:
+            assert "data-cf-beacon" not in attrs, path
+            src = attrs.get("src") or ""
+            assert "cloudflareinsights" not in src, path
+            assert "//" not in src, f"{path}: {src}"
+
+
+def test_only_the_loader_names_the_beacon_script(built) -> None:
+    named = sorted(
+        path.relative_to(built.out).as_posix()
+        for path in built.out.rglob("*")
+        if path.suffix in (".html", ".js")
+        and "cloudflareinsights.com/beacon" in path.read_text(encoding="utf-8")
+    )
+    assert named == ["js/common.js"]
 
 
 def test_csp_adds_exactly_the_two_beacon_origins(built) -> None:

@@ -119,7 +119,9 @@ def test_general_page_is_the_fixed_placeholder(built) -> None:
         assert word not in main.lower(), word
     assert not (built.out / "api" / "general").exists()
     llms = (built.out / "llms.txt").read_text(encoding="utf-8")
-    assert "General agents](/general/index.md): design in progress" in llms
+    assert (
+        "General agents](https://chock.sh/general/index.md): design in progress" in llms
+    )
     twin = (built.out / "general" / "index.md").read_text(encoding="utf-8")
     assert "design in progress" in twin.lower()
 
