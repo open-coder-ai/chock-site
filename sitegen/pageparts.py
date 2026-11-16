@@ -238,7 +238,11 @@ def write_page(
         TITLE=title,
         DESCRIPTION=description,
         CANONICAL=site.data["site_url"] + path,
-        OG_IMAGE=site.data["og_image"],
+        OG_IMAGE=site.data["site_url"] + site.data["og_image"],
+        OG_IMAGE_TYPE=site.data["og_image_size"]["type"],
+        OG_IMAGE_WIDTH=str(site.data["og_image_size"]["width"]),
+        OG_IMAGE_HEIGHT=str(site.data["og_image_size"]["height"]),
+        OG_IMAGE_ALT=site.data["og_image_alt"],
         WA_TOKEN=web_analytics_token(site),
         MD_HREF=md_href,
         ALT_JSON=Safe(alt_json),
@@ -342,6 +346,42 @@ def counts(site: Site, section: str) -> dict[str, Any]:
         "presets": len(site.presets),
         "tested": sum(p.eval_executed for p in policies),
     }
+
+
+def not_shown_note(site: Site) -> str:
+    """The sentence naming the registry policies this site does not show; empty when it shows all."""
+    hidden = site.data["not_shown"]
+    if not hidden:
+        return ""
+    return data_fill(
+        site.data["texts"]["not_shown"],
+        {
+            "__TOTAL__": str(len(site.policies) + len(hidden)),
+            "__HIDDEN_COUNT__": str(len(hidden)),
+            "__HIDDEN_VERB__": "is" if len(hidden) == 1 else "are",
+            "__HIDDEN_IDS__": ", ".join(hidden),
+        },
+    )
+
+
+def counts_rule(site: Site) -> str:
+    """The sentence saying which registry policies the counts leave out; empty when none is."""
+    hidden = site.data["not_shown"]
+    if not hidden:
+        return ""
+    return data_fill(
+        site.data["texts"]["counts_rule"],
+        {
+            "__SHOWN__": str(len(site.policies)),
+            "__TOTAL__": str(len(site.policies) + len(hidden)),
+            "__HIDDEN_IDS__": ", ".join(hidden),
+        },
+    )
+
+
+def with_note(text: str, note: str) -> str:
+    """`text` followed by `note` when there is one."""
+    return f"{text} {note}" if note else text
 
 
 def render_steps(site: Site, templates: Path) -> Safe:

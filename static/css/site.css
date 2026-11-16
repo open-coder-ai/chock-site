@@ -2501,7 +2501,7 @@ main .code-block > pre { margin: 0; background: none; border: 0; border-radius: 
 .home .faq-details:first-child { border-top: 0; }
 .home .faq-details summary { font-weight: 800; }
 
-/* ready in a minute */
+/* ready: the closing call to action */
 .home .cta { position: relative; isolation: isolate; margin: 0; padding: 120px 0; background: none; text-align: center; clip-path: none; box-shadow: none; border-radius: 0; }
 .home .cta::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 100vw; margin-left: -50vw; z-index: -2; background: linear-gradient(160deg, #122A4F 0%, #0B1B33 50%, #081326 100%); }
 .cta-wedge { position: absolute; bottom: 0; z-index: -1; height: 320px; background: linear-gradient(135deg, #0E7490, #0EA5E9 55%, #2563EB); }

@@ -68,7 +68,7 @@ def test_llms_txt_structure(built) -> None:
     ]
     policies_section = text.split("## Coding agents: policies")[1].split("## ")[0]
     for policy in _site(built)["policies"]:
-        line = f"](/coding/policies/{policy['id']}/index.md)"
+        line = f"](https://chock.sh/coding/policies/{policy['id']}/index.md)"
         assert line in policies_section, policy["id"]
     for preset in _site(built)["presets"]:
         assert f"#{preset['id']}" in text or preset["id"] in text, preset["id"]
@@ -78,7 +78,7 @@ def test_llms_full_concatenates_in_order(built) -> None:
     full = (built.out / "llms-full.txt").read_text(encoding="utf-8")
     docs = re.findall(r"^# (/[^\n]+\.md)$", full, re.MULTILINE)
     llms = (built.out / "llms.txt").read_text(encoding="utf-8")
-    llms_docs = re.findall(r"\]\((/[^\s)]+\.md)\)", llms)
+    llms_docs = re.findall(r"\]\(https://chock\.sh(/[^\s)]+\.md)\)", llms)
     assert set(docs) == set(llms_docs)
     assert docs == [d for d in llms_docs if d in docs]
     for twin in built.out.rglob("index.md"):

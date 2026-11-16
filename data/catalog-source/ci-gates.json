@@ -112,7 +112,8 @@
     "steps": [
       "Every test job this run needed passed",
       "Install the coverage tooling",
-      "Combine the shards, 100% line and branch coverage"
+      "Combine the shards, 100% line and branch coverage",
+      "Combine each split policy's parts, 100% line and branch coverage"
     ]
   },
   {
@@ -124,7 +125,8 @@
       "The framework checkout is the pinned commit",
       "Install Chock",
       "Stage the published policies and skills as an adopter would",
-      "Validate the staged policies and replay their evals",
+      "Validate the staged policies",
+      "Replay the evals of this shard's staged policies",
       "OWASP ASI coverage claim holds in the staged adopter"
     ]
   },

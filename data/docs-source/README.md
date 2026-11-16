@@ -16,7 +16,7 @@ Chock adds no new place your code goes. Your agent still sends context to its ow
 
 ### Which agents does it work with?
 
-The 15 in the table above get a git hook, a CI gate and an `AGENTS.md` rule; most also get a native pre-tool hook.
+<!-- derive:faq_agents -->All 20 above get a git hook, a CI gate and an `AGENTS.md` rule; 15 also get a native hook. As one plugin: 8 tested, 3 untested.<!-- /derive:faq_agents -->
 
 ### How do I install it?
 
@@ -25,6 +25,10 @@ See [Install](#install): in your repo, or as one plugin from the builder.
 ### What does it cost?
 
 Nothing: Apache-2.0, and a check costs no tokens.
+
+### How does it compare with other tools?
+
+See [docs/compare.md](docs/compare.md).
 
 ### Does it replace SAST or code review?
 

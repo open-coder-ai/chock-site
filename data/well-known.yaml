@@ -1,0 +1,16 @@
+# /.well-known/security.txt (RFC 9116) and the IndexNow key file, built by sitegen/wellknown.py.
+security_txt:
+  path: .well-known/security.txt
+  # Contact is the one advisory URL in this section of chock's SECURITY.md at .framework-ref,
+  # read from the docs snapshot (data/docs-source), never typed here.
+  source_file: SECURITY.md
+  source_section: Reporting a vulnerability
+  # Policy links the same file at the pinned engine commit: site.json engine_repo + this path.
+  policy_path: SECURITY.md
+  preferred_languages: en
+  # Expires: 00:00Z on the build date plus this many days, so it is never more than a year out.
+  expires_days: 365
+indexnow:
+  # Public by design (https://www.indexnow.org/documentation): served at /<key>.txt.
+  # The release job pings IndexNow with it; the build makes no network call.
+  key: 7a00df3f109a8766ec02496abc532960

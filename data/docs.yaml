@@ -122,7 +122,8 @@ pages:
     # stand in these sections word for word, so docs-drift catches a change in chock.
     checked:
       - {file: README.md, sections: ["Guardrails, not guarantees", FAQ for people and agents]}
-      - {file: SECURITY.md, sections: [Threat model]}
+      # Reporting a vulnerability also feeds /.well-known/security.txt (sitegen/securitytxt.py).
+      - {file: SECURITY.md, sections: [Reporting a vulnerability, Threat model]}
       - {file: docs/assurance-case.md, sections: [Top-level claim, "Residual risks, stated"]}
       - {file: docs/baseline-policies.md, sections: [What the base catalog offers]}
       - {file: docs/enforcement-surfaces.md, sections: [The nine surfaces, What happens when the guard cannot decide]}
@@ -565,8 +566,10 @@ texts:
   grades_heading: Grades and what they rest on
   grades_intro: "Agentseam grades what each agent can enforce before a tool runs. The evidence caps the grade: a row that rests on vendor docs never reads enforceable. Counts at the pinned agentseam release:"
   grade_row: "__GRADE__: __COUNT__ agents"
+  grade_row_one: "__GRADE__: __COUNT__ agent"
   basis_heading: "Basis of each row"
   basis_row: "__BASIS__: __COUNT__ agents"
+  basis_row_one: "__BASIS__: __COUNT__ agent"
   witness_heading: Tested and documented
   witness_body: "Tested means a person saw chock refuse an action in that agent, with that install method, and the engine's list of live tests records the date and method. Documented means the claim rests on the vendor's docs or source. The engine's list of live tests at this commit has __COUNT__ rows."
   install_heading: "1. Install the engine"
@@ -691,7 +694,7 @@ texts:
     turn_end_columns: [Agent, Policies that check writes only at turn end]
     # The engine's label keyword for a policy that is rule text only.
     advisory_keyword: advise
-    advisory_line: "__COUNT__ of the __TOTAL__ policies in the pinned catalog carry the label __WORD__ on __AGENT__: rule text the agent reads, and may not follow."
+    advisory_line: "__COUNT__ of the __TOTAL__ policies this site shows from the pinned catalog carry the label __WORD__ on __AGENT__: rule text the agent reads, and may not follow."
     see: "See:"
     misses_intro: "Policies whose catalog entry lists what it misses:"
     items:

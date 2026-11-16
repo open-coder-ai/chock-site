@@ -8,7 +8,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import ClassVar
 
-from . import analytics, sitedata
+from . import analytics, docsource, favicon, sharecard, sitedata, wellknown
 from . import pages as pages_mod
 from .analytics import AnalyticsError
 from .catalog import CatalogError, catalog_head
@@ -112,11 +112,22 @@ def build(
             else:
                 shutil.copy2(item, dest)
     shutil.copy2(HEADERS, out / "_headers")
+    favicon.write(STATIC / "favicon.svg", out)
     engine_ref = _pin(".framework-ref")
     version = load_version(data)
     site = sitedata.build_site(catalog, ref, engine_ref, source, release, data)
     site.data["version"] = version
+    site.data["og_image_size"] = sharecard.image_size(STATIC, site.data["og_image"])
     write_version_json(out, version, engine_ref, ref)
+    wellknown.write(
+        out,
+        data,
+        TEMPLATES,
+        docsource.load(data, engine_ref),
+        site.data["site_url"],
+        site.data["links"]["engine_repo"],
+        engine_ref,
+    )
     analytics.write_module(events, out / analytics.DIST_ALLOWLIST)
     sitedata.write_site_json(site, out)
     pages_mod.write_css(site, out, STATIC)

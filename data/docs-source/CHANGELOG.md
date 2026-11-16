@@ -1,3 +1,36 @@
+## 1.1.0 - 2026-11-11
+
+- `.agents/policies/INDEX.md` says "Also checked in the agent" only when the policy's effective surfaces
+  keep an in-agent one (`pre-tool-use`, `stop` or `agent-hooks`). A `policies.overrides.<id>.surfaces`
+  that removed them left the note in place while `chock status` reported the narrowed state (#231).
+- A refused agent commit prints the "a waiver it adds was not honoured" note only when the policy defines
+  an `allowlist_pragma` or is a `kind: script` gate, which may honour its own waiver comment. A built-in
+  policy with no waiver got the note too, pointing a person at a waiver that does not exist. The refusal,
+  its message and its exit code are unchanged (#238).
+- **`docs/compatibility.md` states the 1.x promise.** It said chock was pre-1.0. It now says what
+  a patch, minor and major release may change, which part is machine-checked (patch byte-identity,
+  `tests/test_emitter_stability.py`) and which is kept by review. `SECURITY.md` no longer says
+  "Until 1.0".
+- A hook command that names a pinned policy index (`--multi <index> --index-sha256 <hex>`) judges every member policy in one process and refuses if any member denies, if the index or a member file does not match its pin, or if a member fails (not wired by `sync` yet).
+- A multi-policy hook refuses on any fault in its member run, combine or log write instead of exiting with a traceback; each member judges its own copy of the event; the policy index refuses a member file or path argument that is absolute or contains `..`.
+- `chock sync` writes one hook entry per event and matcher for the policies that judge a call before it runs. Its command names a pinned policy index (`.chock/index/<vendor>-<event>-<hash>.json`) listing each policy's argv, timeout and the sha256 of every file its single-policy entry was verified by. A policy whose timeout plus a 5 s grace cannot fit the client's entry timeout is refused. A vendor whose hook schema documents no timeout keeps one entry per policy. `chock check` reports an old per-policy config, or an index that no longer matches its sources, as drift for `chock sync` to rewrite.
+- Hook start-up is cheaper: the runtime loader executes the already-hashed bytes without importing `inspect`, the POSIX launcher runs the runtime directly instead of a separate Python probe (a candidate that writes no start marker passes to the next; Windows keeps the probe), and the write gate reads each committed file once per process.
+- The repo stop's pre-tool check (`--stop-check`) rides the catch-all multi entry when one exists (the entry with no matcher, today token-efficiency's): that process checks the stop once, before any member, and refuses at once with the standalone check's own answer, so a tool call runs one hook process fewer. A fault in the stop check refuses, and a stopped call whose payload cannot be read is refused. Where no entry matches every tool, or the vendor folds nothing (Windsurf), the standalone stop-check entry stays exactly as it was. Applies to sync's repo hooks and to built plugins and bundles alike.
+- A timed-out policy child is killed with its whole process tree, and a member's own deadline can be set per thread (groundwork for one hook process per event).
+- `chock plugin build` writes `"homepage": "https://chock.sh"` into the Claude Code, Codex, Copilot and Cursor plugin manifests, each of which documents the field. Devin's manifest carries none, since no Devin field reference documents it.
+- A built plugin runs one hook per (event, matcher) instead of one per policy: its commands name a pinned policy index shipped in the package (`--multi <root>/scripts/chock_index/<name>.json --index-sha256 <hex> --root <root>`), whose members are paths relative to the plugin root. A bundle folds into one index per (event, matcher) and its per-member toggle still switches a member off. An index that fails its pin, a member file that drifted, a path that is absolute or climbs out of the root, an empty index and an empty root each refuse. A multi-policy hook now refuses an unreadable payload, and keeps what a member wrote to stderr.
+- PyPI's Homepage is now https://chock.sh. The README links chock.sh, its builder, `/llms.txt` and
+  `/api/index.json` instead of "launching soon", and its Quick start installs the pinned release from PyPI
+  (`chock==<version>`) instead of a git commit. A test refuses any README install line that is not the current version.
+- The README opens with chock.sh's promise. Its catalog numbers, incident table, agent lists and repository
+  table are written by `docs/assets/readme/derive.py readme` from `data.json` (catalog `1e60d21`) and chock's
+  own install and witness data; a test fails when they differ. The FAQ links `docs/compare.md`. The PyPI
+  classifier is `Development Status :: 4 - Beta`. New issue form: "I tried Chock and…".
+- **README numbers leave out deprecated policies.** `docs/assets/readme/derive.py` skips a registry
+  entry whose `status` is `deprecated`, so the README counts what chock.sh lists. At catalog
+  `1e60d21`: 71 policies (was 72), 11 in the agent (was 12), 38 Claude Code `block` labels (was 39),
+  4,390 of 4,572 eval cases replayed (was 4,501 of 4,683).
+
 ## 1.0.0 - 2026-11-02
 
 - Entries for unreleased changes now live in `changelog.d/` (one file per change); see
@@ -1020,119 +1053,3 @@
   `new_findings` and `baseline_findings`. Agent-event HEAD reads now resolve from `repo_root`, so
   a root below the git top-level finds its baseline (and a `content_regex` waiver already in
   HEAD). Vendored runner resynced; run `chock sync`.
-
-## 0.14.0 — Gates on any tool call that can ask or warn, agent commits detected, and guards that run on any command
-
-- **Eval cases can expect `ask` and `warn`.** `execute.expect` is now `allow | block | ask | warn`.
-  At the agent events (`tool_use`, `stop`) the gate runner's exit 3 replays as `ask` and 4 as `warn`
-  (a Stop `ask` warns, as it does live); at `commit` and `push` an `ask` gate's refusal reads as
-  `ask`, not `block`, and a `warn` gate as `warn`; a `pre-commit`, `pre-push` or `commit-msg`
-  script's exit 3 is `ask` and 4 is `warn`. A gate's declared `action` still caps a script's
-  verdict. An `expect: block` case whose gate asks or warns now fails, saying so. The runner gains
-  `judge()` (exit code and verdict); `run()` and every exit code are unchanged. Vendored runner
-  resynced; run `chock sync`.
-- **A `tool_call` script asks and warns too.** Exit `3` asks the person and exit `4` warns, as at
-  every other event, and the gate's declared `action` caps the verdict and any refusal: a warn
-  gate never denies a tool call, an ask gate never denies outright.
-- **A gate can warn or ask instead of blocking.** `hook.gate.action` was documented as
-  `block | verify | warn`, the schema accepted only `block`, and the runner ignored it. It is now
-  `block` (default), `ask` or `warn`, and `verify` (a value of `enforcement`) is refused. `warn`
-  never blocks: at commit, push and ci the reason is printed (a `::warning::` annotation in CI) and
-  the exit is 0; in the agent Claude Code gets it as PreToolUse `additionalContext` (no
-  `permissionDecision`, so its permission prompt is untouched), other vendors get stderr and the gate
-  log, and at Stop it is a message, never a block. `ask` asks the person in the agent
-  (`permissionDecision: ask` where the vendor honours one, a deny elsewhere); at commit and push it
-  refuses unless `CHOCK_ALLOW=<policy-id>[,...]` is set on that command and it is not an agent commit;
-  in CI and at Stop it is a warning; the mcp-gateway blocks it. A `script` gate chooses its own
-  verdict by exit code (0 allow, 1 block, 3 ask, 4 warn) under its declared action; an exit 1 with no
-  words or a crash signature is undecided and takes the declared action. Script-backed hooks read
-  exit 3 as ask and 4 as warn, through the runner, which a script-only policy now vendors. The gate
-  log records `warn` and `ask`, and `chock status --only log` counts them. A policy whose only
-  mechanism warns is no longer credited as enforcing. Vendored runtimes and runner resynced; run
-  `chock sync`.
-- **An agent's commit is detected without opt-in.** `CLAUDECODE=1`, a non-empty `AI_AGENT` (both set
-  by Claude Code's Bash tool and witnessed reaching a git hook), or any variable named under
-  `agent_commit_env:` in `.chock/config.yaml` now marks a commit as an agent's, as `CHOCK_AGENT_COMMIT`
-  always did. `CHOCK_AGENT_COMMIT=0` wins over every marker, for a person's git in an agent's
-  terminal. Codex, Cursor and Copilot markers stay unverified. A person whose shell exports
-  `CLAUDECODE` or `AI_AGENT` now sees their own waivers ignored until they set `CHOCK_AGENT_COMMIT=0`.
-  Eval cases are judged as a person's commit whoever runs them.
-- **Installing hooks no longer erases a guard's coverage.** `chock install-hooks` auto-compiled
-  any hook policy without git-hook output, but a guard-only or `tool_use`-only policy has none by
-  design, so the recompile rewrote its coverage as a git-hook-only view and every agent read
-  `none`. A policy with any compiled surface is now left alone; a true drop-in still compiles.
-- **A hook can carry both a `gate` and a `script`.** `hook` was exactly one of the two, so a
-  policy with a pre-commit script could not also gate the write path. The schema now takes at
-  least one; the git-hook emitter compiles both (the script's event shims plus the gate's
-  `gate.json` and shims), the tool_use surfaces compile the gate, and coverage is credited per
-  surface as before. DET-5 still pins `hook.script.on` to the scripts on disk. A gate and a script
-  may not both run at the same git event (`manifest_script_events`): they would share one shim.
-- **`test_integrity` honours its waiver at agent events the way `content_regex` does.** At
-  `tool_use` and an agent's commit the `allowlist_pragma` was ignored outright; now a waiver counts
-  only when that line is already in HEAD, and a waiver the agent adds still does not.
-- **The eval runner resolves the command guard by name and replays more than commit and push.**
-  The guard is `implementations/<id>.sh|.py` (else the legacy map), so helper modules and gate
-  scripts are never taken for it, and a `.py` guard runs under Python. An `execute` case may set
-  `event: tool_use` (`pre-tool-use`) or `stop` with `writes` (and `head_files`, `added`), replayed
-  through the real gate runner at that event. It may also set `event: pre-commit`, `pre-push` or
-  `commit-msg` to run the policy's event script in a staged throwaway repo (`files`, `message`,
-  `stdin`); exit 0 allows, a refusal blocks, a crash is an error. These cases count as executable,
-  not tier 3. Vendored runner resynced.
-- **A gate can judge any tool call by its name.** `"on": [tool_call]` with `params.tools` (globs such
-  as `mcp__Firecrawl__*`, `WebFetch`, `mcp__*`) runs a `content_regex` (over the JSON-serialised tool
-  input) or `script` gate at PreToolUse; a script gets `{"event": "tool_call", "repo_root", "tool",
-  "input", "session"}` and answers by exit code, allow or block. It is emitted for Claude Code, Codex
-  CLI, Cursor, Gemini CLI and Copilot, the vendors whose vendor facts record a tool vocabulary;
-  Antigravity, Devin, Grok, Tabnine and Windsurf get no entry and coverage credits them nothing for it.
-  Run `chock sync` to pick it up; vendored runtimes resynced.
-- **A gate can guard writes outside the repository.** A gate declaring `outside_repo: [<glob>]`
-  (absolute, or starting with `~`, expanded per machine; Windows paths compare the Windows way)
-  receives writes to matching absolute paths, e.g. `~/.claude/memory/*`; every other outside write is
-  still ignored. Judged at PreToolUse only: Stop reads the worktree through git and cannot see them.
-- **Script gates can ask what happened earlier in the session.** Hooks for a `tool_call` script gate
-  append a record per tool call (tool, a path, command first line or URL without query, outcome) to
-  `.chock/state/<session_id>.jsonl`, last 500 kept, files older than 7 days pruned, never file
-  contents or environment values. Scripts receive `"session": {"id", "log_path", "tool_use_id"}` and can
-  import the vendored stdlib helper `chock_session.py`. `chock sync` adds `.chock/state/` to
-  `.gitignore`. Nothing leaves the machine; the format is in `spec/session-log.md`.
-
-- **In-agent gates judge what changed, and honour committed waivers.** At `tool_use` (PreToolUse
-  and Stop) a waiver already in HEAD is now honoured, so a line a human waived and committed no
-  longer blocks the agent forever; a waiver the edit or turn adds is still ignored. At Stop the
-  added lines are the diff of the file on disk against HEAD (a new file is all added), and a
-  whole-file Write is diffed against the current disk file, so an old violation in a touched
-  file no longer blocks every turn end. The baseline is the disk at PreToolUse and HEAD at Stop.
-  `dependency_allowlist` and `test_integrity` now run at `tool_use` too, so a policy declaring
-  `"on": [commit, tool_use]` for them gets in-agent gates. Commit, push and ci are unchanged.
-  Vendored runner resynced.
-- **A policy can carry a shell guard and a content gate together.** A policy with an
-  `implementations/<id>.sh|.py` guard and a `hook.gate` whose `"on"` includes `tool_use` used to get
-  only the guard at the write path; the gate was dropped. Both now compile, on the pre-tool-use
-  surface for claude_code, cursor, codex and the other vendors with a recorded write vocabulary,
-  and in the Copilot hooks file, each in its own fragment so neither overwrites the other. A policy
-  reads as installed for an agent only when every compiled entry is present, so a missing gate entry
-  no longer earns the credit the guard's entry alone used to. Run `chock sync` to pick it up.
-- **A `rule` can carry a `hook.gate`.** The gate is the same control on a second surface, as
-  `hook.script` already was: the rule text stays the ambient line and the INDEX entry, and the gate
-  compiles to the git-hook, pre-tool-use, stop and ci surfaces as an `artifact: hook` gate does.
-  A rule with a payload other than `rule` and one hook is still a `manifest_payload` error.
-- **Script-backed hooks can run at `commit-msg`.** `hook.script.on` accepts `commit-msg`, backed by
-  `implementations/<id>-commit-msg.{sh,py}`. `chock sync` installs a `commit-msg` dispatcher beside
-  `pre-commit` and `pre-push`; git's message-file path arrives as `argv[1]` and the exit code is the
-  verdict. `chock check` pins the declaration to the script both ways (DET-5), and the eval runner
-  does not treat the script as a command guard.
-- **A command guard now runs even when the command will not parse, and a crash is no longer read as a block.**
-  A trailing backslash, an unbalanced quote or PowerShell quoting (`Remove-Item -Recurse C:\`) made
-  `shlex.split` raise, which asked the user for every guard and never let a guard's raw-string branch
-  run. The guard now always runs: argv is a whitespace split when `shlex` fails (`CHOCK_ARGV_FALLBACK=1`
-  says so; the POSIX split is unchanged when it succeeds) and `CHOCK_RAW_COMMAND` is the exact command.
-  Guards also get `CHOCK_TOOL` (`bash`, `powershell`, `shell` or `unknown`) from the hook payload's tool
-  name. An exit 1 is a block only when the guard printed a reason: exit 1 with empty output, a Python
-  traceback or a shell syntax error is a crash and asks, like any other non-zero exit. Guards that print
-  a reason and `exit 1` still block. Vendored runtimes resynced; the contract is in
-  `spec/script-backed-gates.md`.
-- **`--no-registry-check` also skips script integrity.** DET-2 compares a policy's script hashes
-  with the registry, so it is a registry check, but it ran even when the caller asked for none.
-  That was already true of hook artifacts; since a rule's hook is now hashed too, a catalog
-  validating its own source policies (which have no registry entry) was refused. The default
-  still runs DET-2.

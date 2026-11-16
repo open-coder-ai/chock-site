@@ -13,13 +13,16 @@ from .pageparts import (
     badge,
     chip,
     counts,
+    counts_rule,
     data_fill,
     install_command,
     keyword_chip,
     label_chips,
+    not_shown_note,
     policies_sorted,
     render_steps,
     status_badge,
+    with_note,
     write_md,
     write_page,
 )
@@ -114,7 +117,10 @@ def _home(
                 GLANCE_HEADING=home["glance_heading"],
                 GLANCE_LINK=home["glance_link"],
                 STAT_CARDS=Safe(stats),
-                COMPUTED_NOTE=f"{texts['computed_note']} {grades_note(site)}",
+                COMPUTED_NOTE=with_note(
+                    f"{texts['computed_note']} {grades_note(site)}",
+                    counts_rule(site),
+                ),
                 PRESETS_HEADING=home["presets_heading"],
                 PRESETS_INTRO=Prose(home["presets_intro"]),
                 PRESET_CARDS=Safe(preset_cards),
@@ -138,13 +144,14 @@ def _home(
         H1=home["h1"],
         INTRO=home["intro"],
         GLANCE_HEADING=home["glance_heading"],
-        GLANCE_LINE=(
+        GLANCE_LINE=with_note(
             f"{counts_['total']} policies — "
             + ", ".join(
                 f"{site.label_words[track.id][key]} {counts_['label'][key]}"
                 for key in site.label_words[track.id]
             )
-            + f" — {counts_['presets']} presets."
+            + f" — {counts_['presets']} presets.",
+            counts_rule(site),
         ),
         PRESETS_HEADING=home["presets_heading"],
         PRESETS_INTRO=home["presets_intro"],
@@ -255,18 +262,7 @@ def _policies_list(
         )
         for preset in site.presets
     )
-    intro = data_fill(texts["policies_intro"], subs)
-    hidden = site.data["not_shown"]
-    if hidden:
-        intro += " " + data_fill(
-            texts["not_shown"],
-            {
-                "__TOTAL__": str(counts_["total"] + len(hidden)),
-                "__HIDDEN_COUNT__": str(len(hidden)),
-                "__HIDDEN_VERB__": "is" if len(hidden) == 1 else "are",
-                "__HIDDEN_IDS__": ", ".join(hidden),
-            },
-        )
+    intro = with_note(data_fill(texts["policies_intro"], subs), not_shown_note(site))
     dist_label, dist_segs = _dist_bar(site, track, templates, counts_)
     page = site.data["pages"]["policies"]
     path = f"/{track.slug}/policies/"

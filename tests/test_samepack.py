@@ -12,7 +12,13 @@ def test_samepack_node_suite() -> None:
     node = shutil.which("node")
     assert node, "node is required to test static/js/samepack.js"
     result = subprocess.run(
-        [node, "--experimental-detect-module", "--test", str(NODE_TEST)],
+        [
+            node,
+            "--experimental-detect-module",
+            "--test-reporter=tap",
+            "--test",
+            str(NODE_TEST),
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,

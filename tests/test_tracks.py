@@ -33,6 +33,8 @@ SHARED_TOP_LEVEL = {
     "sitemap.xml",
     "robots.txt",
     "favicon.svg",
+    # Built from favicon.svg (IR-F68): browsers and crawlers ask for /favicon.ico.
+    "favicon.ico",
     "api",
     "css",
     "js",
@@ -45,6 +47,13 @@ SHARED_TOP_LEVEL = {
     "_headers",
     # The release version marker (REL-3), read by the release check.
     "version.json",
+    # RFC 9116 security.txt (S-8), under the folder RFC 8615 reserves.
+    ".well-known",
+    # The IndexNow key file (S-9), named after the public key in data/well-known.yaml.
+    yaml.safe_load((ROOT / "data" / "well-known.yaml").read_text(encoding="utf-8"))[
+        "indexnow"
+    ]["key"]
+    + ".txt",
 }
 EXAMPLE = Track(
     id="example",
@@ -110,7 +119,9 @@ def test_general_page_is_the_fixed_placeholder(built) -> None:
         assert word not in main.lower(), word
     assert not (built.out / "api" / "general").exists()
     llms = (built.out / "llms.txt").read_text(encoding="utf-8")
-    assert "General agents](/general/index.md): design in progress" in llms
+    assert (
+        "General agents](https://chock.sh/general/index.md): design in progress" in llms
+    )
     twin = (built.out / "general" / "index.md").read_text(encoding="utf-8")
     assert "design in progress" in twin.lower()
 

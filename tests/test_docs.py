@@ -97,7 +97,7 @@ def test_llms_txt_links_every_docs_twin(built) -> None:
     docs_part = llms.split("## Docs\n", 1)[1].split("\n## ", 1)[0]
     for twin in (built.out / "docs").rglob("index.md"):
         rel = "/" + twin.relative_to(built.out).as_posix()
-        assert f"]({rel})" in docs_part, rel
+        assert f"](https://chock.sh{rel})" in docs_part, rel
 
 
 def test_plugin_witness_never_clears_a_sync_claim() -> None:

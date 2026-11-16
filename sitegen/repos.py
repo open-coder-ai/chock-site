@@ -10,9 +10,11 @@ from .model import SectionResult, Site, Track
 from .pageparts import (
     PARTIALS,
     badge,
+    counts_rule,
     install_command,
     keyword_chip,
     policies_sorted,
+    with_note,
     write_md,
     write_page,
 )
@@ -111,7 +113,7 @@ def _home(site: Site, track: Track, out_dir: Path, templates: Path) -> tuple[str
                 CTA=home["cta"],
                 TIERS_HEADING=home["tiers_heading"],
                 TIER_CARDS=Safe(cards),
-                COMPUTED_NOTE=home["computed_note"],
+                COMPUTED_NOTE=with_note(home["computed_note"], counts_rule(site)),
                 STEPS=_steps(templates, home["steps_heading"], home["steps"]),
                 INSTALL_HEADING=home["install_heading"],
                 INSTALL_NOTE=Prose(home["install_note"]),
@@ -139,7 +141,8 @@ def _home(site: Site, track: Track, out_dir: Path, templates: Path) -> tuple[str
         TIERS_HEADING=home["tiers_heading"],
         TIER_LINES="".join(
             f"- {numbers[t['key']]} {t['word']}: {t['meaning']}\n" for t in tiers
-        ),
+        )
+        + (f"\n{note}\n" if (note := counts_rule(site)) else ""),
         STEPS_HEADING=home["steps_heading"],
         STEP_LINES="".join(
             f"{i}. {step['title']} — {step['body']}\n"

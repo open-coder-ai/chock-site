@@ -1,6 +1,6 @@
 """SITE-UX: path tabs, copy buttons, the "On this page" list and callouts, in a browser."""
 
-from conftest import assert_clean, collect
+from conftest import answer_beacon, assert_clean, collect
 
 MOBILE = {"width": 390, "height": 844}
 DESKTOP = {"width": 1366, "height": 900}
@@ -103,6 +103,7 @@ def test_every_code_block_has_a_copy_button_that_copies_it(browser, site_url) ->
 def test_copy_button_never_sends_an_event(page, site_url) -> None:
     sent: list[str] = []
     page.on("request", lambda req: sent.append(req.url) if "/api/" in req.url else None)
+    answer_beacon(page)
     page.goto(site_url + "/docs/?track=1")
     page.locator(".code-copy").first.click()
     page.wait_for_timeout(200)

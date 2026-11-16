@@ -17,7 +17,7 @@ landing:
   secondary_cta: "See how it works"
   copy_label: "Copy"
   install_aria: "Copy install command"
-  ticks: ["Free and open source", "No sign-up", "Nothing tracked", "Runs on your machine"]
+  ticks: ["Free and open source", "No sign-up", "No cookies", "Runs on your machine"]
   demo_label: "Example of a policy refusing a command"
   demo_title: "A refused move, from the policy's own test"
   demo_tabs_label: "Policies"
@@ -150,14 +150,14 @@ landing:
     - {title: "Tests per policy", body: "Each policy ships test cases that run against the catalog.", proof: "__POLICY__: __EXECUTED__ of __TOTAL__ cases pass", href: "/coding/policies/__POLICY__/"}
   open_eyebrow: "OPEN SOURCE"
   open_heading: "Free to use, and built in the open."
-  open_body: "You pay nothing and need no account, and there is no telemetry. Every policy, test and build step is on GitHub under Apache-2.0. Tell us what your agent did that a policy should have caught."
+  open_body: "You pay nothing and need no account, and the chock command line tool sends nothing. Every policy, test and build step is on GitHub under Apache-2.0. Tell us what your agent did that a policy should have caught."
   open_github: "View on GitHub"
   open_contribute: "Contribute a policy"
   faq_eyebrow: "QUESTIONS"
   faq_heading: "Frequently asked"
   faq_link: "All questions"
   faq_ids: ["what-is-chock", "general-agents", "security-boundary", "free", "tracking", "which-agents", "what-command-does"]
-  cta_heading: "Ready in a minute."
+  cta_heading: "Ready when you are."
   cta_sub: "Pick your guardrails and copy one command."
   cta_github: "View on GitHub"
 coding:

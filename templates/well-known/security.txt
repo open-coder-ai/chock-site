@@ -1,0 +1,5 @@
+Contact: __CONTACT__
+Expires: __EXPIRES__
+Policy: __POLICY__
+Canonical: __CANONICAL__
+Preferred-Languages: __LANGUAGES__

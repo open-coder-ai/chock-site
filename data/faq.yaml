@@ -17,11 +17,17 @@ questions:
 - id: tracking
   group: common
   q: "Do you collect anything about me?"
-  a: "Nothing personal. Your selection lives in the link after the #, which browsers never send to a server. There is no cookie and no account. The site counts a few actions, such as copying a command, and no page views. It stores no IP address or id with them. The Security page lists them. With Global Privacy Control or Do Not Track on, it counts nothing. The chock command line tool sends nothing."
+  a: "Nothing personal. Your selection lives in the link after the #, which browsers never send to a server. There is no cookie and no account. The site counts page views and a few actions, such as copying a command. It stores no IP address or id with an action count. Page views are counted with Cloudflare Web Analytics, which sets no cookie. The Security page lists what is counted. With Global Privacy Control or Do Not Track on, it counts nothing. The chock command line tool sends nothing."
 - id: free
   group: common
   q: "Is it free?"
   a: "Yes. The engine, the catalog and this site are open source under Apache-2.0."
+- id: compare
+  group: common
+  q: "How does Chock compare with other tools?"
+  a: "Chock writes one policy into each agent's own hooks where it has them, and into a git hook and a CI gate. Plain agent hooks, managed settings, Cupcake, agentjail, Kastra, devleaps agent policies, Prempti and Salt Code each do part of that better. The comparison in the chock repository says where each one is stronger and where Chock is weaker. It links each tool's own documentation."
+  link: https://github.com/open-coder-ai/chock/blob/main/docs/compare.md
+  link_label: How Chock compares
 - id: general-agents
   group: common
   q: "What are general agents?"

@@ -25,6 +25,7 @@ ACTIONS = yaml.safe_load(
 # step-by-step docs (SITE-DOCS).
 LLMS_FULL_BUDGET = 2_097_152
 LINK_RE = re.compile(r"\]\((/[^\s)]*)\)")
+ABSOLUTE_LINK_RE = re.compile(r"\]\(https://chock\.sh(/[^\s)]*)\)")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
 
@@ -124,8 +125,10 @@ def test_llms_txt_follows_llmstxt_org_shape(built) -> None:
 
 def test_every_llms_link_resolves_to_a_real_file(built) -> None:
     text = (built.out / "llms.txt").read_text(encoding="utf-8")
-    links = LINK_RE.findall(text)
+    assert LINK_RE.findall(text) == [], "llms.txt links are absolute (LN-6)"
+    links = ABSOLUTE_LINK_RE.findall(text)
     assert len(links) > 100
+    assert len(links) == text.count("]("), "every llms.txt link is on this site"
     for link in links:
         href = link.split("#", 1)[0]
         target = built.out / href.lstrip("/")
@@ -138,9 +141,10 @@ def test_every_docs_twin_has_an_llms_line_with_a_description(built) -> None:
     text = (built.out / "llms.txt").read_text(encoding="utf-8")
     for twin in sorted((built.out / "docs").rglob("index.md")):
         rel = _rel(built, twin)
-        line = next((ln for ln in text.splitlines() if f"]({rel})" in ln), None)
+        url = "https://chock.sh" + rel
+        line = next((ln for ln in text.splitlines() if f"]({url})" in ln), None)
         assert line is not None, rel
-        assert re.search(rf"\]\({re.escape(rel)}\): \S", line), line
+        assert re.search(rf"\]\({re.escape(url)}\): \S", line), line
 
 
 def test_llms_full_holds_every_docs_page_in_nav_order_within_budget(built) -> None:

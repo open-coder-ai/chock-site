@@ -120,7 +120,7 @@ def test_twin_has_every_card_connection_and_step(built, diagram_id: str) -> None
 def test_llms_files_carry_each_diagram_twin(built, diagram_id: str) -> None:
     llms = (built.out / "llms.txt").read_text(encoding="utf-8")
     full = (built.out / "llms-full.txt").read_text(encoding="utf-8")
-    assert f"(/docs/architecture/{diagram_id}/index.md)" in llms
+    assert f"(https://chock.sh/docs/architecture/{diagram_id}/index.md)" in llms
     assert _twin(built, diagram_id).strip() in full
 
 
