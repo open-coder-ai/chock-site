@@ -247,6 +247,10 @@ def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
             templates / HOME / "how.html",
             EYEBROW=land["how_eyebrow"],
             HEADING=land["how_heading"],
+            FIGURE_SRC=land["how_figure_src"],
+            FIGURE_ALT=land["how_figure_alt"],
+            FIGURE_WIDTH=land["how_figure_width"],
+            FIGURE_HEIGHT=land["how_figure_height"],
             STEPS=_each(templates, "how-step", steps),
             NOTE=Safe(
                 render_file(
@@ -619,6 +623,7 @@ def _twin(
         DEMO_LINES=demo,
         TRACK_LINES=tracks,
         HOW_HEADING=land["how_heading"],
+        HOW_FIGURE=f"![{land['how_figure_alt']}]({land['how_figure_src']})",
         HOW_LINES="".join(
             f"{i}. {s['title']} — {s['body']}\n" for i, s in enumerate(land["how"], 1)
         ),
