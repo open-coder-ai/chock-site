@@ -20,6 +20,8 @@ __DEMO_LINES__
 __TRACK_LINES__
 ## __HOW_HEADING__
 
+__HOW_FIGURE__
+
 __HOW_LINES__
 The command it runs, with your selection code in place of the ellipsis. Ask the user first, because it installs hooks:
 

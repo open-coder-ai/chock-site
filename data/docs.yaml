@@ -487,6 +487,7 @@ cli_pages:
   - bundle status
   - new
   - compile
+  - emit
   - install-skills
   - registry
   - registry init

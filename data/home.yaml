@@ -46,6 +46,11 @@ landing:
   stat_labels: {policies: "policies", presets: "presets", agents: "agents"}
   how_eyebrow: "HOW IT WORKS FOR CODING AGENTS"
   how_heading: "From picks to plugin in three steps"
+  how_figure_src: "/img/where-chock-sits.png"
+  how_figure_caption: "Tap to open full size."
+  how_figure_width: "1760"
+  how_figure_height: "2008"
+  how_figure_alt: "A coding agent's harness drawn as component cards in three layers: input (you, the prompt, the session), core (context, the agent loop and the model) and execution (the tool gate, tools, external tools over MCP and subagents), with arrows showing how they talk to each other, beside the repository and pipeline (git commit, git push, CI, main branch). Small diamonds on each card are the hooks on that component: filled where Chock runs today, hollow where a policy of your own can run. The model has none, because Chock never touches it."
   how_apply_note: "For an agent marked tested, the command adds --apply and installs the plugin too. For the others, you install it yourself."
   how:
     - {title: "Pick your guardrails", body: "Tick policies one by one, or start from a preset such as Git hygiene or Secrets."}
