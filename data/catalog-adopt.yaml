@@ -22,7 +22,7 @@ setup:
 steps:
   - {run: [chock, init, .]}
   - {run: [chock, add, protect-main-branch, --ref, __CATALOG_REF__]}
-  - {run: [chock, add, scan-secrets, --ref, __CATALOG_REF__, --verify-sha, 97ead4b680b101b3d17c06142dac0900fc3cfc894dfaa5cb5e09f7e01e4a8edb]}
+  - {run: [chock, add, scan-secrets, --ref, __CATALOG_REF__, --verify-sha, 9d99cab3f5657d37554d6bd899396d95847825c7ff0d8ec4bd3f850a4a5e8a00]}
   - {run: [chock, sync, --repo, ., --ci]}
   - {run: [git, commit, --allow-empty, -m, notes], exit: 1}
   - {run: [git, switch, -c, adopt-chock]}

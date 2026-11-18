@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "engine": "2f3be6d04349a7ec433657e16a294efc62b51d4f",
-  "catalog": "38fb487f7768f3d5c06853a0d4a346587abec937",
+  "engine": "5088f2f17df0c10b3269a68685a3500ffea6516a",
+  "catalog": "cc5a294bf0b5ac0826588b9e2ffc7706af083c26",
   "examples": [
     {
       "step": 1,
@@ -11,20 +11,20 @@
     },
     {
       "step": 2,
-      "command": "chock add protect-main-branch --ref 38fb487f7768f3d5c06853a0d4a346587abec937",
-      "output": "Added protect-main-branch to .agents/policies/protect-main-branch\n  from https://github.com/open-coder-ai/chock-catalog at 38fb487f7768f3d5c06853a0d4a346587abec937\n  sha256 0a5d5865b6258b60dea44d05e38bcd58506ac50c13123d35e88a69a598e9aacd\nINDEX.md: ~314 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "command": "chock add protect-main-branch --ref cc5a294bf0b5ac0826588b9e2ffc7706af083c26",
+      "output": "Added protect-main-branch to .agents/policies/protect-main-branch\n  from https://github.com/open-coder-ai/chock-catalog at cc5a294bf0b5ac0826588b9e2ffc7706af083c26\n  sha256 0a5d5865b6258b60dea44d05e38bcd58506ac50c13123d35e88a69a598e9aacd\nINDEX.md: ~314 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
       "exit": 0
     },
     {
       "step": 3,
-      "command": "chock add scan-secrets --ref 38fb487f7768f3d5c06853a0d4a346587abec937 --verify-sha 97ead4b680b101b3d17c06142dac0900fc3cfc894dfaa5cb5e09f7e01e4a8edb",
-      "output": "Added scan-secrets to .agents/policies/scan-secrets\n  from https://github.com/open-coder-ai/chock-catalog at 38fb487f7768f3d5c06853a0d4a346587abec937\n  sha256 97ead4b680b101b3d17c06142dac0900fc3cfc894dfaa5cb5e09f7e01e4a8edb\nINDEX.md: ~428 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
+      "command": "chock add scan-secrets --ref cc5a294bf0b5ac0826588b9e2ffc7706af083c26 --verify-sha 9d99cab3f5657d37554d6bd899396d95847825c7ff0d8ec4bd3f850a4a5e8a00",
+      "output": "Added scan-secrets to .agents/policies/scan-secrets\n  from https://github.com/open-coder-ai/chock-catalog at cc5a294bf0b5ac0826588b9e2ffc7706af083c26\n  sha256 9d99cab3f5657d37554d6bd899396d95847825c7ff0d8ec4bd3f850a4a5e8a00\nINDEX.md: ~428 tokens (chars/4, max 2000)\nCompiled. Run `chock sync --repo .` to activate commit-time enforcement.",
       "exit": 0
     },
     {
       "step": 4,
       "command": "chock sync --repo . --ci",
-      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nRegistered 2 pre-commit policy implementation(s)\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nRegistered 2 pre-merge-commit policy implementation(s)\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nRegistered 1 pre-push policy implementation(s)\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered 2 PreToolUse/Stop hook(s) in .claude/settings.json\n  claude_code: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run, recorded 2026-09-07)\n  claude_code: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 2 hook entr(y/ies) in .gemini/settings.json\n  gemini_cli: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis vendor-source, recorded 2026-08-28)\n  gemini_cli: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 1 agent hook(s) in .github/hooks/chock.json\n  vscode_copilot: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run-partial, recorded 2026-09-28)\nINDEX.md: ~428 tokens (chars/4, max 2000)\nRecompiled 2 policies\nprotect-main-branch:\n  claude: enforced-at-commit\n  copilot: enforced-at-commit\n  gemini: enforced-at-commit\nscan-secrets:\n  claude: enforced-at-commit + best-effort at tool use (live-run)\n  copilot: enforced-at-commit + best-effort at tool use (live-run-partial)\n  gemini: enforced-at-commit + best-effort at tool use (vendor-source)\n== install ci workflow\nInstalled CI workflow at /work/demo/.github/workflows/chock.yml",
+      "output": "Installed pre-commit dispatcher to /work/demo/.git/hooks/pre-commit\nRegistered 2 pre-commit policy implementation(s)\nInstalled pre-merge-commit dispatcher to /work/demo/.git/hooks/pre-merge-commit\nRegistered 2 pre-merge-commit policy implementation(s)\nInstalled pre-push dispatcher to /work/demo/.git/hooks/pre-push\nRegistered 1 pre-push policy implementation(s)\nInstalled commit-msg dispatcher to /work/demo/.git/hooks/commit-msg\nNo git-commit-msg.sh policies found; commit-msg dispatcher unchanged\nRegistered 2 PreToolUse/Stop hook(s) in .claude/settings.json\n  claude_code: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run, recorded 2026-09-07)\nRegistered 2 hook entr(y/ies) in .gemini/settings.json\n  gemini_cli: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis vendor-source, recorded 2026-08-28)\n  gemini_cli: Untested: chock has not witnessed its hooks run in this client; the wiring follows agentseam's record. What you see there is wanted as evidence: open-coder-ai/agentseam issues labelled 'evidence wanted'.\nRegistered 1 agent hook(s) in .github/hooks/chock.json\n  vscode_copilot: pre-tool: block+rewrite, best-effort, fail mode open (agentseam basis live-run-partial, recorded 2026-09-28)\nINDEX.md: ~428 tokens (chars/4, max 2000)\nRecompiled 2 policies\nprotect-main-branch:\n  claude: enforced-at-commit\n  copilot: enforced-at-commit\n  gemini: enforced-at-commit\nscan-secrets:\n  claude: enforced-at-commit + best-effort at tool use (live-run)\n  copilot: enforced-at-commit + best-effort at tool use (live-run-partial)\n  gemini: enforced-at-commit + best-effort at tool use (vendor-source)\n== install ci workflow\nInstalled CI workflow at /work/demo/.github/workflows/chock.yml",
       "exit": 0
     },
     {

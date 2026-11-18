@@ -83,6 +83,9 @@ upstream:
     - live probe of chock's shipped plugin, built on Windows and copied to `…` with no h
     - live probe of the chock plugin, with every other chock plugin disabled.
     - live probe of the chock plugin.
+    - 'live probe: PreToolUse refused `…` on the PowerShell tool and no commit was made ('
+    - 'live probe: the repo''s PreToolUse hook refused `…` and no commit was made, after t'
+    - 'live probe: the repo''s beforeShellExecution hook refused `…` and no commit was mad'
   - source: chock src/chock/packs/_skills/policy-init/SKILL.md (quoted in data/docs-source)
     starts:
     - 'classify(request) using `…`; present user_facing_class:'
@@ -133,10 +136,6 @@ upstream:
   - source: chock-catalog base/context-hygiene/manifest.yaml
     starts:
     - 'avoid: context rot and lost-in-the-middle'
-  - source: chock-catalog base/dockerfile-compose-security/manifest.yaml
-    starts:
-    - protect-agent-config's `…` of compiled folders
-    - protect-agent-config's \`…` of compiled folders
   - source: chock-catalog base/firecrawl-fallback-only/manifest.yaml
     starts:
     - 'avoid: reaching for the Firecrawl connector'
