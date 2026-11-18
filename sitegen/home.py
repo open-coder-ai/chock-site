@@ -249,6 +249,7 @@ def _how(site: Site, templates: Path, land: dict[str, Any]) -> Safe:
             HEADING=land["how_heading"],
             FIGURE_SRC=land["how_figure_src"],
             FIGURE_ALT=land["how_figure_alt"],
+            FIGURE_CAPTION=land["how_figure_caption"],
             FIGURE_WIDTH=land["how_figure_width"],
             FIGURE_HEIGHT=land["how_figure_height"],
             STEPS=_each(templates, "how-step", steps),

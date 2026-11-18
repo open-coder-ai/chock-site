@@ -1584,6 +1584,7 @@ body { overflow-x: clip; }
 
 .how-figure { margin: 32px auto 0; max-width: 720px; }
 .how-figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; }
+.how-figure figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; text-align: center; }
 .how-steps { margin-top: 32px; }
 .step-code { font-size: 12px; background: var(--bg); }
 .step-note { margin-top: 8px; font-size: 13px; }
