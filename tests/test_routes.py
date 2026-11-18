@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 import yaml
+from chock import evidence
+from chock.hooks import sync_notes
 
 from sitegen import clientdata, engine, routes
 from sitegen.catalog import lead_sentences, prose_lead, trigger_field
@@ -14,6 +16,7 @@ from sitegen.pageparts import PageError
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 ISSUES = "https://github.com/open-coder-ai/agentseam/issues/"
+REPO_SURFACES = ("pre-tool-use", "agent-hooks")
 
 
 def _site(built) -> dict:
@@ -83,10 +86,21 @@ def test_a_plugin_witness_never_clears_repo_hooks(built) -> None:
     sync_witnessed = {
         a for a, r in rows.items() if r["sync"] and r["sync"]["witness"] == "witnessed"
     }
-    assert sync_witnessed == {"vscode_copilot"}
-    for agent in ("claude_code", "cursor", "codex_cli"):
-        assert rows[agent]["plugin"]["witness"] == "witnessed", agent
-        assert rows[agent]["sync"]["witness"] == "untested", agent
+    ledger = engine.witness_ledger()
+    repo_rows = {r["agent"] for r in ledger if r["surface"] in REPO_SURFACES}
+    plugin_only = {
+        r["agent"] for r in ledger if r["surface"] == "plugin-hook"
+    } - repo_rows
+    assert sync_witnessed == repo_rows & {a for a, r in rows.items() if r["sync"]}
+    for agent in plugin_only & set(rows):
+        if rows[agent]["sync"]:
+            assert rows[agent]["sync"]["witness"] == "untested", agent
+    planted = tuple(
+        evidence.Witness(r["agent"], "plugin-hook", "x", "2026-01-01", "x")
+        for r in ledger
+    )
+    for agent in {r["agent"] for r in ledger}:
+        assert not sync_notes.witnessed(agent, ledger=planted), agent
 
 
 def test_plugin_witness_follows_witness_yaml_and_the_ledger(built) -> None:
