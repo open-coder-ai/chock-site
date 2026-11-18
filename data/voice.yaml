@@ -780,4 +780,4 @@ upstream:
   - 'The list is what chock knows about, not a proof of completeness (a file your workflow installs chock from belongs on it: floor.control_plane_paths.add); a symlink at, inside or above the list must open a listed path or nothing, or the run is undecided; a renamed or moved test file reads as a deletion and is refused (docs/floor.md)'
 - source: chock-catalog agentic-security/iam-policy-scan/manifest.yaml
   sentences:
-  - '`0.1.4` · `2026-11-17` · Status draft -> production (owner approval 2026-11-15, CAT-S1, which is the promotion rule''s approval; review record discovery/2026-11-15-review-container-iam-ci-policies.md).'
+  - '`0.1.4` · `2026-11-17` · Status draft -> production (owner approval 2026-11-15, CAT-S1, which is the owner''s approval for production; review record discovery/2026-11-15-review-container-iam-ci-policies.md).'
