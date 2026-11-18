@@ -2,9 +2,12 @@
 
 import itertools
 import re
+from pathlib import Path
 
+import yaml
 from conftest import assert_clean, collect
 
+DATA = Path(__file__).resolve().parents[2] / "data"
 MOBILE = {"width": 390, "height": 844}
 DESKTOP = {"width": 1280, "height": 800}
 
@@ -123,14 +126,18 @@ def test_headings_never_skip_a_level(page, site_url) -> None:
 
 
 def test_every_image_has_alt(page, site_url) -> None:
-    total = 0
+    found = []
     for path in _paths(page, site_url):
         page.goto(site_url + path)
         images = page.locator("img")
-        total += images.count()
         for i in range(images.count()):
-            assert images.nth(i).get_attribute("alt") is not None, f"{path}: img {i}"
-    assert total == 0, f"{total} <img> elements: every one needs an alt"
+            alt = images.nth(i).get_attribute("alt")
+            src = images.nth(i).get_attribute("src")
+            assert alt is not None and alt.strip(), f"{path}: img {src} has no alt"
+            found.append((path, src))
+    figure = yaml.safe_load((DATA / "home.yaml").read_text(encoding="utf-8"))["landing"]
+    declared = [("/", figure["how_figure_src"])]
+    assert found == declared, f"images on the site {found}, declared {declared}"
     assert_clean(page)
 
 
